@@ -1,0 +1,7 @@
+枪1	t2/Spear1
+枪2	t2/Spear2
+枪3	t2/Spear3
+枪4	t2/Spear4
+枪5	ms/Lance3
+枪6	ms/Lance4
+枪7	ms/Lance5

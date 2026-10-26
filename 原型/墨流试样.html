@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>墨流试样</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #111; color: #ddd; font: 14px "PingFang SC", sans-serif; overflow: hidden; }
+  #wrap { position: relative; margin: 0 auto; } #cv { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  #ui { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  button { font: 14px "PingFang SC", sans-serif; padding: 7px 10px; border: 0; border-radius: 6px; background: rgba(20,18,16,.8); color: #f3e7cf; }
+</style></head>
+<body>
+<div id="wrap"><canvas id="cv"></canvas>
+  <div id="ui"><button onclick="play('qinglong')">青龙斩·青金墨浪</button><button onclick="play('roar')">当阳一喝·火爆</button><button onclick="play('fireWhip')">火丝</button><button onclick="play('jet')">水箭</button><button onclick="play('inkDragon')">墨龙</button><button onclick="ML.cfg.palette = ML.cfg.palette === 'qingjin' ? 'ink' : 'qingjin'">青金／黑墨</button></div></div>
+<script src="墨流.js"></script>
+<script>
+// 墨流试样：墨流层（墨流.js）单独看——背景用游戏的地图图，流体叠在上面，和游戏里一样。
+// 调试：window.DEMO（play(名字)、step(n)、draw()、clear()、paused）
+'use strict';
+const W = 360, H = 640, wrap = document.getElementById('wrap'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const S = Math.min(innerWidth / W, innerHeight / H), DPR = Math.min(2, devicePixelRatio || 1);
+wrap.style.width = W * S + 'px'; wrap.style.height = H * S + 'px'; cv.width = Math.round(W * S * DPR); cv.height = Math.round(H * S * DPR);
+const bg = new Image(); bg.onerror = () => say('读不到背景图 ' + bg.src + '。请从本机预览打开：http://localhost:8766/原型/墨流试样.html'); bg.src = new URLSearchParams(location.search).get('bg') || 'img/bg_canyon.jpg';
+// 直接从磁盘打开（file://）时读不到旁边的 墨流.js 和背景图，整页是黑的（10-25 用户：「一团黑」）——写出来告诉怎么开
+function say(msg) { const d = document.createElement('div'); d.style.cssText = 'position:absolute;left:16px;right:16px;top:40%;color:#f3e7cf;font:16px/1.6 "PingFang SC",sans-serif;text-align:center'; d.textContent = msg; wrap.appendChild(d); }
+if (!window.Moliu) { say('读不到 墨流.js。请从本机预览打开：http://localhost:8766/原型/墨流试样.html（直接打开文件读不到旁边的脚本和图片）'); throw new Error('no Moliu'); }
+const ML = window.ML = Moliu.create({ W, H, pw: cv.width, ph: cv.height });
+if (!ML) { say('这个浏览器不支持 WebGL2 浮点纹理，墨流层用不了'); throw new Error('no WebGL2'); }
+const ARGS = { qinglong: [180, 330, 120, 1], roar: [180, 470], fireWhip: [180, 470], jet: [120, 540, 250, 180], inkDragon: [180, 520] };
+function play(k) { ML.fx[k](...ARGS[k]); }
+function draw() {
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  if (bg.complete && bg.naturalWidth) { const ia = bg.width / bg.height, ca = W / H, sw = ia > ca ? bg.height * ca : bg.width, sh = ia > ca ? bg.height : bg.width / ca; ctx.drawImage(bg, (bg.width - sw) / 2, (bg.height - sh) / 2, sw, sh, 0, 0, W, H); }
+  if (ML.render(cv.width, cv.height)) ctx.drawImage(ML.canvas, 0, 0, W, H);
+  ML.drawParts(ctx);
+}
+const DEMO = window.DEMO = { play, draw, step(n = 1) { for (let i = 0; i < n; i++) ML.step(1 / 60); }, clear: () => ML.clear(), paused: false };
+let last = performance.now();
+(function frame(now) { const d = Math.min(1 / 30, (now - last) / 1000); last = now; if (!DEMO.paused) { ML.step(d); draw(); } requestAnimationFrame(frame); })(last);
+setTimeout(() => play('qinglong'), 600);
+</script>
+</body></html>

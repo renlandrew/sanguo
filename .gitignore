@@ -1,0 +1,6 @@
+# macOS、Python 缓存
+.DS_Store
+__pycache__/
+*.pyc
+# 发包临时目录
+outbox/
