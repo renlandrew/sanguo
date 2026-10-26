@@ -1654,7 +1654,7 @@ function drawSheet(name, anim, f, x, y, k, alpha = 1) {
 const sheetOf = T => [T.sheet, T.alt].find(k => k && SHEETS[k] && ready(IMG[k]));
 // 换色（tint）和立绘（pt）只在还借着别人的图集时用；Veo 录的专属图集到了就用原色（10-25）
 const tintOf = T => T.tint && sheetOf(T) !== T.sheet ? TINT[T.tint] : 'none', ownSheet = T => sheetOf(T) === T.sheet;
-for (const k of ['huaxiong', 'lvbu', 'huzhen', 'lijue', 'gaoshun']) { IMG['pt_' + k] = new Image(); IMG['pt_' + k].src = 'img/pt_' + k + '.png' + BUST; }
+for (const k of ['huaxiong', 'lvbu']) { IMG['pt_' + k]   /* 胡轸、李傕、高顺 10-25 已有自己的 Veo 图集，不再找立绘（原来读不到报 404） */ = new Image(); IMG['pt_' + k].src = 'img/pt_' + k + '.png' + BUST; }
 // 敌将立绘：一张抠好的正面立绘，呼吸起伏；出招时往前一扑、放大一点；挨打闪白
 function drawPortrait(e, T, x, y, ps) {
   const im = IMG['pt_' + T.pt], h = T.sh * ps * (e.duel ? 2.2 : 1) * 1.25, w = h * im.width / im.height, t = G.t + e.ph;
