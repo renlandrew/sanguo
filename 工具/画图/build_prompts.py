@@ -47,14 +47,14 @@ def body(k, p):
     p = re.sub(r'（只用图像生成[^）]*）', '', p)
     p = re.sub(r'人物：刘备[^。]*。', '', p)                                       # 统一换成下面的造型段
     p = p.replace('主体放在画面中上部，下面四分之一是地面。', '')
-    p = p.replace('邹靖：幽州校尉，八字胡，', '邹靖：幽州校尉，').replace('红袍外罩黑甲，', '').replace('一员穿红袍黑甲、八字胡的校尉邹靖', '校尉邹靖').replace('三兄弟', '刘备、关羽、张飞三兄弟')   # 邹靖不再穿红黑
+    p = p.replace('红袍外罩黑甲，', '').replace('邹靖：幽州校尉，八字胡，', '邹靖：幽州校尉，').replace('一员穿红袍黑甲、八字胡的校尉邹靖', '校尉邹靖').replace('三兄弟', '刘备、关羽、张飞三兄弟')   # 邹靖不再穿红黑
     return p.strip()
 
 out = []
 for k, p in list(V1.items()) + list(EXTRA.items()):
     if k in DONE or not (k.startswith(('story_s', 'map_', 'item_', 'room_', 'wpn_')) or k in EXTRA or k in REDO): continue
     b = body(k, p)
-    who = [LOOK[n] for n in LOOK if n in b or k in ('trio2',)] if k.startswith('story') or k == 'trio2' else []
+    who = [LOOK[n] for n in ('刘备', '关羽', '张飞')] if k == 'trio2' else [LOOK[n] for n in LOOK if n in b] if k.startswith('story') else []
     if k == 'pt_zoujing': who = [LOOK['邹靖']]
     if k.startswith('wpn_guan'): who = ['青龙偃月刀每一级的刀身都是光滑完整的钢刃，越高级装饰越华丽但仍然是实心刀身，不要镂空、孔洞、腐蚀状花纹。']
     parts = ['只画一张完整的图（不要拼图、不要用代码裁切）。', '画面：' + b]
