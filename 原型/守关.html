@@ -336,7 +336,8 @@ const PERKS = [
   { id: 'mend', name: '修补城墙', desc: '城防回 25%', max: 9, fn: () => { G.wall = Math.min(G.wallMax, G.wall + G.wallMax * .25); } },
 ];
 // 敌方军师（10-25 样本）：李儒——第三波开始 4 秒后伏一队铁骑从左侧杀出；看破拒马（你带拒马，第二波起他放火箭烧掉）
-const FOE_ADV = { liru: { name: '李儒', title: '董卓谋主', ambush: { wave: 2, delay: 4, kind: 'tieqi', n: 8, x0: 16, x1: 70, y: 300 }, seeJum: true } };
+const FOE_ADV = { liru: { name: '李儒', title: '董卓谋主', ambush: { wave: 2, delay: 4, kind: 'tieqi', n: 8, x0: 16, x1: 70, y: 300 }, seeJum: true },
+  liru27: { name: '李儒', title: '献策焚城', ambush: { wave: 3, delay: 3, kind: 'tieqi', n: 6, x0: 290, x1: 344, y: 290 } } };   // 10-26：火烧洛阳是李儒的主意，第二次出场换右侧伏兵、不烧拒马
 const isCav = T => !T.civ && (T.spd >= 48 || !!T.mount);
 // 晋升（10-25 夜用户：「每关减到 3–5 次」）：原来门槛 8、16、24…，一关晋升 5–14 次。改成按这关大约能拿多少军功分段：
 // MER 是机器人会搭配、按推荐等级打这关拿到的军功（6 个种子平均，除掉推荐等级的魅力系数；斗将不算最后斩敌将那一下），改了波次用 __sg.merTest() 重测；
@@ -493,7 +494,8 @@ const LEVELS = [
   { id: 27, name: '火烧洛阳', sub: '洛阳废墟 · 董卓迁都，西凉兵追杀百姓', hpMul: 4.559, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'ruins', reward: '刘备可学「仁德」',
     waves: [[2, 'baixing', 6, 6, 'rand'], [4, 'xiliang', 14, 8, 'rand'], [12, 'baixing', 8, 8, 'rand'], [14, 'xiliang', 20, 0, 'wedge'], [22, 'baixing', 8, 8, 'rand'], [24, 'xiliang', 26, 10, 'rand'],
       [34, 'baixing', 10, 8, 'rand'], [36, 'gongqi', 6, 5, 'rand'], [44, 'baixing', 8, 8, 'rand'], [46, 'xiliang', 28, 10, 'rand'], [56, 'xiliang', 30, 10, 'rand']],
-    tips: [[1, '百姓往城门跑：进了城算救下'], [5, '招式打到百姓算误伤；西凉兵追上百姓会砍倒他们']] },
+    rules: { foeAdv: 'liru27' },
+    tips: [[1, '百姓往城门跑：进了城算救下'], [5, '招式打到百姓算误伤；西凉兵追上百姓会砍倒他们'], [9, '李儒献策：第三波一开打，右侧杀出六骑西凉铁骑']] },
   { id: 28, name: '井中玉玺', sub: '洛阳废墟 · 宫中井里有五色毫光', hpMul: 3.047, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'ruins', reward: '传国玉玺（法宝）',
     rules: { wells: [[90, 300], [180, 250], [270, 310]] },
     waves: [[2, 'xiliang', 22, 8, 'rand'], [8, 'gongqi', 4, 4, 'rand'], [14, 'xiliang', 24, 0, 'wedge'], [22, 'gongqi', 6, 5, 'rand'], [28, 'xiliang', 30, 10, 'rand'], [38, 'tieqi', 8, 6, 'rand'],
@@ -1211,7 +1213,7 @@ function stepRules(dt) {
   const FA = G.foeAdv; if (FA && FA.ambush && !FA.ambushed && G.wave >= FA.ambush.wave && G.t - G.waveT0 >= FA.ambush.delay) {
     const A = FA.ambush; FA.ambushed = true; G.liAmbT = G.t; G.events.push([G.t, '伏']);
     for (let k = 0; k < A.n; k++) spawn({ kind: A.kind, x: R(A.x0, A.x1), w: G.wave, lane: false, g: 'foeAdv' }, A.y + R(-24, 24));
-    G.total += A.n; G.fx.push({ k: 'banner', t: 0, text: FA.name + '的伏兵', sub: A.n + ' 骑铁骑从左侧杀出' }); G.shake = .25;
+    G.total += A.n; G.fx.push({ k: 'banner', t: 0, text: FA.name + '的伏兵', sub: A.n + ' 骑' + FOES[A.kind].name + '从' + (A.x0 > W / 2 ? '右' : '左') + '侧杀出' }); G.shake = .25;
   }
   if (RU.ambush && !G.ambushed && G.t >= RU.ambush.t * TIMEX.v) {        // 伏兵从两侧杀出
     G.ambushed = true; let n = 0;
@@ -4088,8 +4090,8 @@ function drawPrep() {
   const FA = lv.rules && lv.rules.foeAdv && FOE_ADV[lv.rules.foeAdv];                // 敌方军师：计策是明牌（推演会算进去）；看破写明针对什么
   if (FA) { const seen = P.kits.includes('jum');
     if (ready(IMG.p_liru)) { ctx.save(); ctx.beginPath(); ctx.roundRect(14, ey, 28, 28, 5); ctx.clip(); ctx.drawImage(IMG.p_liru, 12, ey - 2, 32, 32); ctx.restore(); ctx.strokeStyle = '#a8301f'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.roundRect(14, ey, 28, 28, 5); ctx.stroke(); } else uiSeal(28, ey + 14, 20, FA.name[0], '#5a1d12'); uiText('敌方军师 · ' + FA.name + '（' + FA.title + '）', 46, ey + 8, 13, '#ffb39a', 'left', FONT, { lw: 3 });
-    uiText(`伏兵：第${CN[FA.ambush.wave]}波开始后，${FA.ambush.n} 骑铁骑从左侧杀出`, 46, ey + 25, 10, 'rgba(244,230,196,.75)', 'left', PLAIN, { stroke: false });
-    uiText(seen ? '看破：你带了拒马——第二波起他放火箭烧掉' : '看破：料定你会用拒马挡铁骑（带了第二波起就烧掉）', 46, ey + 40, 10, seen ? '#ff9a7a' : 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false, glow: seen ? 'rgba(226,86,58,.6)' : null }); ey += 52; }
+    uiText(`伏兵：第${CN[FA.ambush.wave]}波开始后，${FA.ambush.n} 骑${FOES[FA.ambush.kind].name}从${FA.ambush.x0 > W / 2 ? '右' : '左'}侧杀出`, 46, ey + 25, 10, 'rgba(244,230,196,.75)', 'left', PLAIN, { stroke: false });
+    if (FA.seeJum) uiText(seen ? '看破：你带了拒马——第二波起他放火箭烧掉' : '看破：料定你会用拒马挡铁骑（带了第二波起就烧掉）', 46, ey + 40, 10, seen ? '#ff9a7a' : 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false, glow: seen ? 'rgba(226,86,58,.6)' : null }); ey += 52; }
   // 布阵：点两张换位置
   const by = ey + 6; secTitle('布阵 · 出手顺序（五格，点两张换位置）', by);
   for (let k = 0; k < NS; k++) { const x = 12 + k * 68, y = by + 16, w = 64, h = 64, id = P.order[k], on = P.sel === k;
