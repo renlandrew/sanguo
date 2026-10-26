@@ -102,7 +102,8 @@ AXR = {'z': (0, 0, 0), '-z': (math.pi, 0, 0), 'x': (0, math.pi / 2, 0), '-x': (0
 E = Euler(AXR).to_matrix().to_4x4()
 
 sc.render.engine = 'BLENDER_WORKBENCH'
-sh = sc.display.shading; sh.light = 'FLAT'; sh.color_type = 'TEXTURE'; sh.show_object_outline = True; sh.object_outline_color = (.08, .07, .06)
+sh = sc.display.shading; sh.light = 'STUDIO' if opt.get('light') == 'studio' else 'FLAT';   # light=studio：有明暗体积（10-26 去水墨）
+sh.color_type = 'TEXTURE'; sh.show_object_outline = True; sh.object_outline_color = (.08, .07, .06)
 sc.render.film_transparent = True; sc.render.resolution_x = sc.render.resolution_y = SIZE; sc.render.resolution_percentage = 100
 cd = bpy.data.cameras.new('cam'); cd.type = 'ORTHO'; cd.ortho_scale = OSCALE
 cam = bpy.data.objects.new('cam', cd); sc.collection.objects.link(cam); sc.camera = cam

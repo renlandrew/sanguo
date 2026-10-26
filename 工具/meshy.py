@@ -45,7 +45,7 @@ def main():
     elif cmd == 'multi':
         r = call('POST', 'multi-image-to-3d', {
             'image_urls': [data_uri(p) for p in a[1:5]], 'ai_model': 'latest', 'pose_mode': 'a-pose',
-            'should_remesh': True, 'topology': 'triangle', 'target_polycount': 20000,
+            'should_remesh': True, 'topology': 'triangle', 'target_polycount': int(os.environ.get('POLY', '20000')),   # 10-26 用户：「要最精细」——POLY=100000
             'should_texture': True, 'enable_pbr': False, 'remove_lighting': True, 'target_formats': ['glb']})
         print(r.get('result', r))
     elif cmd == 'rig':

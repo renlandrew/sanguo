@@ -32,7 +32,10 @@ def ink(im, band='ochre', keep=0.0, line=3, halo=0):
     base = Image.composite(Image.new('RGB', im.size, CINN), base, red)
     if keep > 0: base = Image.blend(base, im.convert('RGB'), keep)
     if VIVID: base = ImageEnhance.Contrast(ImageEnhance.Color(base).enhance(VIVID)).enhance(1.12)
-    if VIVID and RETINT: base = Image.composite(ych, base, yel)                           # retint=1：全彩之上把头巾再染成 band 色（邓茂、力士红巾，衙役黑巾），同一个模型的兵种分得开   # vivid=1.7：颜色拉鲜、反差加一点，大色块（10-26 用户：「不要水墨风格了」）
+    if VIVID and RETINT:                                                               # 柔光渲染偏暗：调亮以后再找头巾（按色相：黄、橙黄），按亮度染成 band 色
+        br, bg_, bb = base.split(); y2 = mask(lambda r, g, b: (r > 90) & (g > 60) & ((r - b) > 60) & ((g - b) > 35) & ((r - g) < 70), br, bg_, bb).filter(ImageFilter.GaussianBlur(.6))
+        L2 = base.convert('L'); ych2 = Image.merge('RGB', [L2.point(lut(int(BC[i] * .45), BC[i], .8, 30, 200)) for i in range(3)])
+        base = Image.composite(ych2, base, y2)                           # retint=1：全彩之上把头巾再染成 band 色（邓茂、力士红巾，衙役黑巾），同一个模型的兵种分得开   # vivid=1.7：颜色拉鲜、反差加一点，大色块（10-26 用户：「不要水墨风格了」）
     body = base.copy(); body.putalpha(a)
     big = a.filter(ImageFilter.MaxFilter(line))
     edge = ImageChops.subtract(big, a).filter(ImageFilter.GaussianBlur(.4))
