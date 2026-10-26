@@ -53,7 +53,9 @@ PLANS = {
     '杂务给物品': dict(gates=GATES_V3, login={'精铁': 2}, task_n=3, task={'残页': 2}, task_min=3.5, replay={'精铁': 1}, cap={'精铁': 2},
                weekly=('将印', 1, 'tasks', 10), first={20: {'将印': 1}}, save=2, visit=dict(n=2, iron=2, luck=15, min=.3), chores_min=.2,
                chores={'精铁': 3, '残页': 3}, chore_luck=10, mins=MIN2),
+    # 10-26 推完上面那版第一章只要 10 天（陨铁快了），用户：「拉回2周」——探访和募集粮草给的机缘减少（试过满 133 换一块，效果相同但数字难看）
 }
+PLANS['两周'] = {**PLANS['杂务给物品'], 'visit': {**PLANS['杂务给物品']['visit'], 'luck': 12}, 'chore_luck': 6}   # 实际改法：机缘门槛不动，探访 15 → 12、募集粮草 10 → 6（现行）
 # 玩家：每周七天各玩几分钟（0 = 不上线）
 PLAYERS = {
     '每天 45 分钟': [45] * 7,
@@ -65,7 +67,7 @@ PLAYERS = {
 
 
 def run(P, week, days=60):
-    GATES = P['gates']; MIN = P.get('mins', globals()['MIN']); inv = {'精铁': 0, '残页': 0, '将印': 0, '神兵': 0}; luck = 0; need_left = [dict(g[2]) for g in GATES]
+    GATES = P['gates']; MIN = P.get('mins', globals()['MIN']); LF = P.get('luck_full', 100); inv = {'精铁': 0, '残页': 0, '将印': 0, '神兵': 0}; luck = 0; need_left = [dict(g[2]) for g in GATES]
     nxt, owed, log, gate_day, total, login_days, task_days = 1, 0, [], {}, 0, [], []
     for d in range(days):
         mins = week[d % 7]
@@ -85,11 +87,11 @@ def run(P, week, days=60):
             for _ in range(V['n'] * packs):
                 if t < V['min']: break
                 t -= V['min']; inv['精铁'] += V['iron']; luck += V['luck']
-                while luck >= 100: luck -= 100; inv['神兵'] += 1
+                while luck >= LF: luck -= LF; inv['神兵'] += 1
             t -= P.get('chores_min', 0)
             for k, v in P.get('chores', {}).items(): inv[k] += v
             luck += P.get('chore_luck', 0)
-            while luck >= 100: luck -= 100; inv['神兵'] += 1
+            while luck >= LF: luck -= LF; inv['神兵'] += 1
         got = {k: 0 for k in P['cap']}
         def buy():                                                                    # 手里的材料够哪道门就先买哪道（门按关号排）
             for gi, g in enumerate(GATES):

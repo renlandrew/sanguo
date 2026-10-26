@@ -633,13 +633,13 @@ function dailyTick() {
 // 打法军务三道（要去打）＋出外探访两次（一键：派政治最高的人，必带回精铁，攒机缘，满百带回一块神兵材料——定数，不靠运气）＋日常杂务七项（一键全做完，三人各得点经验）
 const CHORES = ['操练兵马', '巡视城防', '犒赏三军', '整理军械', '桃园祭拜', '募集粮草', '批阅军报'], LUCK_FULL = 100;
 // 杂务各给一样东西（10-25 夜用户：「这些不是得到经验，是得到物品奖励……一键完成要消耗体力的」）：一项花体力 10，一天七项共花 70
-const CHORE_PAY = [['精铁', 1], ['精铁', 1], ['残页', 1], ['精铁', 1], ['残页', 1], ['机缘', 10], ['残页', 1]], CHORE_STA = 10;
+const CHORE_PAY = [['精铁', 1], ['精铁', 1], ['残页', 1], ['精铁', 1], ['残页', 1], ['机缘', 6], ['残页', 1]], CHORE_STA = 10;
 // 体力：上限 120，每 5 分钟回 1 点（一天回满还有富余）；现在只有杂务花体力
 const STA_MAX = 120, STA_MS = 5 * 60 * 1000;
 function staNow() { const now = Date.now(), S0 = INV.sta || (INV.sta = { v: STA_MAX, t: now }); if (S0.v >= STA_MAX) { S0.t = now; return STA_MAX; }
   const n = Math.floor((now - S0.t) / STA_MS); if (n > 0) { S0.v = Math.min(STA_MAX, S0.v + n); S0.t += n * STA_MS; } return S0.v; }
 const bestPol = () => ['guan', 'zhang', 'liu'].map(id => [id, Math.floor(statOf(id, ROSTER[id].lv)[3])]).sort((a, b) => b[1] - a[1])[0];
-const visitGain = pol => ({ iron: 1 + (pol >= 70 ? 1 : 0), luck: Math.round(8 + pol * .1) });   // 政治越高带回越多：刘备 72 → 精铁 2、机缘 15
+const visitGain = pol => ({ iron: 1 + (pol >= 70 ? 1 : 0), luck: Math.round(5 + pol * .1) });   // 政治越高带回越多：刘备 72 → 精铁 2、机缘 12（10-26 用户「拉回2周」：杂务也给机缘后陨铁来得太快，探访 15 → 12、募集粮草 10 → 6，一天合计仍约 30）
 function doVisit() {
   if (DAILY.visits >= DAILY.visitN) return null; const [id, pol] = bestPol(), g = visitGain(pol); DAILY.visits++;
   INV.it.精铁 += g.iron; INV.luck = (INV.luck || 0) + g.luck; let god = 0; while (INV.luck >= LUCK_FULL) { INV.luck -= LUCK_FULL; INV.it.陨铁++; god++; }
@@ -3330,7 +3330,7 @@ function sfx(k) {
   else if (k === 'win') { [0, .18, .36].forEach((d, i) => drum(t + d, i === 2, o)); [[293.7, .5], [370, .62], [440, .74], [587.3, .86]].forEach(([f, d]) => horn(t + d, f, d === .86 ? 1.3 : .3, o, .9)); }
   else if (k === 'lose') { gong(t, 98, o, 1.2); horn(t + .4, 220, .8, o, .7); horn(t + 1.1, 196, 1.2, o, .6); }
 }
-// 音乐（10-25 夜用户：「音乐还是用google 生成吧？多生成几首轮流播放」）：Vertex AI Lyria 2 生成的曲子（music/<名>.mp3，提示词在 ../工具/music/music.json），
+// 音乐（10-25 夜用户：「音乐还是用google 生成吧？多生成几首轮流播放」；10-26 用户嫌「都是现代乐器」，提示词改成只用古乐器，旧曲待换）：Vertex AI Lyria 2 生成的曲子（music/<名>.mp3，提示词在 ../工具/music/music.json），
 // 按场合分组轮流放，换曲、换场合时淡入淡出；哪一组一首都没有（文件还没生成或读不到），就用下面现合的占位
 const MUSIC = { calm: ['home_1', 'home_2', 'camp_1'], war: ['war_1', 'war_2', 'war_3', 'war_4'], duel: ['duel_1'], story: ['story_1'], omen: ['omen_1'] };
 const MP = { el: null, old: [], want: null, i: 0, fail: new Set() };
