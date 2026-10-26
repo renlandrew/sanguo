@@ -3536,7 +3536,9 @@ for (const [key, L] of Object.entries(STORY)) { let cur = key === 'open' ? 'stor
 const STORY_GLOW = { story_liu: '80,150,255', story_guan: '60,220,150', story_zhang: '255,110,60', story_zhangjiao: '230,200,90', pt_jianyong: '90,170,230', pt_huaxiong: '220,80,50', pt_lvbu: '230,50,70',
   pt_luzhi: '70,160,150', pt_dongzhuo: '200,120,40', pt_caocao: '140,90,220', pt_gongsun: '220,230,240', pt_sunjian: '230,60,50' };
 for (const k of [1, 2, 3]) { IMG['map_' + k] = new Image(); IMG['map_' + k].src = 'img/map_' + k + '.jpg' + BUST; }   // 战役地图（没有图时退回原来的关卡牌）
-for (const k of new Set(Object.values(STORY).flat().map(l => l[0]))) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + (STORY_GLOW[k] ? '.png' : '.jpg') + BUST; }
+// 每关一张专门画的剧情图（10-26 用户：「每一关都要有至少一张故事，强调逗B的剧情发展」）：img/story_s<关>.jpg 铺满整场；还没画好的关先用原来的立绘（存在第四格）
+for (let n = 1; n <= 30; n++) { const L = STORY['l' + n]; if (!L) continue; for (const ln of L) { ln[3] = ln[0]; ln[0] = 'story_s' + n; } }
+for (const k of new Set(Object.values(STORY).flat().flatMap(l => [l[0], l[3]]).filter(Boolean))) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + (STORY_GLOW[k] ? '.png' : '.jpg') + BUST; }
 let STP = null;                                                                    // 正在演的一场：{ key, i, t0, then }
 const storySeen = k => !!(INV.story && INV.story[k]);
 // 剧情里几句配声效、画面一抖：按句子里的字认
@@ -3567,7 +3569,7 @@ function drawStoryImg(k, a) {
 }
 function drawStory() {
   if (!STP) { screen = 'menu'; return; }
-  const t = uiNow(), L = STORY[STP.key], [k, who, text] = L[STP.i];
+  const t = uiNow(), L = STORY[STP.key], [k0, who, text, alt] = L[STP.i], k = alt && !ready(IMG[k0]) ? alt : k0;   // 剧情图没读到就退回立绘
   ctx.fillStyle = '#0c0805'; ctx.fillRect(0, 0, W, H);
   const fu = STP.prev && STP.prev !== k ? clamp((t - STP.fadeT) / .35, 0, 1) : 1;    // 换图时淡入淡出
   if (fu < 1) drawStoryImg(STP.prev, 1); drawStoryImg(k, fu);
