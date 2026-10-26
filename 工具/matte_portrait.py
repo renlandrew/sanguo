@@ -4,7 +4,7 @@
 输出 原型/img/pt_<名>.png。原图存 美术/<名>/正面.jpg，明天也拿它当 Veo 首帧。
 用法：<media-venv>/bin/python 三国志/工具/matte_portrait.py <正面.jpg> <名>
 """
-import sys
+import os, sys
 from pathlib import Path
 import numpy as np
 from PIL import Image, ImageFilter
@@ -26,6 +26,8 @@ keep = np.isin(lab, [i + 1 for i in range(n) if sizes[i] > sizes.max() * .02]); 
 un = np.clip((a - (1 - alpha[..., None]) * bgc) / np.maximum(alpha[..., None], .05), 0, 255)          # 去掉灰边的混色
 im = Image.fromarray(np.dstack([un, alpha * 255]).astype(np.uint8), 'RGBA')
 im = im.crop(im.getbbox()); w, h = im.size; im = im.resize((round(w * HEIGHT / h), HEIGHT), Image.Resampling.LANCZOS)
+ER = int(os.environ.get('ERODE', '0'))                                                              # ERODE=n：边缘往里收 n 像素，去掉一圈发白的毛边（10-26 吕布：「白边明显」）
+if ER: im.putalpha(im.split()[3].filter(ImageFilter.MinFilter(2 * ER + 1)).filter(ImageFilter.GaussianBlur(.6)))
 al = im.split()[3]; edge = al.filter(ImageFilter.MaxFilter(3))                                       # 一圈细墨线
 line = Image.new('RGBA', im.size, (29, 26, 23, 255)); line.putalpha(edge.point(lambda v: min(255, v)))
 out = Image.alpha_composite(line, im)
