@@ -330,7 +330,7 @@ const PERKS = [
   { id: 'jum', name: '拒马', desc: '城前摆一排拒马，走到这里慢一半', max: 1, fn: s => s.jum = true },
   // 对症的军械（10-25 用户：「要把军功这里设置得更复杂一些，那么一些垃圾军师就经常给不好的建议」）：对上了很强，这关没有那种兵就是废卡
   { id: 'pozhen', name: '破阵弩', desc: '专破举盾的兵：刀气剑气不再减半，各招都打得疼', max: 1, fn: s => s.pierce = true },
-  { id: 'banma', name: '绊马索', desc: '骑兵冲到城前就绊倒落马', max: 1, fn: s => s.trip = true },
+  { id: 'banma', name: '绊马索', desc: '专克骑兵：冲到城前就绊倒落马，各招都打得疼', max: 1, fn: s => s.trip = true },
   { id: 'jinshu', name: '驱邪符', desc: '黄巾术士的符水失效，回不了血、加不了速', max: 1, fn: s => s.noHeal = true },
   { id: 'order', anySk: true, name: '军令如山', desc: '三人出招冷却 -12%', max: 3, fn: s => s.cdMul *= .88 },
   { id: 'mend', name: '修补城墙', desc: '城防回 25%', max: 9, fn: () => { G.wall = Math.min(G.wallMax, G.wall + G.wallMax * .25); } },
@@ -449,12 +449,12 @@ const LEVELS = [
     waves: [[2, 'xiliang', 20, 8, 'rand'], [6, 'tieqi', 6, 4, 'rand'], [14, 'xiliang', 24, 0, 'wedge'], [22, 'tieqi', 8, 6, 'rand'], [30, 'xiliang', 30, 10, 'rand'],
       [40, 'tieqi', 10, 6, 'rand'], [48, 'xiaowei', 1, 0, 'rand', { g: 'a', lead: true }], [48, 'xiliang', 26, 0, 'line', { g: 'a' }], [58, 'tieqi', 10, 6, 'rand'], [64, 'xiliang', 30, 10, 'rand']],
     tips: [[1, '限时：酒凉之前打退这一波'], [4, '俞涉被追着往城下跑，护住他有额外军功']] },
-  { id: 18, name: '无双上将潘凤', sub: '汜水关下 · 潘凤扛着大斧上阵了', hpMul: 2.629, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'plain', reward: '潘凤的大斧（开山斧刃）',
+  { id: 18, name: '无双上将潘凤', sub: '汜水关下 · 潘凤扛着大斧上阵了', hpMul: 3.111, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'plain', reward: '潘凤的大斧（开山斧刃）',
     rules: { ally: { name: '潘凤', sheet: 'panfeng', hp: 200, mode: 'charge', every: 9, must: true, first: 5, y: 440 } },
     waves: [[2, 'xiliang', 22, 8, 'rand'], [10, 'xiliang', 20, 0, 'wedge'], [18, 'tieqi', 6, 5, 'rand'], [24, 'xiliang', 30, 10, 'rand'], [34, 'xiliang', 24, 0, 'line'],
       [40, 'tieqi', 8, 6, 'rand'], [48, 'xiaowei', 1, 0, 'rand', { g: 'a', lead: true }], [48, 'xiliang', 28, 8, 'rand', { g: 'a' }], [58, 'xiliang', 32, 10, 'rand']],
     tips: [[1, '潘凤隔一阵就扛斧冲出去：三成一斧劈倒一片，七成被打回来'], [5, '护住他到最后——他倒了就输']] },
-  { id: 19, name: '关前叫阵', sub: '汜水关下 · 华雄在城下叫骂', hpMul: 2.564, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '熟铁',
+  { id: 19, name: '关前叫阵', sub: '汜水关下 · 华雄在城下叫骂', hpMul: 2.302, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '熟铁',
     waves: [[2, 'xiliang', 22, 8, 'rand'], [8, 'tieqi', 6, 4, 'rand'], [10, 'huaxiongT', 1, 0, 'rand'], [16, 'xiliang', 24, 0, 'wedge'], [24, 'tieqi', 8, 6, 'rand'], [30, 'xiliang', 30, 10, 'rand'],
       [40, 'tieqi', 10, 6, 'line'], [46, 'xiaowei', 1, 0, 'rand', { g: 'a', lead: true }], [46, 'xiliang', 28, 8, 'rand', { g: 'a' }], [56, 'xiliang', 30, 10, 'rand']],
     tips: [[1, '西凉兵来攻关'], [9, '华雄来叫阵了：他叫骂时武将普攻慢一半——用张飞的一喝把他喝回去']] },
@@ -477,7 +477,7 @@ const LEVELS = [
     waves: [[2, 'langqi', 6, 0, 'line'], [8, 'xiliang', 22, 8, 'rand'], [16, 'feixiong', 4, 4, 'rand'], [22, 'langqi', 8, 0, 'wedge'], [30, 'xiliang', 28, 10, 'rand'], [38, 'feixiong', 5, 5, 'rand'],
       [46, 'langqi', 10, 0, 'line'], [54, 'xiliang', 30, 10, 'rand']],
     tips: [[1, '残局：城防只剩七成，武安国在场中苦战'], [6, '武安国会砍身边的敌人，护着他能少挨不少']] },
-  { id: 24, name: '救公孙瓒', sub: '虎牢关前 · 吕布追杀公孙瓒，燕人张翼德在此', hpMul: 4.54, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '张飞可学「燕人咆哮」',
+  { id: 24, name: '救公孙瓒', sub: '虎牢关前 · 吕布追杀公孙瓒，燕人张翼德在此', hpMul: 4.302, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '张飞可学「燕人咆哮」',
     rules: { timed: { t: 60, label: '拖住吕布', text: '拖住了吕布', sub: '公孙瓒脱险' } },
     waves: [[2, 'lvbuR', 1, 0, 'rand'], [4, 'langqi', 6, 0, 'line'], [12, 'xiliang', 22, 8, 'rand'], [20, 'langqi', 8, 0, 'wedge'], [28, 'xiliang', 26, 10, 'rand'], [38, 'langqi', 10, 0, 'line'], [46, 'xiliang', 28, 10, 'rand']],
     tips: [[1, '吕布打不死！他隔一阵冲阵砸城——用张飞的一喝把他喝退'], [8, '拖满 60 秒，公孙瓒就脱险了']] },
@@ -583,6 +583,15 @@ try { const o = JSON.parse(localStorage.getItem(IKEY) || '{}'); INV = { ...INV, 
 if (INV.it.神兵 != null) { INV.it.陨铁 = (INV.it.陨铁 || 0) + INV.it.神兵; delete INV.it.神兵; }        // 旧档：神兵材料 → 陨铁
 for (const k of Object.keys(INV.it)) if (!(k in ITEMS)) delete INV.it[k];           // 砍掉的物品（甲片、马鬃、温酒、符水）从旧存档里清掉
 const saveInv = () => { try { localStorage.setItem(IKEY, JSON.stringify(INV)); } catch (e) {} };
+// 上阵顺序（10-26 用户：「这里应该有一个上阵武将选择，当然目前只有刘关张，军师也放这里，没必要放主页」）：武将页排的出手顺序，
+// 进关时把这关上场的兄弟按它重排（单将关、半路才加入的关不动）；机器人试跑不看，推演数字不受影响
+const BROS = ['zhang', 'liu', 'guan'];
+const lineupNow = () => { const L = (INV.lineup || []).filter(id => BROS.includes(id)); return [...L, ...BROS.filter(id => !L.includes(id))]; };
+function applyLineup(order, lv) {
+  if (lv.solo || (lv.join && lv.join.length)) return order;
+  const pos = order.map((id, i) => BROS.includes(id) ? i : -1).filter(i => i >= 0), want = lineupNow().filter(id => order.includes(id)), out = order.slice();
+  pos.forEach((p, k) => { out[p] = want[k]; }); return out;
+}
 let DAILY = { day: null, tasks: [], taskN: 0, caps: { 精铁: 0 }, week: null, weekN: 0, weekSeal: false, visits: 0, visitN: 0, chores: false };
 try { DAILY = { ...DAILY, ...JSON.parse(localStorage.getItem(DKEY) || '{}') }; } catch (e) {}
 if (!DAILY.visitN && !DAILY.visits) DAILY.visitN = 2;                               // 加探访以前存的档
@@ -745,6 +754,7 @@ function startLevel(i) {
   G.wpnNeed = (GATES[lv.id] || {}).wpn || 0;
   G.leakLog = []; G.wallLog = []; G.wallNext = 0;                                     // 沙盘推演看的：哪一波、哪一路漏了什么兵，城防随时间怎么掉
   // 出阵布置（10-25 沙盘推演样本）：出手顺序、开局带的锦囊（一条战法），推演和正式出战都用同一份
+  if (!window.__sg.simming && !G.sim) G.order = applyLineup(G.order, lv);
   if (PREP && PREP.li === i) { G.order = PREP.order.slice(); for (const id of PREP.kits) { const p = PERKS.find(p => p.id === id); if (p) { p.fn(G.st); G.perks[id] = (G.perks[id] || 0) + 1; } } }
   G.adv = PREP && PREP.li === i && PREP.adviser ? { id: PREP.adviser, cond: PREP.cond, used: false, militiaT: 3 } : null;
   G.foeAdv = RU.foeAdv ? { ...FOE_ADV[RU.foeAdv], ambushed: false } : null; G.slowT = 0; G.events = [];
@@ -799,18 +809,18 @@ function popDmg(e, d, src, vd = 0) {
 }
 
 // 对症（10-26 用户：「加重对症、让乱听的过不去」）：骑兵、举盾、放箭、术士这四类兵，各有对它的战法；这关没拿对的，打它们只有 UNC_X 成伤害
-// （骑兵：绊马索或一喝落马；举盾：破阵弩；放箭：剑气连珠；术士：驱邪符）。门槛开封的（龙鳞、剑印、怒雷）不算——要的是局里选对战法
+// （骑兵：绊马索；举盾：破阵弩；放箭：剑气连珠；术士：驱邪符）。门槛开封的（龙鳞、剑印、怒雷）不算——要的是局里选对战法
 const UNC_X = .45, UNC_FROM = 4;                                                                       // 前三关是教学，第四关起才算
-const traitOpen = tr => { const I = foeIntel(); if (I[tr] < 4) return false; return tr === 'cav' ? !owned('banma') && !owned('zhangRoar') : tr === 'shield' ? !G.st.pierce : tr === 'ranged' ? !owned('liuQi') : !G.st.noHeal; };
+const traitOpen = tr => { const I = foeIntel(); if (I[tr] < 4) return false; return tr === 'cav' ? !owned('banma') : tr === 'shield' ? !G.st.pierce : tr === 'ranged' ? !owned('liuQi') : !G.st.noHeal; };
 function uncountered(T) {
   if (G.lv.id < UNC_FROM) return false;
-  if (isCav(T) && !owned('banma') && !owned('zhangRoar')) return true;
+  if (isCav(T) && !owned('banma')) return true;                                   // 10-26 用户：「骑兵的对症只认绊马索，一喝落马不算」
   if (T.front && !G.st.pierce) return true;
   if ((T.shoot || T.runShoot) && !owned('liuQi')) return true;
   if (T.heal && !G.st.noHeal) return true;
   return false;
 }
-const COUNTER_OF = { banma: 'cav', zhangRoar: 'cav', pozhen: 'shield', liuQi: 'ranged', jinshu: 'healer' };
+const COUNTER_OF = { banma: 'cav', pozhen: 'shield', liuQi: 'ranged', jinshu: 'healer' };
 function hurt(e, d, src) {
   if (e.dead || e.rout) return;
   if (e.shield > 0 && src !== 'burn') { e.shield--; G.fx.push({ k: 'guard', t: 0, x: e.x, y: e.y - 20 }); return; }     // 张梁给的挡刀
@@ -918,14 +928,14 @@ const PERK_KIND = { guanWave: '攻', guanBlade: '攻', guanBoss: '攻', guanExec
 function perkEval(p, I = foeIntel()) {
   const v0 = perkScore(p), why = (v, t) => ({ v, why: t });
   if (p.id === 'pozhen') return I.shield >= 4 ? why(830 + I.shield, `后面还有 ${I.shield} 个举盾的，刀气剑气打他们只有一半`) : why(-50, '这关没有举盾的兵，用不上');
-  if (p.id === 'banma') return I.cav >= 4 ? (owned('zhangRoar') ? why(300, '已有一喝落马，骑兵够用了') : why(830 + I.cav, `后面还有 ${I.cav} 骑要冲过来`)) : why(-50, '这关没有骑兵，用不上');
+  if (p.id === 'banma') return I.cav >= 4 ? why(830 + I.cav, `后面还有 ${I.cav} 骑要冲过来，不绊马打骑兵只有一半`) : why(-50, '这关没有骑兵，用不上');
   if (p.id === 'jinshu') return I.healer >= 2 ? why(830 + I.healer * 4, `${I.healer} 个术士会给兵回血加速`) : why(-50, '这关没有术士，用不上');
   if (p.id === 'jum' && G.foeAdv && G.foeAdv.seeJum) return why(-100, `${G.foeAdv.name}看得破拒马，摆了也会被烧`);
   if (p.id === 'mend') return v0 > 0 ? why(v0, `城防只剩 ${Math.round(G.wall / G.wallMax * 100)}%，先补墙`) : why(v0, '城防还够，补墙浪费一次晋升');
   if (p.combo) return why(v0, `连携凑齐了：${p.combo.map(id => GEN[id].name).join('、')}一起打`);
   if (p.id === 'log' && G.st.logs >= 1) return why(780 + 10 * G.st.logs, `再叠一层，滚木变 ${G.st.logs + 1} 层`);
   let v = v0, t = v0 >= 800 ? '这关就该先拿它' : p.gen ? `顺着${GEN[p.gen].name}的路子走` : '能用';
-  if (p.id === 'zhangRoar' && I.cav >= 4) { v = Math.max(v + 60, owned('banma') ? v : 825 + I.cav); t = owned('banma') ? '骑兵多，喝晕就落马' : `后面还有 ${I.cav} 骑，一喝落马，不然打骑兵只有一半`; }
+  if (p.id === 'zhangRoar' && I.cav >= 4) { v += 60; t = '骑兵多，喝晕就落马'; }
   if ((p.id === 'guanBoss' || p.id === 'zhangWan') && I.boss) { v += 40; t = `后面还有 ${I.boss} 个头目敌将`; }
   if (p.id === 'liuQi' && I.ranged >= 4) { v = Math.max(v + 60, 825 + I.ranged); t = `后面还有 ${I.ranged} 个放箭的，剑气会追，专打他们`; }
   if (p.id === 'guanWave' && I.shield >= 6) { v -= 120; t = '举盾的多，刀气打过去只有一半'; }
@@ -1574,15 +1584,15 @@ function playUlt(k, foe, force) {
   if (!force && (G.vt || 0) - (G.ultLast[k] ?? -99) < 20) return; G.ultLast[k] = G.vt || 0;
   const m = ULT[k].meta; G.ult = { k, t: 0, dur: m.n / m.fps + .45, foe: !!foe };
 }
-function drawUlt(k, t, dur, foe) {
+function drawUlt(k, t, dur, foe, hold) {                                                // hold：武将页预览，演完停在那里来回动，等玩家点了才退（hold 是退场已过的秒数，没点时 -1）
   if (!ultReady(k)) return; const { im, meta: m } = ULT[k], [col, rgb] = ULT_COL[k];
-  const a = t < .14 ? t / .14 : t > dur - .28 ? Math.max(0, (dur - t) / .28) : 1, enter = ease(Math.min(1, t / .2)), dir = k === 'zhang' || k === 'lvbu' ? 1 : -1;
+  const a = hold != null ? (t < .14 ? t / .14 : 1) * (hold >= 0 ? Math.max(0, 1 - hold / .28) : 1) : t < .14 ? t / .14 : t > dur - .28 ? Math.max(0, (dur - t) / .28) : 1, enter = ease(Math.min(1, t / .2)), dir = k === 'zhang' || k === 'lvbu' ? 1 : -1;
   ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
   ctx.globalAlpha = a * .8; ctx.fillStyle = foe ? '#1c0604' : '#06080a'; ctx.fillRect(0, 0, W, H);                         // 压暗
   ctx.globalAlpha = a; ctx.globalCompositeOperation = 'lighter';
   const gx = W / 2 - dir * 20, gy = H * .5, gl = ctx.createRadialGradient(gx, gy, 10, gx, gy, 300); gl.addColorStop(0, rgb + '.42)'); gl.addColorStop(1, rgb + '0)');
   ctx.fillStyle = gl; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over';                           // 身后一大团人物色的光
-  const fi = Math.min(m.n - 1, Math.floor(Math.max(0, t - .06) * m.fps)), sx = (fi % m.cols) * m.w, sy = Math.floor(fi / m.cols) * m.h;
+  const f0 = Math.floor(Math.max(0, t - .06) * m.fps), lp = Math.min(6, m.n - 1), fi = hold != null && f0 >= m.n ? m.n - 1 - Math.abs(((f0 - m.n) % (2 * lp)) - lp) : Math.min(m.n - 1, f0) /* 预览演完：最后几帧来回动 */, sx = (fi % m.cols) * m.w, sy = Math.floor(fi / m.cols) * m.h;
   const dh = H * .82 * (1.06 - .06 * enter), dw = dh * m.w / m.h, x = W / 2 - dw / 2 - dir * 18 + (1 - enter) * dir * -W * .7, y = H - dh;
   ctx.drawImage(im, sx, sy, m.w, m.h, x, y, dw, dh);                                                                    // 人从一侧冲进来
   const name = ULT_NAME[k], tx = dir > 0 ? 44 : W - 44, tu = clamp((t - .18) / .22, 0, 1), ts = 1.5 - .5 * ease(tu);   // 竖排招名，大字砸下来
@@ -3535,7 +3545,7 @@ function drawCounsel() {
     else if (on) uiSeal(W - 46, y + 136, 28, '随', UIC.red, true);
     else pill(W - 96, y + 124, 72, 26, '随军', () => { INV.counsel = k; saveInv(); });
   });
-  plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; INV.seenC = Object.keys(COUNSEL).filter(counselOK); saveInv(); }, false);
+  plaque(112, 600, 136, 32, '返回', () => { screen = 'roster'; INV.seenC = Object.keys(COUNSEL).filter(counselOK); saveInv(); }, false);
 }
 // 结算页（10-25 用户：「这个界面太html，参考雾港」）：照雾港的胜利结算（ChapterOneVictoryReceiptView）——不套对话框，整屏压暗；
 // 先砸出一枚画出来的徽章（img/ui_crest_win|lose.png）和金色大字、三颗星，再一张张滑出出战的武将：头像、等级、经验条涨上去、升级盖章和五维涨了几点、这一关打了多少伤害；
@@ -3694,46 +3704,64 @@ function counselBlame(r) {
   return { ck: a.ck, text: bad.length > 1 ? text + `（这关荐错了 ${bad.length} 回）` : text, retort: re };
 }
 // 武将页（10-25）：三人的等级、经验、五维（五边形图 + 数值条），下面写五维各管什么
+// 武将页顶上一条：出阵五格（按出手顺序，点两格换位）＋右边军师（点进去换）
+function drawLineup(t) {
+  const L = lineupNow(), y0 = 62, cw = 46, gap = 6, x0 = 16;
+  uiText('出阵', x0, y0 + 2, 12, UIC.gold2, 'left', FONT, { stroke: false }); uiText('按顺序出招，点两格换位', x0 + 34, y0 + 2, 10, 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false });
+  for (let i = 0; i < NS; i++) { const x = x0 + i * (cw + gap), y = y0 + 12, id = L[i], sel = MENU.lineSel === i;
+    ctx.save(); if (sel) { ctx.shadowColor = 'rgba(255,210,110,.9)'; ctx.shadowBlur = 12; }
+    ctx.fillStyle = 'rgba(14,10,7,.8)'; ctx.beginPath(); ctx.roundRect(x, y, cw, cw, 7); ctx.fill(); ctx.shadowBlur = 0;
+    if (id) { ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, cw, cw, 7); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], x - 3, y - 2, cw + 6, cw + 6); ctx.restore(); }
+    else uiText('空', x + cw / 2, y + cw / 2, 15, 'rgba(244,230,196,.3)', 'center', FONT, { stroke: false });
+    ctx.strokeStyle = sel ? '#ffe08a' : 'rgba(217,166,64,.7)'; ctx.lineWidth = sel ? 2 : 1.2; ctx.beginPath(); ctx.roundRect(x, y, cw, cw, 7); ctx.stroke(); ctx.restore();
+    uiText(CNUM(i + 1), x + 8, y + 9, 10, '#fff2dc', 'center', FONT, { lw: 3 });
+    if (id) hit(x, y, cw, cw, () => { const a = MENU.lineSel; if (a == null || a === i) { MENU.lineSel = a === i ? null : i; return; }
+      const nl = lineupNow(); [nl[a], nl[i]] = [nl[i], nl[a]]; INV.lineup = nl; saveInv(); MENU.lineSel = null; sfx('tap'); }); }
+  const [ck, C] = counselNow(), cx = W - 16 - 62, cy = y0 + 12, im = IMG['p_' + ck], newC = Object.keys(COUNSEL).some(k => counselOK(k) && !(INV.seenC || []).includes(k) && k !== 'zoujing');
+  uiText('军师', cx, y0 + 2, 12, UIC.gold2, 'left', FONT, { stroke: false });
+  ctx.save(); ctx.beginPath(); ctx.roundRect(cx, cy, cw, cw, 7); ctx.clip(); if (ready(im)) ctx.drawImage(im, cx, cy, cw, cw); ctx.restore();
+  ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.roundRect(cx, cy, cw, cw, 7); ctx.stroke();
+  uiText(C.name, cx + cw + 4, cy + 16, 13, UIC.cream, 'left', FONT, { stroke: false }); uiText('换', cx + cw + 4, cy + 34, 11, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false });
+  if (newC) uiSeal(cx + cw - 2, cy + 2, 15, '!', UIC.red);
+  hit(cx, cy, 62, cw, () => { screen = 'counsel'; });
+}
 function drawRoster() {
   drawBg(); const t = uiNow();
   const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, 'rgba(8,5,4,.72)'); bg.addColorStop(1, 'rgba(6,4,3,.95)'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
   uiText('武将', W / 2, 34, 30, goldGrad(34, 30), 'center', FONT, { glow: 'rgba(255,200,90,.7)', glowR: 14, lw: 6 });
-  const ids = ['guan', 'zhang', 'liu'], ch = 174;
-  ids.forEach((id, k) => {
-    const y = 62 + k * (ch + 4), R0 = ROSTER[id], st = statOf(id, R0.lv), u = ease((t - (MENU.rosterT || 0) - k * .12) / .3);
-    ctx.save(); ctx.globalAlpha = clamp(u, 0, 1); ctx.translate((1 - clamp(u, 0, 1)) * 40, 0);
-    const bgc = ctx.createLinearGradient(12, 0, W - 12, 0); bgc.addColorStop(0, 'rgba(60,40,22,.6)'); bgc.addColorStop(1, 'rgba(30,20,12,.2)'); ctx.fillStyle = bgc; ctx.fillRect(12, y, W - 24, ch);
-    ctx.fillStyle = 'rgba(217,166,64,.55)'; ctx.fillRect(12, y, W - 24, 1);
-    const ps = 78; ctx.save(); ctx.beginPath(); ctx.roundRect(20, y + 10, ps, ps, 10); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], 16, y + 8, ps + 8, ps + 8); ctx.restore();
-    ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.roundRect(20, y + 10, ps, ps, 10); ctx.stroke();
-    if (ultReady(id)) { hit(20, y + 10, ps, ps, () => { MENU.ultPrev = { k: id, t0: uiNow() }; }); uiText('看大招', 20 + ps - 4, y + ps + 4, 10, UIC.gold2, 'right', PLAIN, { lw: 3 }); }   // 点头像看觉醒大招特写
-    uiText(GEN[id].name, 20 + ps / 2, y + 104, 20, UIC.cream, 'center', FONT, { lw: 4 });
-    uiText('Lv ' + R0.lv, 20 + ps / 2, y + 128, 16, UIC.gold2, 'center', PLAIN, { lw: 3 });
+  drawLineup(t);
+  // 10-26 用户：「这里还是占太满了」——三人不再各占一大块：中间一排三张头像卡，点谁下面只摊开谁的五维
+  const ids = ['guan', 'zhang', 'liu'], sel = ids.includes(MENU.rosterSel) ? MENU.rosterSel : 'guan', cw = 104, chh = 150, y0 = 140;
+  ids.forEach((id, k) => { const x = 16 + k * (cw + 8), R0 = ROSTER[id], on = id === sel, u = ease((t - (MENU.rosterT || 0) - k * .08) / .3);
+    ctx.save(); ctx.globalAlpha = clamp(u, 0, 1) * (on ? 1 : .7); plate(x, y0, cw, chh, on);
+    ctx.save(); ctx.beginPath(); ctx.roundRect(x + 10, y0 + 8, cw - 20, cw - 20, 8); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], x + 6, y0 + 4, cw - 12, cw - 12); ctx.restore();
+    ctx.strokeStyle = on ? '#ffe08a' : 'rgba(217,166,64,.6)'; ctx.lineWidth = on ? 1.8 : 1; ctx.beginPath(); ctx.roundRect(x + 10, y0 + 8, cw - 20, cw - 20, 8); ctx.stroke();
+    uiText(GEN[id].name, x + cw / 2 - 12, y0 + cw + 2, 16, UIC.cream, 'center', FONT, { lw: 3 }); uiText('Lv ' + R0.lv, x + cw / 2 + 26, y0 + cw + 3, 12, UIC.gold2, 'center', PLAIN, { lw: 3 });
     const need = needLv(R0.lv), fr = R0.lv >= LV_CAP ? 1 : R0.exp / need;
-    ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.beginPath(); ctx.roundRect(22, y + 142, ps - 4, 6, 3); ctx.fill();
-    ctx.fillStyle = '#e8b64a'; ctx.beginPath(); ctx.roundRect(22, y + 142, Math.max(3, (ps - 4) * fr), 6, 3); ctx.fill();
-    uiText(R0.lv >= LV_CAP ? '满级' : R0.exp + '/' + need, 20 + ps / 2, y + 158, 10, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
-    // 五维条
-    STATS.forEach((n, j) => { const yy = y + 18 + j * 22, bx = 140, bw = 96, v = st[j];
-      uiText(n, 112, yy, 13, UIC.cream, 'left', PLAIN, { stroke: false });
-      ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(bx, yy - 4, bw, 8);
-      const g = ctx.createLinearGradient(bx, 0, bx + bw, 0); g.addColorStop(0, '#7a4a14'); g.addColorStop(1, v >= 90 ? '#ffe08a' : '#d9a640'); ctx.fillStyle = g; ctx.fillRect(bx, yy - 4, bw * v / 100, 8);
-      uiText(String(Math.floor(v)), bx + bw + 6, yy, 13, v >= 90 ? UIC.gold2 : UIC.cream, 'left', PLAIN, { stroke: false }); });
-    // 五边形
-    const cx = 314, cy = y + 64, rr = 26; ctx.strokeStyle = 'rgba(217,166,64,.35)'; ctx.lineWidth = 1;
-    for (const f of [1, .66, .33]) { ctx.beginPath(); for (let j = 0; j < 5; j++) { const a = -Math.PI / 2 + j * 2 * Math.PI / 5; ctx.lineTo(cx + Math.cos(a) * rr * f, cy + Math.sin(a) * rr * f); } ctx.closePath(); ctx.stroke(); }
-    ctx.beginPath(); for (let j = 0; j < 5; j++) { const a = -Math.PI / 2 + j * 2 * Math.PI / 5, f = st[j] / 100; ctx.lineTo(cx + Math.cos(a) * rr * f, cy + Math.sin(a) * rr * f); } ctx.closePath();
-    ctx.fillStyle = 'rgba(246,210,122,.35)'; ctx.fill(); ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 1.4; ctx.stroke();
-    STATS.forEach((n, j) => { const a = -Math.PI / 2 + j * 2 * Math.PI / 5; uiText(n[0], cx + Math.cos(a) * (rr + 9), cy + Math.sin(a) * (rr + 9), 10, 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false }); });
-    // 比一级多了多少 → 战斗里多多少
-    const d = st.map((v, j) => v - GROW[id].base[j]);
-    if (R0.lv > 1) { uiText(`普攻 +${Math.round(d[1] * 1.5)}% · 招式 +${Math.round(d[0] * 1.5)}% · 冷却 -${Math.round((1 - 1 / (1 + .008 * d[2])) * 100)}%`, 112, y + 136, 11, '#ffd76e', 'left', PLAIN, { stroke: false });
-      uiText(`城防 +${Math.round(d[3] * .8)}% · 晋升快 ${Math.round(d[4] * 1.5)}%`, 112, y + 154, 10, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false }); }
-    ctx.restore();
-  });
-  { const lg = '武力 - 攻击 · 统率 - 招式伤害 · 智力 - 冷却 · 政治 - 城防 · 魅力 - 晋升'; uiText(lg, W / 2, 598, fitSize(lg, 11, W - 20, 99, PLAIN), 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false }); }
+    ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.beginPath(); ctx.roundRect(x + 14, y0 + cw + 18, cw - 28, 5, 2.5); ctx.fill();
+    ctx.fillStyle = '#e8b64a'; ctx.beginPath(); ctx.roundRect(x + 14, y0 + cw + 18, Math.max(3, (cw - 28) * fr), 5, 2.5); ctx.fill();
+    uiText(R0.lv >= LV_CAP ? '满级' : R0.exp + '/' + need, x + cw / 2, y0 + cw + 33, 9, 'rgba(244,230,196,.55)', 'center', PLAIN, { stroke: false });
+    ctx.restore(); hit(x, y0, cw, chh, () => { MENU.rosterSel = id; }); });
+  // 选中那位：五维条、五边形、比一级多了多少
+  const id = sel, R0 = ROSTER[id], st = statOf(id, R0.lv), py = y0 + chh + 10, ph = 250; plate(14, py, W - 28, ph);
+  STATS.forEach((n, j) => { const yy = py + 26 + j * 28, bx = 70, bw = 120, v = st[j];
+    uiText(n, 30, yy, 14, UIC.cream, 'left', PLAIN, { stroke: false });
+    ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(bx, yy - 4, bw, 8);
+    const g = ctx.createLinearGradient(bx, 0, bx + bw, 0); g.addColorStop(0, '#7a4a14'); g.addColorStop(1, v >= 90 ? '#ffe08a' : '#d9a640'); ctx.fillStyle = g; ctx.fillRect(bx, yy - 4, bw * v / 100, 8);
+    uiText(String(Math.floor(v)), bx + bw + 8, yy, 14, v >= 90 ? UIC.gold2 : UIC.cream, 'left', PLAIN, { stroke: false }); });
+  const cx = 280, cy = py + 86, rr = 42; ctx.strokeStyle = 'rgba(217,166,64,.35)'; ctx.lineWidth = 1;
+  for (const f of [1, .66, .33]) { ctx.beginPath(); for (let j = 0; j < 5; j++) { const a = -Math.PI / 2 + j * 2 * Math.PI / 5; ctx.lineTo(cx + Math.cos(a) * rr * f, cy + Math.sin(a) * rr * f); } ctx.closePath(); ctx.stroke(); }
+  ctx.beginPath(); for (let j = 0; j < 5; j++) { const a = -Math.PI / 2 + j * 2 * Math.PI / 5, f = st[j] / 100; ctx.lineTo(cx + Math.cos(a) * rr * f, cy + Math.sin(a) * rr * f); } ctx.closePath();
+  ctx.fillStyle = 'rgba(246,210,122,.35)'; ctx.fill(); ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 1.4; ctx.stroke();
+  STATS.forEach((n, j) => { const a = -Math.PI / 2 + j * 2 * Math.PI / 5; uiText(n[0], cx + Math.cos(a) * (rr + 11), cy + Math.sin(a) * (rr + 11), 11, 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false }); });
+  const d = st.map((v, j) => v - GROW[id].base[j]);
+  if (R0.lv > 1) { uiText(`普攻 +${Math.round(d[1] * 1.5)}% · 招式 +${Math.round(d[0] * 1.5)}% · 冷却 -${Math.round((1 - 1 / (1 + .008 * d[2])) * 100)}% · 城防 +${Math.round(d[3] * .8)}%`, W / 2, py + 176, 11, '#ffd76e', 'center', PLAIN, { stroke: false }); }
+  { const lg = '武力 - 攻击 · 统率 - 招式伤害 · 智力 - 冷却 · 政治 - 城防 · 魅力 - 晋升'; uiText(lg, W / 2, py + 198, fitSize(lg, 10, W - 44, 99, PLAIN), 'rgba(244,230,196,.5)', 'center', PLAIN, { stroke: false }); }
+  if (ultReady(id)) pill(W / 2 - 50, py + 210, 100, 28, '看大招', () => { MENU.ultPrev = { k: id, t0: uiNow() }; }, false);   // 觉醒大招特写
   plaque(112, 606, 136, 32, '返回', () => { screen = 'menu'; }, false);
-  const up = MENU.ultPrev; if (up) { const m = ULT[up.k].meta, t = uiNow() - up.t0, dur = m.n / m.fps + .45; if (t < dur) { HITS = []; drawUlt(up.k, t, dur, false); } else MENU.ultPrev = null; }
+  const up = MENU.ultPrev; if (up) { const t = uiNow() - up.t0, hold = up.close ? uiNow() - up.close : -1;   // 10-26 用户：「大招不要自动消失，等用户自己退出」
+    if (hold < .3) { HITS = []; drawUlt(up.k, t, 0, false, hold); if (!up.close) { uiText('点一下退出', W / 2, H - 18, 12, `rgba(244,230,196,${.4 + .3 * Math.sin(uiNow() * 4)})`, 'center', PLAIN, { lw: 3 }); hit(0, 0, W, H, () => { up.close = uiNow(); }); } }
+    else MENU.ultPrev = null; }
 }
 // ---------- 军帐：军务、军械（10-25；设计见 ../设计/第一章设定.md 5.6） ----------
 // 用户：「要给玩家明显的感觉，他还差一些物品升级某个技能，要等第二天甚至几天才能得到，激励持续上线」——
@@ -3811,7 +3839,9 @@ function drawCamp() {
   const ts = DAILY.tasks.slice().sort((a, b) => a.done - b.done), shown = ts.slice(0, 3);
   uiText('今日军务', 18, 250, 16, UIC.gold2, 'left', FONT, { stroke: false });
   uiText(`${dailyDone()}/${dailyTotal()}`, W - 18, 250, 12, 'rgba(244,230,196,.6)', 'right', PLAIN, { stroke: false });
-  if (!ts.length) uiText('先打通第一关，打法军务就会出来', W / 2, 286, 13, UIC.cream, 'center', PLAIN, { stroke: false });
+  if (!ts.length) for (let k = 0; k < 3; k++) { const y = 264 + k * 44;              // 还没出题（一关没打过）：三行灰着占位（10-26 用户：「去掉，如果没出，就灰度就好了」）
+    ctx.save(); ctx.globalAlpha = .35; ctx.filter = 'grayscale(1)'; plate(14, y, W - 28, 40); uiSeal(36, y + 20, 24, '令', UIC.red);
+    uiText('打法军务', 56, y + 14, 13, UIC.cream, 'left', PLAIN, { stroke: false }); uiText('残页 +' + TASK_PAY, 56, y + 30, 10, 'rgba(240,217,160,.6)', 'left', PLAIN, { stroke: false }); ctx.restore(); }
   shown.forEach((t, k) => { const y = 264 + k * 44, li = LEVELS.findIndex(lv => lv.id === t.lv);
     ctx.save(); if (t.done) ctx.globalAlpha = .5; plate(14, y, W - 28, 40); ctx.restore();
     uiSeal(36, y + 20, 24, CNUM(t.lv), LEVELS[li].kind === 'duel' ? '#8a1c10' : UIC.red);
@@ -3819,7 +3849,7 @@ function drawCamp() {
     uiText('残页 +' + TASK_PAY, 56, y + 30, 10, 'rgba(240,217,160,.6)', 'left', PLAIN, { stroke: false });
     if (t.done) uiSeal(W - 42, y + 20, 26, '毕', UIC.red, true); else pill(W - 92, y + 8, 64, 24, '去打', () => { screen = 'menu'; openLevel(li); });
   });
-  let y = 264 + Math.max(1, shown.length) * 44; if (ts.length > 3) { uiText(`还有 ${ts.length - 3} 道打法军务（补领的）`, W / 2, y + 2, 10, 'rgba(244,230,196,.5)', 'center', PLAIN, { stroke: false }); y += 12; }
+  let y = 264 + (ts.length ? shown.length : 3) * 44; if (ts.length > 3) { uiText(`还有 ${ts.length - 3} 道打法军务（补领的）`, W / 2, y + 2, 10, 'rgba(244,230,196,.5)', 'center', PLAIN, { stroke: false }); y += 12; }
   { const [id, pol] = bestPol(), g = visitGain(pol), left = DAILY.visitN - DAILY.visits, vr0 = CAMP.visit && uiNow() - CAMP.visit.t0 < 2.6 ? CAMP.visit : null;   // 出外探访
     ctx.save(); if (!left) ctx.globalAlpha = .5; plate(14, y, W - 28, 44, !!(vr0 && vr0.god)); ctx.restore();
     ctx.save(); rr(22, y + 6, 32, 32, 6); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], 22, y + 6, 32, 32); ctx.restore();
@@ -3952,7 +3982,7 @@ function openLevel(i) {
 }
 function enterLevel(i) {
   if (!PREP_IDS.has(LEVELS[i].id)) { startLevel(i); return; }
-  if (!PREP || PREP.li !== i) PREP = { li: i, order: [...LEVELS[i].slots, null, null].slice(0, NS), kits: [], adviser: 'jianyong', cond: 'wave3', last: null, prev: null, sel: -1 };
+  if (!PREP || PREP.li !== i) PREP = { li: i, order: applyLineup([...LEVELS[i].slots, null, null].slice(0, NS), LEVELS[i]), kits: [], adviser: 'jianyong', cond: 'wave3', last: null, prev: null, sel: -1 };
   PREP.sel = -1; G = null; screen = 'prep'; PREP.t0 = uiNow();
 }
 function prepBg(lv) {
@@ -4160,12 +4190,12 @@ function drawMenu() {
   if (ready(IMG.ui2_top)) { ctx.save(); ctx.translate(0, H); ctx.scale(1, -1); draw9(IMG.ui2_top, -24, -6, W + 48, 94, 40, 40, 8, 12, .5); ctx.restore(); }
   else { ctx.fillStyle = 'rgba(14,10,7,.92)'; ctx.fillRect(0, H - 88, W, 88); }
   const [ck] = counselNow();
-  navBtn(31, '武将', navFace('liu', FACE.liu), () => { screen = 'roster'; MENU.rosterT = uiNow(); }, false);
-  navBtn(90, '神兵', navIco('ui_nav_armory'), () => { screen = 'armory'; ARM.t0 = uiNow(); }, canUp('wpn'));
-  navBtn(150, '战役', navIco('ui_nav_map'), () => { screen = 'levels'; MENU.seg = Math.floor(frontier() / 10); }, false, true);
-  navBtn(210, '军帐', navIco('ui_nav_camp'), () => { screen = 'camp'; CAMP.t0 = uiNow(); }, dailyTotal() > dailyDone());
-  navBtn(270, '军师', navFace('p_' + ck), () => { screen = 'counsel'; }, Object.keys(COUNSEL).some(k => counselOK(k) && !(INV.seenC || []).includes(k) && k !== 'zoujing'));
-  navBtn(329, '系统', navIco('ui_nav_sys'), () => { screen = 'system'; }, false);
+  const newC = Object.keys(COUNSEL).some(k => counselOK(k) && !(INV.seenC || []).includes(k) && k !== 'zoujing');   // 军师挪进武将页（10-26），有新军师时武将钮上亮
+  navBtn(36, '武将', navFace('liu', FACE.liu), () => { screen = 'roster'; MENU.rosterT = uiNow(); }, newC);
+  navBtn(108, '神兵', navIco('ui_nav_armory'), () => { screen = 'armory'; ARM.t0 = uiNow(); }, canUp('wpn'));
+  navBtn(180, '战役', navIco('ui_nav_map'), () => { screen = 'levels'; MENU.seg = Math.floor(frontier() / 10); }, false, true);
+  navBtn(252, '军帐', navIco('ui_nav_camp'), () => { screen = 'camp'; CAMP.t0 = uiNow(); }, dailyTotal() > dailyDone());
+  navBtn(324, '系统', navIco('ui_nav_sys'), () => { screen = 'system'; }, false);
   // 右上角月卡
   { const im = IMG.ui_nav_month, cx = W - 26, cy = 28, br = .5 + .5 * Math.sin(t * 2.4); if (ready(im)) { const f = 28 / Math.max(im.width, im.height);   /* 10-25 夜用户：「这有点太大，小一点」 40 → 28 */ ctx.save(); ctx.shadowColor = `rgba(255,200,90,${.35 + .3 * br})`; ctx.shadowBlur = 10; ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); ctx.restore(); } else uiSeal(cx, cy, 22, '月', UIC.red);
     uiText('月卡', cx, cy + 21, 10, UIC.gold2, 'center', FONT, { lw: 3 }); hit(cx - 22, cy - 20, 44, 52, () => { screen = 'month'; MON.ask = false; }); }

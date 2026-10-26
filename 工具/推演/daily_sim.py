@@ -78,10 +78,14 @@ def run(P, week, days=60):
         login_days.append(d); total += mins; t = mins
         packs = 1 + owed; owed = 0                                                   # 今天的点卯、军务，加上补回来的
         for k, v in P['login'].items(): inv[k] += v * packs
+        late = P['task_n'] * packs if nxt == 1 else 0                                 # 游戏里打通第一关以后当天就补出军务（10-26 对齐 dailyTick）
         tasks = P['task_n'] * packs if nxt > 1 else 0
-        while tasks and t >= P['task_min']:
-            t -= P['task_min']; tasks -= 1; task_days.append(d)
-            for k, v in P['task'].items(): inv[k] += v
+        def do_tasks(n):
+            nonlocal t
+            while n and t >= P['task_min']:
+                t -= P['task_min']; n -= 1; task_days.append(d)
+                for k, v in P['task'].items(): inv[k] += v
+        do_tasks(tasks)
         if 'visit' in P:                                                              # 出外探访、日常杂务：一键，先做（几乎不花时间）
             V = P['visit']
             for _ in range(V['n'] * packs):
@@ -99,14 +103,19 @@ def run(P, week, days=60):
                     take = min(inv[k], need_left[gi][k]); inv[k] -= take; need_left[gi][k] -= take
                     if need_left[gi][k] <= 1e-9: del need_left[gi][k]
         buy()
-        while t > 0 and nxt <= 30:
-            gi = next((i for i, g in enumerate(GATES) if g[0] == nxt), None)
-            if gi is not None and need_left[gi]: break                               # 卡在门前
-            if t < MIN[nxt]: break
-            t -= MIN[nxt]
-            for k, v in P['first'].get(nxt, {}).items(): inv[k] += v
-            if gi is not None: gate_day[GATES[gi][1]] = d + 1
-            nxt += 1; buy()
+        def advance():
+            nonlocal t, nxt
+            while t > 0 and nxt <= 30:
+                gi = next((i for i, g in enumerate(GATES) if g[0] == nxt), None)
+                if gi is not None and need_left[gi]: break                           # 卡在门前
+                if t < MIN[nxt]: break
+                t -= MIN[nxt]
+                for k, v in P['first'].get(nxt, {}).items(): inv[k] += v
+                if gi is not None: gate_day[GATES[gi][1]] = d + 1
+                nxt += 1; buy()
+                if late and nxt == 2: return
+        advance()
+        if late and nxt > 1: do_tasks(late); buy(); advance()
         while t >= 3 and nxt > 1 and any(got[k] < P['cap'][k] for k in got):         # 剩下的时间重打刷材料，到上限就不刷了
             lv = max(1, nxt - 1); t -= MIN[lv]
             for k, v in P['replay'].items():
