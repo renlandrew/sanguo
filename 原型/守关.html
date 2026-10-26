@@ -577,6 +577,10 @@ const GATES = { 5: { wpn: 1 }, 9: { liu2: 1 }, 11: { guan2: 1 }, 15: { wpn: 2 },
 const GATE_WHY = { 5: '邓茂挺枪护身：兵器不够利，砍不进去', 9: '张宝的术士给黄巾兵回血加速：要剑印把术士定住', 11: '西凉兵正面举盾：要龙鳞破甲把盾破了',
   15: '胡轸双刀连斩：兵器要再利一层', 20: '华雄关前死守、护罩厚：兵器要 +3 才砍得破', 22: '并州狼骑成群冲阵：要怒雷火沟把骑兵掀下马',
   25: '李傕的护罩更厚：兵器要 +4', 27: '西凉兵追砍百姓：要剑印终阶把追兵定住', 30: '吕布：兵器 +5，还要一人觉醒' };
+// 开战时军师提一句（10-26 不再拦关）：短句，一行卷轴放得下
+const GATE_SAY = { 5: '邓茂甲厚，兵器不到 +1 砍不动他', 9: '术士给兵回血，先开封刘备的剑印', 11: '西凉兵举盾，先开封关羽的龙鳞破甲',
+  15: '胡轸刀快，兵器最好先到 +2', 20: '华雄护罩厚，兵器要到 +3', 22: '狼骑成群，先开封张飞的怒雷',
+  25: '李傕护罩更厚，兵器要到 +4', 27: '追兵砍百姓，先开封剑印终阶', 30: '吕布？兵器 +5，再觉醒一人' };
 const upAt = id => { const u = {}; for (const [g, req] of Object.entries(GATES)) if (+g <= id) for (const [k, v] of Object.entries(req)) u[k] = Math.max(u[k] || 0, v); return u; };   // 按推荐打到第 id 关时手里有的
 let INV = { it: { 精铁: 0, 残页: 0, 将印: 0, 陨铁: 0 }, up: {}, awake: null, seal20: false, luck: 0 };
 try { const o = JSON.parse(localStorage.getItem(IKEY) || '{}'); INV = { ...INV, ...o, it: { ...INV.it, ...(o.it || {}) }, up: { ...(o.up || {}) } }; } catch (e) {}
@@ -757,6 +761,7 @@ function startLevel(i) {
   G.blocks = 0; G.trenchT = 0; G.logUsed = false; G.nuUsed = false; G.logArm = false; G.nuArm = false; G.lights = []; G.lightN = RU.night ? 3 : 0; G.lightArm = false; G.lightChk = 0;
   if (G.up.liu3) G.st.liuSwords += 2;
   G.wpnNeed = (GATES[lv.id] || {}).wpn || 0;
+  if (!window.__sg.simming && GATES[lv.id] && gateLack(lv.id).length) { const [, C] = counselNow(); G.tips = [[.5, `${C.name}：${GATE_SAY[lv.id]}`], ...(G.tips || [])]; }   // 缺推荐的东西：开战时军师提一句（10-26 不再拦关）
   G.leakLog = []; G.wallLog = []; G.wallNext = 0;                                     // 沙盘推演看的：哪一波、哪一路漏了什么兵，城防随时间怎么掉
   // 出阵布置（10-25 沙盘推演样本）：出手顺序、开局带的锦囊（一条战法），推演和正式出战都用同一份
   if (!window.__sg.simming && !G.sim) G.order = applyLineup(G.order, lv);
@@ -3683,10 +3688,6 @@ function drawResult() {
       drawCounselSay(blame.ck, COUNSEL[blame.ck], blame.text, by - 4, 1, blame.retort); ctx.restore(); }
     by += 70; if (ents.length) drawLoot(26, W - 22 - (ents.length - 1) * 17, 320); }
   else if (ents.length) { drawLoot(40, W / 2, by + 22); by += 50; }
-  const ng = r.loot && nextGate(), la2 = clamp((t - (tb - .2)) / .3, 0, 1); if (ng && la2 > 0 && by < 556) { const ge = gateEta(ng), u0 = gateLack(ng)[0], txt2 = ge.d > 0 ? `${UPS[u0.key].name} · 还差${lackText(ge.lack)}` : `${UPS[u0.key].name} · 材料够了`;
-    ctx.save(); ctx.globalAlpha = la2; ctx.font = `12px ${PLAIN}`; const tw = ctx.measureText(txt2).width, ew = ge.d > 0 ? 8 + ctx.measureText(etaText(ge.d, ge.lack)).width * 1.05 : 0, x0 = W / 2 - (24 + tw + ew) / 2;
-    uiSeal(x0 + 10, by + 10, 18, '门', '#8a1c10'); uiText(txt2, x0 + 24, by + 10, 12, UIC.cream, 'left', PLAIN, { lw: 3 });
-    if (ge.d > 0) uiText(etaText(ge.d, ge.lack), x0 + 24 + tw + 8, by + 10, 12, etaColor(ge.d), 'left', FONT, { lw: 3 }); ctx.restore(); }
   // 牌匾按钮一排放在最下面：经验条涨完才能点
   const go = fn => () => { const k = r.story; if (k && !storySeen(k)) { G = null; playStory(k, fn); } else fn(); };   // 有剧情先演完再去
   const back = go(() => { screen = 'levels'; G = null; }), yb = H - 52;
@@ -3827,11 +3828,11 @@ function drawCamp() {
   campBg('军帐'); dailyTick();
   const gl = campGoal();
   plate(14, 58, W - 28, 166, !!gl);
-  if (!gl) uiText('第一章的门都过了', W / 2, 140, 18, UIC.gold2, 'center', FONT);
+  if (!gl) uiText('该备的都备齐了', W / 2, 140, 18, UIC.gold2, 'center', FONT);
   else {
     const { ng, key, U, tot, d } = gl, lv = LEVELS.find(l => l.id === ng), lvl = INV.up[key] || 0;
     if (key === 'wpn') { drawWeapon('guan', lvl + 1, 44, 140, 150, .2, uiNow(), false); hit(14, 58, W - 28, 120, () => { screen = 'armory'; ARM.t0 = uiNow(); }); }   // 要打兵器时左边放下一级的青龙偃月刀，点卡片进神兵页
-    uiText(`下一道门 · ${lvName(ng)} ${lv.name}`, W / 2, 80, 12, '#ff9a7a', 'center', PLAIN, { stroke: false });
+    { const [, C] = counselNow(), s2 = `${C.name}：打${lvName(ng)}${lv.name}之前，最好先备上这个`; uiText(s2, W / 2, 80, fitSize(s2, 12, W - 60, 99, PLAIN), '#ff9a7a', 'center', PLAIN, { stroke: false }); }   // 军师的建议，不是门槛（10-26）
     uiText(U.name + (U.max > 1 ? ` +${lvl + 1}` : ''), W / 2, 108, 24, UIC.gold2, 'center', FONT, { glow: 'rgba(255,200,90,.4)', glowR: 8 });
     uiText(fitText(U.max > 1 ? U.desc(lvl + 1) : U.desc(), 12, W - 60), W / 2, 134, 12, UIC.cream, 'center', PLAIN, { stroke: false });
     Object.entries(tot).forEach(([it, n], j) => { const have = INV.it[it] || 0, yy = 160 + j * 18;
@@ -3944,7 +3945,7 @@ function drawArmory2() {
       uiText(`${it} ${Math.min(have, n)}/${n}`, 100, yy, 12, ITEM_C[it], 'left', PLAIN, { stroke: false }); uiBar('arm_' + it, 170, yy - 3, 90, 6, have / n, '#8a5a14', '#ffd76e', { edge: 'rgba(0,0,0,0)' }); });
     if (canUp('wpn')) pill(W - 98, y + 66, 76, 30, '打造', () => { doUp('wpn'); ARM.flash = uiNow(); });
     else uiText(etaText(e.d, e.lack), W - 24, y + 94, 12, etaColor(e.d), 'right', FONT, { stroke: false }); }
-  uiText('三人的兵器一起精炼', W / 2, 592, 10, 'rgba(244,230,196,.45)', 'center', PLAIN, { stroke: false });
+  /* 10-26 用户圈了「三人的兵器一起精炼」：「去掉这句」 */
   plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; }, false);
 }
 // 门槛页：第一次打一关、还没有对症的东西
@@ -3984,7 +3985,7 @@ const FOE_NOTE = {
 function openLevel(i) {
   const id = LEVELS[i].id;
   if (i === 0 && !storySeen('open')) { playStory('open', () => openLevel(0)); return; }   // 第一次进第一关：先演序章（桃园、雷劈、醒来）
-  if (!BEST[id] && gateLack(id).length) { GATE = { i, t0: uiNow() }; G = null; screen = 'gate'; return; }   // 第一次打、还缺门槛：先看还差什么
+  /* 10-26 用户：「不需要任何破题门槛，不要在地图提示，可以让军师提示」——不再拦着不让打；缺的东西开战时军师提一句（见 counselGateTip） */
   enterLevel(i);
 }
 function enterLevel(i) {
@@ -4180,9 +4181,7 @@ function drawMenu() {
   uiSeal(42, cy0 + 42, 38, CNUM(lv.id), duel ? '#8a1c10' : UIC.red);
   uiText(`${SEGS[Math.floor(ni / 10)]} · ${levelTag(lv)}`, 70, cy0 + 20, 11, 'rgba(246,210,122,.85)', 'left', PLAIN, { stroke: false });
   uiText(lv.name, 70, cy0 + 42, fitSize(lv.name, 22, cw - 70 - 96, 99, FONT, 3), UIC.cream, 'left', FONT, { lw: 3 });
-  const gl = !BEST[lv.id] && gateLack(lv.id).length;
-  if (gl) { const ge = gateEta(lv.id), u0 = gateLack(lv.id)[0], s2 = `门 · ${UPS[u0.key].name}${ge.d > 0 ? ' · ' + etaText(ge.d, ge.lack) : ' · 材料够了，去军帐'}`; uiText(s2, 70, cy0 + 66, fitSize(s2, 11, cw - 70 - 96, 99, PLAIN), etaColor(ge.d), 'left', PLAIN, { stroke: false }); }
-  else uiText(fitText(lv.sub, 11, cw - 70 - 104), 70, cy0 + 66, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });   // 下面写这一关的一句话剧情
+  uiText(fitText(lv.sub, 11, cw - 70 - 104), 70, cy0 + 66, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });   // 下面写这一关的一句话剧情
   hit(10, cy0, cw - 96, 84, () => { screen = 'levels'; MENU.seg = Math.floor(ni / 10); });
   { const bx = W - 108, by = cy0 + 20, bw = 90, bh = 44, br = .5 + .5 * Math.sin(t * 3);   // 出征：红漆钮（页签那张画的漆面），一呼一吸的金光
     ctx.save(); ctx.shadowColor = `rgba(255,190,90,${.45 + .3 * br})`; ctx.shadowBlur = 14; if (ready(IMG.ui2_tab_red)) draw9(IMG.ui2_tab_red, bx, by, bw, bh, 90, 90, 0, 0, bh / 189); else uiPanel(bx, by, bw, bh, { r: bh / 2, top: '#c0402a', bot: '#6e140c' }); ctx.restore();
@@ -4229,13 +4228,10 @@ function drawCampaignMap(mim, t) {
     if (i === cur) { ctx.shadowColor = `rgba(255,200,90,${.6 + .3 * Math.sin(t * 3)})`; ctx.shadowBlur = 16; }
     uiSeal(x, y, big ? 32 : 26, CNUM(lv.id), duel ? '#8a1c10' : UIC.red); ctx.shadowBlur = 0;
     uiText(lv.name, x, y + (big ? 26 : 23), fitSize(lv.name, 12, 92, 99, FONT), ok ? UIC.cream : 'rgba(244,230,196,.7)', 'center', FONT, { lw: 3.5 });
-    const gl = ok && !b && gateLack(lv.id).length;
-    if (gl) uiSeal(x + 16, y - 14, 15, '门', '#8a1c10');
-    else if (b) for (let k = 0; k < 3; k++) uiStar(x - 14 + k * 14, y + (big ? 41 : 38), 5.5, k < b);
+    if (b) for (let k = 0; k < 3; k++) uiStar(x - 14 + k * 14, y + (big ? 41 : 38), 5.5, k < b);
     ctx.restore();
     if (ok) hit(x - 34, y - 18, 68, 64, () => openLevel(i)); });
-  const ng = nextGate(); if (ng && Math.floor((ng - 1) / 10) === MENU.seg) { const ge = gateEta(ng), u0 = gateLack(ng)[0], s2 = `门 · ${lvName(ng)}：${UPS[u0.key].name}${ge.d > 0 ? ' · 还差' + lackText(ge.lack) + ' · ' + etaText(ge.d, ge.lack) : ' · 材料够了，去军帐'}`;
-    uiText(s2, W / 2, MAP_BOT - 10, fitSize(s2, 12, W - 24, 99, PLAIN), ge.d > 0 ? etaColor(ge.d) : UIC.cream, 'center', PLAIN, { lw: 3 }); }
+  /* 地图上不提示还缺什么（10-26） */
 }
 function drawLevels() {
   drawBg(); const t = uiNow();
@@ -4257,15 +4253,11 @@ function drawLevels() {
     uiSeal(x + 18, y + 21, 27, CNUM(lv.id), duel ? '#8a1c10' : UIC.red);
     uiText(lv.name, x + 36, y + 21, fitSize(lv.name, 18, w - 36 - 26), unlocked ? UIC.cream : 'rgba(244,230,196,.6)', 'left', FONT, { stroke: false });
     const tg = levelTag(lv); uiText(tg, x + 10, y + 45, 11, duel ? '#ff9a7a' : 'rgba(246,210,122,.85)', 'left', PLAIN, { stroke: false });
-    const gl = unlocked && !b && gateLack(lv.id).length;                                // 门还没过：写还差什么、几天后够，不画星
-    if (gl) { const ge = gateEta(lv.id), s2 = ge.d > 0 ? etaText(ge.d, ge.lack) : '去军帐打造'; uiSeal(x + w - 16, y + 19, 18, '门', '#8a1c10'); uiText(s2, x + w - 8, y + 45, fitSize(s2, 10, w - 46, 99, PLAIN), etaColor(ge.d), 'right', PLAIN, { stroke: false }); }
-    else for (let k = 0; k < 3; k++) uiStar(x + w - 46 + k * 16, y + 45, 7, k < b);
+    for (let k = 0; k < 3; k++) uiStar(x + w - 46 + k * 16, y + 45, 7, k < b);
     if (!unlocked) uiText('锁', x + w - 18, y + 19, 14, 'rgba(244,230,196,.7)', 'center');
     ctx.restore();
     if (unlocked) hit(x, y, w, h, () => openLevel(i));
   });
-  const ng = nextGate(); if (ng) { const ge = gateEta(ng), u0 = gateLack(ng)[0], s2 = `下一道门 ${lvName(ng)}：${UPS[u0.key].name}${ge.d > 0 ? ' · 还差' + lackText(ge.lack) + ' · ' + etaText(ge.d, ge.lack) : ' · 材料够了，去军帐'}`;
-    uiSeal(24, 436, 18, '门', '#8a1c10'); uiText(s2, 38, 436, fitSize(s2, 12, W - 52, 99, PLAIN), ge.d > 0 ? etaColor(ge.d) : UIC.cream, 'left', PLAIN, { lw: 3 }); }
   plaque(112, 590, 136, 34, '返回', () => { screen = 'menu'; }, false);
 }
 
