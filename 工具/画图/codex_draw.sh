@@ -10,6 +10,6 @@ for id in "${IDS[@]}"; do
   [ -f "$OUT/$id.png" ] && continue
   P=$(python3 -c "import json,sys;print(next(x['prompt'] for x in json.load(open('$HERE/jobs_v2.json')) if x['id']==sys.argv[1]))" "$id")
   printf "%s" "用内置 image_gen 工具画一张图（只画这一张，不要写代码）。画完把图片文件复制到 $OUT/$id.png 然后结束。附图是画风参考。
-$P" | (cd "$OUT" && "$C" exec --skip-git-repo-check -s workspace-write -i "$REF" - > "log/$id.txt" 2>&1)
+$P" | (cd "$OUT" && "$C" exec --skip-git-repo-check -s workspace-write -i "$REF" $([[ $id == *zoujing* ]] && echo -i "$ROOT/美术/重画/邹靖造型参考.webp") - > "log/$id.txt" 2>&1)
   if [ -f "$OUT/$id.png" ]; then echo "ok $id"; elif grep -q "429\|usage_limit" "$OUT/log/$id.txt"; then echo "额度用完，停在 $id"; exit 1; else echo "没画出 $id（看 log/$id.txt）"; fi
 done
