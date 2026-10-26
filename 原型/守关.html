@@ -3365,7 +3365,7 @@ const sndCfg = () => (INV.snd = INV.snd || { m: 1, mv: .5, s: 1, sv: .7 });
 function sndInit() {
   if (SND.ac) { if (SND.ac.state === 'suspended') SND.ac.resume(); return; }
   try { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; SND.ac = new AC(); } catch (e) { return; }
-  const c = SND.ac; SND.mus = c.createGain(); SND.sfx = c.createGain(); SND.mus.connect(c.destination); SND.sfx.connect(c.destination);
+  const c = SND.ac; SND.mus = c.createGain(); SND.sfx = c.createGain(); SND.mus.connect(c.destination); { const lim = c.createDynamicsCompressor(); lim.threshold.value = -6; lim.knee.value = 4; lim.ratio.value = 12; lim.attack.value = .003; lim.release.value = .25; SND.sfx.connect(lim); lim.connect(c.destination); }   // 声效总线压一下，雷加大了不炸音
   SND.noise = c.createBuffer(1, c.sampleRate, c.sampleRate); const d = SND.noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;   // 声音的随机不碰游戏随机数
   sndApply();
 }
@@ -3391,8 +3391,8 @@ function sfx(k) {
   else if (k === 'hit') { const n = SND.ac.currentTime; if (n - SND.lastHit < .07) return; SND.lastHit = n; nz(t, .07, .22, o, 'bandpass', 1300, 600, 1.2); }
   else if (k === 'wall') { const n = SND.ac.currentTime; if (n - SND.lastHit < .25) return; SND.lastHit = n; drum(t, false, o, .6); }
   else if (k === 'win') { [0, .18, .36].forEach((d, i) => drum(t + d, i === 2, o)); [[293.7, .5], [370, .62], [440, .74], [587.3, .86]].forEach(([f, d]) => horn(t + d, f, d === .86 ? 1.3 : .3, o, .9)); }
-  else if (k === 'thunder') { for (const [dt, v] of THUNDER) {                  // 炸雷：轰隆轰隆三下，一下比一下远（10-26 用户：「雷声太小了，而且要轰隆轰隆2-3下」）
-      if (dt === 0) { nz(t, .16, 2.2, o, 'highpass', 4200, 1400); nz(t + .03, .4, 1.6, o, 'bandpass', 1800, 300, .8); }   // 头一下带脆裂
+  else if (k === 'thunder') { SND.duck = SND.ac.currentTime + THUNDER_LEN; for (const [dt, v0] of THUNDER) { const v = v0 * 1.8;   // 再响一倍，打雷时音乐压低（10-26 用户：「声音还是比音乐小」）                  // 炸雷：轰隆轰隆三下，一下比一下远（10-26 用户：「雷声太小了，而且要轰隆轰隆2-3下」）
+      if (dt === 0) { nz(t, .16, 3.5, o, 'highpass', 4200, 1400); nz(t + .03, .4, 2.6, o, 'bandpass', 1800, 300, .8); }   // 头一下带脆裂
       drum(t + dt, true, o, 2 * v); osc('sine', 58, 32, t + dt + .03, 1.4, 1.1 * v, o, .01); osc('sine', 44, 30, t + dt + .2, 1.2, .8 * v, o, .03);
       nz(t + dt + .06, 1.6, 1.6 * v, o, 'lowpass', 900, 90); nz(t + dt + .35, 1.3, 1.1 * v, o, 'lowpass', 420, 60); } }
   else if (k === 'hooves') { for (let b = 0; b < 7; b++) for (const [dt, w] of [[0, .7], [.1, .8], [.22, 1]]) { const tt = t + b * .42 + dt, v = (.15 + .85 * b / 6) * w;   // 马蹄由远而近：嗒嗒咚、嗒嗒咚，一拍比一拍响（10-26 用户：「来个马蹄声」）
@@ -3408,13 +3408,13 @@ const musicWant = () => screen === 'story' ? (STP && STP.key === 'l10' ? 'omen' 
 function mpPlay(name) { const el = new Audio('music/' + name + '.mp3'); el.volume = 0; el.onerror = () => { MP.fail.add(name); if (MP.el === el) MP.el = null; };
   el.onended = () => { if (MP.el === el) { MP.i++; MP.el = null; } }; el.play().catch(() => {}); if (MP.el) MP.old.push(MP.el); MP.el = el; MP.name = name; }
 function musicTick() {
-  if (!SND.ac || SND.ac.state !== 'running') return; const k = sndCfg(), want = musicWant(), vol = k.m ? k.mv * .55 : 0, list = MUSIC[want].filter(n => !MP.fail.has(n));
+  if (!SND.ac || SND.ac.state !== 'running') return; const k = sndCfg(), want = musicWant(), vol = (k.m ? k.mv * .55 : 0) * (SND.duck && SND.ac.currentTime < SND.duck ? .12 : 1), list = MUSIC[want].filter(n => !MP.fail.has(n));
   MP.old = MP.old.filter(el => { el.volume = Math.max(0, el.volume - .02); if (el.volume <= .01) { el.pause(); return false; } return true; });   // 上一首淡出
   if (!list.length) { if (MP.el) { MP.old.push(MP.el); MP.el = null; } synthTick(want === 'calm' || want === 'story' || want === 'omen' ? 'calm' : 'war'); return; }
   SND.mode = null;
   if (MP.want !== want) { MP.want = want; MP.i = Math.floor(Math.random() * list.length); MP.el && MP.old.push(MP.el); MP.el = null; }
   if (!MP.el && vol > 0) mpPlay(list[MP.i % list.length]);
-  if (MP.el) { MP.el.volume = Math.min(1, Math.max(0, MP.el.volume + (vol - MP.el.volume) * .04)); if (vol <= 0 && MP.el.volume < .01) { MP.el.pause(); MP.el = null; } }
+  if (MP.el) { MP.el.volume = Math.min(1, Math.max(0, MP.el.volume + (vol - MP.el.volume) * (SND.duck && SND.ac.currentTime < SND.duck ? .35 : .04))); if (vol <= 0 && MP.el.volume < .01) { MP.el.pause(); MP.el = null; } }
 }
 // 现合的占位音乐：每帧排后面四分之一秒的音符；主页、结算、各页是「静」，打仗时是「战」
 const PENTA = [146.8, 164.8, 185, 220, 246.9, 293.7, 329.6, 370, 440, 493.9];      // D 宫五声：宫商角徵羽，两个八度
@@ -3539,17 +3539,18 @@ for (const k of new Set(Object.values(STORY).flat().map(l => l[0]))) { IMG[k] = 
 let STP = null;                                                                    // 正在演的一场：{ key, i, t0, then }
 const storySeen = k => !!(INV.story && INV.story[k]);
 // 剧情里几句配声效、画面一抖：按句子里的字认
-const THUNDER = [[0, 1], [.95, .75], [1.85, .5]];                                 // 三下雷的时刻、响度（画面白闪跟着它）
+const THUNDER = [[0, 1], [.95, .75], [1.85, .5]], THUNDER_LEN = 3.2;                                 // 三下雷的时刻、响度（画面白闪跟着它）
 const STORY_SFX = [['轰——', 'thunder'], ['马蹄声', 'hooves'], ['哇——！！！', 'zhang']];
 const STORY_KEYS = () => ['open', ...LEVELS.map(l => 'l' + l.id)].filter(k => STORY[k]);
 function storyEnter() { const ln = STORY[STP.key][STP.i]; STP.t0 = uiNow(); const fx = STORY_SFX.find(([w]) => ln[2].includes(w)); STP.fx = fx ? { k: fx[1], t0: uiNow() } : null; if (fx) sfx(fx[1]); }
 // read：阅读模式（系统页「翻看剧情」或网址带 ?story）——点左边往回翻、右边往下翻，一场完了接下一场；不记成看过
 function playStory(key, then, read) { if (!read) { INV.story = { ...(INV.story || {}), [key]: true }; saveInv(); } const lv = LEVELS.find(l => 'l' + l.id === key);
   STP = { key, i: 0, t0: uiNow(), then, prev: null, bg: lv ? lv.map : null, read }; screen = 'story'; storyEnter(); }
-function storyJump(key, last) { const lv = LEVELS.find(l => 'l' + l.id === key); STP.prev = STORY[STP.key][STP.i][0]; STP.fadeT = uiNow(); STP.key = key; STP.bg = lv ? lv.map : null; STP.i = last ? STORY[key].length - 1 : 0; storyEnter(); }
-function storyPrev() { if (STP.i > 0) { STP.prev = STORY[STP.key][STP.i][0]; STP.i--; STP.fadeT = uiNow(); storyEnter(); STP.t0 = -99; return; }
+function storyJump(key, last) { if (storyBusy()) return; const lv = LEVELS.find(l => 'l' + l.id === key); STP.prev = STORY[STP.key][STP.i][0]; STP.fadeT = uiNow(); STP.key = key; STP.bg = lv ? lv.map : null; STP.i = last ? STORY[key].length - 1 : 0; storyEnter(); }
+function storyPrev() { if (storyBusy()) return; if (STP.i > 0) { STP.prev = STORY[STP.key][STP.i][0]; STP.i--; STP.fadeT = uiNow(); storyEnter(); STP.t0 = -99; return; }
   const ks = STORY_KEYS(), j = ks.indexOf(STP.key); if (j > 0) { storyJump(ks[j - 1], true); STP.t0 = -99; } }
-function storyNext() { const L = STORY[STP.key], ln = L[STP.i], n = [...ln[2]].length, shown = (uiNow() - STP.t0) * 30;
+const storyBusy = () => STP && STP.fx && STP.fx.k === 'thunder' && uiNow() - STP.fx.t0 < THUNDER_LEN;   // 雷没打完不能翻（10-26 用户：「雷声没打完前不能继续」）
+function storyNext() { if (storyBusy()) return; const L = STORY[STP.key], ln = L[STP.i], n = [...ln[2]].length, shown = (uiNow() - STP.t0) * 30;
   if (shown < n) { STP.t0 = uiNow() - n / 30 - .01; return; }                       // 还没打完：先打完这句
   if (STP.i + 1 < L.length) { STP.prev = ln[0]; STP.i++; STP.fadeT = uiNow(); storyEnter(); return; }
   if (STP.read) { const ks = STORY_KEYS(), j = ks.indexOf(STP.key); if (j + 1 < ks.length) { storyJump(ks[j + 1]); return; } }
@@ -3575,7 +3576,7 @@ function drawStory() {
   if (who) { const [nm, col] = SPEAK[who]; if (ready(IMG.ui_plaque_dark)) ctx.drawImage(IMG.ui_plaque_dark, bx + 8, by - 16, 112, 112 * 122 / 600); uiText(nm, bx + 64, by - 16 + 112 * 61 / 600, fitSize(nm, 15, 70), col, 'center', FONT, { lw: 3 }); }
   const lines = cardLines(text, 19, 4), shown = Math.floor((t - STP.t0) * 30); let left = shown;
   lines.forEach((ln, i) => { const cs = [...ln], part = cs.slice(0, Math.max(0, left)).join(''); left -= cs.length; if (part) uiText(part, bx + 20, by + 34 + i * 24, 16, who ? UIC.cream : 'rgba(246,210,122,.95)', 'left', PLAIN, { lw: 3 }); });
-  const allIn = shown >= [...text].length; if (allIn) uiText('点一下继续', bx + bw - 14, by + bh - 14, 10, `rgba(244,230,196,${.35 + .35 * Math.sin(t * 4)})`, 'right', PLAIN, { stroke: false });
+  const allIn = shown >= [...text].length && !storyBusy(); if (allIn) uiText('点一下继续', bx + bw - 14, by + bh - 14, 10, `rgba(244,230,196,${.35 + .35 * Math.sin(t * 4)})`, 'right', PLAIN, { stroke: false });
   /* 10-26 用户圈了对话框左下角「10 / 31」：「不要这个」——不报第几句 */
   if (STP.fx && STP.fx.k === 'thunder') for (const [dt, v] of THUNDER) { const u = (t - STP.fx.t0 - dt) / .7; if (u >= 0 && u < 1) { ctx.fillStyle = `rgba(255,252,235,${(1 - u) * (u < .12 ? 1 : .6) * v})`; ctx.fillRect(0, 0, W, 470); } }   // 雷：每一下整幅白闪
   if (STP.read) { const ks = STORY_KEYS(), j = ks.indexOf(STP.key), lv = LEVELS.find(l => 'l' + l.id === STP.key), nm = lv ? `第${CNUM(lv.id)}关 · ${lv.name}` : '序章 · 桃园';
