@@ -12,6 +12,9 @@ M = json.load(open(HERE / '实测_每关放招普攻_20261025.json', encoding='u
 SEC = {}
 for r in M: SEC.setdefault(r['lv'], []).append(r['t'])
 MIN = {lv: sum(ts) / len(ts) / 60 + 1 for lv, ts in SEC.items()}            # 每关几分钟（含出阵、结算）
+# 10-25 夜晋升减到每关 3–5 次、血量重调后的每关秒数（第一章设定.md 5.5，会搭配 6 种子），给新方案用
+SEC2 = [118, 188, 182, 196, 71, 160, 104, 316, 214, 169, 95, 159, 153, 148, 83, 144, 117, 159, 163, 46, 165, 192, 154, 95, 211, 124, 166, 169, 191, 56]
+MIN2 = {i + 1: t / 60 + 1 for i, t in enumerate(SEC2)}
 
 # 破题门槛：打第 lv 关之前手里要有什么（买得起就马上买）；每个方案一套
 GATES_V1 = [
@@ -45,6 +48,11 @@ PLANS = {
     # 加出外探访两次（一键，刘备政治 72：精铁 2、机缘 15，满 100 得神兵材料一块）、日常杂务七项（一键，只给经验，不算材料）
     '十二道': dict(gates=GATES_V3, login={'精铁': 2}, task_n=3, task={'残页': 2}, task_min=3.5, replay={'精铁': 1}, cap={'精铁': 2},
                weekly=('将印', 1, 'tasks', 10), first={20: {'将印': 1}}, save=2, visit=dict(n=2, iron=2, luck=15, min=.3), chores_min=.2),
+    # 10-25 夜用户：「这些不是得到经验，是得到物品奖励……一键完成要消耗体力的」：七项杂务一天给 精铁 3、残页 3、机缘 10（体力一天回得满，不卡）；
+    # 杂务只算当天，漏掉的天不补；每关用时换成晋升减少后的新实测
+    '杂务给物品': dict(gates=GATES_V3, login={'精铁': 2}, task_n=3, task={'残页': 2}, task_min=3.5, replay={'精铁': 1}, cap={'精铁': 2},
+               weekly=('将印', 1, 'tasks', 10), first={20: {'将印': 1}}, save=2, visit=dict(n=2, iron=2, luck=15, min=.3), chores_min=.2,
+               chores={'精铁': 3, '残页': 3}, chore_luck=10, mins=MIN2),
 }
 # 玩家：每周七天各玩几分钟（0 = 不上线）
 PLAYERS = {
@@ -57,7 +65,7 @@ PLAYERS = {
 
 
 def run(P, week, days=60):
-    GATES = P['gates']; inv = {'精铁': 0, '残页': 0, '将印': 0, '神兵': 0}; luck = 0; need_left = [dict(g[2]) for g in GATES]
+    GATES = P['gates']; MIN = P.get('mins', globals()['MIN']); inv = {'精铁': 0, '残页': 0, '将印': 0, '神兵': 0}; luck = 0; need_left = [dict(g[2]) for g in GATES]
     nxt, owed, log, gate_day, total, login_days, task_days = 1, 0, [], {}, 0, [], []
     for d in range(days):
         mins = week[d % 7]
@@ -79,6 +87,9 @@ def run(P, week, days=60):
                 t -= V['min']; inv['精铁'] += V['iron']; luck += V['luck']
                 while luck >= 100: luck -= 100; inv['神兵'] += 1
             t -= P.get('chores_min', 0)
+            for k, v in P.get('chores', {}).items(): inv[k] += v
+            luck += P.get('chore_luck', 0)
+            while luck >= 100: luck -= 100; inv['神兵'] += 1
         got = {k: 0 for k in P['cap']}
         def buy():                                                                    # 手里的材料够哪道门就先买哪道（门按关号排）
             for gi, g in enumerate(GATES):
@@ -108,7 +119,7 @@ def run(P, week, days=60):
 
 if __name__ == '__main__':
     name = sys.argv[1] if len(sys.argv) > 1 else '定稿'; P = PLANS[name]; GATES = P['gates']
-    print(f'方案：{name}；第一章 30 关全打一遍约 {sum(MIN.values()):.0f} 分钟')
+    print(f'方案：{name}；第一章 30 关全打一遍约 {sum(P.get("mins", MIN).values()):.0f} 分钟')
     print('| 玩家 | 打完第一章 | ' + ' | '.join(f'过第 {g[0]} 关（{g[1]}）' for g in GATES) + ' | 一共玩了 |')
     print('|---|---|' + '---|' * len(GATES) + '---|')
     for pn, wk in PLAYERS.items():

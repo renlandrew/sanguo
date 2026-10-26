@@ -1,0 +1,12 @@
+[
+ {"id": "home_1", "prompt": "Grand majestic main theme for an ancient Chinese Three Kingdoms strategy game, slow tempo, sweeping orchestral strings, solo dizi bamboo flute melody in pentatonic scale, guzheng arpeggios, soft taiko drums, noble and heroic, cinematic, instrumental"},
+ {"id": "home_2", "prompt": "Calm heroic ancient Chinese court music for a strategy game menu, erhu lead melody over warm orchestral strings and harp, guzheng plucks, pentatonic, gentle and noble, mountains and rivers, instrumental"},
+ {"id": "camp_1", "prompt": "Peaceful military camp at dusk in ancient China, solo guzheng with soft erhu answer, light hand drum, warm and nostalgic, slow tempo, pentatonic, strategy game camp theme, instrumental"},
+ {"id": "story_1", "prompt": "Light playful comedic ancient Chinese music, pizzicato strings, pipa plucks, woodblock and small cymbals, bouncy rhythm, cheeky and fun, pentatonic, game cutscene with jokes, instrumental"},
+ {"id": "war_1", "prompt": "Epic ancient Chinese battle music for a Three Kingdoms strategy game, fast driving taiko war drums, low brass fanfares, pipa tremolo, rapid string ostinato, heroic pentatonic melody on dizi, intense and triumphant, instrumental"},
+ {"id": "war_2", "prompt": "Intense battlefield march, ancient Chinese army, thunderous war drums and gongs, erhu lead with full orchestra, brass stabs, urgent tempo, pentatonic, strategy game battle, instrumental"},
+ {"id": "war_3", "prompt": "Heroic charge, ancient Chinese generals defending a city wall, big orchestral brass theme, suona horn calls, galloping strings, war drums, determined and brave, pentatonic, instrumental"},
+ {"id": "war_4", "prompt": "Tense siege defense music, ancient China, pounding low drums, staccato strings, guzheng tremolo, rising tension then heroic brass, pentatonic, strategy game battle, instrumental"},
+ {"id": "duel_1", "prompt": "Dark ominous duel with a legendary enemy general, ancient China, deep taiko drums, low brass, dissonant erhu, heavy and menacing, epic orchestral boss battle, instrumental"},
+ {"id": "omen_1", "prompt": "Mysterious supernatural ancient Chinese music, a crack in the heavens, low drones, distant gongs, eerie guqin harmonics, slow and ominous, hint of another world, instrumental"}
+]

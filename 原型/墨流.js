@@ -45,7 +45,7 @@ void main(){ vUv = aPos * .5 + .5; vL = vUv - vec2(uTexel.x, 0.); vR = vUv + vec
       void main(){ float L = texture(uP, vL).x, R = texture(uP, vR).x, T = texture(uP, vT).x, B = texture(uP, vB).x; vec2 v = texture(uVel, vUv).xy - vec2(R - L, T - B); o = vec4(v, 0., 1.); }`,
     scale: `uniform sampler2D uSrc; uniform float uK; void main(){ o = uK * texture(uSrc, vUv); }`,
     show: `uniform sampler2D uDye; uniform vec2 uDyeTexel; uniform vec3 uThin, uDense, uSheen; uniform float uSheenAmt;
-      vec3 fireRamp(float h){ return vec3(.95, .32, .06) * smoothstep(.03, .45, h) + vec3(.45, .36, .12) * smoothstep(.4, 1.1, h) + vec3(.22) * smoothstep(1.1, 2.2, h); }
+      vec3 fireRamp(float h){ return vec3(.86, .14, .12) * smoothstep(.03, .45, h) + vec3(.40, .14, .10) * smoothstep(.4, 1.1, h) + vec3(.22) * smoothstep(1.1, 2.2, h); }
       void main(){
         vec4 d0 = max(texture(uDye, vUv), 0.); vec2 e2 = uDyeTexel * 2.5;
         vec4 avg = (max(texture(uDye, vUv + vec2(e2.x, 0.)), 0.) + max(texture(uDye, vUv - vec2(e2.x, 0.)), 0.) + max(texture(uDye, vUv + vec2(0., e2.y)), 0.) + max(texture(uDye, vUv - vec2(0., e2.y)), 0.)) * .25;
@@ -59,7 +59,7 @@ void main(){ vUv = aPos * .5 + .5; vL = vUv - vec2(uTexel.x, 0.); vR = vUv + vec
         float sm = pow(1. - exp(-d.b * 1.3), 1.4) * .9; vec3 smokeCol = mix(vec3(.80, .74, .64), vec3(.24, .21, .19), clamp(d.b * .55, 0., 1.)) + fire * .3;
         C = smokeCol * sm + C * (1. - sm); A = sm + A * (1. - sm);
         float wa = pow(1. - exp(-d.a * 1.6), 1.3) * .85; C = vec3(.96, .98, 1.) * wa + C * (1. - wa); A = wa + A * (1. - wa);
-        float fa = pow(smoothstep(.02, .9, d.g), 1.5) * .72; vec3 fc = mix(vec3(.78, .2, .04), vec3(1., .62, .18), smoothstep(.5, 1.4, d.g));   // 火先盖一层橙红实色（浅色地面上纯加光会冲成淡黄）
+        float fa = pow(smoothstep(.02, .9, d.g), 1.5) * .72; vec3 fc = mix(vec3(.60, .06, .08), vec3(.93, .30, .24), smoothstep(.5, 1.4, d.g));   /* 10-25 夜：火从橙黄改暗朱红（张飞的红），不像一团火云 */   // 火先盖一层橙红实色（浅色地面上纯加光会冲成淡黄）
         C = fc * fa + C * (1. - fa); A = fa + A * (1. - fa);
         o = vec4(C + fire * .55, A); }`,                                                       // 再加一层光：颜色超过透明度，预乘叠上去就是加光
   };
