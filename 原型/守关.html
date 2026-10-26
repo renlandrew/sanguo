@@ -4387,7 +4387,7 @@ function fit() {
   cv.width = Math.round(W * RS); cv.height = Math.round(H * RS); cv.style.width = W * S + 'px'; cv.style.height = H * S + 'px';
   cv.style.marginTop = Math.max(0, (innerHeight - H * S) / 2) + 'px'; bakeAll(); spxInit();
   if (ML === null && window.Moliu) ML = Moliu.create({ W, H, pw: cv.width, ph: cv.height }) || false;
-  if (MLB === null && window.Moliu) { MLB = Moliu.create({ W, H, pw: cv.width, ph: cv.height }) || false; if (MLB) { MLB.cfg.palette = 'ink'; MLB.cfg.decay = [.9, 3.6, .85, 2.2]; } }
+  if (MLB === null && window.Moliu) { MLB = Moliu.create({ W, H, pw: cv.width, ph: cv.height }) || false; if (MLB) { MLB.cfg.palette = 'yaoqi';   /* 10-26 张角身边的黑墨烟改紫金妖气 */ MLB.cfg.decay = [.9, 3.6, .85, 2.2]; } }
 }
 (document.fonts ? Promise.race([document.fonts.load('40px "Ma Shan Zheng"'), new Promise(r => setTimeout(r, 2500))]) : Promise.resolve()).then(boot, boot);
 })();

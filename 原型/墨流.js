@@ -11,7 +11,8 @@
 (function () {
 'use strict';
 const PALETTE = {                                                   // 墨的颜色：淡处、浓处、墨里的亮边（10-25 用户：「试下青金色」——石青打底、泥金勾边）
-  qingjin: { thin: [.24, .47, .56], dense: [.03, .16, .24], sheen: [.96, .78, .36], sheenAmt: .55 },
+  qingjin: { thin: [.42, .86, .74], dense: [.04, .45, .40], sheen: [1, .86, .40], sheenAmt: .65 },   // 10-26 用户：「不要水墨风格了」「墨烟特效可以改类似非墨烟特效」——青黑墨浪调成翠绿泛金的刀气（原 thin .24/.47/.56、dense .03/.16/.24）
+  yaoqi:   { thin: [.66, .45, .95], dense: [.30, .08, .48], sheen: [1, .84, .32], sheenAmt: .7 },     // 张角的妖气：紫烟金边（替掉原来的黑墨烟）
   ink:     { thin: [.30, .34, .36], dense: [.035, .035, .045], sheen: [.9, .95, 1], sheenAmt: .22 },
 };
 function create(opt = {}) {
@@ -119,7 +120,7 @@ void main(){ vUv = aPos * .5 + .5; vL = vUv - vec2(uTexel.x, 0.); vR = vUv + vec
   // 碎片（画在调用方的 2D 画布上，逻辑坐标）
   const rnd = (a, b) => a + (b - a) * Math.random();
   const rockPts = () => Array.from({ length: 6 }, (_, i) => { const a = i / 6 * 6.283 + rnd(-.3, .3), r = rnd(.6, 1); return [Math.cos(a) * r, Math.sin(a) * r * .8]; });
-  const flake = (x, y, vx, vy, col) => parts.push({ k: 'flake', x, y, vx, vy, g: 40, drag: 2.2, s: rnd(3, 5.5), rot: rnd(0, 6), spin: rnd(-9, 9), t: 0, life: rnd(.9, 1.5), c: col || (CFG.palette === 'qingjin' ? (Math.random() < .35 ? '#c9a24a' : '#0d2a38') : '#16130f') });
+  const flake = (x, y, vx, vy, col) => parts.push({ k: 'flake', x, y, vx, vy, g: 40, drag: 2.2, s: rnd(3, 5.5), rot: rnd(0, 6), spin: rnd(-9, 9), t: 0, life: rnd(.9, 1.5), c: col || (CFG.palette === 'qingjin' ? (Math.random() < .35 ? '#e8c050' : '#1f9a82') : '#16130f') });
   // GPT 画的刀气（10-25 用户看了程序画的弯刀：「你这项一个弧形，不行，可以接上gpt 那张图在里面吗？」）：和游戏同一张 img/fx_paint.png（工具/vfx/cut_paint.py 转的光），
   // blade 那一格是一道竖着的拱形刀光（外弧朝上）。量过：外沿弧心在格内 (197, 212)、半径 187；从左脚（约 99°）经顶部扫到右脚（约 38°）共 299°，绕 (197, 300) 转
   const PAINT = { img: new Image(), meta: null }; PAINT.img.src = (opt.base || '') + 'img/fx_paint.png'; fetch((opt.base || '') + 'img/fx_paint.json').then(r => r.json()).then(j => { PAINT.meta = j; }).catch(() => {});
