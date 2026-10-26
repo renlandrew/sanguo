@@ -3233,11 +3233,13 @@ function drawTip() {
   const u = (G.t - G.tip.t0) / 5, inU = Math.min(1, u / .05), al = u > .85 ? (1 - u) / .15 : 1, y = TOP + (G.boss && !G.boss.dead ? 30 : 6) + (G.hudChips || 0) * 22 - 30 * (1 - ease(inU));
   ctx.save(); ctx.globalAlpha = al;
   if (ready(IMG.ui_scroll)) {                                                     // 画出来的卷轴：从中间往两边展开（10-25）
-    const ou = ease(Math.min(1, u / .08)), sw = (W - 20) * (.18 + .82 * ou), sx = W / 2 - sw / 2, sh = 40;
+    const t = G.tip.text, maxW = W - 110; let tz = Math.max(11, fitSize(t, 13, maxW, 99, PLAIN)), lines = [t];   // 一行放不下就断成两行、卷轴加高（10-26 试玩：长提示被「…」截掉后半句）
+    ctx.font = `11px ${PLAIN}`; if (ctx.measureText(t).width > maxW) { const h = t.length / 2; let k = Math.round(h); for (let d = 0; d < h * .4; d++) { if (/[，。、；：！？—]/.test(t[Math.round(h) + d - 1] || '')) { k = Math.round(h) + d; break; } if (/[，。、；：！？—]/.test(t[Math.round(h) - d - 1] || '')) { k = Math.round(h) - d; break; } }
+      if (t[k - 1] === '—' && t[k] === '—') k++; lines = [t.slice(0, k), t.slice(k)]; tz = Math.max(10, Math.min(13, ...lines.map(l => fitSize(l, 13, maxW, 99, PLAIN)))); }
+    const ou = ease(Math.min(1, u / .08)), sw = (W - 20) * (.18 + .82 * ou), sx = W / 2 - sw / 2, sh = lines.length > 1 ? 60 : 40;
     draw9(IMG.ui_scroll, sx, y - 6, sw, sh, 100, 100, 0, 0, sh / 136);              // 两头的轴和祥云按原比例，中间绢面拉长；展开时两根轴往外走
     ctx.restore(); ctx.globalAlpha = 1; if (ou < .85) return;
-    const t = G.tip.text, maxW = W - 110, tz = Math.max(11, fitSize(t, 13, maxW, 99, PLAIN)); ctx.font = `${tz}px ${PLAIN}`; let s2 = t; while (ctx.measureText(s2).width > maxW && s2.length > 4) s2 = s2.slice(0, -1); if (s2 !== t) s2 = s2.slice(0, -1) + '…';
-    uiSeal(44, y + 14, 18, '令', UIC.red); txt(s2, W / 2 + 12, y + 14, tz, '#2a1a0e', 'center', PLAIN, al * (ou - .85) / .15); return;
+    const ty = y + sh / 2 - 6; uiSeal(44, ty, 18, '令', UIC.red); lines.forEach((l, i) => txt(l, W / 2 + 12, ty + 1 + (i - (lines.length - 1) / 2) * (tz + 2), tz, '#2a1a0e', 'center', PLAIN, al * (ou - .85) / .15)); return;
   }
   const g = ctx.createLinearGradient(0, y, 0, y + 30); g.addColorStop(0, '#f8eed6'); g.addColorStop(1, '#e8d6ae'); rr(22, y, W - 44, 30, 4); ctx.fillStyle = g; ctx.fill();
   ctx.strokeStyle = '#8a6a2a'; ctx.lineWidth = 1; rr(22.5, y + .5, W - 45, 29, 4); ctx.stroke();
