@@ -3396,9 +3396,9 @@ function sfx(k) {
       drum(t + dt, true, o, 2 * v); osc('sine', 58, 32, t + dt + .03, 1.4, 1.1 * v, o, .01); osc('sine', 44, 30, t + dt + .2, 1.2, .8 * v, o, .03);
       nz(t + dt + .06, 1.6, 1.6 * v, o, 'lowpass', 900, 90); nz(t + dt + .35, 1.3, 1.1 * v, o, 'lowpass', 420, 60);
       nz(t + dt + .04, 1.1, 1.2 * v, o, 'bandpass', 260, 140, .7); } }   // 再加一层中低频滚声：笔记本、手机喇叭放不出最低的那段，靠这层听着响（10-26 用户：「可以再大些」）
-  else if (k === 'hooves') { for (let b = 0; b < 7; b++) for (const [dt, w] of [[0, .7], [.1, .8], [.22, 1]]) { const tt = t + b * .42 + dt, v = (.15 + .85 * b / 6) * w;   // 马蹄由远而近：嗒嗒咚、嗒嗒咚，一拍比一拍响（10-26 用户：「来个马蹄声」）
-      osc('sine', 150, 70, tt, .09, .5 * v, o, .002); nz(tt, .05, .35 * v, o, 'bandpass', 900, 500, 1.5); }
-    nz(t + 2.95, .5, .25, o, 'bandpass', 1600, 2600, 3); osc('sawtooth', 620, 880, t + 2.95, .45, .05, o, .05); }
+  else if (k === 'hooves') { SND.duck = SND.ac.currentTime + 3.6; for (let b = 0; b < 7; b++) for (const [dt, w] of [[0, .7], [.1, .8], [.22, 1]]) { const tt = t + b * .42 + dt, v = (.3 + .7 * b / 6) * w * 2.6;   // 马蹄由远而近：嗒嗒咚、嗒嗒咚，一拍比一拍响；响的时候音乐压低（10-26 用户：「马蹄声呢？」——原来太轻被音乐盖住）
+      osc('sine', 160, 70, tt, .1, .6 * v, o, .002); nz(tt, .06, .45 * v, o, 'bandpass', 1100, 500, 1.4); nz(tt, .08, .35 * v, o, 'bandpass', 300, 180, 1); }
+    nz(t + 2.95, .55, .9, o, 'bandpass', 1600, 2600, 3); osc('sawtooth', 620, 900, t + 2.95, .5, .18, o, .05); osc('sawtooth', 900, 700, t + 3.2, .35, .12, o, .03); }   // 收尾一声马嘶
   else if (k === 'lose') { gong(t, 98, o, 1.2); horn(t + .4, 220, .8, o, .7); horn(t + 1.1, 196, 1.2, o, .6); }
 }
 // 音乐（10-25 夜用户：「音乐还是用google 生成吧？多生成几首轮流播放」；10-26 用户嫌「都是现代乐器」，提示词改成只用古乐器，用户照新提示词生成了十首、按下载顺序对上 music.json 换进来）：Vertex AI Lyria 2 生成的曲子（music/<名>.mp3，提示词在 ../工具/music/music.json），
