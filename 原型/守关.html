@@ -4257,10 +4257,10 @@ function drawMenu() {
     uiText('出征', bx + bw / 2, by + bh / 2 + 1, fitSize('出征', 22, bw - bh * .95), '#fff2dc', 'center', FONT, { lw: 4, glow: 'rgba(255,200,90,.5)', glowR: 8 }); hit(bx, by, bw, bh, () => openLevel(ni)); }
   // 点卯横幅
   if (MENU.note && t - MENU.note.t0 < 3.2) { const u = (t - MENU.note.t0) / 3.2, a = u < .1 ? u / .1 : u > .8 ? (1 - u) / .2 : 1, g = MENU.note.got;
-    ctx.save(); ctx.globalAlpha = a; if (ready(IMG.ui_banner)) draw9(IMG.ui_banner, 8, 188, W - 16, 80, 90, 90, 0, 0, 80 / 89);
-    uiText('点卯', W / 2, 214, 20, '#f6d27a', 'center', FONT, { glow: 'rgba(255,190,80,.7)', glowR: 10 });
+    const ny = cy0 - 92; ctx.save(); ctx.globalAlpha = a; if (ready(IMG.ui_banner)) draw9(IMG.ui_banner, 8, ny, W - 16, 80, 90, 90, 0, 0, 80 / 89);   // 挪到关卡牌上面，别挡住三兄弟的脸（10-26 试玩）
+    uiText('点卯', W / 2, ny + 26, 20, '#f6d27a', 'center', FONT, { glow: 'rgba(255,190,80,.7)', glowR: 10 });
     const s3 = Object.entries(g).map(([k, n]) => `${k} +${n}`).join(' · ') + (MENU.note.packs > 1 ? `（补领 ${MENU.note.packs - 1} 天）` : '') + ' · 今日军务 ' + DAILY.taskN + ' 道';
-    uiText(s3, W / 2, 241, fitSize(s3, 12, W - 16 - 2 * 92, 99, PLAIN), UIC.cream, 'center', PLAIN); ctx.restore(); }   // 字只放横幅中间那块，不压两头的花饰（10-26 用户：「又超出了」）
+    uiText(s3, W / 2, ny + 53, fitSize(s3, 12, W - 16 - 2 * 92, 99, PLAIN), UIC.cream, 'center', PLAIN); ctx.restore(); }   // 字只放横幅中间那块，不压两头的花饰（10-26 用户：「又超出了」）
   // 底栏：乌漆一条、上沿细金线（顶栏那张倒过来），五个图标钮
   if (ready(IMG.ui2_top)) { ctx.save(); ctx.translate(0, H); ctx.scale(1, -1); draw9(IMG.ui2_top, -24, -6, W + 48, 94, 40, 40, 8, 12, .5); ctx.restore(); }
   else { ctx.fillStyle = 'rgba(14,10,7,.92)'; ctx.fillRect(0, H - 88, W, 88); }
