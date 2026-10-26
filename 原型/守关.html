@@ -370,7 +370,8 @@ const CH1 = ['张飞', '刘备', '关羽'];
 // 10-25 又改：敌人速度减半、血 ×1.5（HP_X）、出兵节奏放慢 1.5 倍（TIMEX）、击退减半后，光靠血 ×1.5 结局变简单（十关平均 2.13 → 2.69 星）；
 // 按关二分找血量倍数让星数回到原样：1 关 0.7→3.64、2 关 2.7→4.65、3 关 1.03→3.09、4 关 0.62→1.23、5 关 1.3→1.35、6 关 1.4→2.43、7 关 0.88→1.85、8 关 2.3→3.24、9 关 1.9→2.8、10 关 1.6→1.87（这一行乘在 HP_X 上面）
 // 11–30 关（10-25 新做）的血量倍数也按机器人二分找的：目标星数从 2.4（11 关）慢慢降到 1.6（29、30 关）；8 个种子跑过，见 ../设计/第一章设定.md §5.5
-// 10-26 加了「对症」（UNC_X，第四关起）以后，第 4–30 关 hpMul 按会搭配 6 种子逐关二分重调到 1.8–2.5 星、至少赢 5 局（表见 ../设计/第一章设定.md 5.5）
+// 10-26 加了「对症」（UNC_X，第四关起）、骑兵只认绊马索、兵器每级 +12% 以后，第 4–30 关 hpMul 按会搭配 6 种子逐关二分重调到 1.8–2.5 星、至少赢 5 局；
+// 五个斗将关（5、15、20、25、30）再往上推，直到兵器差一级 6 局最多赢 1 局（表见 ../设计/第一章设定.md 5.5）
 const LEVELS = [
   { id: 1, name: '桃园结义', sub: '黄巾兵来犯涿县，三兄弟头一回并肩', hpMul: 0.295, slots: ['guan', null, null, null], join: [[16, 'zhang'], [30, 'liu']], map: 'peach', reward: '刘关张入队 · 刘备学会双股剑',
     rules: { give: ['log'] },                                                        // 10-25 夜：第一关还没学招，开局送一层滚木；只打四波，很快打完
@@ -390,7 +391,7 @@ const LEVELS = [
     waves: [[2, 'bing', 20, 8, 'rand'], [8, 'qibing', 4, 4, 'rand'], [14, 'bing', 18, 0, 'wedge', { g: 'a' }], [15, 'qushuai', 1, 0, 'rand', { g: 'a', lead: true }], [22, 'qibing', 6, 5, 'rand'], [26, 'bing', 30, 6, 'rand'],
       [36, 'lishi', 6, 4, 'rand'], [40, 'bing', 26, 0, 'line', { g: 'b' }], [41, 'qushuai', 1, 0, 'rand', { g: 'b', lead: true }], [48, 'qibing', 6, 6, 'rand'], [55, 'bing', 24, 12, 'rand'], [62, 'lishi', 4, 4, 'rand'], [66, 'qibing', 6, 6, 'rand', { g: 'c' }], [67, 'qushuai', 1, 0, 'rand', { g: 'c', lead: true }]],
     tips: [[1, '张飞学会了当阳一喝！骑兵冲得快，喝晕就落马'], [6, '限手：这一关招式不自动放，点好了的牌才出招，一共 36 次'], [30, '伏兵就要杀出来了，把敌人引到半路'], [40, '渠帅也是头目，斩了他溃散一片']] },
-  { id: 5, name: '邓茂', sub: '拦路将 · 大兴山下，邓茂挺枪拦路', kind: 'duel', boss: 'dengmao', hpMul: 1.13, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'canyon', reward: '镔铁 · 兵书残卷',
+  { id: 5, name: '邓茂', sub: '拦路将 · 大兴山下，邓茂挺枪拦路', kind: 'duel', boss: 'dengmao', hpMul: 2.207, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'canyon', reward: '镔铁 · 兵书残卷',
     moves: ['heavy', 'summon', 'heavy', 'buff', 'heavy', 'summon'], gap: 3.2, heavy: 14, adds: [['bing', 6], ['lishi', 1]],
     tips: [[1, '斗将：邓茂站在场中出招，城防就是你们的血'], [4, '看到「挺枪突刺」就点右下角「举盾」，挡下来还能反击'], [14, '张飞的一喝能喝晕敌将，打断他']] },
   { id: 6, name: '火烧长社', sub: '黄巾屯兵草营，皇甫嵩火攻', hpMul: 3.652, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'grass', reward: '硫磺',
@@ -412,16 +413,16 @@ const LEVELS = [
       [38, 'zhangbao', 1, 0, 'rand', { g: 'a', lead: true }], [38, 'bing', 30, 8, 'rand', { g: 'a' }], [46, 'shushi', 4, 4, 'rand', { g: 'a' }], [52, 'lishi', 10, 5, 'rand'],
       [58, 'zhangliang', 1, 0, 'rand', { g: 'b', lead: true }], [58, 'bing', 36, 10, 'rand', { g: 'b' }], [66, 'lishi', 8, 4, 'rand', { g: 'b' }]],
     tips: [[1, '夜战：只看得见城前和火光里的敌人，黑处的打不到，还走得快'], [4, '底下「火把」：点它再点战场，照亮一片 20 秒；着了火的敌人自己会亮'], [7, '术士洒符水给身边的黄巾回血，先点他'], [37, '地公将军张宝会刮妖风：武将普攻几秒内减半'], [57, '人公将军张梁给身边的兵挡刀']] },
-  { id: 10, name: '张角', sub: '大战 · 天公将军张角', kind: 'duel', boss: 'zhangjiao', hpMul: 1.57, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'camp', reward: '太平要术 · 兵书',
+  { id: 10, name: '张角', sub: '大战 · 天公将军张角', kind: 'duel', boss: 'zhangjiao', hpMul: 1.021, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'camp', reward: '太平要术 · 兵书',
     moves: ['heavy', 'summon', 'heal', 'heavy', 'seal', 'summon', 'heavy', 'buff'], gap: 3.2, heavy: 11, adds: [['bing', 4], ['lishi', 1]], phase2: [['zhangbao', 120], ['zhangliang', 240]],
     tips: [[1, '天公将军张角：天雷要举盾，符水要用张飞喝断'], [10, '妖术迷魂会封住一位武将几秒'], [30, '张角血少一半时，张宝、张梁会上阵']] },
   // ---------- 二 · 诸侯讨董（11–20，10-25） ----------
-  { id: 11, name: '孟德献刀', sub: '洛阳城门 · 夜，掩护曹操出城', hpMul: 3.876, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'luoyang', reward: '七星宝刀（法宝）',
+  { id: 11, name: '孟德献刀', sub: '洛阳城门 · 夜，掩护曹操出城', hpMul: 4.182, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'luoyang', reward: '七星宝刀（法宝）',
     rules: { night: { vis: 250, torches: [[80, 300], [280, 260]] }, timed: { t: 60, label: '曹操出城', text: '曹操出城了', sub: '刘关张且战且退' } },
     waves: [[2, 'xiliang', 16, 8, 'rand'], [10, 'xiliang', 14, 0, 'wedge'], [18, 'xiliang', 22, 10, 'rand'], [24, 'xiaowei', 1, 0, 'rand', { g: 'a', lead: true }], [24, 'xiliang', 18, 0, 'line', { g: 'a' }],
       [34, 'xiliang', 26, 10, 'rand'], [44, 'xiliang', 20, 0, 'wedge'], [50, 'xiaowei', 1, 0, 'rand', { g: 'b', lead: true }], [50, 'xiliang', 24, 8, 'rand', { g: 'b' }]],
     tips: [[1, '夜里限时：守住城门，等曹操骑马出城；黑处的敌人打不到，用「火把」照亮'], [6, '西凉兵举着盾：剑气、刀气打正面只有一半，张飞的矛照刺'], [22, '西凉校尉带兵，斩了他，他带的兵就溃散']] },
-  { id: 12, name: '十八路会盟', sub: '酸枣大营 · 诸侯会盟，西凉铁骑来袭营', hpMul: 1.969,   /* 沙盘推演样本关（10-25 夜晋升减少后按改前星数重调 5.88→3.2）：原来比按推荐等级调的 4.88 强三成五，配对了（拒马）三星、不配一星多 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'suanzao', reward: '刘备可学「激将」',
+  { id: 12, name: '十八路会盟', sub: '酸枣大营 · 诸侯会盟，西凉铁骑来袭营', hpMul: 2.412,   /* 沙盘推演样本关（10-25 夜晋升减少后按改前星数重调 5.88→3.2）：原来比按推荐等级调的 4.88 强三成五，配对了（拒马）三星、不配一星多 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'suanzao', reward: '刘备可学「激将」',
     rules: { volley: { every: 15, n: 10, dmg: 22, text: '袁绍营放箭' }, foeAdv: 'liru' },
     waves: [[2, 'xiliang', 20, 8, 'rand'], [8, 'tieqi', 4, 4, 'rand'], [16, 'xiliang', 22, 0, 'wedge'], [22, 'tieqi', 6, 5, 'rand'], [28, 'xiliang', 30, 10, 'rand'], [38, 'tieqi', 8, 6, 'rand'],
       [44, 'xiliang', 24, 0, 'line'], [52, 'xiaowei', 1, 0, 'rand', { g: 'a', lead: true }], [52, 'tieqi', 8, 0, 'line', { g: 'a' }], [60, 'xiliang', 30, 10, 'rand']],
@@ -431,12 +432,12 @@ const LEVELS = [
     waves: [[2, 'xiliang', 24, 8, 'rand'], [8, 'tieqi', 6, 4, 'rand'], [14, 'xiliang', 22, 0, 'wedge'], [22, 'xiaowei', 1, 0, 'rand', { g: 'a', lead: true }], [22, 'xiliang', 26, 8, 'rand', { g: 'a' }],
       [32, 'tieqi', 8, 5, 'rand'], [38, 'xiliang', 30, 10, 'rand'], [48, 'tieqi', 10, 6, 'line'], [56, 'xiaowei', 1, 0, 'rand', { g: 'b', lead: true }], [56, 'xiliang', 30, 10, 'rand', { g: 'b' }]],
     tips: [[1, '残局：开局敌人已经冲到半路'], [5, '关隘：敌人挤在中间，青龙斩、一喝一下打得更多']] },
-  { id: 14, name: '孙坚夜败', sub: '汜水关夜营 · 华雄夜袭，祖茂戴赤帻引开追兵', hpMul: 1.922, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '孙坚的赤帻（法宝）',
+  { id: 14, name: '孙坚夜败', sub: '汜水关夜营 · 华雄夜袭，祖茂戴赤帻引开追兵', hpMul: 2.022, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '孙坚的赤帻（法宝）',
     rules: { night: { vis: 250, torches: [[70, 320], [180, 250], [290, 320]] }, decoy: { uses: 1, dur: 5, r: 120 } },
     waves: [[2, 'tieqi', 8, 6, 'rand'], [10, 'xiliang', 20, 8, 'rand'], [16, 'tieqi', 10, 6, 'rand'], [24, 'xiliang', 24, 0, 'wedge'], [30, 'tieqi', 12, 8, 'rand'],
       [40, 'xiaowei', 1, 0, 'rand', { g: 'a', lead: true }], [40, 'tieqi', 12, 0, 'line', { g: 'a' }], [48, 'xiliang', 30, 10, 'rand'], [58, 'tieqi', 14, 8, 'rand']],
     tips: [[1, '夜袭：铁骑摸黑冲营，黑处的打不到；点「火把」再点战场照亮一片'], [4, '右下角「赤帻」：点它再点地面，附近的敌人 5 秒都冲它去（每关一次）']] },
-  { id: 15, name: '胡轸', sub: '拦路将 · 董卓都督胡轸挡在汜水关前', kind: 'duel', boss: 'huzhen', hpMul: 1.35, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '熟铁 · 兵书残卷',
+  { id: 15, name: '胡轸', sub: '拦路将 · 董卓都督胡轸挡在汜水关前', kind: 'duel', boss: 'huzhen', hpMul: 2.637, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '熟铁 · 兵书残卷',
     moves: ['heavy', 'summon', 'combo', 'heavy', 'buff', 'summon', 'combo'], gap: 3.2, heavy: 6, adds: [['xiliang', 5]],
     tips: [[1, '斗将：胡轸双刀连斩，砍两下，盾要举两次'], [12, '张飞的一喝能喝晕他，打断蓄势']] },
   { id: 16, name: '汜水关强攻', sub: '关隘 · 城头装上连弩，西凉弓骑来回骚扰', hpMul: 1.447, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '牛筋',
@@ -454,20 +455,20 @@ const LEVELS = [
     waves: [[2, 'xiliang', 22, 8, 'rand'], [10, 'xiliang', 20, 0, 'wedge'], [18, 'tieqi', 6, 5, 'rand'], [24, 'xiliang', 30, 10, 'rand'], [34, 'xiliang', 24, 0, 'line'],
       [40, 'tieqi', 8, 6, 'rand'], [48, 'xiaowei', 1, 0, 'rand', { g: 'a', lead: true }], [48, 'xiliang', 28, 8, 'rand', { g: 'a' }], [58, 'xiliang', 32, 10, 'rand']],
     tips: [[1, '潘凤隔一阵就扛斧冲出去：三成一斧劈倒一片，七成被打回来'], [5, '护住他到最后——他倒了就输']] },
-  { id: 19, name: '关前叫阵', sub: '汜水关下 · 华雄在城下叫骂', hpMul: 2.302, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '熟铁',
+  { id: 19, name: '关前叫阵', sub: '汜水关下 · 华雄在城下叫骂', hpMul: 2.548, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '熟铁',
     waves: [[2, 'xiliang', 22, 8, 'rand'], [8, 'tieqi', 6, 4, 'rand'], [10, 'huaxiongT', 1, 0, 'rand'], [16, 'xiliang', 24, 0, 'wedge'], [24, 'tieqi', 8, 6, 'rand'], [30, 'xiliang', 30, 10, 'rand'],
       [40, 'tieqi', 10, 6, 'line'], [46, 'xiaowei', 1, 0, 'rand', { g: 'a', lead: true }], [46, 'xiliang', 28, 8, 'rand', { g: 'a' }], [56, 'xiliang', 30, 10, 'rand']],
     tips: [[1, '西凉兵来攻关'], [9, '华雄来叫阵了：他叫骂时武将普攻慢一半——用张飞的一喝把他喝回去']] },
-  { id: 20, name: '华雄', sub: '大战 · 温酒斩华雄', kind: 'duel', boss: 'huaxiong', hpMul: 1.08, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '温酒 · 关羽可学「温酒斩」',
+  { id: 20, name: '华雄', sub: '大战 · 温酒斩华雄', kind: 'duel', boss: 'huaxiong', hpMul: 2.109, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '温酒 · 关羽可学「温酒斩」',
     moves: ['heavy', 'summon', 'buff', 'heavy', 'guard', 'summon', 'heavy'], gap: 3, heavy: 15, adds: [['tieqi', 3]],
     tips: [[1, '华雄：大刀重斩要举盾，骁骑突袭召铁骑'], [10, '「关前死守」是护罩：伤害减半，用一喝把他喝晕就破']] },
   // ---------- 三 · 虎牢关（21–30） ----------
-  { id: 21, name: '虎牢关下', sub: '关隘 · 董卓的飞熊军守关', hpMul: 2.67, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '铁鳞甲材料',
+  { id: 21, name: '虎牢关下', sub: '关隘 · 董卓的飞熊军守关', hpMul: 2.809, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '铁鳞甲材料',
     rules: { pass: true },
     waves: [[2, 'xiliang', 22, 8, 'rand'], [8, 'feixiong', 3, 3, 'rand'], [14, 'xiliang', 24, 0, 'wedge'], [20, 'feixiong', 4, 4, 'rand'], [26, 'xiliang', 30, 10, 'rand'], [36, 'feixiong', 6, 5, 'line'],
       [42, 'xiaowei', 1, 0, 'rand', { g: 'a', lead: true }], [42, 'xiliang', 26, 0, 'line', { g: 'a' }], [50, 'feixiong', 6, 6, 'rand'], [58, 'xiliang', 30, 10, 'rand']],
     tips: [[1, '飞熊军全身重甲：伤害 -30%，晕得短'], [6, '招式攒着，等飞熊军走近了一起打']] },
-  { id: 22, name: '方悦、穆顺', sub: '虎牢关前 · 吕布的狼骑冲阵', hpMul: 2.849, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '铁鳞甲材料',
+  { id: 22, name: '方悦、穆顺', sub: '虎牢关前 · 吕布的狼骑冲阵', hpMul: 3.489, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '铁鳞甲材料',
     rules: { flags: [[110, 330, '方悦'], [250, 330, '穆顺']] },
     waves: [[2, 'langqi', 5, 0, 'line'], [8, 'xiliang', 20, 8, 'rand'], [14, 'langqi', 6, 0, 'line'], [20, 'xianzhen', 10, 6, 'rand'], [28, 'langqi', 8, 0, 'wedge'], [34, 'xiliang', 26, 10, 'rand'],
       [42, 'gaoshun', 1, 0, 'rand', { g: 'a', lead: true }], [42, 'xianzhen', 16, 0, 'line', { g: 'a' }], [50, 'langqi', 10, 0, 'line'], [58, 'xiliang', 28, 10, 'rand']],
@@ -477,19 +478,19 @@ const LEVELS = [
     waves: [[2, 'langqi', 6, 0, 'line'], [8, 'xiliang', 22, 8, 'rand'], [16, 'feixiong', 4, 4, 'rand'], [22, 'langqi', 8, 0, 'wedge'], [30, 'xiliang', 28, 10, 'rand'], [38, 'feixiong', 5, 5, 'rand'],
       [46, 'langqi', 10, 0, 'line'], [54, 'xiliang', 30, 10, 'rand']],
     tips: [[1, '残局：城防只剩七成，武安国在场中苦战'], [6, '武安国会砍身边的敌人，护着他能少挨不少']] },
-  { id: 24, name: '救公孙瓒', sub: '虎牢关前 · 吕布追杀公孙瓒，燕人张翼德在此', hpMul: 4.302, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '张飞可学「燕人咆哮」',
+  { id: 24, name: '救公孙瓒', sub: '虎牢关前 · 吕布追杀公孙瓒，燕人张翼德在此', hpMul: 5.269, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '张飞可学「燕人咆哮」',
     rules: { timed: { t: 60, label: '拖住吕布', text: '拖住了吕布', sub: '公孙瓒脱险' } },
     waves: [[2, 'lvbuR', 1, 0, 'rand'], [4, 'langqi', 6, 0, 'line'], [12, 'xiliang', 22, 8, 'rand'], [20, 'langqi', 8, 0, 'wedge'], [28, 'xiliang', 26, 10, 'rand'], [38, 'langqi', 10, 0, 'line'], [46, 'xiliang', 28, 10, 'rand']],
     tips: [[1, '吕布打不死！他隔一阵冲阵砸城——用张飞的一喝把他喝退'], [8, '拖满 60 秒，公孙瓒就脱险了']] },
   { id: 25, name: '李傕', sub: '拦路将 · 李傕带飞熊军拦路', kind: 'duel', boss: 'lijue', hpMul: 1.73, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '西凉马鬃 · 兵书残卷',
     moves: ['heavy', 'summon', 'heal', 'heavy', 'buff', 'summon'], gap: 3.2, heavy: 15, adds: [['feixiong', 1], ['xiliang', 3]],
     tips: [[1, '李傕：横刀要举盾，劫掠是回血——用一喝打断'], [10, '召出来的飞熊军皮厚，招式攒着打']] },
-  { id: 26, name: '冲车撞关', sub: '虎牢关下 · 推冲车撞开关门', hpMul: 1.956, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '熟铁 · 硫磺',
+  { id: 26, name: '冲车撞关', sub: '虎牢关下 · 推冲车撞开关门', hpMul: 2.934, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '熟铁 · 硫磺',
     rules: { pass: true, cart: { kind: 'ram', dmgX: .5, hp: 220, y0: 470, y1: 200, dur: 80, okText: '撞开关门', okSub: '虎牢关破', lose: '冲车被毁' } },
     waves: [[2, 'xiliang', 22, 8, 'rand'], [8, 'feixiong', 3, 3, 'rand'], [14, 'xiliang', 24, 0, 'wedge'], [22, 'feixiong', 4, 4, 'rand'], [28, 'xiliang', 30, 10, 'rand'], [38, 'feixiong', 5, 5, 'rand'],
       [46, 'xiliang', 28, 8, 'rand'], [54, 'feixiong', 6, 6, 'rand'], [60, 'xiliang', 30, 10, 'rand']],
     tips: [[1, '这一关往外推：冲车慢慢往关门推，推到头就赢'], [6, '敌人会去砍冲车，先打冲车边上的']] },
-  { id: 27, name: '火烧洛阳', sub: '洛阳废墟 · 董卓迁都，西凉兵追杀百姓', hpMul: 3.722, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'ruins', reward: '刘备可学「仁德」',
+  { id: 27, name: '火烧洛阳', sub: '洛阳废墟 · 董卓迁都，西凉兵追杀百姓', hpMul: 4.559, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'ruins', reward: '刘备可学「仁德」',
     waves: [[2, 'baixing', 6, 6, 'rand'], [4, 'xiliang', 14, 8, 'rand'], [12, 'baixing', 8, 8, 'rand'], [14, 'xiliang', 20, 0, 'wedge'], [22, 'baixing', 8, 8, 'rand'], [24, 'xiliang', 26, 10, 'rand'],
       [34, 'baixing', 10, 8, 'rand'], [36, 'gongqi', 6, 5, 'rand'], [44, 'baixing', 8, 8, 'rand'], [46, 'xiliang', 28, 10, 'rand'], [56, 'xiliang', 30, 10, 'rand']],
     tips: [[1, '百姓往城门跑：进了城算救下'], [5, '招式打到百姓算误伤；西凉兵追上百姓会砍倒他们']] },
@@ -498,14 +499,14 @@ const LEVELS = [
     waves: [[2, 'xiliang', 22, 8, 'rand'], [8, 'gongqi', 4, 4, 'rand'], [14, 'xiliang', 24, 0, 'wedge'], [22, 'gongqi', 6, 5, 'rand'], [28, 'xiliang', 30, 10, 'rand'], [38, 'tieqi', 8, 6, 'rand'],
       [46, 'xiliang', 28, 8, 'rand'], [54, 'gongqi', 8, 6, 'rand'], [60, 'xiliang', 30, 10, 'rand']],
     tips: [[1, '场上三口井：一边守，一边点井，每口点三下'], [5, '其中一口有传国玉玺']] },
-  { id: 29, name: '三英会合', sub: '虎牢关前 · 三路同时来', hpMul: 3.077, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '熟铁 · 兵书',
+  { id: 29, name: '三英会合', sub: '虎牢关前 · 三路同时来', hpMul: 3.769, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '熟铁 · 兵书',
     waves: [[2, 'langqi', 6, 6, 'rand', { lane: 'L' }], [2, 'xiliang', 14, 8, 'rand', { lane: 'M' }], [2, 'xianzhen', 8, 6, 'rand', { lane: 'R' }],
       [16, 'feixiong', 4, 4, 'rand', { lane: 'M' }], [18, 'langqi', 8, 6, 'rand', { lane: 'R' }], [20, 'xiliang', 18, 8, 'rand', { lane: 'L' }],
       [32, 'xianzhen', 12, 6, 'rand', { lane: 'L' }], [34, 'xiliang', 22, 10, 'rand', { lane: 'R' }], [36, 'langqi', 10, 6, 'rand', { lane: 'M' }],
       [48, 'gaoshun', 1, 0, 'rand', { g: 'a', lead: true, lane: 'M' }], [48, 'xianzhen', 16, 8, 'rand', { g: 'a', lane: 'M' }], [50, 'feixiong', 5, 5, 'rand', { lane: 'L' }], [52, 'langqi', 10, 6, 'rand', { lane: 'R' }],
       [62, 'xiliang', 30, 10, 'rand']],
     tips: [[1, '三路同时来：左路狼骑、中路西凉兵、右路陷阵营'], [46, '高顺带陷阵营走中路，斩他溃散']] },
-  { id: 30, name: '吕布', sub: '大战 · 三英战吕布', kind: 'duel', boss: 'lvbu', hpMul: 1.34, sanying: true, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '战鼓（法宝）· 第一章突破',
+  { id: 30, name: '吕布', sub: '大战 · 三英战吕布', kind: 'duel', boss: 'lvbu', hpMul: 2.094, sanying: true, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '战鼓（法宝）· 第一章突破',
     moves: ['heavy', 'combo', 'guard', 'rush', 'buff', 'combo', 'heavy', 'rush'], gap: 3, heavy: 11, adds: [['langqi', 3]],
     tips: [[1, '三英战吕布：三人都在出手顺序里时，每第三次出招多一记合击'], [8, '画戟横扫砍两下，盾要举两次；无双是护罩，喝晕才破']] },
 ];
@@ -562,10 +563,17 @@ const EXPECT = (() => { const r = { guan: { lv: 1, exp: 0 }, zhang: { lv: 1, exp
 //            「要给玩家明显的感觉，他还差一些物品升级某个技能，要等第二天甚至几天才能得到，激励持续上线」；设计、推演见 ../设计/第一章设定.md 5.6） ----------
 // 时间公平：每天能拿的有上限、人人一样，多玩不多拿；漏掉的天点卯、军务最多补两天；掉落是定数，没有随机。
 const IKEY = `sgz.${SAVE_NS}.inv`, DKEY = `sgz.${SAVE_NS}.daily`;
-const ITEMS = { 精铁: '打兵器', 残页: '招式开封（只从军务来）', 将印: '觉醒', 陨铁: '陨铁：天外落下的铁，兵器 +2 起每级要一块（出外探访、募集粮草攒机缘换来）' };   // 10-25 夜「神兵材料」改名「陨铁」   // 10-25 用户看了军帐：「好复杂」——甲片、马鬃（甲胄、坐骑）和军需（温酒、符水）都砍了，只留卡关要的；同日加神兵材料
-const ITEM_C = { 精铁: '#c9cdd2', 残页: '#f0d9a0', 将印: '#e2563a', 陨铁: '#8fe8ff' };
+const ITEMS = { 精铁: '打兵器', 残页: '研习招式（军务、杂务给）', 将印: '觉醒', 陨铁: '陨铁：天外落下的铁，兵器 +2 起每级要一块（出外探访、募集粮草攒机缘换来）' };   // 10-25 夜「神兵材料」改名「陨铁」   // 10-25 用户看了军帐：「好复杂」——甲片、马鬃（甲胄、坐骑）和军需（温酒、符水）都砍了，只留卡关要的；同日加神兵材料
+const ITEM_TIP = {                                                                   // 悬停说明：第一行名字，下面用途、来源（10-26 用户嫌原来的「很口语很儿戏，不像游戏」）
+  精铁: '精铁\n百炼之铁，锻造兵器所需\n来源：点卯、征战、出外探访、日常杂务',
+  残页: '兵书残页\n研习招式进阶所需\n来源：打法军务、日常杂务',
+  将印: '将印\n大将之印，可令一员武将觉醒\n来源：每周完成十道军务',
+  陨铁: '陨铁\n天外陨铁，兵器二阶以上锻造所需\n来源：出外探访积累机缘',
+  体力: '体力\n日常杂务每项消耗十点\n每五分钟恢复一点，上限一百二十' };
+const ITEM_C = { 精铁: '#c9cdd2', 残页: '#f0d9a0', 将印: '#e2563a', 陨铁: '#8fe8ff', 体力: '#9be0a0' };
+const WPN_IRON = [8, 20, 30, 40, 50];                                                // 兵器 +1…+5 各要多少精铁：天天玩的约第 1、4、7、10、14 天攒够，正好赶上第 5、15、20、25、30 关的斗将
 const UPS = {                                                                        // 能打造、开封的东西：每级要什么、做什么
-  wpn:    { name: '兵器', max: 5, cost: k => k >= 2 ? { 精铁: 4 * k, 陨铁: 1 } : { 精铁: 4 * k }, desc: k => `普攻、招式 +${5 * k}%` },   // 10-25 用户：「神兵材料是升级武器的要素」
+  wpn:    { name: '兵器', max: 5, cost: k => k >= 2 ? { 精铁: WPN_IRON[k - 1], 陨铁: 1 } : { 精铁: WPN_IRON[k - 1] }, desc: k => `普攻、招式 +${12 * k}%` },   // 10-26 用户：「神兵不能那么容易升级，必须和卡关卡同步」——每级 +12%、精铁 8/20/30/40/50   // 10-25 用户：「神兵材料是升级武器的要素」
   liu2:   { name: '双股剑 · 剑印', gen: 'liu', max: 1, cost: () => ({ 残页: 6 }), desc: () => '砍中的定住 4 秒：走不动、放不了箭、施不了法' },
   guan2:  { name: '青龙斩 · 龙鳞破甲', gen: 'guan', max: 1, cost: () => ({ 残页: 12 }), desc: () => '扫过的 4 秒内盾和甲都失效、多受 20%' },
   zhang2: { name: '当阳一喝 · 怒雷', gen: 'zhang', max: 1, cost: () => ({ 残页: 18 }), desc: () => '喝完城前留一道火沟烧 4 秒：走进去着火、慢一半，骑兵落马' },
@@ -578,9 +586,9 @@ const GATE_WHY = { 5: '邓茂挺枪护身：兵器不够利，砍不进去', 9: 
   15: '胡轸双刀连斩：兵器要再利一层', 20: '华雄关前死守、护罩厚：兵器要 +3 才砍得破', 22: '并州狼骑成群冲阵：要怒雷火沟把骑兵掀下马',
   25: '李傕的护罩更厚：兵器要 +4', 27: '西凉兵追砍百姓：要剑印终阶把追兵定住', 30: '吕布：兵器 +5，还要一人觉醒' };
 // 开战时军师提一句（10-26 不再拦关）：短句，一行卷轴放得下
-const GATE_SAY = { 5: '邓茂甲厚，兵器不到 +1 砍不动他', 9: '术士给兵回血，先开封刘备的剑印', 11: '西凉兵举盾，先开封关羽的龙鳞破甲',
-  15: '胡轸刀快，兵器最好先到 +2', 20: '华雄护罩厚，兵器要到 +3', 22: '狼骑成群，先开封张飞的怒雷',
-  25: '李傕护罩更厚，兵器要到 +4', 27: '追兵砍百姓，先开封剑印终阶', 30: '吕布？兵器 +5，再觉醒一人' };
+const GATE_SAY = { 5: '邓茂甲厚，兵器不到 +1 砍不动他', 9: '术士给兵回血，先研习刘备的剑印', 11: '西凉兵举盾，先研习关羽的龙鳞破甲',
+  15: '胡轸刀快，兵器最好先到 +2', 20: '华雄护罩厚，兵器要到 +3', 22: '狼骑成群，先研习张飞的怒雷',
+  25: '李傕护罩更厚，兵器要到 +4', 27: '追兵砍百姓，先研习剑印终阶', 30: '吕布？兵器 +5，再觉醒一人' };
 const upAt = id => { const u = {}; for (const [g, req] of Object.entries(GATES)) if (+g <= id) for (const [k, v] of Object.entries(req)) u[k] = Math.max(u[k] || 0, v); return u; };   // 按推荐打到第 id 关时手里有的
 let INV = { it: { 精铁: 0, 残页: 0, 将印: 0, 陨铁: 0 }, up: {}, awake: null, seal20: false, luck: 0 };
 try { const o = JSON.parse(localStorage.getItem(IKEY) || '{}'); INV = { ...INV, ...o, it: { ...INV.it, ...(o.it || {}) }, up: { ...(o.up || {}) } }; } catch (e) {}
@@ -756,8 +764,9 @@ function startLevel(i) {
     G.pow[id] = 1 + .015 * d[1]; G.lead[id] = 1 + .015 * d[0]; G.cdg[id] = 1 / (1 + .008 * d[2]); if (team.includes(id)) { pol = Math.max(pol, d[3]); cha = Math.max(cha, d[4]); } }
   G.wallMax = 100 * (1 + .008 * pol); G.wall = G.wallMax; G.needMul = 1 / (1 + .015 * cha);
   // 打造、开封过的东西（10-25）：机器人按推荐打到这关时该有的算；?all 跳关试玩时，没有的按推荐补上（同等级的规矩）
-  const own = INV.up, exp = upAt(lv.id); G.up = sim ? (window.__sg.noUp ? {} : exp) : window.__sg.all ? Object.fromEntries([...new Set([...Object.keys(own), ...Object.keys(exp)])].map(k => [k, Math.max(own[k] || 0, exp[k] || 0)])) : { ...own };
-  G.upMul = 1 + .05 * (G.up.wpn || 0); G.awake = G.up.awake ? (!sim && INV.awake) || 'guan' : null;
+  const own = INV.up, exp = upAt(lv.id); if (sim && window.__sg.wpnLess && exp.wpn) exp.wpn -= window.__sg.wpnLess;   // wpnLess：推演「兵器差几级」
+  G.up = sim ? (window.__sg.noUp ? {} : exp) : window.__sg.all ? Object.fromEntries([...new Set([...Object.keys(own), ...Object.keys(exp)])].map(k => [k, Math.max(own[k] || 0, exp[k] || 0)])) : { ...own };
+  G.upMul = 1 + .12 * (G.up.wpn || 0); G.awake = G.up.awake ? (!sim && INV.awake) || 'guan' : null;
   G.blocks = 0; G.trenchT = 0; G.logUsed = false; G.nuUsed = false; G.logArm = false; G.nuArm = false; G.lights = []; G.lightN = RU.night ? 3 : 0; G.lightArm = false; G.lightChk = 0;
   if (G.up.liu3) G.st.liuSwords += 2;
   G.wpnNeed = (GATES[lv.id] || {}).wpn || 0;
@@ -844,7 +853,7 @@ function hurt(e, d, src) {
   if (brk) d *= 1.2;
   if (uncountered(T0) && src !== 'burn') d *= UNC_X;                                                                    // 没对症：见下
   if (e.guardT2 > 0) d *= .5;                                                                                           // 斗将护罩
-  if (e.duel && G.wpnNeed && (G.up.wpn || 0) < G.wpnNeed && src !== 'burn') { d *= .5; if (!G.sim && (G.vt || 0) - (e.dullT || -9) > 1.5) { e.dullT = G.vt || 0; G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 110, text: '兵器不够利，砍不进去', size: 15, color: INK }); } }   // 门槛：兵器没精炼到这一关要的级别
+  if (e.duel && G.wpnNeed && (G.up.wpn || 0) < G.wpnNeed && src !== 'burn') { d *= .35;   /* 斗将：兵器没到这关要的那级只打三成半（10-26，原来一半） */ if (!G.sim && (G.vt || 0) - (e.dullT || -9) > 1.5) { e.dullT = G.vt || 0; G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 110, text: '兵器不够利，砍不进去', size: 15, color: INK }); } }   // 门槛：兵器没精炼到这一关要的级别
   const who = WHO[src], big = FOES[e.kind].boss || e.lead;
   if (e.stun > 0 && G.st.daze && src !== 'burn') d *= 1 + G.st.daze;                                                     // 威震
   if (big && who === 'guan') d *= G.st.guanBoss;                                                                          // 斩将
@@ -1508,6 +1517,20 @@ function awardExp(win, stars) {
 // ---------- 画 ----------
 let HITS = [];
 const hit = (x, y, w, h, fn) => HITS.push({ x, y, w, h, fn });
+// 悬停说明（10-26 用户：「鼠标移动上去会有字说明，游戏UI」）：画的时候登记一块区域和一句话，鼠标停在上面就弹一块漆面金边小牌
+let HOVERS = [], MOUSE = null;
+const hov = (x, y, w, h, text) => HOVERS.push({ x, y, w, h, text });
+function drawHoverTip() {
+  if (!MOUSE) return; const h = [...HOVERS].reverse().find(r => MOUSE.x >= r.x && MOUSE.x <= r.x + r.w && MOUSE.y >= r.y && MOUSE.y <= r.y + r.h); if (!h) return;
+  const [title, ...body] = h.text.split('\n'), rows = body.flatMap((l, k) => cardLines(l, 18, 2).map(t => ({ t, dim: k > 0 }))), lines = rows.map(r => r.t);   // 第二句起（来源、恢复）整句淡色，折行也一样 ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
+  ctx.font = `14px ${FONT}`; const t0 = ctx.measureText(title).width; ctx.font = `11px ${PLAIN}`;
+  const tw = Math.max(t0, ...lines.map(l => ctx.measureText(l).width)) + 22, th = 28 + lines.length * 16 + 6;
+  const bx = clamp(h.x + h.w / 2 - tw / 2, 6, W - 6 - tw), by = h.y + h.h + 6 + th < H ? h.y + h.h + 6 : h.y - 6 - th;
+  ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 10; plate(bx, by, tw, th); ctx.shadowBlur = 0;
+  uiText(title, bx + 11, by + 15, 14, UIC.gold2, 'left', FONT, { stroke: false });
+  ctx.fillStyle = 'rgba(217,166,64,.35)'; ctx.fillRect(bx + 10, by + 26, tw - 20, 1);
+  rows.forEach((r, i) => uiText(r.t, bx + 11, by + 38 + i * 16, 11, r.dim ? 'rgba(244,230,196,.6)' : UIC.cream, 'left', PLAIN, { stroke: false })); ctx.restore();
+}
 function txt(s, x, y, size, color = INK, align = 'left', font = FONT, alpha = 1) { ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.font = `${size}px ${font}`; ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillText(s, x, y); ctx.globalAlpha = 1; }
 function inkRect(x, y, w, h, fill = 'rgba(244,238,226,.92)', line = INK, lw = 1.5) {
   ctx.fillStyle = fill; ctx.fillRect(x, y, w, h);
@@ -1521,7 +1544,8 @@ function button(x, y, w, h, label, fn, main) {
 function bar(x, y, w, h, frac, color, back = 'rgba(29,26,23,.15)') {
   ctx.fillStyle = back; ctx.fillRect(x, y, w, h); ctx.fillStyle = color; ctx.fillRect(x, y, w * clamp(frac, 0, 1), h);
 }
-function render() {
+function render() { HOVERS = []; renderScreen(); drawHoverTip(); }
+function renderScreen() {
   HITS = [];
   ctx.setTransform(RS, 0, 0, RS, 0, 0);
   ctx.clearRect(0, 0, W, H);
@@ -3776,8 +3800,9 @@ function drawRoster() {
 const CAMP = { t0: 0, pickAwake: false };
 let GATE = null;
 // 物品图标（ChatGPT 画，img/item_<名>.png）；没到时画一块同色的圆角块写首字
-for (const k of ['精铁', '残页', '将印', '陨铁']) { IMG['item_' + k] = new Image(); IMG['item_' + k].src = 'img/item_' + encodeURIComponent(k) + '.png' + BUST; }
+for (const k of ['精铁', '残页', '将印', '陨铁', '体力']) { IMG['item_' + k] = new Image(); IMG['item_' + k].src = 'img/item_' + encodeURIComponent(k) + '.png' + BUST; }
 function drawItemIcon(k, cx, cy, s) {
+  if (ITEM_TIP[k]) hov(cx - s / 2 - 2, cy - s / 2 - 2, s + 4, s + 4, ITEM_TIP[k]);          // 图标都带悬停说明
   const im = IMG['item_' + k]; if (ready(im)) { const f = s / Math.max(im.width, im.height); ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); return; }
   ctx.fillStyle = ITEM_C[k] || UIC.gold; rr(cx - s * .35, cy - s * .35, s * .7, s * .7, 5); ctx.fill(); uiText(k[0], cx, cy + 1, s * .4, '#2a1a0e', 'center', FONT, { stroke: false });
 }
@@ -3838,9 +3863,9 @@ function drawCamp() {
     Object.entries(tot).forEach(([it, n], j) => { const have = INV.it[it] || 0, yy = 160 + j * 18;
       uiText(`${it} ${Math.min(have, n)}/${n}`, 120, yy, 13, ITEM_C[it], 'right', PLAIN, { stroke: false });
       uiBar('goal_' + it, 130, yy - 4, 150, 8, have / n, '#8a5a14', '#ffd76e', { edge: 'rgba(217,166,64,.55)' }); });
-    if (canUp(key)) pill(W / 2 - 60, 186, 120, 32, key === 'awake' ? '觉醒' : U.gen ? '开封' : '打造', () => { if (key === 'awake') CAMP.pickAwake = true; else { doUp(key); MENU.flash = { key, t0: uiNow() }; } });
+    if (canUp(key)) pill(W / 2 - 60, 186, 120, 32, key === 'awake' ? '觉醒' : U.gen ? '研习' : '打造', () => { if (key === 'awake') CAMP.pickAwake = true; else { doUp(key); MENU.flash = { key, t0: uiNow() }; } });
     else uiText(etaText(d, gl.lack) + (gl.lack.some(([i]) => i === '将印') && !INV.seal20 ? '，再首通第廿关' : ''), W / 2, 204, 17, etaColor(d), 'center', FONT);
-    if (MENU.flash && uiNow() - MENU.flash.t0 < 1.2) { const u = (uiNow() - MENU.flash.t0) / 1.2; ctx.save(); ctx.globalAlpha = 1 - u; uiSeal(W - 58, 108, 34 + 12 * u, UPS[MENU.flash.key].gen ? '封' : '成', UIC.red); ctx.restore(); }
+    if (MENU.flash && uiNow() - MENU.flash.t0 < 1.2) { const u = (uiNow() - MENU.flash.t0) / 1.2; ctx.save(); ctx.globalAlpha = 1 - u; uiSeal(W - 58, 108, 34 + 12 * u, UPS[MENU.flash.key].gen ? '悟' : '成', UIC.red); ctx.restore(); }
   }
   // 今天的军务十二道：打法军务一行一道（点「去打」直接进那一关）；出外探访、日常杂务各一行，一键做完
   const ts = DAILY.tasks.slice().sort((a, b) => a.done - b.done), shown = ts.slice(0, 3);
@@ -3963,7 +3988,7 @@ function drawGate() {
       uiText(`${it} ${Math.min(have, n)}/${n}`, 24, yy, 12, ITEM_C[it], 'left', PLAIN, { stroke: false }); uiBar('g_' + g.key + it, 110, yy - 3, 120, 6, have / n, '#8a5a14', '#ffd76e', { edge: 'rgba(0,0,0,0)' }); });
   });
   const y2 = 168 + lack.length * 70 + 14;
-  uiText(ge.d <= 0 ? '材料够了，去军帐打造、开封就能打' : `还差 ${lackText(ge.lack)}`, W / 2, y2, 15, UIC.cream, 'center', PLAIN);
+  uiText(ge.d <= 0 ? '材料够了，去军帐打造、研习就能打' : `还差 ${lackText(ge.lack)}`, W / 2, y2, 15, UIC.cream, 'center', PLAIN);
   if (ge.d > 0) uiText(etaText(ge.d, ge.lack) + (ge.d >= 1 ? '——明天点卯、做军务再来' : ''), W / 2, y2 + 24, 16, etaColor(ge.d), 'center', FONT);
   pill(40, y2 + 52, 130, 34, '去军帐', () => { screen = 'camp'; GATE = null; });
   pill(190, y2 + 52, 130, 34, '返回', () => { screen = 'menu'; GATE = null; }, false);
@@ -4170,11 +4195,12 @@ function drawMenu() {
   const nt = dailyTick(); if (nt) MENU.note = { ...nt, t0: t };
   // 左上角资料卡：过了几关、几颗星、精铁
   const done = LEVELS.filter(lv => BEST[lv.id]).length, stars = LEVELS.reduce((a, lv) => a + (BEST[lv.id] || 0), 0);
-  { const mg = monthLeft() > 0; if (mg) { ctx.save(); ctx.shadowColor = 'rgba(255,205,100,.75)'; ctx.shadowBlur = 12; } plate(8, 10, 128, 46); if (mg) ctx.restore(); } uiText('第一章 · 群雄逐鹿', 18, 24, fitSize('第一章 · 群雄逐鹿', 13, 108), UIC.gold2, 'left', FONT, { stroke: false });   // 不写「几关、过了几关」这类设计上的数（10-25 夜用户）
-  uiStar(22, 43, 6.5, true); uiText('×' + stars, 32, 43, 11, UIC.cream, 'left', PLAIN, { stroke: false });
-  drawItemIcon('精铁', 66, 43, 16); uiText('×' + (INV.it.精铁 || 0), 76, 43, 11, UIC.cream, 'left', PLAIN, { stroke: false });
-  uiText('体 ' + staNow(), 128, 43, 11, '#9be0a0', 'right', PLAIN, { stroke: false });
-  hit(8, 10, 128, 46, () => { screen = 'camp'; CAMP.t0 = uiNow(); });
+  { const mg = monthLeft() > 0; if (mg) { ctx.save(); ctx.shadowColor = 'rgba(255,205,100,.75)'; ctx.shadowBlur = 12; } plate(8, 10, 176, 46); if (mg) ctx.restore(); } uiText('第一章 · 群雄逐鹿', 18, 24, fitSize('第一章 · 群雄逐鹿', 13, 156), UIC.gold2, 'left', FONT, { stroke: false });   // 不写「几关、过了几关」这类设计上的数（10-25 夜用户）
+  uiStar(20, 43, 6.5, true); uiText(String(stars), 29, 43, 11, UIC.cream, 'left', PLAIN, { stroke: false });       // 10-26 用户：「这个体也用个icon 吧，另外，这个游戏的物品就只有精铁吗？」——星、精铁、残页、陨铁、体力一排
+  [['精铁', INV.it.精铁], ['残页', INV.it.残页], ['陨铁', INV.it.陨铁], ['体力', staNow()]].forEach(([k, n], j) => { const x = 58 + j * 32;
+    drawItemIcon(k, x, 43, 15); uiText(String(n || 0), x + 9, 43, 11, k === '体力' ? '#9be0a0' : UIC.cream, 'left', PLAIN, { stroke: false }); hov(x - 9, 33, 30, 20, ITEM_TIP[k]); });
+  hov(12, 33, 34, 20, `战功星\n各关征战所得，共 ${stars} 颗`);
+  hit(8, 10, 176, 46, () => { screen = 'camp'; CAMP.t0 = uiNow(); });
   // 当前目标卡：下一关、门槛还差什么、出征
   const ni = frontier(), lv = LEVELS[ni], duel = lv.kind === 'duel', cy0 = 440, cw = W - 20;
   plate(10, cy0, cw, 84, true);
@@ -4262,6 +4288,8 @@ function drawLevels() {
 }
 
 // ---------- 输入 ----------
+cv.addEventListener('pointermove', ev => { if (ev.pointerType !== 'mouse') return; const r = cv.getBoundingClientRect(); MOUSE = { x: (ev.clientX - r.left) / S, y: (ev.clientY - r.top) / S }; });   // 悬停说明只给鼠标
+cv.addEventListener('pointerleave', () => { MOUSE = null; });
 cv.addEventListener('pointerdown', ev => {
   if (G && G.ult) return;
   const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) / S, y = (ev.clientY - r.top) / S;
