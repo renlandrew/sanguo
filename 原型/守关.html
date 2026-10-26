@@ -624,6 +624,13 @@ const TASKS = {
   huts:    { ok: lv => !!(lv.rules && lv.rules.huts), text: n => `${n}把草营全烧掉`, check: (r, G) => r.win && G.huts.length && G.huts.every(h => h.burnt) },
   civ:     { ok: lv => (lv.waves || []).some(w => FOES[w[1]].civ), text: n => `${n}救下九成百姓`, check: (r, G) => r.win && G.saved >= G.civTotal * .9 },
   block:   { ok: lv => lv.kind === 'duel', text: n => `${n}举盾挡下三次重击`, check: (r, G) => r.win && (G.blocks || 0) >= 3 },
+  // 按关的打法军务（10-26 补）：护车、护友军、护将旗、夜里省火把、井里捞玉玺
+  cart:    { ok: lv => !!(lv.rules && lv.rules.cart && lv.rules.cart.kind !== 'ram'), text: n => `${n}车驾保住八成`, check: (r, G) => r.win && G.cart && G.cart.hp >= G.cart.max * .8 },
+  ram:     { ok: lv => !!(lv.rules && lv.rules.cart && lv.rules.cart.kind === 'ram'), text: n => `${n}冲车保住一半撞开关门`, check: (r, G) => r.win && G.cart && G.cart.hp >= G.cart.max * .5 },
+  ally:    { ok: lv => !!(lv.rules && lv.rules.ally), text: (n, id) => `${n}${LEVELS.find(l => l.id === id)?.rules.ally.name || '友军'}保住一半血`, check: (r, G) => r.win && G.ally && G.ally.hp >= G.ally.max * .5 },
+  flags:   { ok: lv => !!(lv.rules && lv.rules.flags), text: n => `${n}两面将旗一面不倒`, check: (r, G) => r.win && !G.flagsDown },
+  torch:   { ok: lv => !!(lv.rules && lv.rules.night), text: n => `${n}只点一支火把`, check: (r, G) => r.win && G.lightN >= 2 },
+  seal:    { ok: lv => !!(lv.rules && lv.rules.wells), text: n => `${n}捞出传国玉玺`, check: (r, G) => r.win && G.sealFound },
   ploy:    { ok: lv => lv.id === 12, text: n => `${n}在伏兵杀出时放缓兵之计`, check: (r, G) => r.win && G.adv && G.adv.used && G.adv.cond === 'ambush' },
 };
 const topDmg = G => Object.entries(G.dmgBy || {}).filter(([id]) => G.fighters.includes(id)).sort((a, b) => b[1] - a[1])[0]?.[0];
@@ -3911,7 +3918,7 @@ function drawCamp() {
   shown.forEach((t, k) => { const y = 264 + k * 44, li = LEVELS.findIndex(lv => lv.id === t.lv);
     ctx.save(); if (t.done) ctx.globalAlpha = .5; plate(14, y, W - 28, 40); ctx.restore();
     uiSeal(36, y + 20, 24, CNUM(t.lv), LEVELS[li].kind === 'duel' ? '#8a1c10' : UIC.red);
-    uiText(TASKS[t.k].text(lvName(t.lv)), 56, y + 14, 13, t.done ? 'rgba(244,230,196,.55)' : UIC.cream, 'left', PLAIN, { stroke: false });
+    uiText(TASKS[t.k].text(lvName(t.lv), t.lv), 56, y + 14, 13, t.done ? 'rgba(244,230,196,.55)' : UIC.cream, 'left', PLAIN, { stroke: false });
     uiText('残页 +' + TASK_PAY, 56, y + 30, 10, 'rgba(240,217,160,.6)', 'left', PLAIN, { stroke: false });
     if (t.done) uiSeal(W - 42, y + 20, 26, '毕', UIC.red, true); else pill(W - 92, y + 8, 64, 24, '去打', () => { screen = 'menu'; openLevel(li); });
   });
