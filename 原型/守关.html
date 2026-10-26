@@ -2851,13 +2851,22 @@ function drawNums() {
 }
 // 竖排招名：一笔竖着的墨，上面一个字一个字弹出来（参考录屏里主角旁边的竖条招名）
 const SKC = { guan: ['#a8f0c8', '#0b3a2a'], zhang: ['#ffc08a', '#4a0f08'], liu: ['#bfe3ff', '#0c2a4a'] };
+const SKB_CV = document.createElement('canvas');
+for (const k of ['guan', 'zhang', 'liu']) { IMG['skb_' + k] = new Image(); IMG['skb_' + k].src = 'img/skb_' + k + '.png' + BUST; }
 function drawSkName(f) {
   const u = f.t / f.dur; if (u >= 1) return; const n = f.text.length, gap = 25, h = n * gap + 18, grow = ease(f.t / .14), a = u < .78 ? 1 : 1 - (u - .78) / .22, [fill, edge] = SKC[f.id] || ['#fff', INK];
   // 10-25 用户：「武器都黑了」——字后面那笔竖着的黑墨立在武将头顶，像一根变黑的长兵器；去掉，改成人物颜色的一团淡光托字
-  // 10-25 用户：「背后那个光很好，但应该和字一样高」——光从第一个字顶到最后一个字底，中间一样亮，只在两头 4 像素里淡出
-  const ty0 = f.y - h / 2 + 18 - 19, ty1 = f.y - h / 2 + 18 + (n - 1) * gap + 19, gh = ty1 - ty0, fd = 10 / gh;       // 字所在那段一样亮，上下各多 10 像素淡出（原来淡出拉满整段，光比字长一截）
-  const gl = ctx.createLinearGradient(0, ty0, 0, ty1); gl.addColorStop(0, 'rgba(0,0,0,0)'); gl.addColorStop(fd, fill); gl.addColorStop(1 - fd, fill); gl.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .35 * a * grow; ctx.fillStyle = gl; ctx.fillRect(f.x - 16, ty0, 32, gh); ctx.restore();
+  // 10-25 用户：「这个框再好看点，要比图2更好看，比如上下渐隐？形成剑峰之类的？」——衬一条画的剑形旗带（img/skb_<人>.png：上端剑尖、下端飞白散开、两边细金线），
+  // 从剑尖往下一笔刷出来，刷满后一道高光从上扫到下；没到时退回原来那块和字一样高的光。用户随后让 ChatGPT 重画了一版（里面不挖空、飘带更长），字放在实心那段（上 18%～下 72%）
+  const bim = IMG['skb_' + f.id], ty0 = f.y - h / 2 + 18 - 13, ty1 = f.y - h / 2 + 18 + (n - 1) * gap + 13;
+  if (ready(bim)) { const bh = (ty1 - ty0) * 1.85, bw = Math.min(54, bh * bim.width / bim.height * 1.38), by = ty0 - bh * .18, rv = ease(Math.min(1, f.t / .2));
+    let src = bim; const sp = (f.t - .22) / .35;
+    if (sp > 0 && sp < 1) { const iw = bim.width, ih = bim.height, yy = ih * sp, hb = 26 * ih / bh, g2 = SKB_CV.getContext('2d');   // 高光只扫在旗带本身（离屏画好再贴；直接在主画布上 source-atop 会把背后的地也刷亮，成一块方光板）
+      SKB_CV.width = iw; SKB_CV.height = ih; g2.drawImage(bim, 0, 0); const gr = g2.createLinearGradient(0, yy - hb, 0, yy + hb); gr.addColorStop(0, 'rgba(255,250,225,0)'); gr.addColorStop(.5, 'rgba(255,250,225,.55)'); gr.addColorStop(1, 'rgba(255,250,225,0)');
+      g2.globalCompositeOperation = 'source-atop'; g2.fillStyle = gr; g2.fillRect(0, yy - hb, iw, hb * 2); src = SKB_CV; }
+    ctx.save(); ctx.globalAlpha = a; ctx.beginPath(); ctx.rect(f.x - bw, by, bw * 2, bh * rv); ctx.clip(); ctx.drawImage(src, f.x + 1 - bw / 2, by, bw, bh); ctx.restore(); }
+  else { const gh = ty1 - ty0 + 12, fd = 10 / gh, gl = ctx.createLinearGradient(0, ty0 - 6, 0, ty1 + 6); gl.addColorStop(0, 'rgba(0,0,0,0)'); gl.addColorStop(fd, fill); gl.addColorStop(1 - fd, fill); gl.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .35 * a * grow; ctx.fillStyle = gl; ctx.fillRect(f.x - 16, ty0 - 6, 32, gh); ctx.restore(); }
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
   for (let i = 0; i < n; i++) { const t = f.t - .05 - i * .05; if (t < 0) continue; const p = t < .1 ? 1.6 - .6 * (t / .1) : 1, y = f.y - h / 2 + 18 + i * gap;
     ctx.globalAlpha = a; ctx.font = `${22 * p}px ${FONT}`; ctx.lineWidth = 4; ctx.strokeStyle = edge; ctx.strokeText(f.text[i], f.x + 1, y); ctx.fillStyle = fill; ctx.fillText(f.text[i], f.x + 1, y); }
@@ -3169,7 +3178,8 @@ function drawBattleBtns() {
   if (G.state !== 'play' || G.ult) return;
   ctx.save(); ctx.beginPath(); ctx.arc(W - 17, 54, 11, 0, 6.283); ctx.fillStyle = 'rgba(20,14,10,.85)'; ctx.fill(); ctx.strokeStyle = UIC.gold; ctx.lineWidth = 1.4; ctx.stroke();
   ctx.fillStyle = UIC.cream; ctx.fillRect(W - 21, 49, 3, 10); ctx.fillRect(W - 16, 49, 3, 10); ctx.restore(); hit(W - 30, 42, 26, 26, () => { G.paused = true; });
-  roundBtn(32, 402, 20, '功', '军功', () => { G.panel = true; G.panelAdv = null; MENU.panelT = uiNow(); }, false);
+  const over = G.fx.some(f => f.k === 'skname' && f.t < f.dur && Math.abs(f.x - 32) < 45);              // 最左那员武将出招时，竖排招名的旗带正好落在这颗按钮上：按钮先淡下去让字露出来
+  ctx.save(); if (over) ctx.globalAlpha = .22; roundBtn(32, 402, 20, '功', '军功', () => { G.panel = true; G.panelAdv = null; MENU.panelT = uiNow(); }, false); ctx.restore();
 }
 function drawPause() {
   ctx.fillStyle = 'rgba(8,5,4,.7)'; ctx.fillRect(0, 0, W, H);
