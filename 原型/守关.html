@@ -1029,7 +1029,7 @@ const depth = y => clamp((y - VY) / (WALL_Y - VY), .3, 1.05), persp = y => .6 * 
 const fan = (e, dy) => { if (G.lv.map !== 'canyon') e.x = clamp(e.x + (e.x - VPX) * dy / (e.y - VY), 12, W - 12);   // 往前走就往两边散开，往回退就往中间收
   if (e.sx != null) { e.sx = clamp(e.sx + (e.sx - VPX) * dy / (e.y - VY), 12, W - 12); e.x += (e.sx - e.x) * Math.min(1, Math.abs(dy) / 40); if (Math.abs(e.sx - e.x) < 1) e.sx = null; } };   // 从门里出来的：走出几十步再散到自己那一路
 // 有门、有台阶的背景（10-26 用户圈着驿馆大殿上冒出来的敌人）：敌人从门口那一小段出来，不从屋檐、城楼上冒出来
-const MAP_SPAWN = { yamen: { y: 222, gx: [150, 210] }, luoyang: { y: 202, gx: [160, 200] }, camp: { y: 207, gx: [135, 225] } };
+const MAP_SPAWN = { yamen: { y: 222, gx: [150, 210] }, luoyang: { y: 202, gx: [160, 200] }, camp: { y: 207, gx: [135, 225] }, canyon: { y: 200, gx: [125, 235] } };   // canyon：10-26 新底图山谷地面从 200 才开始，170 出兵像走在远山上（用户圈图）
 const alive = () => G.foes.filter(e => !e.dead && !e.rout);
 
 function step(dt) {
