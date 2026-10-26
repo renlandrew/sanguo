@@ -1619,7 +1619,7 @@ function playUlt(k, foe, force) {
   const m = ULT[k].meta; G.ult = { k, t: 0, dur: m.n / m.fps + .45, foe: !!foe };
 }
 const ULT_HOLD = { zhang: 3 };                                                     // 武将页预览定格在哪一帧（不写就是最后一帧）
-function drawUlt(k, t, dur, foe, hold) {                                                // hold：武将页预览，演完停在最后一帧，等玩家点「退出」才退（hold 是退场已过的秒数，没点时 -1）
+function drawUlt(k, t, dur, foe, hold, label = '觉醒') {                                                // hold：武将页预览，演完停在最后一帧，等玩家点「退出」才退（hold 是退场已过的秒数，没点时 -1）
   if (!ultReady(k)) return; const { im, meta: m } = ULT[k], [col, rgb] = ULT_COL[k];
   const a = hold != null ? (t < .14 ? t / .14 : 1) * (hold >= 0 ? Math.max(0, 1 - hold / .28) : 1) : t < .14 ? t / .14 : t > dur - .28 ? Math.max(0, (dur - t) / .28) : 1, enter = ease(Math.min(1, t / .2)), dir = k === 'zhang' || k === 'lvbu' ? 1 : -1;
   ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
@@ -1632,7 +1632,7 @@ function drawUlt(k, t, dur, foe, hold) {                                        
   ctx.drawImage(im, sx, sy, m.w, m.h, x, y, dw, dh);                                                                    // 人从一侧冲进来
   const name = ULT_NAME[k], tx = dir > 0 ? 44 : W - 44, tu = clamp((t - .18) / .22, 0, 1), ts = 1.5 - .5 * ease(tu);   // 竖排招名，大字砸下来
   ctx.globalAlpha = a * tu; [...name].forEach((c, j) => { ctx.save(); ctx.translate(tx, 150 + j * 64); ctx.scale(ts, ts); uiText(c, 0, 0, 56, col, 'center', FONT, { glow: rgb + '.9)', glowR: 18, lw: 7 }); ctx.restore(); });
-  if (!foe) { ctx.globalAlpha = a * tu * .8; uiText('觉醒', tx, 150 + name.length * 64 + 10, 16, '#f6d27a', 'center', FONT, { lw: 4 }); }
+  if (!foe) { ctx.globalAlpha = a * tu * .8; uiText(label, tx, 150 + name.length * 64 + 10, 16, '#f6d27a', 'center', FONT, { lw: 4 }); }
   ctx.restore();
 }
 // 同一帧的剪影（受击闪白）：先画进一张小画布，再用纯色盖住有像素的地方
@@ -3485,9 +3485,9 @@ const ORG = '上影AI部';                                                      
 const STORY = {
   open: [['story_oath', '', '中平元年，涿郡，桃园。三个人正在结拜。'], ['story_oath', 'liu', '我三人虽然异姓，既结为兄弟……'], ['story_oath', 'guan', '不求同年同月同日生——'], ['story_oath', 'zhang', '但求同年同月同日死！'],
     ['story_bolt', '', '轰——！'], ['story_bolt', '', '老天爷当场就批准了。'],
-    ['story_wake', 'zhang', '……我外卖还没送完。'], ['story_wake', 'guan', '这胡子是真的？我健身卡还剩两年。'], ['story_wake', 'liu', `冷静，先对齐一下信息。我是${ORG}的产品经理，今天在三国主题公园团建。`], ['story_wake', 'guan', `${ORG}？做影音画游戏、全靠AI生成的那个？`],
+    ['story_wake', 'zhang', '……我外卖还没送完。'], ['story_wake', 'guan', '这胡子是真的？我健身卡还剩两年。'], ['story_wake', 'liu', `冷静，先对齐一下信息。我是${ORG}的产品经理，今天在三国主题公园团建。`], ['story_wake', 'zhang', '我也在！我给你们送奶茶来着！'], ['story_wake', 'guan', `${ORG}？做影音画游戏、全靠AI生成的那个？`],
     ['story_wake', 'zhang', '难怪！我刚数了一下，我右手六根手指。'], ['story_wake', 'liu', '……那是你手里还攥着奶茶吸管。'],
-    ['story_wake', 'zhang', '我也在！我给你们送奶茶来着！'], ['story_wake', 'guan', '我在那儿拍视频。然后，一道雷。'], ['story_wake', 'zhang', '这一切，不会是你们部门生成的吧？'], ['story_wake', 'liu', '不可能。我们生成的，起码画风是统一的。'],
+    ['story_wake', 'guan', '我在那儿拍视频。然后，一道雷。'], ['story_wake', 'zhang', '这一切，不会是你们部门生成的吧？'], ['story_wake', 'liu', '不可能。我们生成的，起码画风是统一的。'],
     ['story_wake', 'liu', '所以我们穿越了，还穿成了刘关张。'],
     ['story_wake', 'zhang', '那稳了！三国我熟，游戏里打通过八遍！'],
     ['story_zoujing', '', '马蹄声由远而近，一员将官勒马停在桃园门口。'], ['story_zoujing', 'zoujing', '吾乃幽州校尉邹靖！尔等可是来投军的义勇？'],
@@ -3498,35 +3498,35 @@ const STORY = {
   // 关后剧情（10-26 用户：「故事情节要把第一章全部做完，基本每关结束都要有，总结，然后过渡到下一关」）：首通每一关结算完演一场——这一仗怎么了，再引到下一关。
   // 一句 [图, 谁, 话]；图写 null 的按说话人取立绘（STORY_FACE），旁白和没有立绘的人沿用上一张；人物立绘铺在这一关的战场底图上
   l1: [[null, 'liu', '等等，我手里这两把剑……在发光？'], [null, 'liu', '我脑子里多了个按钮，写着「双股剑」。比我们部门的需求文档好懂多了。'], [null, 'zhang', '啊？这世界还带技能树？'], [null, 'guan', '看来打赢一仗，就能学会一招。'], [null, 'liu', '好，我先上线了。你俩加油。'], [null, 'zoujing', '此乃本校尉调教有方！'], [null, 'zhang', '你全程在后面喊「冲前面」啊。'], ['story_liu', '', '刘备学会了「双股剑」。'], [null, '', '涿县保住了。可黄巾，不止这一路。'], [null, 'zoujing', '县里要募乡勇，你们三个去帮着练！'], [null, 'zhang', '练兵？我电动车驾照都是补考过的。'], ['story_zoujing', '', '告示贴出去三天，来了五百乡勇——和又一拨黄巾。']],
-  l2: [[null, 'guan', '来了。刀身发凉，像有条青龙在动。'], [null, 'guan', '青龙斩。……这一刀，镜头感很足。'], [null, 'liu', '这特效比我们部门AI出的还顺，这话别外传。'], [null, 'zhang', '那我呢？我呢我呢？'], [null, 'liu', '排队。按剧本，你嗓门最大，压轴。'], ['story_guan', '', '关羽学会了「青龙斩」。'], [null, 'jianyong', '玄德！在下简雍，听说你招了乡勇，特来帮忙。'], ['story_liu', 'liu', '（小声）原主的发小。千万别露馅。'], [null, 'jianyong', '玄德今日说话怎么怪怪的？'], [null, 'liu', '……最近在学新词。对齐、拆解、赋能。'], ['story_zhang', '', '探马来报：黄巾大将程远志，带五万人往大兴山来了。'], [null, 'zhang', '五万？我们才五百！'], [null, 'guan', '按剧本，这仗我们赢。']],
-  l3: [[null, 'zhang', '（深吸一口气）哇——！！！'], [null, '', '城下的黄巾兵，倒了一片。'], [null, 'zhang', '卧槽，我一嗓子把人喊晕了？'], [null, 'liu', '当阳一喝。按剧本你要到长坂坡才这么喊，提前了四十回。'], [null, 'zhang', '这波，叫提前上线！'], ['story_zhang', '', '张飞学会了「当阳一喝」。三兄弟，齐了。'], [null, '', '程远志被斩，黄巾溃散。'], [null, 'zoujing', '此乃本校尉……'], [null, 'zhang', '你别说了。'], ['story_liu', '', '没歇两天，青州太守求援：城被黄巾围了。'], [null, 'liu', '按剧本，这仗要埋伏。我来画个饼——不对，画个阵。']],
+  l2: [[null, 'guan', '来了。刀身发凉，像有条青龙在动。'], [null, 'guan', '青龙斩。……这一刀，镜头感很足。'], [null, 'liu', '这特效比我们部门AI出的还顺，这话别外传。'], [null, 'zhang', '那我呢？我呢我呢？'], [null, 'liu', '排队。原著里你嗓门最大，压轴。'], ['story_guan', '', '关羽学会了「青龙斩」。'], [null, 'jianyong', '玄德！在下简雍，听说你招了乡勇，特来帮忙。'], ['story_liu', 'liu', '（小声）原主的发小。千万别露馅。'], [null, 'jianyong', '玄德今日说话怎么怪怪的？'], [null, 'liu', '……最近在学新词。对齐、拆解、赋能。'], ['story_zhang', '', '探马来报：黄巾大将程远志，带五万人往大兴山来了。'], [null, 'zhang', '五万？我们才五百！'], [null, 'guan', '我记得，这仗我们赢。']],
+  l3: [[null, 'zhang', '（深吸一口气）哇——！！！'], [null, '', '城下的黄巾兵，倒了一片。'], [null, 'zhang', '我去，我一嗓子把人喊晕了？'], [null, 'liu', '当阳一喝。原著里你要到长坂坡才这么喊，提前了四十回。'], [null, 'zhang', '这波，叫提前上线！'], ['story_zhang', '', '张飞学会了「当阳一喝」。三兄弟，齐了。'], [null, '', '程远志被斩，黄巾溃散。'], [null, 'zoujing', '此乃本校尉……'], [null, 'zhang', '你别说了。'], ['story_liu', '', '没歇两天，青州太守求援：城被黄巾围了。'], [null, 'liu', '这仗要埋伏。我来画个饼——不对，画个阵。']],
   l4: [['story_liu', '', '两路伏兵一起杀出，青州之围解了。'], [null, 'liu', '复盘一下：埋伏这招，好用。'], [null, 'guan', '（看水里倒影）刚才那一刀，侧脸很稳。'], [null, 'zhang', '二哥，你又在照水。'], [null, 'zoujing', '慢着！大兴山下有个邓茂，挺着长枪拦路，扬言要报仇！'], [null, 'zhang', '单挑？我爱单挑！游戏里我单挑没输过。'], [null, 'liu', '游戏里你是满级。现在你是一级。']],
-  l5: [['story_zhang', '', '邓茂倒下了。'], [null, 'zhang', '这波操作，我能吹一年。'], [null, 'guan', '你举盾那下挺准。'], [null, 'zhang', '嘿嘿，看见红字就点，跟抢单一样。'], ['story_liu', '', '长社城里，皇甫嵩被黄巾围住了。城外，全是草搭的营。'], [null, 'liu', '草营……按剧本，一把火。'], [null, 'zhang', '放火我熟，我天天给人送烧烤。']],
-  l6: [['story_guan', '', '长社大火烧了一夜，黄巾主力退了。'], [null, 'guan', '咳……这烟，对皮肤不好。'], [null, 'liu', '功劳记在皇甫嵩头上。按剧本，我们只是路过。'], ['story_zhang', '', '回程路上，一队官军被黄巾追得满山跑。'], [null, 'zhang', '前面那个胖子是谁？跑得还挺快。'], [null, 'liu', '董卓。……救，还是不救？'], [null, 'guan', '剧本里救了。'], [null, 'liu', '行，那就按需求来。']],
+  l5: [['story_zhang', '', '邓茂倒下了。'], [null, 'zhang', '这波操作，我能吹一年。'], [null, 'guan', '你举盾那下挺准。'], [null, 'zhang', '嘿嘿，看见红字就点，跟抢单一样。'], ['story_liu', '', '长社城里，皇甫嵩被黄巾围住了。城外，全是草搭的营。'], [null, 'liu', '草营……按剧本，一把火。'], [null, 'zhang', '火候我熟，送了三年烧烤，闻烟就知道几分熟。']],
+  l6: [['story_guan', '', '长社大火烧了一夜，黄巾主力退了。'], [null, 'guan', '咳……这烟，对皮肤不好。'], [null, 'liu', '功劳记在皇甫嵩头上。我们只是路过。'], ['story_zhang', '', '回程路上，一队官军被黄巾追得满山跑。'], [null, 'zhang', '前面那个胖子是谁？跑得还挺快。'], [null, 'liu', '董卓。……救，还是不救？'], [null, 'guan', '剧本里救了。'], [null, 'liu', '行，那就按需求来。']],
   l7: [['story_liu', '', '董卓的车驾逃了回去。'], [null, 'dongzhuo', '尔等现居何职？'], [null, 'liu', '白身。'], [null, 'dongzhuo', '哦，白身。（扭头就走）'], [null, 'zhang', '他一句谢谢都没有！我外卖送到还有人说谢谢！'], [null, 'guan', '剧本里他就是这样。忍住。'], ['story_liu', '', '后来，刘备总算当上了安喜县尉。上任没几天，督邮来查账了。'], [null, 'liu', '我有预感，三弟今天要出大事。']],
   l8: [['story_zhang', '', '督邮被绑在拴马桩上，柳条抽断了十几根。'], [null, 'zhang', '让你要好处费！差评！'], [null, 'liu', '三弟……剧本里确实有这段，但你也太投入了。'], [null, 'guan', '官，是当不成了。'], [null, 'liu', '没事，裸辞。正好去广宗，投奔卢植老师打张角。'], ['story_guan', '', '广宗城，由张角的两个弟弟张宝、张梁守着。他们挑夜里出兵。']],
   l9: [['story_liu', '', '火把照到的地方，黄巾一片片倒下。张宝、张梁败走。'], [null, 'luzhi', '玄德，几年不见，用兵大有长进。'], [null, 'liu', '（小声）原主的老师，北中郎将卢植。终于来了个靠谱的。'], [null, 'luzhi', '只是你说话……为何满口「颗粒度」？'], [null, 'liu', '老师，这是……新学的兵法术语。'], ['story_zhangjiao', '', '城中黄雾四起。天公将军张角，亲自出阵了。'], ['story_zhang', 'zhang', 'BOSS 战！我手心出汗了。']],
-  l10: [[null, 'zhangjiao', '那道雷……不是我招的……'], [null, 'zhangjiao', '天门……开了……他们……要来……'], ['story_zhangjiao', 'liu', '等等，谁要来？讲清楚再走啊！'], ['story_zhangjiao', 'zhang', '天门？这设定是不是你们部门哪个提示词写崩了？'], [null, '', '张角没有讲清楚。'], [null, 'guan', '……这剧本，好像不太对。'], ['story_liu', '', '张角死了。黄巾之乱，平了。'], [null, 'liu', '一章打完了，可我心里不踏实。'], [null, 'guan', '他说的天门，是什么？'], [null, 'liu', '不知道。先往下走。'], [null, '', '几年后，洛阳。董卓进京，废立天子，满朝不敢出声。'], [null, '', '有个人揣着一把七星宝刀，进了相府。']],
-  l11: [['story_liu', '', '曹操献刀不成，连夜逃出洛阳。三兄弟在城门边杀散了追兵。'], [null, 'caocao', '多谢三位壮士。敢问尊姓大名？'], [null, 'liu', '刘备，字玄德。（内心：这是曹操！活的！）'], [null, 'guan', '（小声）大哥，表情管理一下。'], [null, 'caocao', '我回陈留发檄文，召天下诸侯讨董。'], [null, 'zhang', '这个我知道！十八路诸侯！'], [null, 'caocao', '……十八路？我还没发呢，你怎么知道是十八路？'], [null, 'zhang', '呃……我猜的。我数学好。']],
+  l10: [[null, 'zhangjiao', '那道雷……不是我招的……'], [null, 'zhangjiao', '天门……开了……他们……要来……'], ['story_zhangjiao', 'liu', '等等，谁要来？讲清楚再走啊！'], ['story_zhangjiao', 'zhang', '天门？这设定是不是你们部门哪个提示词写崩了？'], [null, '', '张角没有讲清楚。'], [null, 'guan', '……这剧本，好像不太对。'], ['story_liu', '', '张角死了。黄巾之乱，平了。'], [null, 'liu', '黄巾这一仗打完了，可我心里不踏实。'], [null, 'guan', '他说的天门，是什么？'], [null, 'liu', '不知道。先往下走。'], [null, '', '几年后，洛阳。董卓进京，废立天子，满朝不敢出声。'], [null, '', '有个人揣着一把七星宝刀，进了相府。']],
+  l11: [['story_liu', '', '曹操献刀不成，连夜逃出洛阳。三兄弟在城门边杀散了追兵。'], [null, 'caocao', '多谢三位壮士。敢问尊姓大名？'], [null, 'liu', '刘备，字玄德。（内心：这是曹操！活的！）'], [null, 'guan', '（小声）大哥，表情管理一下。'], [null, 'caocao', '我回陈留发檄文，召天下诸侯讨董。'], [null, 'zhang', '这个我知道！十八路诸侯！'], [null, 'caocao', '……十八路？我还没发呢，你怎么知道是十八路？'], [null, 'zhang', '猜的！十八，吉利！'], [null, 'caocao', '……那你再猜猜我？']],
   l12: [['story_liu', '', '酸枣大营，十八路诸侯会盟，盟主袁绍。西凉铁骑来袭营，被打退了。'], [null, 'liu', '这会盟，跟我们部门开周会一样：人多，吵，最后谁也不干活。'], [null, 'guan', '我们坐在最末一席。'], [null, 'zhang', '袁绍看我们的眼神，跟看实习生一样。'], ['story_liu', '', '先锋孙坚，已经杀到汜水关下。'], [null, 'liu', '走，去关前看看。按剧本，有人要在这儿出名了。'], [null, 'guan', '是我。']],
-  l13: [['story_liu', '', '关前的西凉兵退回关里。孙坚就在关下扎营。'], [null, 'sunjian', '诸位辛苦。今夜我军守营，你们歇着吧。'], [null, 'zhang', '孙坚人挺好啊。'], [null, 'liu', '（小声）按剧本，他今晚要被华雄偷营。'], [null, 'guan', '要不要提醒他？'], [null, 'liu', '说了他也不信。我们部门提风险，从来没人信。'], ['story_guan', '', '半夜，汜水关门大开。华雄，来了。']],
+  l13: [['story_liu', '', '关前的西凉兵退回关里。孙坚就在关下扎营。'], [null, 'sunjian', '诸位辛苦。今夜我军守营，你们歇着吧。'], [null, 'zhang', '孙坚人挺好啊。'], [null, 'liu', '（小声）我记得，他今晚要被华雄偷营。'], [null, 'guan', '要不要提醒他？'], [null, 'liu', '说了他也不信。我们部门提风险，从来没人信。'], ['story_guan', '', '半夜，汜水关门大开。华雄，来了。']],
   l14: [['story_liu', '', '祖茂戴着孙坚的赤帻引开追兵，孙坚这才逃了出来。'], [null, 'sunjian', '这顶赤帻送你们。没有它，我今夜就交代了。'], [null, 'guan', '红头巾。……配我的绿袍，有点撞色。'], [null, 'zhang', '二哥，命要紧还是穿搭要紧？'], [null, 'guan', '都要紧。'], ['story_zhang', '', '天一亮，董卓的都督胡轸，提着双刀到了关前。']],
   l15: [['story_zhang', '', '胡轸的双刀落在地上。'], [null, 'zhang', '这个人，剧本里有吗？'], [null, 'liu', '演义里一笔带过。现实里，打得我手都酸了。'], [null, 'guan', '剧本省掉的地方，都是真的仗。'], ['story_zhang', '', '联军要强攻汜水关。城头装上了连弩，西凉弓骑在关前来回绕。'], [null, 'zhang', '连弩！终于有远程武器了！']],
   l16: [['story_liu', '', '汜水关没攻下来，可西凉弓骑被打怕了，不敢再出关。'], [null, '', '华雄在关下连斩联军数将。中军帐里，没人说话。'], [null, 'liu', '到点了。二弟，你的高光时刻。'], [null, 'guan', '（整理胡子）我准备好了。'], [null, 'caocao', '这位将军且慢。来，饮了这杯热酒再去。'], [null, 'guan', '酒且斟下，某去便来。'], [null, 'zhang', '二哥你台词背得好熟！'], [null, 'guan', '拍视频练过。']],
-  l17: [['story_liu', '', '关羽正要出帐，袁绍一拍桌子：「我有上将潘凤，可斩华雄！」'], [null, 'zhang', '潘凤？无双上将？'], [null, 'liu', '（小声）按剧本，他上去就没了。'], [null, 'guan', '那酒……先放着。'], ['story_zhang', '', '潘凤扛着大斧出了营门。三兄弟只好跟去关前接应。']],
-  l18: [['story_zhang', '', '潘凤的大斧丢在了关前。人，被抬了回来。'], [null, 'zhang', '还活着！剧本偏航了！'], [null, 'liu', '偏航好。今天这个偏航，是我们打出来的。'], [null, 'guan', '大斧挺沉，留着用。'], ['story_guan', '', '华雄在关下叫骂了一整天，骂声都传进了中军帐。'], [null, 'guan', '我去。这回，谁也别拦。']],
+  l17: [['story_liu', '', '关羽正要出帐，袁绍一拍桌子：「我有上将潘凤，可斩华雄！」'], [null, 'zhang', '潘凤？无双上将？'], [null, 'liu', '（小声）原著里，他上去就没了。'], [null, 'guan', '那酒……先放着。'], ['story_zhang', '', '潘凤扛着大斧出了营门。三兄弟只好跟去关前接应。']],
+  l18: [['story_zhang', '', '潘凤的大斧丢在了关前。人，被抬了回来。'], [null, 'zhang', '还活着！剧本偏航了！'], [null, 'liu', '偏航好。今天这个偏航，是我们打出来的。'], [null, 'guan', '大斧挺沉，留着用。'], ['story_guan', '', '华雄在关下叫骂，骂声都传进了中军帐。'], [null, 'guan', '我去。这回，谁也别拦。']],
   l19: [[null, 'huaxiong', '关东鼠辈！还有谁敢出来！'], [null, 'guan', '我。'], [null, 'huaxiong', '你是何人？'], [null, 'guan', '马弓手，关羽。'], [null, 'huaxiong', '一个马弓手，也敢来送死？'], [null, 'liu', '（小声）三，二，一……']],
-  l20: [['story_guan', '', '关羽提着华雄的头，回到帐中。'], [null, '', '那杯酒，还是温的。'], [null, 'guan', '（举杯）这个镜头，我等了很多年。'], [null, 'liu', '这条要是发出去，播放量破亿。'], [null, 'zhang', '二哥！帅炸了！'], ['story_zhang', '', '汜水关破了。董卓退守虎牢关，派出了飞熊军。'], [null, 'zhang', '虎牢关……那不就是……'], [null, 'liu', '对。吕布在那儿。']],
-  l21: [['story_zhang', '', '飞熊军退回关里。关门上，竖起一面「吕」字大旗。'], [null, 'zhang', '我心跳好快。是激动，不是怕。'], [null, 'guan', '都一样。'], ['story_liu', '', '吕布的狼骑冲出关来。方悦、穆顺先后出阵迎战。'], [null, 'liu', '按剧本，这两位撑不了多久。我们得在边上兜着。']],
+  l20: [['story_guan', '', '关羽提着华雄的头，回到帐中。'], [null, '', '那杯酒，还是温的。'], [null, 'caocao', '这酒，我让伙房热了三回。'], [null, 'guan', '（举杯）这个镜头，我等了很多年。'], [null, 'liu', '这条要是发出去，播放量破亿。'], [null, 'zhang', '二哥！帅炸了！'], [null, 'zoujing', '（远处）此乃本校尉当年调教——'], [null, 'zhang', '他怎么跟到这儿了？'], ['story_zhang', '', '汜水关破了。董卓退守虎牢关，派出了飞熊军。'], [null, 'zhang', '虎牢关……那不就是……'], [null, 'liu', '对。吕布在那儿。']],
+  l21: [['story_zhang', '', '飞熊军退回关里。关门上，竖起一面「吕」字大旗。'], [null, 'zhang', '我心跳好快。是激动，不是怕。'], [null, 'guan', '都一样。'], [null, 'zhang', '吕布？我游戏里一刀一个！'], [null, 'liu', '游戏里你开了修改器。'], ['story_liu', '', '吕布的狼骑冲出关来。方悦、穆顺先后出阵迎战。'], [null, 'liu', '原著里这两位撑不了多久。我们得在边上兜着。']],
   l22: [['story_liu', '', '狼骑冲了三阵，被三兄弟死死挡住。'], [null, 'liu', '方悦、穆顺都抢回来了，伤得重，但都活着。'], [null, 'zhang', '又偏航了！我们是不是在改剧本？'], [null, 'guan', '改剧本的，好像不止我们。'], [null, 'liu', '什么意思？'], [null, 'guan', '刚才那些狼骑，眼睛是红的。'], ['story_guan', '', '北海武安国，扛着铁锤冲了上去。']],
-  l23: [['story_liu', '', '武安国还是断了一臂，被抢了回来。'], [null, 'liu', '有些剧情，改不动。'], [null, 'zhang', '（握拳）下一个是谁？'], ['story_liu', '', '吕布亲自出关，一路追杀公孙瓒。'], [null, 'liu', '公孙瓒，我老同学。……原主的。'], [null, 'zhang', '该我上线了！「燕人张翼德在此」——这句我练了一路！']],
+  l23: [['story_liu', '', '武安国还是断了一臂，被抢了回来。'], [null, 'guan', '那锤子少说八十斤。他核心是真稳。'], [null, 'liu', '有些剧情，改不动。'], [null, 'zhang', '（握拳）下一个是谁？'], ['story_liu', '', '吕布亲自出关，一路追杀公孙瓒。'], [null, 'liu', '公孙瓒，我老同学。……原主的。'], [null, 'zhang', '该我上线了！「燕人张翼德在此」——这句我练了一路！']],
   l24: [['story_zhang', '', '张飞一嗓子，吕布愣了一下。公孙瓒趁机逃回了营。'], [null, 'gongsun', '玄德，今日多亏你家三弟。'], [null, 'zhang', '不客气！给个五星好评就行！'], [null, 'gongsun', '……五星？'], ['story_guan', '', '董卓派李傕带飞熊军出关，要把联军堵在半路。'], [null, 'guan', '又一个拦路的。']],
   l25: [['story_liu', '', '李傕败走，飞熊军退回了虎牢关。'], [null, 'liu', '关门太厚，硬冲不行。'], [null, 'zhang', '那就造冲车！我送外卖撞过一次小区门禁。'], [null, 'guan', '……然后呢？'], [null, 'zhang', '然后赔了三百。'], ['story_liu', '', '联军连夜赶造冲车。天一亮，撞关。']],
-  l26: [['story_liu', '', '虎牢关的城门，被撞开了一道缝。'], [null, '', '可关里已经空了。董卓烧了洛阳，挟着天子迁往长安。'], [null, 'liu', '他把整座城，当成没用的旧版本删掉了。'], [null, 'guan', '城里还有百姓。'], [null, 'zhang', '西凉兵在追着砍人！走！']],
+  l26: [['story_liu', '', '虎牢关的城门，被撞开了一道缝。'], [null, 'guan', '撞门这镜头我没拍到，能再撞一次吗？'], [null, 'zhang', '门都碎了二哥！'], [null, '', '可关里已经空了。董卓烧了洛阳，挟着天子迁往长安。'], [null, 'liu', '他把整座城，当成没用的旧版本删掉了。'], [null, 'guan', '城里还有百姓。'], [null, 'zhang', '西凉兵在追着砍人！走！']],
   l27: [['story_liu', '', '追兵截住了。百姓一队一队往城外走。'], [null, 'liu', '这一仗没什么战利品，可我觉得最值。'], [null, 'guan', '嗯。'], [null, 'zhang', '大哥，你刚才那句话，挺不像产品经理的。'], [null, 'liu', '……被你发现了。'], ['story_guan', '', '夜里，废墟中一口井，冒出五色毫光。']],
-  l28: [['story_liu', '', '井里捞出一方玉玺。传国玉玺。'], [null, 'liu', '按剧本，这是孙坚捞的。'], [null, 'zhang', '又偏航了！'], [null, 'guan', '玺底下压着一张纸。'], ['story_zhangjiao', '', '纸上没有字，只画着一扇门。和张角临死说的，对得上。'], ['story_liu', 'liu', '天门。'], [null, '', '虎牢关前，吕布回来了。三路兵马，同时杀到。']],
-  l29: [['story_liu', '', '三路都挡住了。'], ['pt_lvbu', '', '烟尘里，一员大将骑着赤兔马，提着方天画戟出了关。'], [null, 'lvbu', '三个人，一起上吧。'], ['story_zhang', 'zhang', '他还挺有礼貌。'], [null, 'guan', '三英战吕布。这一场，全网都在等。'], [null, 'liu', '兄弟们，最后一个需求。上线。']],
-  l30: [['pt_lvbu', '', '吕布拨马退回关里。三英战吕布，没输。'], [null, 'lvbu', '你们三个……不像这个世界的人。'], ['pt_lvbu', 'liu', '你怎么知道？'], [null, 'lvbu', '因为我也见过那扇门。'], [null, '', '吕布没再说下去。'], [null, 'zhang', '又一个话说一半的！这世界的人都这样吗？'], [null, 'guan', '这一章，打完了。'], [null, 'liu', '剧本已经偏得不成样子。可有一件事没变——'], [null, 'liu', '我们三个，还在一起。'], ['story_oath', '', '第一章 · 群雄逐鹿 · 完']],
+  l28: [['story_liu', '', '井里捞出一方玉玺。传国玉玺。'], [null, 'liu', '按剧本，这是孙坚捞的。'], [null, 'zhang', '又偏航了！'], [null, 'guan', '玺底下压着一张纸。'], ['story_zhangjiao', '', '纸上没有字，只画着一扇门。和张角临死说的，对得上。'], ['story_liu', 'liu', '天门。'], [null, '', '虎牢关外，吕布又杀回来了。三路兵马，同时杀到。'], [null, 'liu', '原著里三英战吕布在烧洛阳前头……这集怎么倒着播？']],
+  l29: [[null, '', '卢植派人送来一封信。'], [null, 'luzhi', '（信中）玄德，为师已学会「对齐」，营中诸将甚惧。'], ['story_liu', '', '三路都挡住了。'], ['pt_lvbu', '', '烟尘里，一员大将骑着赤兔马，提着方天画戟出了关。'], [null, 'lvbu', '三个人，一起上吧。'], ['story_zhang', 'zhang', '他还挺有礼貌。'], [null, 'guan', '三英战吕布。这一场，全网都在等。'], [null, 'liu', '兄弟们，最后一个需求。上线。']],
+  l30: [['pt_lvbu', '', '吕布拨马退回关里。三英战吕布，没输。'], [null, 'lvbu', '你们三个……不像这个世界的人。'], ['pt_lvbu', 'liu', '你怎么知道？'], [null, 'lvbu', '因为我也见过那扇门。'], [null, '', '吕布没再说下去。'], [null, 'zhang', '又一个话说一半的！这世界的人都这样吗？'], [null, 'guan', '虎牢关这一仗，打完了。'], [null, 'liu', '剧本已经偏得不成样子。可有一件事没变——'], [null, 'liu', '我们三个，还在一起。'], ['story_oath', '', '第一章 · 群雄逐鹿 · 完']],
 };
 const SPEAK = { liu: ['刘备', '#9ad6ff'], guan: ['关羽', '#7ff0b8'], zhang: ['张飞', '#ff9a6a'], zhangjiao: ['张角', '#e8d27a'], zoujing: ['邹靖', '#f0a070'],
   jianyong: ['简雍', '#a8d8ff'], luzhi: ['卢植', '#d8c8ff'], dongzhuo: ['董卓', '#d08060'], caocao: ['曹操', '#c0a0ff'], sunjian: ['孙坚', '#ff8080'], huaxiong: ['华雄', '#e07050'], gongsun: ['公孙瓒', '#f0f0f0'], lvbu: ['吕布', '#ff6a7a'] };
@@ -3543,16 +3543,18 @@ let STP = null;                                                                 
 const storySeen = k => !!(INV.story && INV.story[k]);
 // 剧情里几句配声效、画面一抖：按句子里的字认
 const THUNDER = [[0, 1], [.95, .75], [1.85, .5]], THUNDER_LEN = 3.2;                                 // 三下雷的时刻、响度（画面白闪跟着它）
+// 剧情里学会招式那一句：演这位武将的大招特写（大招录像），大字招名下写「习得」，配招式声和一声锣；演完才能往下翻（10-26 用户：「学会技能时（剧情中）要有一个特效之类的」）
+const STORY_LEARN = [['学会了「双股剑」', 'liu'], ['学会了「青龙斩」', 'guan'], ['学会了「当阳一喝」', 'zhang']], LEARN_LEN = 2.2;
 const STORY_SFX = [['轰——', 'thunder'], ['马蹄声', 'hooves'], ['哇——！！！', 'zhang']];
 const STORY_KEYS = () => ['open', ...LEVELS.map(l => 'l' + l.id)].filter(k => STORY[k]);
-function storyEnter() { const ln = STORY[STP.key][STP.i]; STP.t0 = uiNow(); const fx = STORY_SFX.find(([w]) => ln[2].includes(w)); STP.fx = fx ? { k: fx[1], t0: uiNow() } : null; if (fx) sfx(fx[1]); }
+function storyEnter() { const ln = STORY[STP.key][STP.i]; STP.t0 = uiNow(); const lr = STORY_LEARN.find(([w]) => ln[2].includes(w)); STP.learn = lr && ultReady(lr[1]) ? { k: lr[1], t0: uiNow() } : null; if (STP.learn) { sfx(lr[1]); sfx('gong'); } const fx = STORY_SFX.find(([w]) => ln[2].includes(w)); STP.fx = fx ? { k: fx[1], t0: uiNow() } : null; if (fx) sfx(fx[1]); }
 // read：阅读模式（系统页「翻看剧情」或网址带 ?story）——点左边往回翻、右边往下翻，一场完了接下一场；不记成看过
 function playStory(key, then, read) { if (!read) { INV.story = { ...(INV.story || {}), [key]: true }; saveInv(); } const lv = LEVELS.find(l => 'l' + l.id === key);
   STP = { key, i: 0, t0: uiNow(), then, prev: null, bg: lv ? lv.map : null, read }; screen = 'story'; storyEnter(); }
 function storyJump(key, last) { if (storyBusy()) return; const lv = LEVELS.find(l => 'l' + l.id === key); STP.prev = STORY[STP.key][STP.i][0]; STP.fadeT = uiNow(); STP.key = key; STP.bg = lv ? lv.map : null; STP.i = last ? STORY[key].length - 1 : 0; storyEnter(); }
 function storyPrev() { if (storyBusy()) return; if (STP.i > 0) { STP.prev = STORY[STP.key][STP.i][0]; STP.i--; STP.fadeT = uiNow(); storyEnter(); STP.t0 = -99; return; }
   const ks = STORY_KEYS(), j = ks.indexOf(STP.key); if (j > 0) { storyJump(ks[j - 1], true); STP.t0 = -99; } }
-const storyBusy = () => STP && STP.fx && STP.fx.k === 'thunder' && uiNow() - STP.fx.t0 < THUNDER_LEN;   // 雷没打完不能翻（10-26 用户：「雷声没打完前不能继续」）
+const storyBusy = () => STP && ((STP.fx && STP.fx.k === 'thunder' && uiNow() - STP.fx.t0 < THUNDER_LEN) || (STP.learn && uiNow() - STP.learn.t0 < LEARN_LEN));   // 雷没打完不能翻（10-26 用户：「雷声没打完前不能继续」）
 function storyNext() { if (storyBusy()) return; const L = STORY[STP.key], ln = L[STP.i], n = [...ln[2]].length, shown = (uiNow() - STP.t0) * 30;
   if (shown < n) { STP.t0 = uiNow() - n / 30 - .01; return; }                       // 还没打完：先打完这句
   if (STP.i + 1 < L.length) { STP.prev = ln[0]; STP.i++; STP.fadeT = uiNow(); storyEnter(); return; }
@@ -3573,6 +3575,7 @@ function drawStory() {
   ctx.fillStyle = '#0c0805'; ctx.fillRect(0, 0, W, H);
   const fu = STP.prev && STP.prev !== k ? clamp((t - STP.fadeT) / .35, 0, 1) : 1;    // 换图时淡入淡出
   if (fu < 1) drawStoryImg(STP.prev, 1); drawStoryImg(k, fu);
+  if (STP.learn) { const hb = HITS.length; drawUlt(STP.learn.k, t - STP.learn.t0, 0, false, -1, '习得'); HITS.length = hb; }   // 学会招式：大招特写盖在剧情图上，停在最后一帧
   const sg = ctx.createLinearGradient(0, 400, 0, H); sg.addColorStop(0, 'rgba(8,5,4,0)'); sg.addColorStop(.35, 'rgba(8,5,4,.85)'); sg.addColorStop(1, 'rgba(8,5,4,.95)'); ctx.fillStyle = sg; ctx.fillRect(0, 400, W, H - 400);
   // 对话框
   const bx = 10, by = 482, bw = W - 20, bh = 132; plate(bx, by, bw, bh);
