@@ -97,6 +97,7 @@ if SHIELD:              # 圆盾：直径 0.6 米的扁圆，中间一个铁泡�
     boss = prim('uv_sphere', IRON, radius=.07, segments=10, ring_count=6, location=(0, -.03, 0))
     rim = prim('cylinder', IRON, radius=.31, depth=.03, vertices=20, location=(0, .006, 0), rotation=(math.pi / 2, 0, 0))
     shield = join([rim, disc, boss])
+    SHIELD_R = shield.matrix_world.to_quaternion().to_matrix().to_4x4()   # 合并后竖起来的那 90° 只在物体旋转里；每帧摆位置时要带上，不然盾倒回平的（10-26 用户：「盾牌都要竖起来，不是和地面平行拿啊」）
 AXR = {'z': (0, 0, 0), '-z': (math.pi, 0, 0), 'x': (0, math.pi / 2, 0), '-x': (0, -math.pi / 2, 0), 'y': (-math.pi / 2, 0, 0), '-y': (math.pi / 2, 0, 0)}[AX]
 E = Euler(AXR).to_matrix().to_4x4()
 
@@ -128,7 +129,7 @@ for a in list(bpy.data.actions):
             if a.name in CARRY: rot = Vector(CARRY[a.name]).normalized().to_track_quat('Z', 'Y').to_matrix().to_4x4()   # 朝向定死，只跟着手走
             else: rot = (arm.matrix_world @ hand_pb.matrix).to_quaternion().to_matrix().to_4x4() @ E                  # 跟着手骨转
             weapon.matrix_world = Matrix.Translation(hand + off) @ rot
-        if shield: shield.matrix_world = Matrix.Translation(lhand + off + Vector((-.04, -.08, 0)))                 # 盾挂在左手前面、面朝镜头
+        if shield: shield.matrix_world = Matrix.Translation(lhand + off + Vector((-.04, -.08, 0))) @ SHIELD_R                 # 盾挂在左手前面、面朝镜头
         bpy.context.view_layer.update()
         sc.render.filepath = os.path.join(out, '%s_%02d.png' % (a.name, i)); bpy.ops.render.render(write_still=True)
 print('渲完', out)
