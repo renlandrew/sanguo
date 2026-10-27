@@ -271,6 +271,7 @@ const GEN = {
   zhang: { name: '张飞', skill: '当阳一喝', cast: .4, desc: '喝退城前的敌人，喝晕一阵', atk: { kind: 'thrust', cd: 1, dmg: 6, range: 220, n: 2 }, sh: 78 },   // 10-25 用户：「张飞没有普攻？」——射程 125→220、伤害 12→6（十关 8 个种子平均星数 2.09→2.11）
   liu:   { name: '刘备', skill: '双股剑', cast: .45, desc: '两剑专砍晕住的敌人，伤害翻倍', atk: { kind: 'qi', cd: 1.2, dmg: 8.5, range: 300 }, sh: 76 },
 };
+for (const h of ['guan', 'zhang', 'liu']) { IMG['mark_' + h] = new Image(); IMG['mark_' + h].src = 'img/mark_' + h + '.png?v=1027'; }
 const HERO_COL = { guan: '#4fd08e', zhang: '#ff6a3a', liu: '#6cbcff' };   // 标记、选中用的人物色
 const CD = 20;   /* 10-27 用户：「大招几秒来一次……基本上就是不断在按……是不是要很久才来一次大招，威力加大……更多伤害给到普攻（武器升级+人物升级）」——7→20 秒；原来招式打 96% 的伤害 */
 const SK_X = 2, ATK_X = 16;   /* 招式每下 ×2、普攻 ×16：普攻扛大半伤害，兵器、武力（普攻吃）升级才显得出 */
@@ -569,7 +570,7 @@ const EXPECT = (() => { const r = { guan: { lv: 1, exp: 0 }, zhang: { lv: 1, exp
 //            「要给玩家明显的感觉，他还差一些物品升级某个技能，要等第二天甚至几天才能得到，激励持续上线」；设计、推演见 ../设计/第一章设定.md 5.6） ----------
 // 时间公平：每天能拿的有上限、人人一样，多玩不多拿；漏掉的天点卯、军务最多补两天；掉落是定数，没有随机。
 const IKEY = `sgz.${SAVE_NS}.inv`, DKEY = `sgz.${SAVE_NS}.daily`;
-const ITEMS = { 精铁: '打兵器', 残页: '研习招式（军务、杂务给）', 将印: '觉醒', 陨铁: '陨铁：天外落下的铁，兵器 +2 起每级要一块（出外探访、募集粮草攒机缘换来）' };   // 10-25 夜「神兵材料」改名「陨铁」   // 10-25 用户看了军帐：「好复杂」——甲片、马鬃（甲胄、坐骑）和军需（温酒、符水）都砍了，只留卡关要的；同日加神兵材料
+const ITEMS = { 精铁: '打兵器', 残页: '研习招式（军务、杂务给）', 将印: '觉醒', 陨铁: '陨铁：天外落下的铁，兵器 +4 起每两级要一块（出外探访、募集粮草攒机缘换来）' };   // 10-25 夜「神兵材料」改名「陨铁」   // 10-25 用户看了军帐：「好复杂」——甲片、马鬃（甲胄、坐骑）和军需（温酒、符水）都砍了，只留卡关要的；同日加神兵材料
 const ITEM_TIP = {                                                                   // 悬停说明：第一行名字，下面用途、来源（10-26 用户嫌原来的「很口语很儿戏，不像游戏」）
   精铁: '精铁\n百炼之铁，锻造兵器所需\n来源：点卯、征战、出外探访、日常杂务',
   残页: '兵书残页\n研习招式进阶所需\n来源：打法军务、日常杂务',
@@ -590,12 +591,12 @@ const UPS = {                                                                   
 // 破题门槛：第一次打这一关之前要有的（重打不拦）
 const GATES = { 5: { wpn: 2 }, 9: { liu2: 1 }, 11: { guan2: 1 }, 15: { wpn: 4 }, 20: { wpn: 6 }, 22: { zhang2: 1 }, 25: { wpn: 8 }, 27: { liu3: 1 }, 30: { wpn: 10, awake: 1 } };
 const GATE_WHY = { 5: '邓茂挺枪护身：兵器不够利，砍不进去', 9: '张宝的术士给黄巾兵回血加速：要剑印把术士定住', 11: '西凉兵正面举盾：要龙鳞破甲把盾破了',
-  15: '胡轸双刀连斩：兵器要再利一层', 20: '华雄关前死守、护罩厚：兵器要 +3 才砍得破', 22: '并州狼骑成群冲阵：要怒雷火沟把骑兵掀下马',
-  25: '李傕的护罩更厚：兵器要 +4', 27: '西凉兵追砍百姓：要剑印终阶把追兵定住', 30: '吕布：兵器 +5，还要一人觉醒' };
+  15: '胡轸双刀连斩：兵器要再利一层', 20: '华雄关前死守、护罩厚：兵器要 +6 才砍得破', 22: '并州狼骑成群冲阵：要怒雷火沟把骑兵掀下马',
+  25: '李傕的护罩更厚：兵器要 +8', 27: '西凉兵追砍百姓：要剑印终阶把追兵定住', 30: '吕布：兵器 +10，还要一人觉醒' };
 // 开战时军师提一句（10-26 不再拦关）：短句，一行卷轴放得下
-const GATE_SAY = { 5: '邓茂甲厚，兵器不到 +1 砍不动他', 9: '术士给兵回血，先研习刘备的剑印', 11: '西凉兵举盾，先研习关羽的龙鳞破甲',
-  15: '胡轸刀快，兵器最好先到 +2', 20: '华雄护罩厚，兵器要到 +3', 22: '狼骑成群，先研习张飞的怒雷',
-  25: '李傕护罩更厚，兵器要到 +4', 27: '追兵砍百姓，先研习剑印终阶', 30: '吕布？兵器 +5，再觉醒一人' };
+const GATE_SAY = { 5: '邓茂甲厚，兵器不到 +2 砍不动他', 9: '术士给兵回血，先研习刘备的剑印', 11: '西凉兵举盾，先研习关羽的龙鳞破甲',
+  15: '胡轸刀快，兵器最好先到 +4', 20: '华雄护罩厚，兵器要到 +6', 22: '狼骑成群，先研习张飞的怒雷',
+  25: '李傕护罩更厚，兵器要到 +8', 27: '追兵砍百姓，先研习剑印终阶', 30: '吕布？兵器 +10，再觉醒一人' };
 const upAt = id => { const u = {}; for (const [g, req] of Object.entries(GATES)) if (+g <= id) for (const [k, v] of Object.entries(req)) u[k] = Math.max(u[k] || 0, v); return u; };   // 按推荐打到第 id 关时手里有的
 let INV = { it: { 精铁: 0, 残页: 0, 将印: 0, 陨铁: 0 }, up: {}, awake: null, seal20: false, luck: 0 };
 try { const o = JSON.parse(localStorage.getItem(IKEY) || '{}'); INV = { ...INV, ...o, it: { ...INV.it, ...(o.it || {}) }, up: { ...(o.up || {}) } }; } catch (e) {}
@@ -1765,6 +1766,8 @@ function drawFoe(e) {
   if (e.shield > 0) { const sx = x, sy = y - top * .45; ctx.globalAlpha = .75; ctx.fillStyle = '#8f877a'; ctx.beginPath(); ctx.ellipse(sx, sy, 6 * ps, 8 * ps, 0, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1; brush(ctx, arcPts(sx, sy, 8 * ps, -2.6, -.5, 8), 1.4, INK, .85, () => 1, 0, vr); }
   if (e.stun > 0) { for (let k = 0; k < 3; k++) { const a = G.t * 6 + k * 2.1, hy = y - top - 4 * ps; blot(ctx, x + Math.cos(a) * 7 * ps, hy + Math.sin(a) * 2.2 * ps, 1.5 * ps, k ? INK : CINNABAR, .85, vr, 7); } }
   { const cols = G.order.filter(Boolean).filter((h, j, a) => a.indexOf(h) === j && ((G.focusBy && G.focusBy[h]) || G.focus) === e).map(h => HERO_COL[h] || CINNABAR);   // 标记：谁盯着他就画谁的颜色，几个人盯就并排几个（10-27 用户：「不同将领也用不同颜色的标记」）
+    const ids = G.order.filter(Boolean).filter((h, j, a) => a.indexOf(h) === j && ((G.focusBy && G.focusBy[h]) || G.focus) === e);
+    if (ids.every(h => ready(IMG['mark_' + h]))) { ids.forEach((h, j) => { const im = IMG['mark_' + h], mh = 22, mw = mh * im.width / im.height, mx = x + (j - (ids.length - 1) / 2) * (mw + 2), my = y - top - 6 * ps - 3 * Math.abs(Math.sin(G.t * 4 + j)); ctx.drawImage(im, mx - mw / 2, my - mh, mw, mh); }); return; }   /* 画的标记旗（img/mark_<人>.png）；没有图时才用下面程序画的三角 */
     cols.forEach((c, j) => { const mx = x + (j - (cols.length - 1) / 2) * 13, my = y - top - 9 * ps - 3 * Math.abs(Math.sin(G.t * 4 + j)); ctx.save(); ctx.beginPath(); ctx.moveTo(mx - 6, my - 9); ctx.lineTo(mx + 6, my - 9); ctx.lineTo(mx, my); ctx.closePath();
       ctx.shadowColor = c; ctx.shadowBlur = 8; ctx.fillStyle = c; ctx.fill(); ctx.shadowBlur = 0; ctx.lineWidth = 1.4; ctx.strokeStyle = '#fff8e8'; ctx.stroke(); ctx.restore(); }); }
   if (T.boss && !e.duel && G.boss !== e) { txt(T.name, x, y - top - 12 * ps, 13, CINNABAR, 'center'); bar(x - 16 * ps, y - top - 4 * ps, 32 * ps, 3, e.hp / e.max, CINNABAR); }   // 场上第二个大将：头顶写名字
@@ -3282,8 +3285,7 @@ function drawSlots() {
       const cd = Math.max(0, G.shieldCd), mv = G.duel.mv, warn = mv && (mv.k === 'heavy' || mv.k === 'combo' || mv.k === 'rush'), on = G.shieldT > 0, pulse = .5 + .5 * Math.sin(now * 18);
       uiPanel(x, y, w, h, { r: 7, top: on ? '#e6b44a' : warn && cd <= 0 ? '#c0402a' : '#3a2b1f', bot: on ? '#8a5a10' : warn && cd <= 0 ? '#6e140c' : UIC.lac,
         glow: on ? 'rgba(255,220,120,.9)' : warn && cd <= 0 ? `rgba(255,90,60,${.5 + .5 * pulse})` : null, glowR: 16 });
-      ctx.save(); ctx.translate(x + w / 2, y + 30); const sg = ctx.createRadialGradient(-4, -6, 2, 0, 0, 20); sg.addColorStop(0, '#a07a4a'); sg.addColorStop(1, '#4a3018'); ctx.fillStyle = sg;
-      ctx.beginPath(); ctx.ellipse(0, 0, 16, 19, 0, 0, 6.283); ctx.fill(); ctx.strokeStyle = UIC.gold; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = UIC.gold2; ctx.beginPath(); ctx.arc(0, 0, 4, 0, 6.283); ctx.fill(); ctx.restore();
+      if (hasProp('shield')) drawProp('shield', x + w / 2, y + 52, 44); else { ctx.save(); ctx.translate(x + w / 2, y + 30); ctx.fillStyle = '#6b5236'; ctx.beginPath(); ctx.arc(0, 0, 18, 0, 6.283); ctx.fill(); ctx.restore(); }   /* 举盾钮用画的木盾（10-27 用户圈着程序画的圆：「不要用svg」） */
       uiText(warn && cd <= 0 && !on ? '快举盾！' : '举盾', x + w / 2, y + h - 13, 15, '#fff2dc', 'center');
       if (cd > 0 && !on) { ctx.save(); ctx.beginPath(); ctx.moveTo(x + w / 2, y + 30); ctx.arc(x + w / 2, y + 30, 24, -Math.PI / 2, -Math.PI / 2 + 6.283 * cd / 4); ctx.closePath(); ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fill(); ctx.restore(); uiText(cd.toFixed(1), x + w / 2, y + 31, 15, '#fff', 'center', PLAIN); }
       hit(x, y, w, h, pressShield); continue;
