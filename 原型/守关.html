@@ -1837,6 +1837,7 @@ function drawBossVfx(k, t, x, y, size, rot = 0, alpha = 1, wx = 1) {
   const C = bvfxFeather(V.im, sx, sy, sw, sh);
   ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = alpha * .95; ctx.drawImage(C, 0, 0, sw, sh, -sw * kk * wx / 2, -sh * kk / 2, sw * kk * wx, sh * kk); ctx.restore();   /* 10-27 用户：「我觉得都要优化一下」——「滤色」叠上去像光，不再是平涂实心块盖住场景；胡轸加亮那层用户说「保持之前的淡更好看」，去掉了 */
 }
+const BVFX_OFF = { huzhen: 1 };   /* 10-27 用户：「不行，有明显的正方形。你还是自己画如何？」——胡轸不用 Veo 录像，回到两把画稿巨刀 */
 let BVFX_C = null;
 function bvfxFeather(im, sx, sy, sw, sh) {                                          // 10-27 用户：「法术两边被截断了，形成长方形」——录像出了画框的地方四边渐隐，不留直边
   if (!BVFX_C) BVFX_C = document.createElement('canvas'); const C = BVFX_C;
@@ -1879,7 +1880,7 @@ function bossBursts(f, C, n, t0, gap, y = WALL_Y - 24) { for (let i = 0; i < n; 
 function drawBossUlt(f) {
   const C = BOSS_FX[f.boss]; if (!C) return; const t = f.t, A = f.blocked ? .55 : 1, cy = WALL_Y - 70;
   const fade = t > 1.1 ? Math.max(0, (1.5 - t) / .4) : 1;
-  const veo = !!BVFX[f.boss]; if (veo) for (const [x, y, sz, rot, d, wx] of BVFX_AT[f.boss]) drawBossVfx(f.boss, t - d, x, y, sz, rot, A, wx);   // Veo 录的法术在最底下，画稿和墨流叠上面
+  const veo = !!BVFX[f.boss] && !BVFX_OFF[f.boss]; if (veo) for (const [x, y, sz, rot, d, wx] of BVFX_AT[f.boss]) drawBossVfx(f.boss, t - d, x, y, sz, rot, A, wx);   // Veo 录的法术在最底下，画稿和墨流叠上面
   if (f.boss === 'dengmao') {                                                       // 一杆巨枪从邓茂身前直扎城头，城头一排炸开
     const p = Math.min(1, t / .18), x1 = f.bx + (W / 2 - f.bx) * p, y1 = f.by + (cy - f.by) * p, rot = Math.atan2(cy - f.by, W / 2 - f.bx) + Math.PI / 2;
     if (!veo) drawTint('spear', C.col, (f.bx + x1) / 2, (f.by + y1) / 2, 160 + 320 * p, rot, A * Math.max(0, 1 - Math.max(0, t - .3) / .3), .8);
@@ -1892,8 +1893,8 @@ function drawBossUlt(f) {
       bossGlow(x, WALL_Y - 20, 90, C.col, .6 * al); }
     bossBursts(f, C, 5, .05, .1);
   } else if (f.boss === 'huzhen') {                                                 // 两道赤红巨刀从两边交叉斩下
-    if (!veo) for (const side of [-1, 1]) { const p = Math.min(1, t / .22), a0 = side < 0 ? -1.2 : 1.2, rot = a0 - side * 2.4 * p, x = W / 2 + side * (140 - 120 * p), y = cy - 60 + 40 * p;
-      drawTint('blade', C.col, x, y, 300, rot, A * fade, .65); }
+    if (!veo) for (const side of [-1, 1]) { const p = Math.min(1, t / .22), a0 = side < 0 ? -1.2 : 1.2, rot = a0 - side * 2.4 * p, x = W / 2 + side * (170 - 120 * p), y = cy - 70 + 40 * p;   // 画得够大，交叉时两头伸到屏幕边上
+      drawTint('blade', C.col, x, y, 420, rot, A * fade * .85, .5, .45); }   // 压扁成细长的刀光，不要两大块红
     bossBursts(f, C, 5, .2, .04);
   } else if (f.boss === 'huaxiong') {                                               // 一刀从天劈下，城前地裂、整排着火
     const p = Math.min(1, t / .16), y = TOP - 80 + (cy - 40 - TOP + 80) * (p * p);
