@@ -116,7 +116,8 @@ for g in (sys.argv[2:] or ['guan', 'zhang', 'liu']):
     cols0 = np.where(m0[feet0 - 14:feet0].any(axis=0))[0]; cx0 = (cols0.min() + cols0.max()) / 2
     k = STAND / fig0; bw0 = body(m0)[0]
     strips, meta = [], {'stand': STAND, 'anims': {}}
-    for anim, (src, idx) in (PLAN[g] if g in FOE else {**{a: (a, i) for a, i in PICK.items()}, **PLAN.get(g, {})}).items():
+    import os; NEWP = os.environ.get('NEWPLAN') == '1'   # 10-27 新画风重录：刘关张不用旧的 PLAN（那是按旧视频挑的帧），照 PICK
+    for anim, (src, idx) in (PLAN[g] if g in FOE else {**{a: (a, i) for a, i in PICK.items()}, **({} if NEWP else PLAN.get(g, {}))}).items():
         if src not in takes: continue
         tid = takes[src].stem; end = END.get(tid, N - 1); cs = cells(takes[src])
         frames = []
@@ -133,7 +134,7 @@ for g in (sys.argv[2:] or ['guan', 'zhang', 'liu']):
         ims = []
         for f in frames:
             im = Image.fromarray(f[y0:y1, x0:x1], 'RGBA').resize((W - 16, H - 16), Image.Resampling.LANCZOS)
-            pad = Image.new('RGBA', (W, H), (0, 0, 0, 0)); pad.paste(im, (8, 8)); ims.append(ink(pad, keep=1, line=3, halo=4))
+            pad = Image.new('RGBA', (W, H), (0, 0, 0, 0)); pad.paste(im, (8, 8)); ims.append(ink(pad, keep=1, line=float(os.environ.get('INK_LINE', 3)), halo=float(os.environ.get('INK_HALO', 4))))   # 10-27 用户嫌吕布「阴影好严重」：新画风重录时 INK_LINE=1 INK_HALO=0
         strips.append((anim, ims, [round((cx - x0) * kk + 8, 1), round((feet - y0) * kk + 8, 1)]))
         print(g, anim, tid, len(ims), '帧', f'{W}x{H}')
     PER = 8                                                                             # 一行最多 8 帧，图集长宽都别超过 4096（手机上贴图边长有上限）
