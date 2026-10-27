@@ -19,14 +19,15 @@ TAIL = (" Strong, dramatic, weighty motion; every limb moves naturally; two arms
 NEG = ("black background, gradient background, dark background, vignette, spotlight, scenery, sky, ground, floor, shadow, "
        "glow, light rays, lightning, sparks, fire, flames, smoke, mist, dust, particles, magic effects, energy, aura, "
        "turning around, back view, extra people, extra weapons, extra arms, extra hands, bending weapon, morphing weapon, snake, "
-       "camera movement, zoom, cut, text, subtitles, watermark, logo, leaving the frame")
+       "camera movement, zoom, cut, jump cut, scene cut, sudden change of pose, teleporting, text, subtitles, watermark, logo, leaving the frame")
 SHOTS = {
     'guan': "Guan Yu lifts the long crescent glaive high, spins it once over his head, then steps forward and cleaves it down diagonally in one huge chop toward the camera, "
             "his green robe and headscarf whipping back. He straightens up, plants the glaive upright beside him with his right hand, "
             "and with his left hand slowly strokes his long black beard downward from chin to chest, calm and proud, eyes half-closed. Hold that pose.",
     'zhang': "Zhang Fei brings the raised spear down, swings it in a big horizontal sweep across the front of the camera, then stamps one foot and thrusts the spear straight at the camera, "
-             "roaring with his mouth wide open, red cloth blasting back. Then he slams the spear butt into the ground, plants his left fist on his hip, "
-             "throws his head back and laughs heartily, shoulders shaking. Hold that pose.",
+             "roaring with his mouth wide open, red cloth blasting back. Then, in the same continuous motion, he slowly pulls the spear back, straightens up, "
+             "stands the spear upright beside him in his right hand, plants his left fist on his hip, throws his head back and laughs heartily, shoulders shaking. Hold that pose. "
+             "One single continuous take, every movement flows smoothly into the next.",   # 10-27 第一版从蹲着跳切到叉腰站立，用户：「重新录」
     'liu': "Liu Bei sweeps the two crossed swords outward in two wide arcs, steps forward and thrusts both swords toward the camera in a fast crossing X, "
            "white sleeves and blue ribbons flowing. Then he draws the swords back, lowers both blades to point down at his sides, "
            "stands tall and gives a slow, dignified nod toward the camera with a gentle, determined smile. Hold that pose.",
