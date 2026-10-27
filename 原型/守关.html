@@ -3432,16 +3432,23 @@ function sfx(k) {
 const MUSIC = { calm: ['home_1', 'home_2', 'camp_1'], war: ['war_1', 'war_2', 'war_3', 'war_4'], duel: ['duel_1'], story: ['story_1'], omen: ['omen_1'] };
 const MP = { el: null, old: [], want: null, i: 0, fail: new Set() };
 const musicWant = () => screen === 'story' ? (STP && STP.key === 'l10' ? 'omen' : 'story') : G && screen === 'play' && G.state !== 'over' && !G.sim ? (G.lv.kind === 'duel' ? 'duel' : 'war') : 'calm';
-function mpPlay(name) { const el = new Audio('music/' + name + '.mp3'); el.volume = 0; el.onerror = () => { MP.fail.add(name); if (MP.el === el) MP.el = null; };
+// 苹果的浏览器（含微信）里 <audio> 的 volume 是只读的、永远 1：原来靠 el.volume 淡入淡出、调到 0 才暂停，所以手机上关不掉、还会几首叠着放（10-26 用户：「网页上关不了音乐音效」）。
+// 现在每首接进 WebAudio：<audio> → 自己的增益（淡入淡出）→ SND.mus（开关、音量，sndApply 管）。el.volume 不再碰
+const mpGain = el => el._g ? el._g.gain.value : 0;
+function mpSetGain(el, v) { if (el._g) el._g.gain.value = v; }
+function mpPlay(name) { const el = new Audio('music/' + name + '.mp3'); el.onerror = () => { MP.fail.add(name); if (MP.el === el) MP.el = null; };
+  try { const src = SND.ac.createMediaElementSource(el), g = SND.ac.createGain(); g.gain.value = 0; src.connect(g); g.connect(SND.mus); el._g = g; } catch (e) { el.volume = 0; }
   el.onended = () => { if (MP.el === el) { MP.i++; MP.el = null; } }; el.play().catch(() => {}); if (MP.el) MP.old.push(MP.el); MP.el = el; MP.name = name; }
+function mpStop(el) { el.pause(); try { el.removeAttribute('src'); el.load(); } catch (e) {} }
 function musicTick() {
-  if (!SND.ac || SND.ac.state !== 'running') return; const k = sndCfg(), want = musicWant(), vol = (k.m ? k.mv * .55 : 0) * (SND.duck && SND.ac.currentTime < SND.duck ? .06 : 1), list = MUSIC[want].filter(n => !MP.fail.has(n));
-  MP.old = MP.old.filter(el => { el.volume = Math.max(0, el.volume - .02); if (el.volume <= .01) { el.pause(); return false; } return true; });   // 上一首淡出
+  if (!SND.ac || SND.ac.state !== 'running') return; const k = sndCfg(), want = musicWant(), duck = SND.duck && SND.ac.currentTime < SND.duck, vol = (k.m ? 1 : 0) * (duck ? .06 : 1), list = MUSIC[want].filter(n => !MP.fail.has(n));
+  MP.old = MP.old.filter(el => { const v = Math.max(0, mpGain(el) - .02); mpSetGain(el, v); if (v <= .01 || !el._g) { mpStop(el); return false; } return true; });   // 上一首淡出
+  if (!k.m) { if (MP.el) { mpStop(MP.el); MP.el = null; } MP.old.forEach(mpStop); MP.old = []; SND.mode = null; return; }   // 音乐关了：立刻停，不等淡出
   if (!list.length) { if (MP.el) { MP.old.push(MP.el); MP.el = null; } synthTick(want === 'calm' || want === 'story' || want === 'omen' ? 'calm' : 'war'); return; }
   SND.mode = null;
   if (MP.want !== want) { MP.want = want; MP.i = Math.floor(Math.random() * list.length); MP.el && MP.old.push(MP.el); MP.el = null; }
   if (!MP.el && vol > 0) mpPlay(list[MP.i % list.length]);
-  if (MP.el) { MP.el.volume = Math.min(1, Math.max(0, MP.el.volume + (vol - MP.el.volume) * (SND.duck && SND.ac.currentTime < SND.duck ? .35 : .04))); if (vol <= 0 && MP.el.volume < .01) { MP.el.pause(); MP.el = null; } }
+  if (MP.el) { const g = mpGain(MP.el); mpSetGain(MP.el, Math.min(1, Math.max(0, g + (vol - g) * (duck ? .35 : .04)))); }
 }
 // 现合的占位音乐：每帧排后面四分之一秒的音符；主页、结算、各页是「静」，打仗时是「战」
 const PENTA = [146.8, 164.8, 185, 220, 246.9, 293.7, 329.6, 370, 440, 493.9];      // D 宫五声：宫商角徵羽，两个八度
@@ -4369,7 +4376,7 @@ cv.addEventListener('pointerdown', ev => {
 window.__sg = {
   auto: false, turbo: 1, all: new URLSearchParams(location.search).has('all'), seed: 0,   // 网址带 ?all 就十关全开（试玩用）
   tune: TUNE, PERKS, GEN, LEVELS, WAVE, TIMEX, MER, RANK_AT, setSpd(v) { SPD.v = SPD_X = v; ACT_X = 1 / v; }, get G() { return G; }, draw: () => render(),            // draw：面板藏着时浏览器不跑动画帧，截图前手动画一帧 get screen() { return screen; },
-  start: i => startLevel(i), open: i => openLevel(i), get prep() { return PREP; }, set prep(v) { PREP = v; }, get screen() { return screen; }, get ml() { return [ML, MLB]; },
+  start: i => startLevel(i), open: i => openLevel(i), get prep() { return PREP; }, set prep(v) { PREP = v; }, get screen() { return screen; }, get ml() { return [ML, MLB]; }, get snd() { return { SND, MP }; },
   // 军师荐得对不对：机器人照真值打，每次晋升让三位军师各荐一次，数荐中真值最高那张的次数（10-25）
   advTest(levels, seeds = 2) { const out = {};
     for (const i of levels) for (let k = 0; k < seeds; k++) { this.seed = k * 101; this.auto = true; this.simming = true; startLevel(i); this.simming = false; G.sim = true; let n = 0;
