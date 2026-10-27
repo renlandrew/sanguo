@@ -1626,7 +1626,7 @@ function renderScreen() {
   if (G.tip && G.t - G.tip.t0 < 5) drawTip();
   if (G.state === 'pick') drawPick();
   if (G.state === 'over') drawResult();
-  if (G.ult) drawUlt(G.ult.k, G.ult.t, G.ult.dur, G.ult.foe);
+  if (G.ult) drawUlt(G.ult.k, G.ult.t * G.ult.sp, G.ult.dur * G.ult.sp, G.ult.foe);
   else if (G.state === 'play' && G.panel) drawMerit(); else if (G.state === 'play' && G.paused) drawPause();
 }
 // ---------- 大招特写（10-25 用户：「要录制一些大招的录像？能占据屏幕的大招？」「录大招特写：关羽、张飞、刘备的觉醒大招加张角天雷、吕布方天画戟」） ----------
@@ -1642,9 +1642,10 @@ const ultReady = k => ULT[k] && ULT[k].meta && ready(ULT[k].im);
 function playUlt(k, foe, force) {
   if (G.sim || !ultReady(k)) return; G.ultLast = G.ultLast || {};
   if (!force && (G.vt || 0) - (G.ultLast[k] ?? -99) < 20) return; G.ultLast[k] = G.vt || 0;
-  const m = ULT[k].meta; G.ult = { k, t: 0, dur: m.n / m.fps + .45, foe: !!foe };
+  const m = ULT[k].meta, sp = foe || !m.battleN ? 1 : 1.5, n = foe ? m.n : Math.min(m.n, m.battleN || m.n);   // 10-27 新录 8 秒学招特写：打仗时只放出招那一段、1.5 倍速，收招的捋须／大笑留给武将页
+  G.ult = { k, t: 0, sp, dur: (n / m.fps + .45) / sp, foe: !!foe };
 }
-const ULT_HOLD = { zhang: 3 };                                                     // 武将页预览定格在哪一帧（不写就是最后一帧）
+const ULT_HOLD = {};                                                     // 武将页预览定格在哪一帧（不写就是最后一帧）
 function drawUlt(k, t, dur, foe, hold, label = '觉醒') {                                                // hold：武将页预览，演完停在最后一帧，等玩家点「退出」才退（hold 是退场已过的秒数，没点时 -1）
   if (!ultReady(k)) return; const { im, meta: m } = ULT[k], [col, rgb] = ULT_COL[k];
   const a = hold != null ? (t < .14 ? t / .14 : 1) * (hold >= 0 ? Math.max(0, 1 - hold / .28) : 1) : t < .14 ? t / .14 : t > dur - .28 ? Math.max(0, (dur - t) / .28) : 1, enter = ease(Math.min(1, t / .2)), dir = k === 'zhang' || k === 'lvbu' ? 1 : -1;

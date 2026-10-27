@@ -14,7 +14,8 @@ from scipy import ndimage as ndi
 
 HERE = Path(__file__).resolve().parent
 SRC = Path(sys.argv[1]); OUT = HERE.parents[1] / '原型' / 'img'
-HEIGHT, FPS = 900, 15
+import os
+HEIGHT, FPS, GRID = int(os.environ.get('HEIGHT', 900)), int(os.environ.get('FPS', 15)), int(os.environ.get('GRID', 2))   # 10-27 学招特写 8 秒：GRID=3（3×3 帧图）HEIGHT=720 FPS=16
 args = sys.argv[2:]; rng = next((a for a in args if ':' in a), None); keys = [a for a in args if ':' not in a] or ['guan', 'zhang', 'liu', 'zhangjiao', 'lvbu']
 
 def flat_gray(a):
@@ -47,8 +48,8 @@ for k in keys:
     if not grids: print(k, '没有帧图，跳过'); continue
     frames = []
     for gp in grids:
-        sh = np.asarray(Image.open(gp).convert('RGB')).astype(np.float32); ch, cw = sh.shape[0] // 2, sh.shape[1] // 2
-        for i in range(4): frames.append(sh[(i // 2) * ch:(i // 2 + 1) * ch, (i % 2) * cw:(i % 2 + 1) * cw])
+        sh = np.asarray(Image.open(gp).convert('RGB')).astype(np.float32); ch, cw = sh.shape[0] // GRID, sh.shape[1] // GRID
+        for i in range(GRID * GRID): frames.append(sh[(i // GRID) * ch:(i // GRID + 1) * ch, (i % GRID) * cw:(i % GRID + 1) * cw])
     if rng: a, b = (int(x) for x in rng.split(':')); frames = frames[a:b]
     mats = [matte(f, flat_gray(f)) for f in frames]
     al = np.stack([m[..., 3] > 40 for m in mats]); ys, xs = np.where(al.any(axis=0))
