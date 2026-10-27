@@ -4108,7 +4108,7 @@ function drawWeapon(id, lvl, cx, cy, h, rot, t, big) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, 9); g.addColorStop(0, `rgba(255,240,200,${.8 * a})`); g.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = g; ctx.fillRect(ex - 9, ey - 9, 18, 18); ctx.restore(); }
 }
 function drawArmory2() {
-  const wl = INV.up.wpn || 0, lvl = wpnVis(wl), room = IMG['room_' + Math.max(1, wl)];   // 十级一级一张神兵室底图；lvl 是画面档位（两级一档）
+  const wl = INV.up.wpn || 0, lvl = wpnVis(wl), room = IMG['room_' + (wl >= 6 ? 2 : 1)];   /* 第一章神兵室最多到第二间（10-27 用户：「不需要10个神兵室，那太快了」），兵器 6 级起换，其余留给后面章节；lvl 是画面档位 */
   if (ready(room)) { const h = W * room.height / room.width; ctx.drawImage(room, 0, 0, W, h); const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, 'rgba(8,5,4,.45)'); bg.addColorStop(.35, 'rgba(8,5,4,.1)'); bg.addColorStop(.62, 'rgba(8,5,4,.25)'); bg.addColorStop(1, 'rgba(6,4,3,.92)'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
     uiText('神兵', W / 2, 32, 28, goldGrad(32, 28), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 }); }
   else campBg('神兵');
