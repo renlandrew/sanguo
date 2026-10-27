@@ -21,9 +21,9 @@ RAMPS = {                                                                      #
     'lvbu':      ['#3a0410', '#a4142c', '#e0304a', '#ff8a5a', '#fff0e8'],
 }
 
-GAIN = {'huaxiong': .45, 'lvbu': .8, 'dengmao': 1.25, 'lijue': .5, 'zhangjiao': 1.3}                         # 亮度倍数：火墙一整排叠起来会冲成一块白，压一压；邓茂的太淡，提一点
+GAIN = {'huaxiong': .45, 'lvbu': .8, 'dengmao': 1.25, 'lijue': .5, 'zhangjiao': 1.45}                         # 亮度倍数：火墙一整排叠起来会冲成一块白，压一压；邓茂的太淡，提一点
 
-HALO = {'zhangjiao': 1.4}                                                      # 透明度的次方：越大外圈光晕越淡（10-27 用户：张角「其他都清晰，就这个模糊」——紫色光晕太厚）
+HALO = {'zhangjiao': 1.8}                                                      # 透明度的次方：越大外圈光晕越淡（10-27 用户：张角「其他都清晰，就这个模糊」——紫色光晕太厚）
 
 def ramp(name, L):
     cs = np.array([[int(c[i:i + 2], 16) for i in (1, 3, 5)] for c in RAMPS[name]], np.float32)
