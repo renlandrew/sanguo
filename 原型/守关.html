@@ -1834,10 +1834,18 @@ const BTINT = {};
 const BVFX = {}; for (const k of Object.keys(BOSS_FX)) { const im = new Image(); im.src = 'img/fx_boss_' + k + '.webp' + BUST; fetch('img/fx_boss_' + k + '.json' + BUST).then(r => r.ok ? r.json() : null).then(j => { if (j) BVFX[k] = { im, m: j.anims.play, stand: j.stand }; }).catch(() => {}); }
 function drawBossVfx(k, t, x, y, size, rot = 0, alpha = 1) {
   const V = BVFX[k]; if (!V || !ready(V.im)) return; const R = V.m.rects, i = Math.floor(t * 20); if (i < 0 || i >= R.length) return; const [sx, sy, sw, sh] = R[i], kk = size / V.stand;   /* 每秒 20 帧：录的 4 秒太慢，压到一秒半左右跟上打中那一下 */
-  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = alpha * .95; ctx.drawImage(V.im, sx, sy, sw, sh, -sw * kk / 2, -sh * kk / 2, sw * kk, sh * kk);
-  const extra = BVFX_BOOST[k] || 0; if (extra) { ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = alpha * extra; ctx.drawImage(V.im, sx, sy, sw, sh, -sw * kk / 2, -sh * kk / 2, sw * kk, sh * kk); } ctx.restore();   /* 10-27 用户：「我觉得都要优化一下」——「滤色」叠上去像光，不再是平涂实心块盖住场景 */
+  const C = bvfxFeather(V.im, sx, sy, sw, sh);
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = alpha * .95; ctx.drawImage(C, 0, 0, sw, sh, -sw * kk / 2, -sh * kk / 2, sw * kk, sh * kk); ctx.restore();   /* 10-27 用户：「我觉得都要优化一下」——「滤色」叠上去像光，不再是平涂实心块盖住场景；胡轸加亮那层用户说「保持之前的淡更好看」，去掉了 */
 }
-const BVFX_BOOST = { huzhen: .55 };   /* 10-27 用户：「胡轸的交叉刀变淡了不少，可以亮一些」——红色在黄沙上滤色后太淡，再叠一层半实的 */
+let BVFX_C = null;
+function bvfxFeather(im, sx, sy, sw, sh) {                                          // 10-27 用户：「法术两边被截断了，形成长方形」——录像出了画框的地方四边渐隐，不留直边
+  if (!BVFX_C) BVFX_C = document.createElement('canvas'); const C = BVFX_C;
+  if (C.width < sw || C.height < sh) { C.width = Math.max(C.width, sw); C.height = Math.max(C.height, sh); }
+  const c = C.getContext('2d'); c.globalCompositeOperation = 'copy'; c.drawImage(im, sx, sy, sw, sh, 0, 0, sw, sh); c.globalCompositeOperation = 'destination-out';
+  const fx = sw * .2, fy = sh * .16, edge = (x0, y0, x1, y1, rx, ry, rw, rh) => { const g = c.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(rx, ry, rw, rh); };
+  edge(0, 0, fx, 0, 0, 0, fx, sh); edge(sw, 0, sw - fx, 0, sw - fx, 0, fx, sh); edge(0, 0, 0, fy, 0, 0, sw, fy); edge(0, sh, 0, sh - fy, 0, sh - fy, sw, fy);
+  c.globalCompositeOperation = 'source-over'; return C;
+}
 // 每员首领的 Veo 动画放哪、多大、转多少（录的时候多半是竖着的：从上往下劈、从下往上刺）
 const BVFX_AT = {                                                                   // [x, y, 大小, 转角, 晚几秒（负的就是跳过录像开头的蓄势）]：录的多是竖的，落点（爆炸）在下边
   dengmao:   [[W / 2, WALL_Y - 110, 400, Math.PI, -.6]],                                // 枪从下往上刺的录像倒过来：从敌将那边扎向城头，炸在城上
