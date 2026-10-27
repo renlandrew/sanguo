@@ -577,9 +577,10 @@ const ITEM_TIP = {                                                              
   陨铁: '陨铁\n天外陨铁，兵器二阶以上锻造所需\n来源：出外探访积累机缘',
   体力: '体力\n日常杂务每项消耗十点\n每五分钟恢复一点，上限一百二十' };
 const ITEM_C = { 精铁: '#c9cdd2', 残页: '#f0d9a0', 将印: '#e2563a', 陨铁: '#8fe8ff', 体力: '#9be0a0' };
-const WPN_IRON = [8, 20, 30, 40, 50];                                                // 兵器 +1…+5 各要多少精铁：天天玩的约第 1、4、7、10、14 天攒够，正好赶上第 5、15、20、25、30 关的斗将
+const WPN_IRON = [4, 4, 10, 10, 15, 15, 20, 20, 25, 25];   /* 10-27 用户：「要增加武器的升级频率」——5 级拆成 10 级，每级 +8%，精铁对半拆，陨铁在 4、6、8、10 级各一块；斗将关要 2/4/6/8/10 级，到关的天数不变 */
+const WPN_MAX = 10, wpnVis = w => Math.min(5, Math.floor((w || 0) / 2));   // 画面档位：两级换一次样子（兵器图、刀气光效仍是 0–5 档）                                                // 兵器 +1…+5 各要多少精铁：天天玩的约第 1、4、7、10、14 天攒够，正好赶上第 5、15、20、25、30 关的斗将
 const UPS = {                                                                        // 能打造、开封的东西：每级要什么、做什么
-  wpn:    { name: '兵器', max: 5, cost: k => k >= 2 ? { 精铁: WPN_IRON[k - 1], 陨铁: 1 } : { 精铁: WPN_IRON[k - 1] }, desc: k => `普攻、招式 +${12 * k}%` },   // 10-26 用户：「神兵不能那么容易升级，必须和卡关卡同步」——每级 +12%、精铁 8/20/30/40/50   // 10-25 用户：「神兵材料是升级武器的要素」
+  wpn:    { name: '兵器', max: WPN_MAX, cost: k => k >= 4 && k % 2 === 0 ? { 精铁: WPN_IRON[k - 1], 陨铁: 1 } : { 精铁: WPN_IRON[k - 1] }, desc: k => `普攻、招式 +${8 * k}%` },   // 10-26 用户：「神兵不能那么容易升级，必须和卡关卡同步」——每级 +12%、精铁 8/20/30/40/50   // 10-25 用户：「神兵材料是升级武器的要素」
   liu2:   { name: '双股剑 · 剑印', gen: 'liu', max: 1, cost: () => ({ 残页: 6 }), desc: () => '砍中的定住 4 秒：走不动、放不了箭、施不了法' },
   guan2:  { name: '青龙斩 · 龙鳞破甲', gen: 'guan', max: 1, cost: () => ({ 残页: 12 }), desc: () => '扫过的 4 秒内盾和甲都失效、多受 20%' },
   zhang2: { name: '当阳一喝 · 怒雷', gen: 'zhang', max: 1, cost: () => ({ 残页: 18 }), desc: () => '喝完城前留一道火沟烧 4 秒：走进去着火、慢一半，骑兵落马' },
@@ -587,7 +588,7 @@ const UPS = {                                                                   
   awake:  { name: '觉醒', max: 1, cost: () => ({ 将印: 2 }), desc: () => '选一人觉醒：招式伤害 +20%、冷却 -15%' },
 };
 // 破题门槛：第一次打这一关之前要有的（重打不拦）
-const GATES = { 5: { wpn: 1 }, 9: { liu2: 1 }, 11: { guan2: 1 }, 15: { wpn: 2 }, 20: { wpn: 3 }, 22: { zhang2: 1 }, 25: { wpn: 4 }, 27: { liu3: 1 }, 30: { wpn: 5, awake: 1 } };
+const GATES = { 5: { wpn: 2 }, 9: { liu2: 1 }, 11: { guan2: 1 }, 15: { wpn: 4 }, 20: { wpn: 6 }, 22: { zhang2: 1 }, 25: { wpn: 8 }, 27: { liu3: 1 }, 30: { wpn: 10, awake: 1 } };
 const GATE_WHY = { 5: '邓茂挺枪护身：兵器不够利，砍不进去', 9: '张宝的术士给黄巾兵回血加速：要剑印把术士定住', 11: '西凉兵正面举盾：要龙鳞破甲把盾破了',
   15: '胡轸双刀连斩：兵器要再利一层', 20: '华雄关前死守、护罩厚：兵器要 +3 才砍得破', 22: '并州狼骑成群冲阵：要怒雷火沟把骑兵掀下马',
   25: '李傕的护罩更厚：兵器要 +4', 27: '西凉兵追砍百姓：要剑印终阶把追兵定住', 30: '吕布：兵器 +5，还要一人觉醒' };
@@ -598,6 +599,7 @@ const GATE_SAY = { 5: '邓茂甲厚，兵器不到 +1 砍不动他', 9: '术士�
 const upAt = id => { const u = {}; for (const [g, req] of Object.entries(GATES)) if (+g <= id) for (const [k, v] of Object.entries(req)) u[k] = Math.max(u[k] || 0, v); return u; };   // 按推荐打到第 id 关时手里有的
 let INV = { it: { 精铁: 0, 残页: 0, 将印: 0, 陨铁: 0 }, up: {}, awake: null, seal20: false, luck: 0 };
 try { const o = JSON.parse(localStorage.getItem(IKEY) || '{}'); INV = { ...INV, ...o, it: { ...INV.it, ...(o.it || {}) }, up: { ...(o.up || {}) } }; } catch (e) {}
+if (INV.up.wpn && !INV.wpn10) INV.up.wpn = Math.min(10, INV.up.wpn * 2); INV.wpn10 = true;   // 10-27 兵器 5 级改 10 级：旧档等级翻倍
 if (INV.it.神兵 != null) { INV.it.陨铁 = (INV.it.陨铁 || 0) + INV.it.神兵; delete INV.it.神兵; }        // 旧档：神兵材料 → 陨铁
 for (const k of Object.keys(INV.it)) if (!(k in ITEMS)) delete INV.it[k];           // 砍掉的物品（甲片、马鬃、温酒、符水）从旧存档里清掉
 const saveInv = () => { try { localStorage.setItem(IKEY, JSON.stringify(INV)); } catch (e) {} };
@@ -779,7 +781,7 @@ function startLevel(i) {
   // 打造、开封过的东西（10-25）：机器人按推荐打到这关时该有的算；?all 跳关试玩时，没有的按推荐补上（同等级的规矩）
   const own = INV.up, exp = upAt(lv.id); if (sim && window.__sg.wpnLess && exp.wpn) exp.wpn -= window.__sg.wpnLess;   // wpnLess：推演「兵器差几级」
   G.up = sim ? (window.__sg.noUp ? {} : exp) : window.__sg.all ? Object.fromEntries([...new Set([...Object.keys(own), ...Object.keys(exp)])].map(k => [k, Math.max(own[k] || 0, exp[k] || 0)])) : { ...own };
-  G.upMul = 1 + .12 * (G.up.wpn || 0); G.awake = G.up.awake ? (!sim && INV.awake) || 'guan' : null;
+  G.upMul = 1 + .08 * (G.up.wpn || 0); G.awake = G.up.awake ? (!sim && INV.awake) || 'guan' : null;
   G.blocks = 0; G.trenchT = 0; G.logUsed = false; G.nuUsed = false; G.logArm = false; G.nuArm = false; G.lights = []; G.lightN = RU.night ? 3 : 0; G.lightArm = false; G.lightChk = 0;
   if (G.up.liu3) G.st.liuSwords += 2;
   G.wpnNeed = (GATES[lv.id] || {}).wpn || 0;
@@ -2816,7 +2818,7 @@ function drawDim() { const a = spxDimNow(); if (a <= .005) return; ctx.fillStyle
 // 每升一级：刀气、火矛大一点、亮一点、拖尾长一点；剑气束越来越多、越金；三级起刀气多一道残影、火矛多喷火；四级起刀气里一条金线、火星带金、命中多炸一朵金的。
 // 不在身上叠一团光晕（试过：纸色地面上糊成一团雾，用户：「好丑」）
 // 只管画面，不改伤害和判定（伤害由 G.upMul 管）
-const WT = () => (G && G.up && G.up.wpn) || 0;
+const WT = () => wpnVis(G && G.up && G.up.wpn);
 function spxWave(s) {
   if (hasPaint2('dao2')) { const r = s.ang + Math.PI / 2, cx = Math.cos(s.ang), cy = Math.sin(s.ang), vt = G.vt || 0; if (s.vb == null) { s.vb = vt; s.vx0 = s.x; s.vy0 = s.y; }
     const age = vt - s.vb, sc = age < .07 ? .35 + .85 * age / .07 : 1.2 - .2 * Math.min(1, (age - .07) / .08), fl = age < .12 ? .9 : .35 + .25 * Math.sin(vt * 38 + s.x);   // 出手：从小撑开、先亮后闪
@@ -4019,7 +4021,7 @@ function drawCamp() {
   if (!gl) uiText('该备的都备齐了', W / 2, 140, 18, UIC.gold2, 'center', FONT);
   else {
     const { ng, key, U, tot, d } = gl, lv = LEVELS.find(l => l.id === ng), lvl = INV.up[key] || 0;
-    if (key === 'wpn') { drawWeapon('guan', lvl + 1, 44, 140, 150, .2, uiNow(), false); hit(14, 58, W - 28, 120, () => { screen = 'armory'; ARM.t0 = uiNow(); }); }   // 要打兵器时左边放下一级的青龙偃月刀，点卡片进神兵页
+    if (key === 'wpn') { drawWeapon('guan', wpnVis(lvl + 1), 44, 140, 150, .2, uiNow(), false); hit(14, 58, W - 28, 120, () => { screen = 'armory'; ARM.t0 = uiNow(); }); }   // 要打兵器时左边放下一级的青龙偃月刀，点卡片进神兵页
     { const [, C] = counselNow(), s2 = `${C.name}：打${lvName(ng)}${lv.name}之前，最好先备上这个`; uiText(s2, W / 2, 80, fitSize(s2, 12, W - 60, 99, PLAIN), '#ff9a7a', 'center', PLAIN, { stroke: false }); }   // 军师的建议，不是门槛（10-26）
     uiText(U.name + (U.max > 1 ? ` +${lvl + 1}` : ''), W / 2, 108, 24, UIC.gold2, 'center', FONT, { glow: 'rgba(255,200,90,.4)', glowR: 8 });
     uiText(fitText(U.max > 1 ? U.desc(lvl + 1) : U.desc(), 12, W - 60), W / 2, 134, 12, UIC.cream, 'center', PLAIN, { stroke: false });
@@ -4106,7 +4108,7 @@ function drawWeapon(id, lvl, cx, cy, h, rot, t, big) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, 9); g.addColorStop(0, `rgba(255,240,200,${.8 * a})`); g.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = g; ctx.fillRect(ex - 9, ey - 9, 18, 18); ctx.restore(); }
 }
 function drawArmory2() {
-  const lvl = INV.up.wpn || 0, room = IMG['room_' + ROOM_OF[Math.min(5, lvl)]];
+  const wl = INV.up.wpn || 0, lvl = wpnVis(wl), room = IMG['room_' + Math.max(1, wl)];   // 十级一级一张神兵室底图；lvl 是画面档位（两级一档）
   if (ready(room)) { const h = W * room.height / room.width; ctx.drawImage(room, 0, 0, W, h); const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, 'rgba(8,5,4,.45)'); bg.addColorStop(.35, 'rgba(8,5,4,.1)'); bg.addColorStop(.62, 'rgba(8,5,4,.25)'); bg.addColorStop(1, 'rgba(6,4,3,.92)'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
     uiText('神兵', W / 2, 32, 28, goldGrad(32, 28), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 }); }
   else campBg('神兵');
@@ -4115,20 +4117,20 @@ function drawArmory2() {
   drawWeapon(id, lvl, 150, 300 + Math.sin(t * 1.6) * 5, id === 'liu' ? 320 : 360, WPN_ROT[id], t, true);
   if (fl) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = fl; ctx.fillStyle = '#fff6dc'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
   uiText(WPN[id], 22, 78, 22, UIC.gold2, 'left', FONT, { glow: `rgba(${WPN_GLOW[id]},.5)`, glowR: 10 });
-  uiText(`${WPN_TIER[lvl]}${lvl ? ' · +' + lvl : ''}`, 22, 104, 15, `rgb(${WPN_GLOW[id]})`, 'left', FONT);
-  uiText(lvl ? UPS.wpn.desc(lvl) : '还没精炼', 22, 124, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });
+  uiText(`${WPN_TIER[lvl]}${wl ? ' · +' + wl : ''}`, 22, 104, 15, `rgb(${WPN_GLOW[id]})`, 'left', FONT);
+  uiText(wl ? UPS.wpn.desc(wl) : '还没精炼', 22, 124, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });
   ['guan', 'zhang', 'liu'].forEach((g, k) => { const x = W - 70, y = 70 + k * 92, on = g === id;                       // 右边三格：三人的兵器
     ctx.save(); if (!on) ctx.globalAlpha = .5; ctx.fillStyle = 'rgba(14,10,7,.8)'; rr(x, y, 58, 84, 7); ctx.fill();   /* 和底栏武将牌一样：暗底加细金框（关卡牌那张缩小了里面的金边像个方框） */
     drawWeapon(g, lvl, x + 29, y + 36, 66, WPN_ROT[g], t, false); if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, x - 1, y - 1, 60, 86, 60, 60, 60, 60, .1); ctx.restore();
     if (on) { ctx.save(); ctx.shadowColor = 'rgba(255,200,90,.8)'; ctx.shadowBlur = 10; ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 1.6; rr(x + .5, y + .5, 57, 83, 7); ctx.stroke(); ctx.restore(); }
     uiText(GEN[g].name, x + 29, y + 74, 11, on ? UIC.gold2 : UIC.cream, 'center', PLAIN, { stroke: false }); hit(x, y, 58, 84, () => { ARM.who = g; }); });
   // 底下：下一级
-  const y = 470; plate(14, y, W - 28, 112, lvl < 5);
-  if (lvl >= 5) uiText('已是绝世神兵', W / 2, y + 56, 18, UIC.gold2, 'center', FONT);
+  const y = 470; plate(14, y, W - 28, 112, wl < WPN_MAX);
+  if (wl >= WPN_MAX) uiText('已是绝世神兵', W / 2, y + 56, 18, UIC.gold2, 'center', FONT);
   else { const cost = upCost('wpn'), e = eta(cost), nim = wpnImg(id, lvl + 1);
-    ctx.save(); ctx.beginPath(); ctx.rect(20, y + 6, 70, 100); ctx.clip(); drawWeapon(id, lvl + 1, 55, y + 56, 96, WPN_ROT[id], t, false); ctx.restore();
-    uiText(`下一级 · ${WPN_TIER[lvl + 1]} +${lvl + 1}`, 100, y + 20, 15, UIC.gold2, 'left', FONT, { stroke: false });
-    uiText(UPS.wpn.desc(lvl + 1), 100, y + 40, 11, UIC.cream, 'left', PLAIN, { stroke: false });
+    ctx.save(); ctx.beginPath(); ctx.rect(20, y + 6, 70, 100); ctx.clip(); drawWeapon(id, wpnVis(wl + 1), 55, y + 56, 96, WPN_ROT[id], t, false); ctx.restore();
+    uiText(`下一级 · ${WPN_TIER[wpnVis(wl + 1)]} +${wl + 1}`, 100, y + 20, 15, UIC.gold2, 'left', FONT, { stroke: false });
+    uiText(UPS.wpn.desc(wl + 1), 100, y + 40, 11, UIC.cream, 'left', PLAIN, { stroke: false });
     Object.entries(cost).forEach(([it, n], j) => { const have = INV.it[it] || 0, yy = y + 60 + j * 16;
       uiText(`${it} ${Math.min(have, n)}/${n}`, 100, yy, 12, ITEM_C[it], 'left', PLAIN, { stroke: false }); uiBar('arm_' + it, 170, yy - 3, 90, 6, have / n, '#8a5a14', '#ffd76e', { edge: 'rgba(0,0,0,0)' }); });
     if (canUp('wpn')) pill(W - 98, y + 66, 76, 30, '打造', () => { doUp('wpn'); ARM.flash = uiNow(); });
