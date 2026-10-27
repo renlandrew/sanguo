@@ -3264,16 +3264,17 @@ function drawHud() {
   else uiText('第一章 群雄逐鹿', 46, 50, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });
   const left = Math.max(0, G.total - G.killed - G.leaked - (G.routed || 0));
   if (ready(IMG.ui2_slot)) {                                                      // 细金边槽（凹槽挖空对准条），敌军数压在条上
-    const k = 18 / 33; uiBar('foe', 186 + 5 * k, 13 + 6 * k, 140 - 12 * k, 20 * k, left / Math.max(1, G.total), '#8a1a10', '#e2563a', { edge: 'rgba(0,0,0,0)' }); draw9(IMG.ui2_slot, 186, 13, 140, 18, 18, 18, 0, 0, k); uiText('敌 ' + left, 256, 22, 11, UIC.cream, 'center', PLAIN);
+    const k = 18 / 33; uiBar('foe', 192 + 5 * k, 13 + 6 * k, 158 - 12 * k, 20 * k, left / Math.max(1, G.total), '#8a1a10', '#e2563a', { edge: 'rgba(0,0,0,0)' }); draw9(IMG.ui2_slot, 192, 13, 158, 18, 18, 18, 0, 0, k); uiText('敌 ' + left, 271, 22, 11, UIC.cream, 'center', PLAIN);
   } else { uiText('敌', 190, 22, 15, UIC.red2, 'center'); uiBar('foe', 202, 15, 96, 12, left / Math.max(1, G.total), '#8a1a10', '#e2563a'); uiText(String(left), 302, 21, 12, UIC.cream, 'left', PLAIN); }
   // 军功：一个小圆徽章写等级，旁边金条
   const gArt = ready(IMG.ui2_slot), k2 = 15 / 33;
-  if (gArt) { uiBar('exp', 210 + 5 * k2, 40 + 6 * k2, 116 - 12 * k2, 20 * k2, rankFrac(), '#a8701a', '#ffd76e', { edge: 'rgba(0,0,0,0)' }); draw9(IMG.ui2_slot, 210, 40, 116, 15, 18, 18, 0, 0, k2); uiText('军功', 183, 47, 11, UIC.gold2, 'right', PLAIN, { stroke: false }); }
+  if (gArt) { uiBar('exp', 192 + 5 * k2, 40 + 6 * k2, 158 - 12 * k2, 20 * k2, rankFrac(), '#a8701a', '#ffd76e', { edge: 'rgba(0,0,0,0)' }); draw9(IMG.ui2_slot, 192, 40, 158, 15, 18, 18, 0, 0, k2); uiText('军功', 185, 47, 11, UIC.gold2, 'right', PLAIN, { stroke: false }); }
   /* 10-26 用户圈了军功条前那方「一」字圆印：「这个不需要」——不画军功等级印 */
   if (!gArt) { uiText('军功', 210, 47, 12, UIC.gold2, 'left', PLAIN, { stroke: false }); uiBar('exp', 238, 42, 78, 9, rankFrac(), '#a8701a', '#ffd76e', { edge: '#8a6a2a' }); }
   // 退：右上角一个小圆钮
-  ctx.save(); ctx.beginPath(); ctx.arc(W - 17, 22, 12, 0, 6.283); ctx.fillStyle = 'rgba(20,14,10,.85)'; ctx.fill(); ctx.strokeStyle = UIC.gold; ctx.lineWidth = 1.4; ctx.stroke(); ctx.restore();
-  uiText('退', W - 17, 23, 13, UIC.cream, 'center', FONT, { stroke: false }); hit(W - 32, 6, 30, 32, () => { screen = 'menu'; G = null; });
+  // 10-27 用户：「2个条宽度保持一致，军功和退上下并列，退改为退军」——退军钮挪到敌军条左边，和下面的「军功」对齐
+  ctx.save(); ctx.beginPath(); ctx.roundRect(153, 12, 34, 20, 10); ctx.fillStyle = 'rgba(20,14,10,.85)'; ctx.fill(); ctx.strokeStyle = UIC.gold; ctx.lineWidth = 1.2; ctx.stroke(); ctx.restore();
+  uiText('退军', 170, 22.5, 11, UIC.cream, 'center', FONT, { stroke: false }); hit(150, 6, 40, 30, () => { screen = 'menu'; G = null; });
   const st = []; if (G.RU.casts) st.push(['招式剩 ' + G.casts, G.casts <= 3 ? UIC.red2 : UIC.cream]);
   if (G.RU.timed && !G.timedDone) st.push([G.RU.timed.label + ' ' + Math.max(0, G.RU.timed.t * TIMEX.v - G.t).toFixed(0) + ' 秒', UIC.gold2]);
   if (G.civs) st.push(['救下 ' + G.saved + '/' + G.civTotal + (G.misfire ? ' · 误伤 ' + G.misfire : ''), '#9be0c0']);
