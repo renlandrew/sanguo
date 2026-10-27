@@ -14,7 +14,7 @@ HERE = Path(__file__).resolve().parent; OUT = HERE.parents[1] / '原型' / 'img'
 SIZE = 768                                                                     # 10-27 用户：「这好像很模糊」——手机上一帧要拉到一千多像素，512 太小
 RAMPS = {                                                                      # 暗 → 主色 → 亮色 → 白，和 BOSS_FX 的 col / glow 一致
     'dengmao':   ['#3a2006', '#a8640e', '#e0a23a', '#ffd27a', '#fff6e0'],
-    'zhangjiao': ['#1e0838', '#6a2cc0', '#b46cff', '#f4d36a', '#fffbe8'],
+    'zhangjiao': ['#2a0a50', '#7a34e0', '#b46cff', '#dcb0ff', '#fbf2ff'],   # 10-27 用户：「单独把紫色加回去」——亮处不再走金白，留在淡紫
     'huzhen':    ['#3a0806', '#9a1c14', '#d8403a', '#ff9a6a', '#fff0e4'],
     'huaxiong':  ['#2a0a04', '#9a2c0c', '#e0601a', '#ffb04a', '#fff4dc'],
     'lijue':     ['#2c1806', '#7c4a14', '#c88a3a', '#ffcf7a', '#fff8e8'],
@@ -37,7 +37,7 @@ for k in range(N):
     c = sheet[(k // COLS) * ch:(k // COLS + 1) * ch, (k % COLS) * cw:(k % COLS + 1) * cw]
     L = c.max(axis=2); L = np.clip((L - .03) / .97 * GAIN.get(key, 1), 0, 1)                         # Effekseer 的黑是真黑，只去一点点压缩噪声
     a = np.clip(L * 1.6, 0, 1) ** HALO.get(key, .85); a = ndi.gaussian_filter(a, .3)
-    rgb = ramp(key, L ** .8)
+    rgb = ramp(key, L ** (1.15 if key == 'zhangjiao' else .8))
     frames.append(np.dstack([rgb, a * 255]).astype(np.uint8))
 al = np.stack([f[..., 3] > 10 for f in frames]); ys, xs = np.where(al.any(axis=0))
 cy, cx = ch / 2, cw / 2; hy, hx = max(cy - ys.min(), ys.max() + 1 - cy), max(cx - xs.min(), xs.max() + 1 - cx)   # 外框按中心对称，锚点在中心
