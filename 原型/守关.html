@@ -4095,7 +4095,8 @@ function drawCamp() {
   uiText(`${dailyDone()}/${dailyTotal()}`, W - 18, 250, 12, 'rgba(244,230,196,.6)', 'right', PLAIN, { stroke: false });
   if (!ts.length) for (let k = 0; k < 3; k++) { const y = 264 + k * 44;              // 还没出题（一关没打过）：三行灰着占位（10-26 用户：「去掉，如果没出，就灰度就好了」）
     ctx.save(); ctx.globalAlpha = .35; ctx.filter = 'grayscale(1)'; plate(14, y, W - 28, 40); uiSeal(36, y + 20, 24, '令', UIC.red);
-    uiText('打法军务', 56, y + 14, 13, UIC.cream, 'left', PLAIN, { stroke: false }); uiText('残页 +' + TASK_PAY, 56, y + 30, 10, 'rgba(240,217,160,.6)', 'left', PLAIN, { stroke: false }); ctx.restore(); }
+    uiText('打法军务', 56, y + 14, 13, UIC.cream, 'left', PLAIN, { stroke: false }); uiText('残页 +' + TASK_PAY, 56, y + 30, 10, 'rgba(240,217,160,.6)', 'left', PLAIN, { stroke: false }); ctx.restore();
+    uiText(k === 0 ? '今天先出征一次，军令才会下达' : '', W - 24, y + 21, 11, UIC.gold2, 'right', PLAIN, { lw: 2.5 }); }   // 10-27 用户：「军务灰度却没有任何提示」
   shown.forEach((t, k) => { const y = 264 + k * 44, li = LEVELS.findIndex(lv => lv.id === t.lv);
     ctx.save(); if (t.done) ctx.globalAlpha = .5; plate(14, y, W - 28, 40); ctx.restore();
     uiSeal(36, y + 20, 24, CNUM(t.lv), LEVELS[li].kind === 'duel' ? '#8a1c10' : UIC.red);
