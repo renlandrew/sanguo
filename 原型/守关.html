@@ -3297,7 +3297,9 @@ const FACE = { guan: [20, 0, 190], zhang: [25, 0, 190], liu: [10, 0, 190] };   /
 const GEN_BLOCK = { guan: '#1d4d34', zhang: '#6e2014', liu: '#1c3f60' };         // 名牌底色：关羽深绿、张飞深红、刘备深蓝，一眼分得开
 function drawSlots() {
   if (ready(IMG.ui2_top)) { const th = H - SLOT_Y + 30; ctx.save(); ctx.translate(0, SLOT_Y - 24 + th); ctx.scale(1, -1); draw9(IMG.ui2_top, -24, 0, W + 48, th, 40, 40, 8, 12, .5); ctx.restore();   // 顶栏那块倒过来：金线在上沿，加高一格放城防
-    if (G && screen === 'play') { const fr = G.wall / G.wallMax, low = fr <= .5; uiText('城防', 14, SLOT_Y - 13, 12, UIC.gold2, 'left', FONT); uiText(Math.ceil(fr * 100) + '%', 50, SLOT_Y - 13, 12, low ? '#ff7a4a' : UIC.cream, 'left', PLAIN); } }
+    if (G && screen === 'play') { const fr = G.wall / G.wallMax, low = fr <= .5, y0 = SLOT_Y - 27, bh = 7;   // 金线加粗成一条血槽：里面就是城防（10-27 用户：「加高这条金色线，里面好像HP」）
+      ctx.fillStyle = '#2a1608'; ctx.fillRect(0, y0, W, bh); const g = ctx.createLinearGradient(0, y0, 0, y0 + bh); g.addColorStop(0, low ? '#ff9a6a' : '#ffe39a'); g.addColorStop(.5, low ? '#d8401a' : '#e0a83a'); g.addColorStop(1, low ? '#7a1a08' : '#8a5a14');
+      ctx.fillStyle = g; ctx.fillRect(0, y0, W * fr, bh); ctx.fillStyle = '#f6d27a'; ctx.fillRect(0, y0 - 1, W, 1); ctx.fillRect(0, y0 + bh, W, 1); uiText('城防', 14, SLOT_Y - 13, 12, UIC.gold2, 'left', FONT); uiText(Math.ceil(fr * 100) + '%', 50, SLOT_Y - 13, 12, low ? '#ff7a4a' : UIC.cream, 'left', PLAIN); } }
   else uiPanel(-4, SLOT_Y - 4, W + 8, H - SLOT_Y + 8, { r: 0, alpha: .95 });
   const now = G.t;
   // 主动战法（滚木、连弩）放进右边的空格；空格不够就在底栏上方右边排小方钮（10-25 用户圈了两个空格：「滚木那类主动战法让用户自己点，你想办法把人头变小点」）
