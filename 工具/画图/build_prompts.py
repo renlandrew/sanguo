@@ -61,7 +61,7 @@ for k, p in list(V1.items()) + list(EXTRA.items()):
     if k.startswith('wpn_guan'): who = ['青龙偃月刀每一级的刀身都是光滑完整的钢刃，越高级装饰越华丽但仍然是实心刀身，不要镂空、孔洞、腐蚀状花纹。']
     parts = ['只画一张完整的图（不要拼图、不要用代码裁切）。', '画面：' + b]
     if k.startswith('story_s'): parts.append(STORY_CAM)
-    if k.startswith('story') and '张飞' in b: parts.append('画面里只有一个张飞：其他诸侯、将领、士兵、路人都不许穿红黑铠甲、不许戴红头巾、不许留张飞那样的络腮胡，长相和衣服颜色都要跟张飞明显不同（10-27 用户圈第 12 张：「这2个一个样」）。')
+    if k.startswith('story'): parts.append('画面里最多只有一个张飞：其他诸侯、将领、士兵、路人都不许穿红黑铠甲、不许戴红头巾、不许留张飞那样的络腮胡，长相和衣服颜色都要跟张飞明显不同（10-27 用户圈第 12 张：「这2个一个样」）。')
     if who: parts.append('人物造型：' + ''.join(who) + (NOT_RED + WEAPON if len(who) > 1 else ''))
     parts += [STYLE, NO, EM]
     m = re.search(r'(\d+)\s*:\s*(\d+)', b)
