@@ -13,7 +13,7 @@
 </style>
 </head>
 <body>
-<canvas id="bgv" width="36" height="64"></canvas><canvas id="cv"></canvas>
+<canvas id="bgv" width="36" height="64" style="display:none"></canvas><canvas id="cv"></canvas>
 <script src="墨流.js?v=20261025"></script>
 <script>
 // 群雄逐鹿 · 守关原型（10-24）：敌军从上面一波波冲下来，刘关张站在城头各自普攻（10-24 起不设主角），招式按出手顺序轮流放，
@@ -4558,7 +4558,7 @@ function frame(now) {
   render(); bgMirror(); requestAnimationFrame(frame);
 }
 const BGV = document.getElementById('bgv'), BGX = BGV.getContext('2d'); let bgTick = 0;
-function bgMirror() { if (innerWidth <= W * S + 2 || (bgTick++ & 3)) return; BGX.drawImage(cv, 0, 0, 36, 64); }   // 宽屏才画，每 4 帧缩成 36×64 一次，放大加模糊就够当底
+function bgMirror() { const wide = innerWidth > W * S + 2; if (BGV.style.display !== (wide ? '' : 'none')) BGV.style.display = wide ? '' : 'none'; if (!wide || (bgTick++ & 3)) return;   /* 10-27 手机上变糊：全屏加模糊滤镜的底层画布让手机浏览器把整页降了清晰度，窄屏直接不显示 */ BGX.drawImage(cv, 0, 0, 36, 64); }   // 宽屏才画，每 4 帧缩成 36×64 一次，放大加模糊就够当底
 function boot() { fit(); addEventListener('resize', fit); if (new URLSearchParams(location.search).has('story')) playStory('open', () => { screen = 'menu'; }, true);   /* 网址带 ?story：直接从序章开始翻看第一章全部剧情（10-26 用户：「你专门开个故事我看看，可以来回翻动的」） */
   requestAnimationFrame(frame); }
 function fit() {
