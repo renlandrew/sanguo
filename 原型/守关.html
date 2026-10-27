@@ -2131,7 +2131,7 @@ function drawGenerals() {
     if (SHEETS[sk] && ready(IMG[sk])) {
       // 出招演 skill（施法时间加收招 0.2 秒演完 8 帧），普攻演 atk（0.35 秒），平时 idle 来回播
       const nOf = a => SHEETS[sk].anims[a].rects.length;
-      let anim = 'idle', ni = Math.min(3, nOf('idle')), fr = ((G.t * 2.2 + i * 1.3) % (2 * ni - 2)); if (fr > ni - 1) fr = 2 * ni - 2 - fr;   /* 10-27 用户：「待机应该是站立，衣服随风飘扬，不要动来动去像个小丑」——只用开头站定的三帧慢慢来回 */
+      let anim = 'idle', ni = nOf('idle'), fr = ((G.t * 6 + i * 3) % (2 * ni - 2)); if (fr > ni - 1) fr = 2 * ni - 2 - fr;   /* 10-27 用户：「待机应该是站立，衣服随风飘扬，不要动来动去像个小丑」——只用开头站定的三帧慢慢来回 */
       if (casting) { anim = 'skill'; fr = G.cast.t / (G.cast.dur + .2) * (nOf('skill') - .01); }
       else if (an) { anim = an.v && SHEETS[sk].anims[an.v] ? an.v : 'atk'; fr = an.t / atkAnim(id) * (nOf(anim) - .01); }
       const sealed = G.seal[i] > 0, rage = id === 'zhang' && G.rageT > 0;
@@ -4162,7 +4162,7 @@ function drawReward() {
 // 神兵（10-25 用户发来三张别家「神兵」截图：「画好不同等级的青龙偃月刀等武器，要越来越绚」）：三人的兵器各画五级（ChatGPT 画、工具/matte_weapons.py 抠，img/wpn_<人><1..5>.png），
 // 兵器精炼等级（INV.up.wpn，三人共用）0–4 对应第 1–5 级的样子，+5 用第 5 级再加一圈金光：凡铁、精钢、龙纹、鎏金、神兵、绝世。
 // 一页：中间一把大的斜着、慢慢浮，身后按等级发光（越高越亮、越多颜色），右边三格换着看三人的；底下写下一级要什么、几天后够，够了就打造
-const G_FIX = { liu: { idle: .74 } };   // 10-27 新录战场人物：刘备待机首帧蹲得低，按它定的比例画出来大一圈（用户：「大小不一？」），缩回和关张一样高
+const G_FIX = { guan: { idle: 1.03, atk: .95 }, zhang: { atk: 1.05 }, liu: { idle: .64 } };   // 按图集里身体高度量出来的（行里像素够多才算身体，兵器细杆不算），让三人待机、普攻一样高   // 10-27 新录战场人物：刘备待机首帧蹲得低，按它定的比例画出来大一圈（用户：「大小不一？」），缩回和关张一样高
 const ARM = { who: 'guan', t0: 0, flash: 0 };
 const WPN = { guan: '青龙偃月刀', zhang: '丈八蛇矛', liu: '雌雄双股剑' }, WPN_TIER = ['凡铁', '精钢', '龙纹', '鎏金', '神兵', '绝世'];
 const WPN_GLOW = { guan: '90,220,170', zhang: '255,120,60', liu: '110,180,255' }, WPN_ROT = { guan: .62, zhang: .62, liu: .14 };   // 双股剑是交叉的一对，只斜一点
