@@ -388,11 +388,11 @@ const LEVELS = [
     waves: [[2, 'bing', 26, 8, 'rand'], [8, 'gong', 8, 3, 'rand'], [14, 'bing', 21, 0, 'wedge'], [20, 'lishi', 8, 4, 'rand'],   // 10-26：程远志提前到第 26 秒、后面的兵砍掉一半、走快 1.4 倍
       [26, 'cyz', 1, 0, 'rand', { g: 'c', lead: true }], [27, 'bing', 26, 0, 'wedge', { g: 'c' }], [31, 'lishi', 10, 4, 'rand', { g: 'c' }], [34, 'bing', 30, 10, 'rand', { g: 'c' }], [38, 'gong', 8, 4, 'line', { g: 'c' }]],
     tips: [[1, '残局：开局黄巾兵已经冲到半路了'], [4, '关羽学会了青龙斩：一刀扫倒一片'], [7, '弓手停在远处朝城上放箭，点他让刘备、关羽先打他'], [15, '程远志来了！他头顶有将旗——斩了他，他带的兵全都溃散']] },
-  { id: 4, name: '青州解围', sub: '黄巾围青州，刘备两侧设伏', hpMul: 1.318, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'plain', reward: '熟铁',
-    rules: { ambush: { t: 32, y0: 180, y1: 340 }, casts: 36 },
+  { id: 4, name: '青州解围', sub: '黄巾围青州，刘备两侧设伏', hpMul: 4.6,   /* 10-26 去掉限手后 1.318 变 3 星，用户：「第四关不难，可以增加点血量」→ 2.17 星 5/6 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'plain', reward: '熟铁',
+    rules: { ambush: { t: 32, y0: 180, y1: 340 } },                                  // 10-26 去掉「限手 36 次」：第四关起本来就默认自己点牌（用户：「好」）
     waves: [[2, 'bing', 20, 8, 'rand'], [8, 'qibing', 4, 4, 'rand'], [14, 'bing', 18, 0, 'wedge', { g: 'a' }], [15, 'qushuai', 1, 0, 'rand', { g: 'a', lead: true }], [22, 'qibing', 6, 5, 'rand'], [26, 'bing', 30, 6, 'rand'],
       [36, 'lishi', 6, 4, 'rand'], [40, 'bing', 26, 0, 'line', { g: 'b' }], [41, 'qushuai', 1, 0, 'rand', { g: 'b', lead: true }], [48, 'qibing', 6, 6, 'rand'], [55, 'bing', 24, 12, 'rand'], [62, 'lishi', 4, 4, 'rand'], [66, 'qibing', 6, 6, 'rand', { g: 'c' }], [67, 'qushuai', 1, 0, 'rand', { g: 'c', lead: true }]],
-    tips: [[1, '张飞学会了当阳一喝！骑兵冲得快，喝晕就落马'], [6, '限手：这一关招式不自动放，点好了的牌才出招，一共 36 次'], [30, '伏兵就要杀出来了，把敌人引到半路'], [40, '渠帅也是头目，斩了他溃散一片']] },
+    tips: [[1, '张飞学会了当阳一喝！骑兵冲得快，喝晕就落马'], [6, '从这关起招式要自己点：牌亮了就点它出招；右边「自动」可以改回轮流自动'], [30, '伏兵就要杀出来了，把敌人引到半路'], [40, '渠帅也是头目，斩了他溃散一片']] },
   { id: 5, name: '邓茂', sub: '拦路将 · 大兴山下，邓茂挺枪拦路', kind: 'duel', boss: 'dengmao', hpMul: 2.207, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'canyon', reward: '镔铁 · 兵书残卷',
     moves: ['heavy', 'summon', 'heavy', 'buff', 'heavy', 'summon'], gap: 3.2, heavy: 14, adds: [['bing', 6], ['lishi', 1]],
     tips: [[1, '斗将：邓茂站在场中出招，城防就是你们的血'], [4, '看到「挺枪突刺」就点右下角「举盾」，挡下来还能反击'], [14, '张飞的一喝能喝晕敌将，打断他']] },
@@ -509,7 +509,7 @@ const LEVELS = [
       [48, 'gaoshun', 1, 0, 'rand', { g: 'a', lead: true, lane: 'M' }], [48, 'xianzhen', 16, 8, 'rand', { g: 'a', lane: 'M' }], [50, 'feixiong', 5, 5, 'rand', { lane: 'L' }], [52, 'langqi', 10, 6, 'rand', { lane: 'R' }],
       [62, 'xiliang', 30, 10, 'rand']],
     tips: [[1, '三路同时来：左路狼骑、中路西凉兵、右路陷阵营'], [46, '高顺带陷阵营走中路，斩他溃散']] },
-  { id: 30, name: '吕布', sub: '大战 · 三英战吕布', kind: 'duel', boss: 'lvbu', hpMul: 2.094, sanying: true, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '战鼓（法宝）· 第一章突破',
+  { id: 30, name: '吕布', sub: '大战 · 三英战吕布', kind: 'duel', boss: 'lvbu', hpMul: 3.0,   /* 10-26 一喝能喝断、举盾举到落地以后：2.094 时兵器差一级也 6/6 赢，调到 3.0：够级 2.33 星 6/6，差一级 3/6 */ sanying: true, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '战鼓（法宝）· 第一章突破',
     moves: ['heavy', 'combo', 'guard', 'rush', 'buff', 'combo', 'heavy', 'rush'], gap: 3, heavy: 11, adds: [['langqi', 3]],
     tips: [[1, '三英战吕布：三人都在出手顺序里时，每第三次出招多一记合击'], [8, '画戟横扫砍两下，盾要举两次；无双是护罩，喝晕才破']] },
 ];
@@ -1259,7 +1259,8 @@ function stepAlly(dt) {
   } else if (A.cd <= 0) { A.cd = 1.4; const tg = alive().filter(e => !FOES[e.kind].civ && Math.hypot(e.x - A.x, e.y - A.y) < 70)[0]; if (tg) { hurt(tg, 40 * HPX, 'ally'); A.swing = .3; } }
   if (A.swing > 0) A.swing -= dt;
 }
-function pressShield() { if (G.shieldCd > 0 || G.state !== 'play') return; G.shieldT = .75; G.shieldCd = 4; G.fx.push({ k: 'shieldup', t: 0, dur: 1.4 }); }
+function pressShield() { if (G.shieldCd > 0 || G.state !== 'play') return; const d = G.foes.find(e => e.duel && !e.dead && e.mv && (e.mv.k === 'heavy' || e.mv.k === 'combo' || e.mv.k === 'rush'));
+  G.shieldT = d ? Math.max(.75, d.mv.dur - d.mv.t + .2) : .75; G.shieldCd = 4;   /* 敌将正在蓄重招时举盾：一直举到这一下落地（10-26 用户：「举盾也经常感觉没用」——原来只举 0.75 秒，蓄 1.6 秒的突刺一看到提示就按反而落空） */ G.fx.push({ k: 'shieldup', t: 0, dur: 1.4 }); }
 // ---------- 斗将：敌将站在场中，按招式表出招 ----------
 const MOVE_NAME = { huzhen: { heavy: '双刀劈', combo: '双刀连斩', summon: '西凉兵', buff: '蓄势' }, huaxiong: { heavy: '大刀重斩', summon: '骁骑突袭', buff: '斩将威压', guard: '关前死守' },
   lijue: { heavy: '横刀', summon: '飞熊军', heal: '劫掠', buff: '蓄势' }, lvbu: { heavy: '方天画戟', combo: '画戟横扫', guard: '无双', buff: '飞将', rush: '赤兔冲阵' },
@@ -1301,7 +1302,7 @@ function resolveMove(e, k) {
   if (k === 'rush') { e.x = clamp(HX + (rnd() < .5 ? -1 : 1) * R(60, 110), 60, 300); k = 'heavy'; }   // 赤兔冲阵：闪身换位再重击
   if (k === 'guard') { e.guardT2 = 6 * TIMEX.v; G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 120, text: '护罩：伤害减半，喝晕才破', size: 16, color: CINNABAR }); return; }
   if (k === 'heavy') {
-    if (G.shieldT > 0) { G.counterT = 3; G.blocks = (G.blocks || 0) + 1; G.fx.push({ k: 'blocked', t: 0 }); }
+    if (G.shieldT > 0) { G.counterT = 3; G.blocks = (G.blocks || 0) + 1; G.fx.push({ k: 'blocked', t: 0 }); G.shieldT = 0; G.shieldCd = 0; }   /* 挡下了冷却清零：连斩第二下马上能再举 */
     else { G.wall -= L.heavy * (e.buffT > 0 ? 1.5 : 1); G.fx.push({ k: e.kind === 'zhangjiao' ? 'bolt' : 'lunge', t: 0, x: clamp(e.x + R(-60, 60), 40, 320), bx: e.x, by: e.y }); G.shake = .4; }
   } else if (k === 'summon') {
     for (const [kind, n] of L.adds) for (let i = 0; i < n * ENEMY_X; i++) { spawn({ kind, x: clamp(e.x + R(-130, 130), 30, 330), lane: false }, e.y + R(-6, 24)); G.total++; }
@@ -1435,7 +1436,7 @@ function resolveSkill(id, boost = 1) {
   if (id === 'liu' && G.st.ji) G.jiNext = true;
   if (id === 'zhang') {
     const R0 = G.st.zhangR;
-    for (const e of al) { const d = WALL_Y - e.y; if (d < R0 || e.duel) { const T = FOES[e.kind], res = T.boss ? (T.taunt || T.rampage ? 1 : .35) : (T.stunRes || 1); if (T.taunt || T.rampage) shoutBack(e); hurt(e, 24 * HPX * boost, 'roar'); if (!e.duel) e.knock += SPD_X * (28 + 50 * (1 - d / R0)) * res; e.stun = Math.max(e.stun, G.st.zhangStun * res); } }
+    for (const e of al) { const d = WALL_Y - e.y; if (d < R0 || e.duel) { const T = FOES[e.kind], res = T.boss ? (T.taunt || T.rampage ? 1 : .35) : (T.stunRes || 1); if (T.taunt || T.rampage) shoutBack(e); hurt(e, 24 * HPX * boost, 'roar'); if (e.duel && e.mv && e.mv.k !== 'heal') { e.mv = null; e.moveT = (G.lv.gap || 3) * TIMEX.v; if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 110, text: '打断！', size: 24, color: CINNABAR }); }   /* 一喝喝断敌将正在蓄的招（10-26 用户：「张飞的喝不能阻断」——原来只晕 0.5 秒，晕完突刺照样落下） */ if (!e.duel) e.knock += SPD_X * (28 + 50 * (1 - d / R0)) * res; e.stun = Math.max(e.stun, G.st.zhangStun * res); } }
     G.fx.push({ k: 'roar', t: 0, ox: genX(G.order.indexOf('zhang')), R: R0, hits: al.filter(e => WALL_Y - e.y < R0).map(e => [e.x, e.y - 14]), rays: Array.from({ length: 15 }, (_, i) => ({ a: -Math.PI * .93 + Math.PI * .86 * (i + R(-.35, .35)) / 14, l: R0 * R(.45, 1.02), w: R(12, 24), bend: R(-.12, .12) })) });
     G.shake = .3; G.roarT = G.t;
     if (G.up && G.up.zhang2) { G.trenchT = 4; G.trenchY = WALL_Y - Math.min(R0, 160) * .62; }   // 怒雷：城前留一道火沟
