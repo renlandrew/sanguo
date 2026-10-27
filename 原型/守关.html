@@ -1298,6 +1298,7 @@ function stepDuel(e, dt) {
     e.mv = { k, t: 0, dur, bot: (window.__sg.auto || G.sim) && hv && rnd() < .75 ? dur - R(.15, .6) : -1 };
     e.castT = dur; if (k === 'heavy' && ULT_FOE.has(e.kind)) playUlt(e.kind, true);
     G.fx.push({ k: hv ? 'warn' : 'txt', t: 0, x: e.x, y: e.y - 100, text: NM[k] || k, size: 24, color: hv ? CINNABAR : INK, dur, boss: e.kind });
+    if (hv && e.kind === 'zhangjiao') { spPlay('sigil_purple', e.x, e.y + 4, 230, { ground: true, sy: .42, fps: 20 }); spPlay('arcs', e.x, -40, 150, { follow: e, fps: 20 }); }   /* 张角蓄天雷：脚下紫色符文法阵、手上电弧（魔兽风，Veo） */
   }
 }
 function resolveMove(e, k) {
@@ -1309,13 +1310,13 @@ function resolveMove(e, k) {
   if (k === 'guard') { e.guardT2 = 6 * TIMEX.v; G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 120, text: '护罩：伤害减半，喝晕才破', size: 16, color: CINNABAR }); return; }
   if (k === 'heavy') {
     if (!G.sim) G.fx.push({ k: 'bossult', t: 0, dur: 1.8, boss: e.kind, bx: e.x, by: e.y, blocked: G.shieldT > 0, fired: {} });   /* 敌将重招的大范围华彩（10-27 用户：「敌人的首领将领的法术还不够绚丽，要范围很大，绚丽」） */
-    if (G.shieldT > 0) { G.counterT = 3; G.blocks = (G.blocks || 0) + 1; G.fx.push({ k: 'blocked', t: 0 }); G.shieldT = 0; G.shieldCd = 0; }   /* 挡下了冷却清零：连斩第二下马上能再举 */
+    if (G.shieldT > 0) { G.counterT = 3; G.blocks = (G.blocks || 0) + 1; G.fx.push({ k: 'blocked', t: 0 }); spPlay('dome', W / 2, WALL_Y + 20, 440, { fps: 22, alpha: .85 }); G.shieldT = 0; G.shieldCd = 0; }   /* 挡下了冷却清零：连斩第二下马上能再举 */
     else { G.wall -= L.heavy * (e.buffT > 0 ? 1.5 : 1); G.fx.push({ k: e.kind === 'zhangjiao' ? 'bolt' : 'lunge', t: 0, x: clamp(e.x + R(-60, 60), 40, 320), bx: e.x, by: e.y }); G.shake = .4; }
   } else if (k === 'summon') {
     for (const [kind, n] of L.adds) for (let i = 0; i < n * ENEMY_X; i++) { spawn({ kind, x: clamp(e.x + R(-130, 130), 30, 330), lane: false }, e.y + R(-6, 24)); G.total++; }
   } else if (k === 'seal') {
     const ids = [0, 1, 2, 3].filter(i => G.order[i] && G.seal[i] <= 0);
-    if (ids.length) { const i = ids[Math.floor(rnd() * ids.length)]; G.seal[i] = 6; G.fx.push({ k: 'txt', t: 0, x: genX(i), y: GY - 96, text: '迷魂', size: 22, color: CINNABAR }); }
+    if (ids.length) { const i = ids[Math.floor(rnd() * ids.length)]; G.seal[i] = 6; G.fx.push({ k: 'txt', t: 0, x: genX(i), y: GY - 96, text: '迷魂', size: 22, color: CINNABAR }); spPlay('face', W / 2, WALL_Y - 200, 320, { fps: 18 }); }   /* 妖术迷魂：屏幕中间张口的妖脸 */
   } else if (k === 'buff') { e.buffT = 8; G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 120, text: '伤害 +50%', size: 18, color: CINNABAR }); }
 }
 function stepAttacks(dt, al) {
@@ -1423,6 +1424,7 @@ function startCast(i) {
   const tao = G.st.taoyuan && id === 'guan' && G.seq.slice(-2).join() === 'zhang,liu'; if (tao) boost *= 2;
   G.seq.push(id); if (G.seq.length > 4) G.seq.shift();
   G.cast = { id, slot: i, t: 0, dur: GEN[id].cast, boost, tao }; sfx(id);
+  if (id === 'liu') spPlay('sigil_gold', genX(i), GY - 4, 150, { ground: true, sy: .45, fps: 22 });   /* 刘备出双股剑：脚下金色符文法阵 */
   G.ready[i] = G.t + cdOf(id); G.turn = (i + 1) % NS;
   G.fx.push({ k: 'skname', t: 0, dur: 1.3, x: genX(i), y: GY - 150, text: GEN[id].skill, id });                      // 竖在这员武将头顶，四个位置隔 86，不会叠
   if (G.awake === id) playUlt(id);
@@ -1502,7 +1504,7 @@ function logHit(L, e) {
   if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 90, text: '撞退', size: 18, color: CINNABAR });
 }
 function fireNu(x) {
-  const n = Math.min(3, G.st.nu), [cx, w] = actSpan(n, x); G.nuUsed = true; G.nuArm = false;
+  const n = Math.min(3, G.st.nu), [cx, w] = actSpan(n, x); G.nuUsed = true; G.nuArm = false; for (let k = 0; k < n; k++) spPlay('spears', cx + (k - (n - 1) / 2) * 110, WALL_Y - 120 - k * 20, 380, { fps: 20, delay: k * .1 });   /* 连弩、万箭：天降光矛雨 */
   const tg = alive().filter(e => e.y > HZ + 4 && !FOES[e.kind].civ && !FOES[e.kind].invuln && Math.abs(e.x - cx) < w / 2 && seen(e)).sort((a, b) => b.y - a.y);
   for (let k = 0; k < NU_N[n - 1] && tg.length; k++) G.shots.push({ k: 'volley', x: clamp(cx + R(-w / 2, w / 2), 10, W - 10), y: WALL_Y - 4, target: tg[k % Math.min(tg.length, 10)], dmg: 30 * HPX });
   if (n >= 3) for (const e of tg) { const T = FOES[e.kind]; if (T.shoot || T.runShoot || T.heal) e.rootT = Math.max(e.rootT || 0, 2.5); }
@@ -1599,7 +1601,7 @@ function renderScreen() {
   for (const L of G.logs) drawLog(L);
   drawHuts();
   drawDim();
-  drawGroundFx();
+  drawGroundFx(); drawSpfx(true);
   spxPass('ground');
   for (const f of G.fx) if (f.k === 'corpse') drawCorpse(f);
   const fs = G.foes.slice().sort((a, b) => a.y - b.y);
@@ -1612,7 +1614,7 @@ function renderScreen() {
   for (const s of G.shots) drawShot(s);
   if (SPX.ok) spxParts(); else drawParts();
   spxPass('top');
-  drawFbs();
+  drawFbs(); drawSpfx(false);
   drawShards();
   if (ML) { const dt = clamp((G.vt || 0) - (ML.vt0 ?? (G.vt || 0)), 0, 1 / 20); ML.vt0 = G.vt || 0; ML.step(dt); if (ML.render(cv.width, cv.height)) ctx.drawImage(ML.canvas, 0, 0, W, H); ML.drawParts(ctx); }
   drawWash();
@@ -1944,6 +1946,17 @@ function fbFrame(k, i, x, y, size, rot, alpha = 1, flip = 1, glow = 0) {
   ctx.drawImage(im, sx, sy, S, S, -M.anchor[0] * size, -M.anchor[1] * size, size, size);
   if (glow > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = alpha * glow; ctx.drawImage(im, sx, sy, S, S, -M.anchor[0] * size, -M.anchor[1] * size, size, size); }
   ctx.restore();
+}
+// 魔兽风法术（10-27 用户发五张魔兽截图：「法术多做这种效果」）：Veo 黑底录、切成逐帧图集 img/fx_sp_<键>.webp，spPlay 推一段，地面的（ground）压扁贴地，画在敌人下面
+const SPV = {}; for (const k of ['sigil_purple', 'arcs', 'face', 'dome', 'spears', 'sigil_gold']) { const im = new Image(); im.src = 'img/fx_sp_' + k + '.webp' + BUST; fetch('img/fx_sp_' + k + '.json' + BUST).then(r => r.ok ? r.json() : null).then(j => { if (j) SPV[k] = { im, m: j.anims.play, stand: j.stand }; }).catch(() => {}); }
+function spPlay(k, x, y, size, o = {}) { if (!G || G.sim || !SPV[k]) return; (G.spfx = G.spfx || []).push({ k, x, y, size, born: (G.vt || 0) + (o.delay || 0), fps: o.fps || 16, sy: o.sy || 1, ground: !!o.ground, alpha: o.alpha ?? 1, follow: o.follow || null }); }
+function drawSpfx(ground) {
+  if (!G.spfx || !G.spfx.length) return; const vt = G.vt || 0;
+  G.spfx = G.spfx.filter(f => vt - f.born < SPV[f.k].m.rects.length / f.fps);
+  for (const f of G.spfx) { if (f.ground !== ground) continue; const t = vt - f.born; if (t < 0) continue; const V = SPV[f.k], R = V.m.rects, i = Math.min(R.length - 1, Math.floor(t * f.fps)), [sx, sy, sw, sh] = R[i], kk = f.size / V.stand, an = V.m.anchor;
+    const x = f.follow ? f.follow.x : f.x, y = f.follow ? f.follow.y + (f.y || 0) : f.y, a = f.alpha * Math.min(1, (R.length - 1 - i) / 4 + .2);
+    ctx.save(); ctx.translate(x, y); ctx.scale(1, f.sy); ctx.globalAlpha = a; ctx.drawImage(V.im, sx, sy, sw, sh, -an[0] * kk, -an[1] * kk, sw * kk, sh * kk);
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a * .3; ctx.drawImage(V.im, sx, sy, sw, sh, -an[0] * kk, -an[1] * kk, sw * kk, sh * kk); ctx.restore(); }
 }
 function drawFbs() {
   if (!G.fbs || !G.fbs.length) return; const vt = G.vt || 0;
@@ -4481,7 +4494,7 @@ cv.addEventListener('pointerdown', ev => {
 window.__sg = {
   auto: false, turbo: 1, all: new URLSearchParams(location.search).has('all'), seed: 0,   // 网址带 ?all 就十关全开（试玩用）
   tune: TUNE, PERKS, GEN, LEVELS, WAVE, TIMEX, MER, RANK_AT, setSpd(v) { SPD.v = SPD_X = v; ACT_X = 1 / v; }, get G() { return G; }, draw: () => render(),            // draw：面板藏着时浏览器不跑动画帧，截图前手动画一帧 get screen() { return screen; },
-  start: i => startLevel(i), open: i => openLevel(i), get prep() { return PREP; }, set prep(v) { PREP = v; }, get screen() { return screen; }, get ml() { return [ML, MLB]; }, get snd() { return { SND, MP }; },
+  start: i => startLevel(i), open: i => openLevel(i), get prep() { return PREP; }, set prep(v) { PREP = v; }, get screen() { return screen; }, get ml() { return [ML, MLB]; }, get snd() { return { SND, MP }; }, spPlay: (...a) => spPlay(...a),
   // 军师荐得对不对：机器人照真值打，每次晋升让三位军师各荐一次，数荐中真值最高那张的次数（10-25）
   advTest(levels, seeds = 2) { const out = {};
     for (const i of levels) for (let k = 0; k < seeds; k++) { this.seed = k * 101; this.auto = true; this.simming = true; startLevel(i); this.simming = false; G.sim = true; let n = 0;
