@@ -12,7 +12,8 @@ v = src.max(axis=2)
 floor = float(np.percentile(v, 35)) + 6                                      # 黑底占大半，取三分之一分位当底噪
 v = np.clip((v - floor) / max(1.0, float(np.percentile(v, 99.7)) - floor), 0, 1)
 for dst in sys.argv[2:]:
-    old = Image.open(dst); size = old.size; alpha = old.mode in ('RGBA', 'LA') or (old.mode == 'P' and 'transparency' in old.info)
+    old = Image.open(dst); alpha = old.mode in ('RGBA', 'LA') or (old.mode == 'P' and 'transparency' in old.info)
+    k = max(1, 1024 // max(old.size)); size = (old.size[0] * k, old.size[1] * k)   # 10-27 用户嫌天雷模糊：贴图按原比例放大到长边约 1024（UV 按比例取，尺寸可以变）
     L = Image.fromarray((v * 255).astype(np.uint8), 'L').resize(size, Image.Resampling.LANCZOS)
     if alpha: out = Image.merge('RGBA', (Image.new('L', size, 255),) * 3 + (L,))
     else: out = Image.merge('RGB', (L, L, L))

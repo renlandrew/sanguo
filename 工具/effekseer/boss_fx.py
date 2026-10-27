@@ -11,7 +11,7 @@ from PIL import Image
 from scipy import ndimage as ndi
 
 HERE = Path(__file__).resolve().parent; OUT = HERE.parents[1] / '原型' / 'img'
-SIZE = 512
+SIZE = 768                                                                     # 10-27 用户：「这好像很模糊」——手机上一帧要拉到一千多像素，512 太小
 RAMPS = {                                                                      # 暗 → 主色 → 亮色 → 白，和 BOSS_FX 的 col / glow 一致
     'dengmao':   ['#3a2006', '#a8640e', '#e0a23a', '#ffd27a', '#fff6e0'],
     'zhangjiao': ['#1e0838', '#6a2cc0', '#b46cff', '#f4d36a', '#fffbe8'],
@@ -34,7 +34,7 @@ cw = sheet.shape[1] // COLS; ch = cw; frames = []
 for k in range(N):
     c = sheet[(k // COLS) * ch:(k // COLS + 1) * ch, (k % COLS) * cw:(k % COLS + 1) * cw]
     L = c.max(axis=2); L = np.clip((L - .03) / .97 * GAIN.get(key, 1), 0, 1)                         # Effekseer 的黑是真黑，只去一点点压缩噪声
-    a = np.clip(L * 1.6, 0, 1) ** .85; a = ndi.gaussian_filter(a, .6)
+    a = np.clip(L * 1.6, 0, 1) ** .85; a = ndi.gaussian_filter(a, .3)
     rgb = ramp(key, L ** .8)
     frames.append(np.dstack([rgb, a * 255]).astype(np.uint8))
 al = np.stack([f[..., 3] > 10 for f in frames]); ys, xs = np.where(al.any(axis=0))
