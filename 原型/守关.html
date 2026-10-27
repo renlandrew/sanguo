@@ -1831,11 +1831,13 @@ const BOSS_FX = {
 };
 const BTINT = {};
 // Veo 录的法术动画（黑底去黑、切成逐帧图集，工具/veo/cut_vfx.py）：重招落地时叠在画稿上播，每秒 12 帧；读不到就只演画稿和墨流
-const BVFX = {}; for (const k of Object.keys(BOSS_FX)) { const im = new Image(); im.src = 'img/fx_boss_' + k + '.webp' + BUST; fetch('img/fx_boss_' + k + '.json' + BUST).then(r => r.ok ? r.json() : null).then(j => { if (j) BVFX[k] = { im, m: j.anims.play, stand: j.stand }; }).catch(() => {}); }
+const BVFX = {}; for (const k of Object.keys(BOSS_FX)) { const im = new Image(); im.src = 'img/fx_boss_' + k + '.webp' + BUST; fetch('img/fx_boss_' + k + '.json' + BUST).then(r => r.ok ? r.json() : null).then(j => { if (j) BVFX[k] = { im, m: j.anims.play, stand: j.stand, efk: j.src === 'effekseer' }; }).catch(() => {}); }
 function drawBossVfx(k, t, x, y, size, rot = 0, alpha = 1, wx = 1) {
   const V = BVFX[k]; if (!V || !ready(V.im)) return; const R = V.m.rects, i = Math.floor(t * 20); if (i < 0 || i >= R.length) return; const [sx, sy, sw, sh] = R[i], kk = size / V.stand;   /* 每秒 20 帧：录的 4 秒太慢，压到一秒半左右跟上打中那一下 */
   const C = bvfxFeather(V.im, sx, sy, sw, sh);
-  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = alpha * .95; ctx.drawImage(C, 0, 0, sw, sh, -sw * kk * wx / 2, -sh * kk / 2, sw * kk * wx, sh * kk); ctx.restore();   /* 10-27 用户：「我觉得都要优化一下」——「滤色」叠上去像光，不再是平涂实心块盖住场景；胡轸加亮那层用户说「保持之前的淡更好看」，去掉了 */
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); const dw = sw * kk * wx, dh = sh * kk;
+  if (V.efk) { ctx.globalAlpha = alpha * .9; ctx.drawImage(C, 0, 0, sw, sh, -dw / 2, -dh / 2, dw, dh); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = alpha * .35; ctx.drawImage(C, 0, 0, sw, sh, -dw / 2, -dh / 2, dw, dh); }   /* Effekseer 的透明是干净的：正常叠上去保住颜色，再「变亮」叠一层发光 */
+  else { ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = alpha * .95; ctx.drawImage(C, 0, 0, sw, sh, -dw / 2, -dh / 2, dw, dh); } ctx.restore();   /* 10-27 用户：「我觉得都要优化一下」——「滤色」叠上去像光，不再是平涂实心块盖住场景；胡轸加亮那层用户说「保持之前的淡更好看」，去掉了 */
 }
 const BVFX_OFF = { huzhen: 1 };   /* 10-27 用户：「不行，有明显的正方形。你还是自己画如何？」——胡轸不用 Veo 录像，回到两把画稿巨刀 */
 let BVFX_C = null;
@@ -1849,12 +1851,12 @@ function bvfxFeather(im, sx, sy, sw, sh) {                                      
 }
 // 每员首领的 Veo 动画放哪、多大、转多少（录的时候多半是竖着的：从上往下劈、从下往上刺）
 const BVFX_AT = {                                                                   // [x, y, 大小, 转角, 晚几秒（负的就是跳过录像开头的蓄势）, 横向拉宽]：录的多是竖的，落点（爆炸）在下边
-  dengmao:   [[W / 2, WALL_Y - 110, 400, Math.PI, -.6]],                                // 枪从下往上刺的录像倒过来：从敌将那边扎向城头，炸在城上
-  zhangjiao: [[70, WALL_Y - 160, 320, 0, 0], [290, WALL_Y - 160, 320, 0, .12], [180, WALL_Y - 170, 350, 0, .24]],   // 三道天雷先左后右再正中
+  dengmao:   [[W / 2, WALL_Y - 60, 380, 0, .12]],                                       // 10-27 改 Effekseer（GPT 火焰贴图）：巨枪扎到城头那一下，城上喷起一团土金色的火
+  zhangjiao: [[80, WALL_Y - 110, 300, 0, 0], [280, WALL_Y - 110, 300, 0, .12], [180, WALL_Y - 130, 340, 0, .24]],   // 三道天雷（Effekseer + GPT 闪电贴图）先左后右再正中
   huzhen:    [[W / 2, WALL_Y - 130, 420, 0, -.25, 1.75]],   // 第六个数是横向拉宽：10-27 用户「你扩大到接近整个屏幕的宽度会好一些」
-  huaxiong:  [[W / 2, WALL_Y - 180, 460, 0, 0]],
-  lijue:     [[W / 2, WALL_Y - 100, 380, 0, 0]],
-  lvbu:      [[W / 2, WALL_Y - 200, 460, 0, -.15]] };
+  huaxiong:  [[W / 2, WALL_Y - 50, 400, 0, .12]],                                         // 一刀劈下后城前一整排地火（Effekseer + GPT 火焰贴图）
+  lijue:     [[W / 2, WALL_Y - 40, 400, 0, .1]],                                          // 横刀扫过，刀后一路翻卷的烟火（Effekseer + GPT 烟火贴图）
+  lvbu:      [[W / 2, WALL_Y - 70, 430, 0, .15]] };                                      // 巨戟扎下，城上炸起一柱赤红火
 function tintPaint(nm, col) {                                                       // 画稿按颜色重新上色（保留明暗和透明），缓存一张
   const key = nm + col; if (BTINT[key]) return BTINT[key]; if (!hasPaint2(nm)) return null;
   const P = PAINT[nm], sw = P.box[2], sh = P.box[3], c = document.createElement('canvas'); c.width = sw; c.height = sh; const g = c.getContext('2d');
@@ -1880,14 +1882,15 @@ function bossBursts(f, C, n, t0, gap, y = WALL_Y - 24) { for (let i = 0; i < n; 
 function drawBossUlt(f) {
   const C = BOSS_FX[f.boss]; if (!C) return; const t = f.t, A = f.blocked ? .55 : 1, cy = WALL_Y - 70;
   const fade = t > 1.1 ? Math.max(0, (1.5 - t) / .4) : 1;
-  const veo = !!BVFX[f.boss] && !BVFX_OFF[f.boss]; if (veo) for (const [x, y, sz, rot, d, wx] of BVFX_AT[f.boss]) drawBossVfx(f.boss, t - d, x, y, sz, rot, A, wx);   // Veo 录的法术在最底下，画稿和墨流叠上面
+  const clip = !!BVFX[f.boss] && !BVFX_OFF[f.boss], veo = clip && !BVFX[f.boss].efk;   // veo：旧的 Veo 录像，画稿让位；Effekseer 的和画稿一起放
+  if (clip) for (const [x, y, sz, rot, d, wx] of BVFX_AT[f.boss]) drawBossVfx(f.boss, t - d, x, y, sz, rot, A, wx);   // Veo 录的法术在最底下，画稿和墨流叠上面
   if (f.boss === 'dengmao') {                                                       // 一杆巨枪从邓茂身前直扎城头，城头一排炸开
     const p = Math.min(1, t / .18), x1 = f.bx + (W / 2 - f.bx) * p, y1 = f.by + (cy - f.by) * p, rot = Math.atan2(cy - f.by, W / 2 - f.bx) + Math.PI / 2;
     if (!veo) drawTint('spear', C.col, (f.bx + x1) / 2, (f.by + y1) / 2, 160 + 320 * p, rot, A * Math.max(0, 1 - Math.max(0, t - .3) / .3), .8);
     at1(f, 'jet', .02, () => ML && ML.fx.jet(f.bx, f.by, W / 2, cy)); bossBursts(f, C, 4, .18, .05);
   } else if (f.boss === 'zhangjiao') {                                              // 天上翻起乌云，五道天雷依次劈在城头
     at1(f, 'cloud', 0, () => { if (MLB) for (let k = 0; k < 10; k++) MLB.splat(VR(10, W - 10), TOP + VR(10, 60), VR(-200, 200), VR(-40, 60), VR(14, 22), [1.4, 0, .3, 0]); });
-    if (!veo) for (let i = 0; i < 5; i++) { const t0 = .05 + i * .1, u = (t - t0) / .45; if (u < 0 || u > 1) continue; const x = 36 + i * 72 + Math.sin(i * 7.3) * 14, al = (u < .2 ? 1 : (1 - u) / .8) * A;
+    if (!clip) for (let i = 0; i < 5; i++) { const t0 = .05 + i * .1, u = (t - t0) / .45; if (u < 0 || u > 1) continue; const x = 36 + i * 72 + Math.sin(i * 7.3) * 14, al = (u < .2 ? 1 : (1 - u) / .8) * A;
       const pts = [[x + 24, TOP - 10]]; let xx = x + 24; for (let y = TOP + 26; y < WALL_Y; y += 40) { xx += Math.sin(y * .37 + i * 5) * 20; pts.push([xx, y]); } pts.push([x, WALL_Y - 10]);
       brush(ctx, pts, 26, C.col, .35 * al, () => 1, 0, vr); brush(ctx, pts, 10, C.glow, .9 * al, () => 1, 0, vr); brush(ctx, pts, 3.5, '#ffffff', al, () => 1, 0, vr);
       bossGlow(x, WALL_Y - 20, 90, C.col, .6 * al); }
