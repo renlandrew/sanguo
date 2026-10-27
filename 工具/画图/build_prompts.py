@@ -4,7 +4,8 @@
 第二版按段落写：画面 → 镜头构图 → 出场人物造型（只写出场的人）→ 画风 → 不要 → 用户要求的两句强调（各两遍，用户：「每次prompt都要强调」）。
 用法：python3 三国志/工具/画图/build_prompts.py  → jobs_v2.json（[{id, ar, prompt}]），一条消息只发一张，附第 5 关剧情图当画风参考。
 """
-import json, re
+import json, os, re
+ALL = os.environ.get('ALL') == '1'   # ALL=1：整章所有图都出一份（10-27 用户要「所有图片」的 prompt）
 from pathlib import Path
 HERE = Path(__file__).resolve().parent
 V1 = dict(json.load(open(HERE / 'jobs_v1.json', encoding='utf-8')))
@@ -55,9 +56,10 @@ def body(k, p):
 
 out = []
 for k, p in list(V1.items()) + list(EXTRA.items()):
-    if k in DONE or not (k.startswith(('story_s', 'map_', 'item_', 'room_', 'wpn_')) or k in EXTRA or k in REDO): continue
+    if not ALL and (k in DONE or not (k.startswith(('story_s', 'map_', 'item_', 'room_', 'wpn_')) or k in EXTRA or k in REDO)): continue
     b = body(k, p)
     who = [LOOK[n] for n in ('刘备', '关羽', '张飞')] if k == 'trio2' else [LOOK[n] for n in LOOK if n in b] if k.startswith('story') else []
+    if k.startswith('pt_') or k in ('story_guan', 'story_liu', 'story_zhang'): who = [LOOK[n] for n in LOOK if n in b][:1]
     if k == 'pt_zoujing': who = [LOOK['邹靖']]
     if k.startswith('wpn_guan'): who = ['青龙偃月刀每一级的刀身都是光滑完整的钢刃，越高级装饰越华丽但仍然是实心刀身，不要镂空、孔洞、腐蚀状花纹。']
     parts = ['只画一张完整的图（不要拼图、不要用代码裁切）。', '画面：' + b]
@@ -68,5 +70,5 @@ for k, p in list(V1.items()) + list(EXTRA.items()):
     m = re.search(r'(\d+)\s*:\s*(\d+)', b)
     ar = '1:1' if k.startswith('item_') else f'{m.group(1)}:{m.group(2)}' if m else '2:3'
     out.append({'id': k, 'ar': ar, 'prompt': '\n'.join(parts)})
-json.dump(out, open(HERE / 'jobs_v2.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+json.dump(out, open(HERE / ('jobs_all.json' if ALL else 'jobs_v2.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 print(len(out), 'jobs'); print(out[2]['prompt'])
