@@ -21,7 +21,9 @@ RAMPS = {                                                                      #
     'lvbu':      ['#3a0410', '#a4142c', '#e0304a', '#ff8a5a', '#fff0e8'],
 }
 
-GAIN = {'huaxiong': .45, 'lvbu': .8, 'dengmao': 1.25, 'lijue': .5}                         # 亮度倍数：火墙一整排叠起来会冲成一块白，压一压；邓茂的太淡，提一点
+GAIN = {'huaxiong': .45, 'lvbu': .8, 'dengmao': 1.25, 'lijue': .5, 'zhangjiao': 1.3}                         # 亮度倍数：火墙一整排叠起来会冲成一块白，压一压；邓茂的太淡，提一点
+
+HALO = {'zhangjiao': 1.4}                                                      # 透明度的次方：越大外圈光晕越淡（10-27 用户：张角「其他都清晰，就这个模糊」——紫色光晕太厚）
 
 def ramp(name, L):
     cs = np.array([[int(c[i:i + 2], 16) for i in (1, 3, 5)] for c in RAMPS[name]], np.float32)
@@ -34,7 +36,7 @@ cw = sheet.shape[1] // COLS; ch = cw; frames = []
 for k in range(N):
     c = sheet[(k // COLS) * ch:(k // COLS + 1) * ch, (k % COLS) * cw:(k % COLS + 1) * cw]
     L = c.max(axis=2); L = np.clip((L - .03) / .97 * GAIN.get(key, 1), 0, 1)                         # Effekseer 的黑是真黑，只去一点点压缩噪声
-    a = np.clip(L * 1.6, 0, 1) ** .85; a = ndi.gaussian_filter(a, .3)
+    a = np.clip(L * 1.6, 0, 1) ** HALO.get(key, .85); a = ndi.gaussian_filter(a, .3)
     rgb = ramp(key, L ** .8)
     frames.append(np.dstack([rgb, a * 255]).astype(np.uint8))
 al = np.stack([f[..., 3] > 10 for f in frames]); ys, xs = np.where(al.any(axis=0))
