@@ -47,7 +47,7 @@ PLAN = {
     'huaxiong': {'idle': ('idle', range(0, 9)), 'taunt': ('taunt', range(4, 40, 3)), 'heavy': ('heavy', range(4, 30, 2)),   # 待机第 10 帧起 Veo 加了绕身的红飘带；重斩劈下时溅的血点不连身子，抠图时自然丢掉
                  'summon': ('summon', range(4, 36, 3)), 'hit': ('die', range(15, 21)), 'die': ('die', range(14, 40, 2))},   # 倒下那条先举了一下刀（0–13 帧），从跪下那段起取
     'lijue': {'idle': ('idle', range(0, 16, 2)), 'heavy': ('heavy', range(4, 40, 3)), 'summon': ('summon', range(4, 36, 3)), 'hit': ('die', range(18, 24)), 'die': ('die', range(16, 40, 2))},   # 倒下那条也先举刀，从踉跄那段起取
-    'lvbu': {'idle': ('idle', range(0, 16, 2)), 'heavy': ('heavy', range(0, 40, 3)), 'rush': ('rush', range(21, 33)), 'hit': ('die', range(12, 18)), 'die': ('die', range(9, 40, 2))},   # 倒下第 5、6 帧胸口 Veo 加了一团亮光，从 9 起
+    'lvbu': {'idle': ('idle', range(0, 16, 2)), 'heavy': ('die', range(0, 14)), 'rush': ('rush', range(14, 40, 2)), 'hit': ('die', range(14, 20)), 'die': ('die', range(14, 40, 2))},   # 10-27 新画风重录：重击那条背景冒出一大团深蓝，改用倒下那条开头的挥戟   # 倒下第 5、6 帧胸口 Veo 加了一团亮光，从 9 起
     'gaoshun': {'run': ('run', range(21, 32)), 'ram': ('ram', range(6, 40, 3)),   # 跑步一周 11 帧；开头镜头还在追，人先小后大，按身宽归一（FIT）
                  'hit': ('die', range(18, 24)), 'die': ('die', range(14, 40, 2))},   # 倒下：戟断了、躲到盾后单膝跪地
     'panfeng': {'idle': ('ram', range(0, 4)), 'ram': ('ram', range(0, 40, 3))},
