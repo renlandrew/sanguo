@@ -134,7 +134,7 @@ for g in (sys.argv[2:] or ['guan', 'zhang', 'liu']):
         ims = []
         for f in frames:
             im = Image.fromarray(f[y0:y1, x0:x1], 'RGBA').resize((W - 16, H - 16), Image.Resampling.LANCZOS)
-            pad = Image.new('RGBA', (W, H), (0, 0, 0, 0)); pad.paste(im, (8, 8)); ims.append(ink(pad, keep=1, line=float(os.environ.get('INK_LINE', 3)), halo=float(os.environ.get('INK_HALO', 4))))   # 10-27 用户嫌吕布「阴影好严重」：新画风重录时 INK_LINE=1 INK_HALO=0
+            pad = Image.new('RGBA', (W, H), (0, 0, 0, 0)); pad.paste(im, (8, 8)); ims.append(ink(pad, keep=1, line=int(os.environ.get('INK_LINE', 3)), halo=int(os.environ.get('INK_HALO', 4))))   # 10-27 用户嫌吕布「阴影好严重」：新画风重录时 INK_LINE=1 INK_HALO=0
         strips.append((anim, ims, [round((cx - x0) * kk + 8, 1), round((feet - y0) * kk + 8, 1)]))
         print(g, anim, tid, len(ims), '帧', f'{W}x{H}')
     PER = 8                                                                             # 一行最多 8 帧，图集长宽都别超过 4096（手机上贴图边长有上限）
