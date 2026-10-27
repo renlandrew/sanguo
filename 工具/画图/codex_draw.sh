@@ -4,7 +4,7 @@
 # 用法：bash 三国志/工具/画图/codex_draw.sh [id ...]
 C="/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"
 HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/../.." && pwd)"; OUT="$ROOT/美术/重画/codex"; mkdir -p "$OUT/log"
-REF="$ROOT/美术/重画/画风参考_结拜.jpg"
+REF="$ROOT/美术/重画/画风参考_雷劈.jpg"
 IDS=("$@"); [ ${#IDS[@]} -eq 0 ] && IDS=($(python3 -c 'import json,sys;print(" ".join(x["id"] for x in json.load(open(sys.argv[1]))))' "$HERE/jobs_v2.json"))   # 路径里有 andrew's 的撇号：一律走 argv，别拼进 python 字符串
 for id in "${IDS[@]}"; do
   [ -f "$OUT/$id.png" ] && continue
