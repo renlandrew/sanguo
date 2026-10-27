@@ -25,6 +25,9 @@ PLAN = {
     'twinqi':   {'frames': list(range(14, 30)), 'size': 160, 'anchor': 'center', 'loop': True},
     'flysword': {'frames': list(range(14, 30)), 'size': 192, 'anchor': 'center', 'loop': True},
     'cross':    {'frames': list(range(0, 24)), 'size': 192, 'anchor': 'center', 'loop': False},
+    # 10-27 敌方首领重招（make_bossfx_pack.py）：一次性，长边 384，整段 40 帧取前 32
+    **{k: {'frames': list(range(0, 32)), 'size': 384, 'anchor': 'center', 'loop': False} for k in ('boss_dengmao', 'boss_zhangjiao', 'boss_huzhen', 'boss_huaxiong', 'boss_lijue', 'boss_lvbu')},
+    'boss_lijue': {'frames': list(range(0, 20)), 'size': 384, 'anchor': 'center', 'loop': False},   # 后半段月牙合成整圈（不要完整圆环），只取前 20 帧
 }
 
 def cells(path):

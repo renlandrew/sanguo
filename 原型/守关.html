@@ -1305,7 +1305,7 @@ function resolveMove(e, k) {
   if (k === 'rush') { e.x = clamp(HX + (rnd() < .5 ? -1 : 1) * R(60, 110), 60, 300); k = 'heavy'; }   // 赤兔冲阵：闪身换位再重击
   if (k === 'guard') { e.guardT2 = 6 * TIMEX.v; G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 120, text: '护罩：伤害减半，喝晕才破', size: 16, color: CINNABAR }); return; }
   if (k === 'heavy') {
-    if (!G.sim) G.fx.push({ k: 'bossult', t: 0, dur: 1.5, boss: e.kind, bx: e.x, by: e.y, blocked: G.shieldT > 0, fired: {} });   /* 敌将重招的大范围华彩（10-27 用户：「敌人的首领将领的法术还不够绚丽，要范围很大，绚丽」） */
+    if (!G.sim) G.fx.push({ k: 'bossult', t: 0, dur: 1.8, boss: e.kind, bx: e.x, by: e.y, blocked: G.shieldT > 0, fired: {} });   /* 敌将重招的大范围华彩（10-27 用户：「敌人的首领将领的法术还不够绚丽，要范围很大，绚丽」） */
     if (G.shieldT > 0) { G.counterT = 3; G.blocks = (G.blocks || 0) + 1; G.fx.push({ k: 'blocked', t: 0 }); G.shieldT = 0; G.shieldCd = 0; }   /* 挡下了冷却清零：连斩第二下马上能再举 */
     else { G.wall -= L.heavy * (e.buffT > 0 ? 1.5 : 1); G.fx.push({ k: e.kind === 'zhangjiao' ? 'bolt' : 'lunge', t: 0, x: clamp(e.x + R(-60, 60), 40, 320), bx: e.x, by: e.y }); G.shake = .4; }
   } else if (k === 'summon') {
@@ -1823,6 +1823,21 @@ const BOSS_FX = {
   lvbu:      { col: '#e0304a', glow: '#ff7ab0', prof: 'fire' },     // 赤红画戟：火龙盘起、巨戟直刺、再横扫全场
 };
 const BTINT = {};
+// Veo 录的法术动画（黑底去黑、切成逐帧图集，工具/veo/cut_vfx.py）：重招落地时叠在画稿上播，每秒 12 帧；读不到就只演画稿和墨流
+const BVFX = {}; for (const k of Object.keys(BOSS_FX)) { const im = new Image(); im.src = 'img/fx_boss_' + k + '.webp' + BUST; fetch('img/fx_boss_' + k + '.json' + BUST).then(r => r.ok ? r.json() : null).then(j => { if (j) BVFX[k] = { im, m: j.anims.play, stand: j.stand }; }).catch(() => {}); }
+function drawBossVfx(k, t, x, y, size, rot = 0, alpha = 1) {
+  const V = BVFX[k]; if (!V || !ready(V.im)) return; const R = V.m.rects, i = Math.floor(t * 20); if (i < 0 || i >= R.length) return; const [sx, sy, sw, sh] = R[i], kk = size / V.stand;   /* 每秒 20 帧：录的 4 秒太慢，压到一秒半左右跟上打中那一下 */
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = alpha; ctx.drawImage(V.im, sx, sy, sw, sh, -sw * kk / 2, -sh * kk / 2, sw * kk, sh * kk);
+  ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = alpha * .35; ctx.drawImage(V.im, sx, sy, sw, sh, -sw * kk / 2, -sh * kk / 2, sw * kk, sh * kk); ctx.restore();
+}
+// 每员首领的 Veo 动画放哪、多大、转多少（录的时候多半是竖着的：从上往下劈、从下往上刺）
+const BVFX_AT = {                                                                   // [x, y, 大小, 转角, 晚几秒（负的就是跳过录像开头的蓄势）]：录的多是竖的，落点（爆炸）在下边
+  dengmao:   [[W / 2, WALL_Y - 120, 470, Math.PI, -.6]],                                // 枪从下往上刺的录像倒过来：从敌将那边扎向城头，炸在城上
+  zhangjiao: [[70, WALL_Y - 170, 360, 0, 0], [290, WALL_Y - 170, 360, 0, .12], [180, WALL_Y - 180, 390, 0, .24]],   // 三道天雷先左后右再正中
+  huzhen:    [[W / 2, WALL_Y - 120, 430, 0, -.25]],
+  huaxiong:  [[W / 2, WALL_Y - 200, 520, 0, 0]],
+  lijue:     [[W / 2, WALL_Y - 100, 430, 0, 0]],
+  lvbu:      [[W / 2, WALL_Y - 220, 540, 0, -.15]] };
 function tintPaint(nm, col) {                                                       // 画稿按颜色重新上色（保留明暗和透明），缓存一张
   const key = nm + col; if (BTINT[key]) return BTINT[key]; if (!hasPaint2(nm)) return null;
   const P = PAINT[nm], sw = P.box[2], sh = P.box[3], c = document.createElement('canvas'); c.width = sw; c.height = sh; const g = c.getContext('2d');
@@ -1848,19 +1863,20 @@ function bossBursts(f, C, n, t0, gap, y = WALL_Y - 24) { for (let i = 0; i < n; 
 function drawBossUlt(f) {
   const C = BOSS_FX[f.boss]; if (!C) return; const t = f.t, A = f.blocked ? .55 : 1, cy = WALL_Y - 70;
   const fade = t > 1.1 ? Math.max(0, (1.5 - t) / .4) : 1;
+  const veo = !!BVFX[f.boss]; if (veo) for (const [x, y, sz, rot, d] of BVFX_AT[f.boss]) drawBossVfx(f.boss, t - d, x, y, sz, rot, A);   // Veo 录的法术在最底下，画稿和墨流叠上面
   if (f.boss === 'dengmao') {                                                       // 一杆巨枪从邓茂身前直扎城头，城头一排炸开
     const p = Math.min(1, t / .18), x1 = f.bx + (W / 2 - f.bx) * p, y1 = f.by + (cy - f.by) * p, rot = Math.atan2(cy - f.by, W / 2 - f.bx) + Math.PI / 2;
-    drawTint('spear', C.col, (f.bx + x1) / 2, (f.by + y1) / 2, 160 + 320 * p, rot, A * Math.max(0, 1 - Math.max(0, t - .3) / .3), .8);
+    if (!veo) drawTint('spear', C.col, (f.bx + x1) / 2, (f.by + y1) / 2, 160 + 320 * p, rot, A * Math.max(0, 1 - Math.max(0, t - .3) / .3), .8);
     at1(f, 'jet', .02, () => ML && ML.fx.jet(f.bx, f.by, W / 2, cy)); bossBursts(f, C, 4, .18, .05);
   } else if (f.boss === 'zhangjiao') {                                              // 天上翻起乌云，五道天雷依次劈在城头
     at1(f, 'cloud', 0, () => { if (MLB) for (let k = 0; k < 10; k++) MLB.splat(VR(10, W - 10), TOP + VR(10, 60), VR(-200, 200), VR(-40, 60), VR(14, 22), [1.4, 0, .3, 0]); });
-    for (let i = 0; i < 5; i++) { const t0 = .05 + i * .1, u = (t - t0) / .45; if (u < 0 || u > 1) continue; const x = 36 + i * 72 + Math.sin(i * 7.3) * 14, al = (u < .2 ? 1 : (1 - u) / .8) * A;
+    if (!veo) for (let i = 0; i < 5; i++) { const t0 = .05 + i * .1, u = (t - t0) / .45; if (u < 0 || u > 1) continue; const x = 36 + i * 72 + Math.sin(i * 7.3) * 14, al = (u < .2 ? 1 : (1 - u) / .8) * A;
       const pts = [[x + 24, TOP - 10]]; let xx = x + 24; for (let y = TOP + 26; y < WALL_Y; y += 40) { xx += Math.sin(y * .37 + i * 5) * 20; pts.push([xx, y]); } pts.push([x, WALL_Y - 10]);
       brush(ctx, pts, 26, C.col, .35 * al, () => 1, 0, vr); brush(ctx, pts, 10, C.glow, .9 * al, () => 1, 0, vr); brush(ctx, pts, 3.5, '#ffffff', al, () => 1, 0, vr);
       bossGlow(x, WALL_Y - 20, 90, C.col, .6 * al); }
     bossBursts(f, C, 5, .05, .1);
   } else if (f.boss === 'huzhen') {                                                 // 两道赤红巨刀从两边交叉斩下
-    for (const side of [-1, 1]) { const p = Math.min(1, t / .22), a0 = side < 0 ? -1.2 : 1.2, rot = a0 - side * 2.4 * p, x = W / 2 + side * (140 - 120 * p), y = cy - 60 + 40 * p;
+    if (!veo) for (const side of [-1, 1]) { const p = Math.min(1, t / .22), a0 = side < 0 ? -1.2 : 1.2, rot = a0 - side * 2.4 * p, x = W / 2 + side * (140 - 120 * p), y = cy - 60 + 40 * p;
       drawTint('blade', C.col, x, y, 300, rot, A * fade, .65); }
     bossBursts(f, C, 5, .2, .04);
   } else if (f.boss === 'huaxiong') {                                               // 一刀从天劈下，城前地裂、整排着火
