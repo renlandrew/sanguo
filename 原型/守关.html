@@ -4111,7 +4111,7 @@ function drawCamp() {
     uiText(`出外探访 · 派${GEN[id].name}`, 62, y + 15, 13, left ? UIC.cream : 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false });
     if (vr0) uiText((vr0.god ? `带回陨铁！还有精铁 +${vr0.iron}` : `带回精铁 +${vr0.iron} · 机缘 +${vr0.luck}`) + (vr0.page ? ' · 路上捡到残页 +1' : ''), 62, y + 32, 11, vr0.god ? ITEM_C.陨铁 : UIC.gold2, 'left', PLAIN, { stroke: false });
     else { const s2 = `机缘 ${INV.luck || 0}/${LUCK_FULL} 满了得陨铁 · 宜派政治、魅力高的`; uiText(s2, 62, y + 32, fitSize(s2, 10, W - 104 - 62, 99, PLAIN), 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false }); }
-    if (left) pill(W - 92, y + 10, 64, 24, `派出 ${left}`, () => { const r = doVisit(); if (r) { CAMP.visit = { ...r, t0: uiNow() }; showReward(r.god ? '带回陨铁！' : '探访归来', [], [r.id], true, [['精铁', r.iron], r.god ? ['陨铁', r.god] : ['机缘', r.luck], ...(r.page ? [['残页', r.page]] : [])]); } }); else uiSeal(W - 42, y + 22, 26, '毕', UIC.red, true);
+    if (left) pill(W - 92, y + 10, 64, 24, `派出 ${left}`, () => { const r = doVisit(); if (r) { CAMP.visit = { ...r, t0: uiNow() }; showReward(r.god ? '带回陨铁！' : '探访归来', [], [r.id], true, [['精铁', r.iron], r.god ? ['陨铁', r.god] : ['机缘', r.luck], ...(r.page ? [['残页', r.page]] : [])]); REWARD.wait = 2; REWARD.waitText = GEN[r.id].name + '正在四处寻觅'; } }); else uiSeal(W - 42, y + 22, 26, '毕', UIC.red, true);
     y += 48; }
   { const left = choresLeft(), hh = 30 + 4 * 21;                                    // 日常杂务七项一项一项列出来（10-25 用户：「不能这样，要7个都列出来」），两列；点一项做一项，「一键完成」全做
     plate(14, y, W - 28, hh, false);
@@ -4154,7 +4154,15 @@ const showReward = (title, lines, who, joy = true, items = []) => { REWARD = { t
 const itemSnap = () => ({ ...INV.it, 机缘: INV.luck || 0 });
 const itemDiff = (a, b) => Object.keys(b).filter(k => (b[k] || 0) > (a[k] || 0)).map(k => [k, b[k] - (a[k] || 0)]);
 function drawReward() {
-  const R = REWARD, t = uiNow() - R.t0, u = Math.min(1, t / .25), e = 1 - Math.pow(1 - u, 3);
+  const R = REWARD, T = uiNow() - R.t0;
+  if (R.wait && T < R.wait) {                                                       // 10-27 用户：「这里要有2秒的过渡，显示正在寻觅」
+    ctx.save(); ctx.globalAlpha = .82 * Math.min(1, T / .2); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = Math.min(1, T / .2);
+    const id = R.who[0], sz = 96, x = W / 2 - sz / 2, y = 230; ctx.save(); rr(x, y, sz, sz, 8); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], x, y, sz, sz); ctx.restore();
+    if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, x - 1, y - 1, sz + 2, sz + 2, 60, 60, 60, 60, .1);
+    uiText(R.waitText + '.'.repeat(1 + Math.floor(T * 3) % 3), W / 2, y + sz + 34, 16, UIC.gold2, 'center', FONT, { lw: 3 });
+    const bw = 160; ctx.fillStyle = '#2a1608'; ctx.fillRect(W / 2 - bw / 2, y + sz + 54, bw, 5); ctx.fillStyle = '#e0a83a'; ctx.fillRect(W / 2 - bw / 2, y + sz + 54, bw * T / R.wait, 5);
+    ctx.restore(); hit(0, 0, W, H, () => {}); return; }
+  const t = T - (R.wait || 0), u = Math.min(1, t / .25), e = 1 - Math.pow(1 - u, 3);
   ctx.save(); ctx.globalAlpha = .78 * u; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); ctx.restore();
   ctx.save(); ctx.globalAlpha = u; const py = 150 + (1 - e) * 40;
   plate(30, py, W - 60, 300, R.joy);
@@ -4169,7 +4177,7 @@ function drawReward() {
   R.lines.forEach((l, i) => uiText(l, W / 2, (ni ? iy + 70 : py + 78 + sz + 30) + i * 20, 14, R.joy ? UIC.cream : '#d8c8b0', 'center', PLAIN, { lw: 3 }));
   if (t > .5) uiText('点任意处继续', W / 2, py + 286, 11, 'rgba(244,230,196,.55)', 'center', PLAIN, { stroke: false });
   ctx.restore();
-  hit(0, 0, W, H, () => { if (uiNow() - R.t0 > .4) REWARD = null; });
+  hit(0, 0, W, H, () => { if (uiNow() - R.t0 > (R.wait || 0) + .4) REWARD = null; });
 }
 // 神兵（10-25 用户发来三张别家「神兵」截图：「画好不同等级的青龙偃月刀等武器，要越来越绚」）：三人的兵器各画五级（ChatGPT 画、工具/matte_weapons.py 抠，img/wpn_<人><1..5>.png），
 // 兵器精炼等级（INV.up.wpn，三人共用）0–4 对应第 1–5 级的样子，+5 用第 5 级再加一圈金光：凡铁、精钢、龙纹、鎏金、神兵、绝世。
