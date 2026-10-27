@@ -558,7 +558,7 @@ function buildQueue(lv) {
 
 // ---------- 存档（只记每关最好星数） ----------
 // 网址带 ?save=名字 时存进另一套档（测试用，不碰玩家真存档 sgz.proto.*）
-const SAVE_NS = new URLSearchParams(location.search).get('save') || 'proto';
+const SAVE_NS = new URLSearchParams(location.search).get('save') || (() => { try { return localStorage.getItem('sgz.slot') || 'proto'; } catch (e) { return 'proto'; } })();   // 测试期两格存档（系统页左右拨动切换）：proto / proto2
 const SKEY = `sgz.${SAVE_NS}.stars`;
 let BEST = {}; try { BEST = JSON.parse(localStorage.getItem(SKEY) || '{}'); } catch (e) {}
 const saveBest = () => { try { localStorage.setItem(SKEY, JSON.stringify(BEST)); } catch (e) {} };
@@ -3648,8 +3648,18 @@ function drawSystem() {
   const nSeen = Object.keys(STORY).filter(storySeen).length;                       // 三十多场放不下一排：点进去另开一页
   if (!nSeen) uiText('还没有看过的剧情', 34, y3 + 54, 12, 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false });
   else pill(30, y3 + 42, 120, 26, '翻看剧情', () => { screen = 'storylist'; }, false);
+  { const y4 = y3 + 92, two = SAVE_NS === 'proto2', url = new URLSearchParams(location.search).has('save'); plate(16, y4, W - 32, 92);   // 测试用（10-27 用户：「给一个按键，可以重置进度，换另一个则旧进度，左右拉动的btn」）
+    uiText('测试存档', 34, y4 + 24, 18, UIC.gold2, 'left', FONT, { stroke: false });
+    const sx = W - 158, sw = 126, sy = y4 + 10; ctx.save(); ctx.fillStyle = '#1a0c06'; rr(sx, sy, sw, 28, 14); ctx.fill(); ctx.strokeStyle = '#9a7432'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#b0201a'; rr(sx + (two ? sw / 2 : 0) + 2, sy + 2, sw / 2 - 4, 24, 12); ctx.fill(); ctx.restore();
+    uiText('存档一', sx + sw / 4, sy + 14, 12, two ? 'rgba(244,230,196,.5)' : '#fff', 'center', PLAIN, { stroke: false }); uiText('存档二', sx + sw * 3 / 4, sy + 14, 12, two ? '#fff' : 'rgba(244,230,196,.5)', 'center', PLAIN, { stroke: false });
+    if (!url) hit(sx, sy, sw, 28, () => { try { localStorage.setItem('sgz.slot', two ? 'proto' : 'proto2'); } catch (e) {} location.reload(); });
+    pill(30, y4 + 50, 140, 28, SYS.reset ? '再点一次确认' : '重置当前存档', () => { if (!SYS.reset) { SYS.reset = uiNow(); return; } Object.keys(localStorage).filter(k => k.startsWith(`sgz.${SAVE_NS}.`)).forEach(k => localStorage.removeItem(k)); location.reload(); }, !!SYS.reset);
+    if (SYS.reset && uiNow() - SYS.reset > 3) SYS.reset = 0;
+    uiText(url ? '网址指定了存档，不能切换' : '两格各自独立，切换不会丢', W - 34, y4 + 64, 10, 'rgba(244,230,196,.55)', 'right', PLAIN, { stroke: false }); }
   plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; }, false);
 }
+const SYS = { reset: 0 };
 // ---------- 月卡（10-25 夜用户：「月卡等」）：照 5.0b「不卖强度，只卖省时间和外观」——每天的日常杂务自动做完、漏掉的点卯补领七天（平时两天）、主页资料卡和头像换金边 ----------
 const monthLeft = () => INV.month ? Math.max(0, INV.month.until - dayNum(dayStr())) : 0;
 function drawMonth() {
