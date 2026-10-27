@@ -1834,17 +1834,16 @@ const BTINT = {};
 const BVFX = {}; for (const k of Object.keys(BOSS_FX)) { const im = new Image(); im.src = 'img/fx_boss_' + k + '.webp' + BUST; fetch('img/fx_boss_' + k + '.json' + BUST).then(r => r.ok ? r.json() : null).then(j => { if (j) BVFX[k] = { im, m: j.anims.play, stand: j.stand }; }).catch(() => {}); }
 function drawBossVfx(k, t, x, y, size, rot = 0, alpha = 1) {
   const V = BVFX[k]; if (!V || !ready(V.im)) return; const R = V.m.rects, i = Math.floor(t * 20); if (i < 0 || i >= R.length) return; const [sx, sy, sw, sh] = R[i], kk = size / V.stand;   /* 每秒 20 帧：录的 4 秒太慢，压到一秒半左右跟上打中那一下 */
-  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = alpha; ctx.drawImage(V.im, sx, sy, sw, sh, -sw * kk / 2, -sh * kk / 2, sw * kk, sh * kk);
-  ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = alpha * .35; ctx.drawImage(V.im, sx, sy, sw, sh, -sw * kk / 2, -sh * kk / 2, sw * kk, sh * kk); ctx.restore();
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = alpha * .95; ctx.drawImage(V.im, sx, sy, sw, sh, -sw * kk / 2, -sh * kk / 2, sw * kk, sh * kk); ctx.restore();   /* 10-27 用户：「我觉得都要优化一下」——「滤色」叠上去像光，不再是平涂实心块盖住场景 */
 }
 // 每员首领的 Veo 动画放哪、多大、转多少（录的时候多半是竖着的：从上往下劈、从下往上刺）
 const BVFX_AT = {                                                                   // [x, y, 大小, 转角, 晚几秒（负的就是跳过录像开头的蓄势）]：录的多是竖的，落点（爆炸）在下边
-  dengmao:   [[W / 2, WALL_Y - 120, 470, Math.PI, -.6]],                                // 枪从下往上刺的录像倒过来：从敌将那边扎向城头，炸在城上
-  zhangjiao: [[70, WALL_Y - 170, 360, 0, 0], [290, WALL_Y - 170, 360, 0, .12], [180, WALL_Y - 180, 390, 0, .24]],   // 三道天雷先左后右再正中
-  huzhen:    [[W / 2, WALL_Y - 120, 430, 0, -.25]],
-  huaxiong:  [[W / 2, WALL_Y - 200, 520, 0, 0]],
-  lijue:     [[W / 2, WALL_Y - 100, 430, 0, 0]],
-  lvbu:      [[W / 2, WALL_Y - 220, 540, 0, -.15]] };
+  dengmao:   [[W / 2, WALL_Y - 110, 400, Math.PI, -.6]],                                // 枪从下往上刺的录像倒过来：从敌将那边扎向城头，炸在城上
+  zhangjiao: [[70, WALL_Y - 160, 320, 0, 0], [290, WALL_Y - 160, 320, 0, .12], [180, WALL_Y - 170, 350, 0, .24]],   // 三道天雷先左后右再正中
+  huzhen:    [[W / 2, WALL_Y - 120, 370, 0, -.25]],
+  huaxiong:  [[W / 2, WALL_Y - 180, 460, 0, 0]],
+  lijue:     [[W / 2, WALL_Y - 100, 380, 0, 0]],
+  lvbu:      [[W / 2, WALL_Y - 200, 460, 0, -.15]] };
 function tintPaint(nm, col) {                                                       // 画稿按颜色重新上色（保留明暗和透明），缓存一张
   const key = nm + col; if (BTINT[key]) return BTINT[key]; if (!hasPaint2(nm)) return null;
   const P = PAINT[nm], sw = P.box[2], sh = P.box[3], c = document.createElement('canvas'); c.width = sw; c.height = sh; const g = c.getContext('2d');
@@ -1899,7 +1898,7 @@ function drawBossUlt(f) {
   } else if (f.boss === 'lvbu') {                                                   // 吕布：火龙盘起，巨戟直刺，再一记横扫全场
     at1(f, 'dragon', 0, () => { if (ML) { ML.fx.fireWhip(f.bx, f.by + 10); ML.fx.fireWhip(f.bx, f.by + 10); } });
     const p = Math.min(1, t / .2); drawTint('spear', C.col, (f.bx + W / 2) / 2, (f.by + cy) / 2, 240 + 380 * p, Math.atan2(cy - f.by, W / 2 - f.bx) + Math.PI / 2, A * Math.max(0, 1 - Math.max(0, t - .4) / .3), .8);
-    if (t > .35) { const q = Math.min(1, (t - .35) / .3); drawTint('blade', C.col, W / 2, cy - 20, 440, -1.3 + 2.6 * q, A * fade, .9, .8); bossGlow(W / 2, cy, 170, C.glow, .4 * A * fade); }
+    if (t > .35) { const q = Math.min(1, (t - .35) / .3); drawTint('blade', C.col, W / 2, cy - 20, 440, -1.3 + 2.6 * q, A * fade * (veo ? .45 : 1), .9, .8); bossGlow(W / 2, cy, 170, C.glow, .4 * A * fade); }
     bossBursts(f, C, 6, .2, .05); at1(f, 'sweep', .5, () => { if (ML) for (let k = 0; k < 5; k++) ML.fx.roar(40 + k * 70, WALL_Y - 14); });
   }
 }
