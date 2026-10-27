@@ -3296,7 +3296,7 @@ function drawHud() {
 const FACE = { guan: [20, 0, 190], zhang: [25, 0, 190], liu: [10, 0, 190] };   /* 10-27 换成 Codex 画的新胸像（用户：「战法的形象也换掉」），原水墨头像在 美术/重画/旧/p_<人>_ink.jpg */   // 头像图里头肩那一块：[左, 上, 边长]（原图 240 见方）
 const GEN_BLOCK = { guan: '#1d4d34', zhang: '#6e2014', liu: '#1c3f60' };         // 名牌底色：关羽深绿、张飞深红、刘备深蓝，一眼分得开
 function drawSlots() {
-  if (ready(IMG.ui2_top)) { const th = H - SLOT_Y + 30; ctx.save(); ctx.translate(0, SLOT_Y - 24 + th); ctx.scale(1, -1); draw9(IMG.ui2_top, -24, 0, W + 48, th, 40, 40, 8, 12, .5); ctx.restore();   // 顶栏那块倒过来：金线在上沿，加高一格放城防
+  if (ready(IMG.ui2_top)) { const th = H - SLOT_Y + 17; ctx.save(); ctx.translate(0, SLOT_Y - 17 + th); ctx.scale(1, -1); draw9(IMG.ui2_top, -24, 0, W + 48, th, 40, 40, 8, 12, .5); ctx.restore();   // 顶栏那块倒过来：金线在上沿，加高一格放城防
     if (G && screen === 'play') { const fr = G.wall / G.wallMax, low = fr <= .5, y0 = SLOT_Y - 15, bh = 10;   /* 往下挪到武将牌上方、矮一些（10-27 用户：「往下拉到红线位置，字小一些，不用那么高，上下两条金线细小，暗金」） */   // 金线加粗成一条血槽，城防写在槽里（10-27 用户：「加高这条金色线，里面好像HP」「数字写在里面，不要用这个色，看不清」）
       ctx.fillStyle = '#1a0c06'; ctx.fillRect(0, y0, W, bh); const g = ctx.createLinearGradient(0, y0, 0, y0 + bh); g.addColorStop(0, low ? '#ff8a5a' : '#e8604a'); g.addColorStop(.5, low ? '#c8280e' : '#b0201a'); g.addColorStop(1, low ? '#6a0c04' : '#5a0c0a');
       ctx.fillStyle = g; ctx.fillRect(0, y0, W * fr, bh); ctx.fillStyle = '#9a7432'; ctx.fillRect(0, y0 - .8, W, .8); ctx.fillRect(0, y0 + bh, W, .8);
