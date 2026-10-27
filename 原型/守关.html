@@ -72,7 +72,7 @@ function smooth(pts, n = 6) { const o = []; for (let i = 0; i < pts.length - 1; 
 
 // ---------- 图 ----------
 // 牌面头像和菜单三人图：用户定的新画风（10-24：「用这个图吧，风格可以改一下，不要那么水墨」），透明底，原图在 美术/刘关张/桃园三英_透明.png
-const IMG = {}; for (const k of ['guan', 'zhang', 'liu']) { IMG[k] = new Image(); IMG[k].src = 'img/p_' + k + '.jpg'; }
+const IMG = {}; for (const k of ['guan', 'zhang', 'liu']) { IMG[k] = new Image(); IMG[k].src = 'img/p_' + k + '.jpg?v=1027'; }
 for (const k of ['jianyong', 'liru']) { IMG['p_' + k] = new Image(); IMG['p_' + k].src = 'img/p_' + k + '.jpg'; }   // 军师头像（10-25，ChatGPT 画，原图 美术/界面/军师头像_简雍李儒.jpg）
 IMG.trio = new Image(); IMG.trio.src = 'img/trio.png?v=1027';
 // 3D 建模渲出来的小兵图集（Meshy → Blender → 水墨着色，见 ../工具/）；没有时退回程序画的
@@ -3273,7 +3273,7 @@ function drawHud() {
     if (b.guardT2 > 0) uiText('护罩', W - 30, TOP + 9, 11, UIC.gold2, 'center', PLAIN);
   }
 }
-const FACE = { guan: [60, 10, 150], zhang: [50, 5, 150], liu: [53, 5, 150] };   // 头像图里头肩那一块：[左, 上, 边长]（原图 240 见方）
+const FACE = { guan: [20, 0, 190], zhang: [25, 0, 190], liu: [10, 0, 190] };   /* 10-27 换成 Codex 画的新胸像（用户：「战法的形象也换掉」），原水墨头像在 美术/重画/旧/p_<人>_ink.jpg */   // 头像图里头肩那一块：[左, 上, 边长]（原图 240 见方）
 const GEN_BLOCK = { guan: '#1d4d34', zhang: '#6e2014', liu: '#1c3f60' };         // 名牌底色：关羽深绿、张飞深红、刘备深蓝，一眼分得开
 function drawSlots() {
   if (ready(IMG.ui2_top)) { const th = H - SLOT_Y + 14; ctx.save(); ctx.translate(0, SLOT_Y - 8 + th); ctx.scale(1, -1); draw9(IMG.ui2_top, -24, 0, W + 48, th, 40, 40, 8, 12, .5); ctx.restore(); }   // 顶栏那块倒过来：金线在上沿
