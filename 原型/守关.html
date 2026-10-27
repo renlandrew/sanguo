@@ -75,7 +75,7 @@ function smooth(pts, n = 6) { const o = []; for (let i = 0; i < pts.length - 1; 
 // 牌面头像和菜单三人图：用户定的新画风（10-24：「用这个图吧，风格可以改一下，不要那么水墨」），透明底，原图在 美术/刘关张/桃园三英_透明.png
 const IMG = {}; for (const k of ['guan', 'zhang', 'liu']) { IMG[k] = new Image(); IMG[k].src = 'img/p_' + k + '.jpg?v=1027'; }
 for (const k of ['jianyong', 'liru']) { IMG['p_' + k] = new Image(); IMG['p_' + k].src = 'img/p_' + k + '.jpg'; }   // 军师头像（10-25，ChatGPT 画，原图 美术/界面/军师头像_简雍李儒.jpg）
-IMG.trio = new Image(); IMG.trio.src = 'img/trio.png?v=1027';
+IMG.trio = new Image(); IMG.trio.src = 'img/trio.png?v=1027b';
 // 3D 建模渲出来的小兵图集（Meshy → Blender → 水墨着色，见 ../工具/）；没有时退回程序画的
 const BUST = '?t=' + Date.now();                     // 原型阶段图集常改，别吃浏览器缓存
 // 城墙、战场背景（ChatGPT 画的，../工具/make_scene.py 处理）；没有时退回程序画的
