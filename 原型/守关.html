@@ -1305,6 +1305,7 @@ function resolveMove(e, k) {
   if (k === 'rush') { e.x = clamp(HX + (rnd() < .5 ? -1 : 1) * R(60, 110), 60, 300); k = 'heavy'; }   // 赤兔冲阵：闪身换位再重击
   if (k === 'guard') { e.guardT2 = 6 * TIMEX.v; G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 120, text: '护罩：伤害减半，喝晕才破', size: 16, color: CINNABAR }); return; }
   if (k === 'heavy') {
+    if (!G.sim) G.fx.push({ k: 'bossult', t: 0, dur: 1.5, boss: e.kind, bx: e.x, by: e.y, blocked: G.shieldT > 0, fired: {} });   /* 敌将重招的大范围华彩（10-27 用户：「敌人的首领将领的法术还不够绚丽，要范围很大，绚丽」） */
     if (G.shieldT > 0) { G.counterT = 3; G.blocks = (G.blocks || 0) + 1; G.fx.push({ k: 'blocked', t: 0 }); G.shieldT = 0; G.shieldCd = 0; }   /* 挡下了冷却清零：连斩第二下马上能再举 */
     else { G.wall -= L.heavy * (e.buffT > 0 ? 1.5 : 1); G.fx.push({ k: e.kind === 'zhangjiao' ? 'bolt' : 'lunge', t: 0, x: clamp(e.x + R(-60, 60), 40, 320), bx: e.x, by: e.y }); G.shake = .4; }
   } else if (k === 'summon') {
@@ -1809,6 +1810,75 @@ function burst(x, y, prof, size, delay = 0, n = 4) {
   fbPlay('hit_' + prof, x, y, size, null, { delay, glow: .45 });
   for (let i = 0; i < n; i++) { const a = VR(0, 6.283), sp = VR(140, 260) * size / 50; G.shards.push({ k: 'shard', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60, rot: a, spin: VR(-14, 14), s: VR(3.5, 6) * size / 50, born, life: VR(.32, .5), c: C[1 + (i % 2)] }); }
   if (G.shards.length > 90) G.shards.splice(0, G.shards.length - 90);
+}
+// ---------- 敌将重招的大范围华彩（10-27 用户：「敌人的首领将领的法术还不够绚丽，要范围很大，绚丽」） ----------
+// 主体都是 GPT 画稿（刀风 blade、刀气 dao2、火矛 spear，按每员敌将的颜色重新上色），配真流体（墨流层的火、烟）和爆13 帧动画；
+// 不整屏闪、不压暗、不推镜头（10-26 用户：「屏幕不要闪动」），范围靠画稿画得大、横贯城头。只管画面，不碰伤害和判定；随机只用 VR
+const BOSS_FX = {
+  dengmao:   { col: '#e0a23a', glow: '#ffd27a', prof: 'gold' },     // 黄巾土金：一杆巨枪直扎城头
+  zhangjiao: { col: '#b46cff', glow: '#f4d36a', prof: 'gold' },     // 紫金天雷：五道天雷横扫城头
+  huzhen:    { col: '#d8403a', glow: '#ff9a6a', prof: 'fire' },     // 赤红双刀：两道巨刀交叉斩
+  huaxiong:  { col: '#4f7aa8', glow: '#ffb04a', prof: 'fire' },     // 铁灰大刀：一刀从天劈下，地裂一线火
+  lijue:     { col: '#c88a3a', glow: '#ffcf7a', prof: 'gold' },     // 古铜横刀：一刀从左横扫到右
+  lvbu:      { col: '#e0304a', glow: '#ff7ab0', prof: 'fire' },     // 赤红画戟：火龙盘起、巨戟直刺、再横扫全场
+};
+const BTINT = {};
+function tintPaint(nm, col) {                                                       // 画稿按颜色重新上色（保留明暗和透明），缓存一张
+  const key = nm + col; if (BTINT[key]) return BTINT[key]; if (!hasPaint2(nm)) return null;
+  const P = PAINT[nm], sw = P.box[2], sh = P.box[3], c = document.createElement('canvas'); c.width = sw; c.height = sh; const g = c.getContext('2d');
+  g.drawImage(IMG.paint, P.cell[0] + P.box[0], P.cell[1] + P.box[1], sw, sh, 0, 0, sw, sh);
+  g.globalCompositeOperation = 'color'; g.fillStyle = col; g.fillRect(0, 0, sw, sh);
+  g.globalCompositeOperation = 'destination-in'; g.drawImage(IMG.paint, P.cell[0] + P.box[0], P.cell[1] + P.box[1], sw, sh, 0, 0, sw, sh);
+  return (BTINT[key] = c);
+}
+function drawTint(nm, col, x, y, len, rot, alpha, glow = .5, sy = 1) {
+  const c = tintPaint(nm, col); if (!c) return; const k = len / Math.max(c.width, c.height);
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(1, sy); ctx.globalAlpha = alpha; ctx.drawImage(c, -c.width * k / 2, -c.height * k / 2, c.width * k, c.height * k);
+  if (glow) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = alpha * glow; ctx.drawImage(c, -c.width * k / 2, -c.height * k / 2, c.width * k, c.height * k); } ctx.restore();
+}
+function bossGlow(x, y, r, col, a) { const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a; ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); ctx.restore(); }
+// 蓄力：敌将身上一团本色的光越聚越亮，脚下往上冒火和烟（不画几何圈）
+function bossCharge(f) {
+  const C = BOSS_FX[f.boss], e = G.duel; if (!C || !e || e.dead) return; const u = Math.min(1, f.t / f.dur), pu = .6 + .4 * Math.sin(f.t * 18);
+  bossGlow(e.x, e.y - 40, 60 + 70 * u, C.col, (.25 + .45 * u) * pu);
+  if (ML && vr() < .5) ML.splat(e.x + VR(-26, 26), e.y - VR(0, 20), VR(-30, 30), VR(-260, -140), VR(5, 8), [0, .5 + u, .25, 0]);
+}
+const at1 = (f, key, t, fn) => { if (f.t >= t && !f.fired[key]) { f.fired[key] = 1; fn(); } };   // 到点只触发一次
+function bossBursts(f, C, n, t0, gap, y = WALL_Y - 24) { for (let i = 0; i < n; i++) at1(f, 'b' + i, t0 + i * gap, () => { const x = 30 + (W - 60) * (n > 1 ? i / (n - 1) : .5); burst(x, y + VR(-10, 10), C.prof, 74, 0, 5); fbPlay('bao', x, y - 10, 150, null, { glow: .6 }); if (ML) ML.splat(x, y, VR(-60, 60), VR(-420, -260), VR(9, 13), [0, 1.3, .6, 0]); }); }
+function drawBossUlt(f) {
+  const C = BOSS_FX[f.boss]; if (!C) return; const t = f.t, A = f.blocked ? .55 : 1, cy = WALL_Y - 70;
+  const fade = t > 1.1 ? Math.max(0, (1.5 - t) / .4) : 1;
+  if (f.boss === 'dengmao') {                                                       // 一杆巨枪从邓茂身前直扎城头，城头一排炸开
+    const p = Math.min(1, t / .18), x1 = f.bx + (W / 2 - f.bx) * p, y1 = f.by + (cy - f.by) * p, rot = Math.atan2(cy - f.by, W / 2 - f.bx) + Math.PI / 2;
+    drawTint('spear', C.col, (f.bx + x1) / 2, (f.by + y1) / 2, 160 + 320 * p, rot, A * Math.max(0, 1 - Math.max(0, t - .3) / .3), .8);
+    at1(f, 'jet', .02, () => ML && ML.fx.jet(f.bx, f.by, W / 2, cy)); bossBursts(f, C, 4, .18, .05);
+  } else if (f.boss === 'zhangjiao') {                                              // 天上翻起乌云，五道天雷依次劈在城头
+    at1(f, 'cloud', 0, () => { if (MLB) for (let k = 0; k < 10; k++) MLB.splat(VR(10, W - 10), TOP + VR(10, 60), VR(-200, 200), VR(-40, 60), VR(14, 22), [1.4, 0, .3, 0]); });
+    for (let i = 0; i < 5; i++) { const t0 = .05 + i * .1, u = (t - t0) / .45; if (u < 0 || u > 1) continue; const x = 36 + i * 72 + Math.sin(i * 7.3) * 14, al = (u < .2 ? 1 : (1 - u) / .8) * A;
+      const pts = [[x + 24, TOP - 10]]; let xx = x + 24; for (let y = TOP + 26; y < WALL_Y; y += 40) { xx += Math.sin(y * .37 + i * 5) * 20; pts.push([xx, y]); } pts.push([x, WALL_Y - 10]);
+      brush(ctx, pts, 26, C.col, .35 * al, () => 1, 0, vr); brush(ctx, pts, 10, C.glow, .9 * al, () => 1, 0, vr); brush(ctx, pts, 3.5, '#ffffff', al, () => 1, 0, vr);
+      bossGlow(x, WALL_Y - 20, 90, C.col, .6 * al); }
+    bossBursts(f, C, 5, .05, .1);
+  } else if (f.boss === 'huzhen') {                                                 // 两道赤红巨刀从两边交叉斩下
+    for (const side of [-1, 1]) { const p = Math.min(1, t / .22), a0 = side < 0 ? -1.2 : 1.2, rot = a0 - side * 2.4 * p, x = W / 2 + side * (140 - 120 * p), y = cy - 60 + 40 * p;
+      drawTint('blade', C.col, x, y, 300, rot, A * fade, .65); }
+    bossBursts(f, C, 5, .2, .04);
+  } else if (f.boss === 'huaxiong') {                                               // 一刀从天劈下，城前地裂、整排着火
+    const p = Math.min(1, t / .16), y = TOP - 80 + (cy - 40 - TOP + 80) * (p * p);
+    drawTint('dao2', C.col, W / 2, y, 560, Math.PI, A * fade, .9); bossGlow(W / 2, y + 120, 130, C.glow, .35 * A * fade);
+    at1(f, 'slam', .16, () => { if (ML) for (let k = 0; k < 7; k++) setTimeout(() => ML && ML.fx.roar(30 + k * 50, WALL_Y - 14), k * 25); });
+    bossBursts(f, C, 3, .16, .06);
+  } else if (f.boss === 'lijue') {                                                  // 一把古铜横刀从左扫到右，刀后一路烟火
+    const p = Math.min(1, t / .5), x = -120 + (W + 240) * (1 - Math.pow(1 - p, 2));
+    drawTint('blade', C.col, x, cy - 10, 380, Math.PI / 2, A * fade, .8, .7); bossGlow(x, cy - 10, 130, C.glow, .45 * A * fade);
+    if (ML && p < 1 && vr() < .9) ML.splat(x - 40, cy, -500, VR(-160, 40), VR(8, 12), [0, .9, .7, 0]);
+    bossBursts(f, C, 6, .08, .07);
+  } else if (f.boss === 'lvbu') {                                                   // 吕布：火龙盘起，巨戟直刺，再一记横扫全场
+    at1(f, 'dragon', 0, () => { if (ML) { ML.fx.fireWhip(f.bx, f.by + 10); ML.fx.fireWhip(f.bx, f.by + 10); } });
+    const p = Math.min(1, t / .2); drawTint('spear', C.col, (f.bx + W / 2) / 2, (f.by + cy) / 2, 240 + 380 * p, Math.atan2(cy - f.by, W / 2 - f.bx) + Math.PI / 2, A * Math.max(0, 1 - Math.max(0, t - .4) / .3), .8);
+    if (t > .35) { const q = Math.min(1, (t - .35) / .3); drawTint('blade', C.col, W / 2, cy - 20, 440, -1.3 + 2.6 * q, A * fade, .9, .8); bossGlow(W / 2, cy, 170, C.glow, .4 * A * fade); }
+    bossBursts(f, C, 6, .2, .05); at1(f, 'sweep', .5, () => { if (ML) for (let k = 0; k < 5; k++) ML.fx.roar(40 + k * 70, WALL_Y - 14); });
+  }
 }
 // 普攻动起来（10-25 用户圈着火矛、刀风：「带点效果，火啊光啊之类的，动起来」）：飞行物身后一条渐细的光带，沿途闪几点亮光；火矛喷真火（墨流层）、带火星
 function chargeFlash(x, y, age, col, r0) {
@@ -3061,11 +3131,13 @@ function drawFx(f) {
       const xe = x0 + (x1 - x0) * p; brush(ctx, [[x0, y], [(x0 + xe) / 2, y - 6], [xe, y + 3]], 9, INK, .75 * fade, u2 => Math.pow(u2, .5) * (1 - u2 * .2), .3, vr);
       brush(ctx, [[xe, y - 2], [xe - sd * 6, y - 26]], 1.6, INK, .9 * fade, () => 1, 0, vr); brush(ctx, quad([xe - sd * 6, y - 26], [xe - sd * 14, y - 23], [xe - sd * 18, y - 18]), 5, CINNABAR, .85 * fade, u2 => 1 - u2 * .5, .2, vr); }
   } else if (f.k === 'warn') {                                                       // 敌将要放重击：名字闪红，城上落点画红叉，底下一条蓄力条
+    bossCharge(f);
     const u = f.t / f.dur, fl = .55 + .45 * Math.sin(f.t * 22);
     ctx.globalAlpha = .85; ctx.fillStyle = PAPER; ctx.fillRect(f.x - 70, f.y - 18, 140, 42); ctx.globalAlpha = 1; ctx.strokeStyle = CINNABAR; ctx.lineWidth = 1.5; ctx.strokeRect(f.x - 70, f.y - 18, 140, 42);
     txt(f.text, f.x, f.y, f.size + 4, CINNABAR, 'center', FONT, .6 + .4 * fl);
     bar(f.x - 34, f.y + 16, 68, 4, u, CINNABAR);
     for (let k = 0; k < 3; k++) { const x = 60 + k * 120; brush(ctx, [[x - 9, WALL_Y - 12], [x + 9, WALL_Y + 6]], 3, CINNABAR, .5 + .4 * fl, () => 1, 0, vr); brush(ctx, [[x + 9, WALL_Y - 12], [x - 9, WALL_Y + 6]], 3, CINNABAR, .5 + .4 * fl, () => 1, 0, vr); }
+  } else if (f.k === 'bossult') { drawBossUlt(f);
   } else if (f.k === 'bolt') { const u = f.t / .7; if (u > 1) return;              // 张角的天雷：从天上一道折线劈到城头
     const fade = u < .25 ? 1 : (1 - u) / .75, pts = [[f.x + 20, TOP - 10]]; let x = f.x + 20;
     for (let y = TOP + 30; y < WALL_Y; y += 46) { x += Math.sin(y * 13.7 + f.x) * 22; pts.push([x, y]); } pts.push([f.x, WALL_Y]);
