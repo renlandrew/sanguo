@@ -4021,7 +4021,7 @@ function drawRoster() {
 const CAMP = { t0: 0, pickAwake: false };
 let GATE = null;
 // 物品图标（ChatGPT 画，img/item_<名>.png）；没到时画一块同色的圆角块写首字
-for (const k of ['精铁', '残页', '将印', '陨铁', '体力']) { IMG['item_' + k] = new Image(); IMG['item_' + k].src = 'img/item_' + encodeURIComponent(k) + '.png' + BUST; }
+for (const k of ['精铁', '残页', '将印', '陨铁', '体力', '机缘']) { IMG['item_' + k] = new Image(); IMG['item_' + k].src = 'img/item_' + encodeURIComponent(k) + '.png' + BUST; }
 function drawItemIcon(k, cx, cy, s) {
   if (ITEM_TIP[k]) hov(cx - s / 2 - 2, cy - s / 2 - 2, s + 4, s + 4, ITEM_TIP[k]);          // 图标都带悬停说明
   const im = IMG['item_' + k]; if (ready(im)) { const f = s / Math.max(im.width, im.height); ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); return; }
@@ -4111,19 +4111,19 @@ function drawCamp() {
     uiText(`出外探访 · 派${GEN[id].name}`, 62, y + 15, 13, left ? UIC.cream : 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false });
     if (vr0) uiText((vr0.god ? `带回陨铁！还有精铁 +${vr0.iron}` : `带回精铁 +${vr0.iron} · 机缘 +${vr0.luck}`) + (vr0.page ? ' · 路上捡到残页 +1' : ''), 62, y + 32, 11, vr0.god ? ITEM_C.陨铁 : UIC.gold2, 'left', PLAIN, { stroke: false });
     else { const s2 = `机缘 ${INV.luck || 0}/${LUCK_FULL} 满了得陨铁 · 宜派政治、魅力高的`; uiText(s2, 62, y + 32, fitSize(s2, 10, W - 104 - 62, 99, PLAIN), 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false }); }
-    if (left) pill(W - 92, y + 10, 64, 24, `派出 ${left}`, () => { const r = doVisit(); if (r) { CAMP.visit = { ...r, t0: uiNow() }; showReward(r.god ? '带回陨铁！' : '探访归来', [`精铁 +${r.iron}`, r.god ? `陨铁 +${r.god}` : `机缘 +${r.luck}`, ...(r.page ? ['路上捡到残页 +1'] : [])], [r.id]); } }); else uiSeal(W - 42, y + 22, 26, '毕', UIC.red, true);
+    if (left) pill(W - 92, y + 10, 64, 24, `派出 ${left}`, () => { const r = doVisit(); if (r) { CAMP.visit = { ...r, t0: uiNow() }; showReward(r.god ? '带回陨铁！' : '探访归来', [], [r.id], true, [['精铁', r.iron], r.god ? ['陨铁', r.god] : ['机缘', r.luck], ...(r.page ? [['残页', r.page]] : [])]); } }); else uiSeal(W - 42, y + 22, 26, '毕', UIC.red, true);
     y += 48; }
   { const left = choresLeft(), hh = 30 + 4 * 21;                                    // 日常杂务七项一项一项列出来（10-25 用户：「不能这样，要7个都列出来」），两列；点一项做一项，「一键完成」全做
     plate(14, y, W - 28, hh, false);
     const sta = staNow(), can = Math.min(left, Math.floor(sta / CHORE_STA));
     uiText(`日常杂务 ${CHORES.length - left}/${CHORES.length}`, 24, y + 15, 13, UIC.cream, 'left', PLAIN, { stroke: false });
     uiText(`体力 ${sta}/${STA_MAX}`, 112, y + 15, 11, sta >= CHORE_STA ? '#9be0a0' : UIC.red2, 'left', PLAIN, { stroke: false });
-    if (left) { pill(W - 112, y + 5, 88, 22, can ? `一键完成` : '体力不够', () => { const b0 = itemSnap(), l0 = choresLeft(); doChores(); const done = l0 - choresLeft(); if (done) showReward('杂务做完了', [`做了 ${done} 项`, ...itemDiff(b0, itemSnap())], ['guan', 'zhang', 'liu']); else showReward('体力不够', ['明天再来'], ['zhang'], false); }, true, can > 0); if (can) uiText(`体力 -${can * CHORE_STA}`, W - 68, y + 34, 10, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false }); }
+    if (left) { pill(W - 112, y + 5, 88, 22, can ? `一键完成` : '体力不够', () => { const b0 = itemSnap(), l0 = choresLeft(); doChores(); const done = l0 - choresLeft(); if (done) { campFw(W / 2, 640 * .62, 7); campGain(itemDiff(b0, itemSnap()), W / 2, 640 * .62); } else showReward('体力不够', ['明天再来'], ['zhang'], false); }, true, can > 0); if (can) uiText(`体力 -${can * CHORE_STA}`, W - 68, y + 34, 10, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false }); }
     else uiSeal(W - 40, y + 15, 22, '毕', UIC.red, true);
     CHORES.forEach((c, k) => { const cx = 24 + (k % 2) * ((W - 48) / 2), cy = y + 40 + Math.floor(k / 2) * 21, on = choreOn(k);
       uiText(c, cx, cy, 12, on ? 'rgba(244,230,196,.45)' : UIC.cream, 'left', PLAIN, { stroke: false });
       { const [ik, n] = CHORE_PAY[k]; uiText(`${ik}+${n}`, cx + 58, cy, 10, on ? 'rgba(246,210,122,.35)' : (ITEM_C[ik] || 'rgba(246,210,122,.8)'), 'left', PLAIN, { stroke: false }); }
-      if (on) uiSeal(cx + 128, cy, 16, '毕', UIC.red, true); else hit(cx - 4, cy - 10, (W - 48) / 2, 20, () => { const b0 = itemSnap(); if (doChore(k)) showReward(c + ' · 完成', itemDiff(b0, itemSnap()), [BROS[k % 3]]); else showReward('体力不够', ['明天再来'], [BROS[k % 3]], false); }); });
+      if (on) uiSeal(cx + 128, cy, 16, '毕', UIC.red, true); else hit(cx - 4, cy - 10, (W - 48) / 2, 20, () => { const b0 = itemSnap(); if (doChore(k)) { campFw(cx + 40, cy, 2); campGain(itemDiff(b0, itemSnap()), cx + 60, cy); } else showReward('体力不够', ['明天再来'], [BROS[k % 3]], false); }); });
   }
   if (gl && gl.lack.some(([i]) => i === '将印')) uiText(DAILY.weekSeal ? '本周将印已领' : `本周军务 ${DAILY.weekN}/${WEEK_N} · 满十道得将印一方`, W / 2, 580, 11, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
   plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; CAMP.pickAwake = false; }, false);
@@ -4135,13 +4135,24 @@ function drawCamp() {
       uiText(GEN[id].name, x + 40, y + 96, 16, UIC.cream, 'center', FONT); hit(x, y, 80, 100, () => { doUp('awake', id); CAMP.pickAwake = false; MENU.flash = { key: 'awake', t0: uiNow() }; }); });
     pill(130, 380, 100, 28, '算了', () => { CAMP.pickAwake = false; }, false);
   }
-  if (REWARD) drawReward();
+  drawCampFw(); if (REWARD) drawReward();
+}
+// 日常杂务做完放金色烟花、飘出得到的东西（10-27 用户：「这个就用烟花之类的即可，但要符合游戏」）——用命中的金色爆花帧动画，不弹窗
+const CFW = [];
+function campFw(x, y, n) { for (let i = 0; i < n; i++) CFW.push({ k: i % 2 ? 'hit_gold' : 'bao', x: x + (Math.random() - .5) * (n > 2 ? 220 : 50), y: y + (Math.random() - .5) * (n > 2 ? 160 : 30), size: n > 2 ? 150 : 90, t0: uiNow() + i * .12, rot: Math.random() * 6.283 }); sfx('tap'); }
+function campGain(items, x, y) { items.forEach(([k, n], i) => CFW.push({ gain: [k, n], x: x + (i - (items.length - 1) / 2) * 52, y, t0: uiNow() + .15 })); }
+function drawCampFw() {
+  const now = uiNow(); for (let i = CFW.length - 1; i >= 0; i--) { const f = CFW[i], t = now - f.t0; if (t < 0) continue;
+    if (f.gain) { if (t > 1.6) { CFW.splice(i, 1); continue; } const a = t < 1.1 ? 1 : (1.6 - t) / .5; ctx.save(); ctx.globalAlpha = a; drawItemIcon(f.gain[0], f.x, f.y - t * 40, 30); uiText('+' + f.gain[1], f.x, f.y - t * 40 + 24, 13, '#ffe39a', 'center', PLAIN, { lw: 3 }); ctx.restore(); continue; }
+    const M = FBM[f.k], dur = M ? M.dur * 1.4 : .6; if (t > dur || !hasFb(f.k)) { CFW.splice(i, 1); continue; }
+    fbFrame(f.k, Math.min(M.n - 1, Math.floor(t / dur * M.n)), f.x, f.y, f.size, f.rot, 1, 1, .6); }
 }
 // 结果画面（10-27 用户：「每个点击都要有个画面展示完成，获得了什么之类的，参与人物的武将也要展示喜悦或者不高兴（失败）」）
 let REWARD = null;
-const showReward = (title, lines, who, joy = true) => { REWARD = { title, lines, who, joy, t0: uiNow() }; sfx(joy ? 'tap' : 'tap'); };
+for (const id of ['guan', 'zhang', 'liu']) for (const m of ['joy', 'sad']) { const k = 'emo_' + id + '_' + m; IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.jpg' + BUST; }
+const showReward = (title, lines, who, joy = true, items = []) => { REWARD = { title, lines, who, joy, items, t0: uiNow() }; sfx('tap'); };
 const itemSnap = () => ({ ...INV.it, 机缘: INV.luck || 0 });
-const itemDiff = (a, b) => Object.keys(b).filter(k => (b[k] || 0) !== (a[k] || 0) && k !== '机缘' || (k === '机缘' && b[k] > a[k])).map(k => `${k} ${b[k] - (a[k] || 0) > 0 ? '+' : ''}${b[k] - (a[k] || 0)}`);
+const itemDiff = (a, b) => Object.keys(b).filter(k => (b[k] || 0) > (a[k] || 0)).map(k => [k, b[k] - (a[k] || 0)]);
 function drawReward() {
   const R = REWARD, t = uiNow() - R.t0, u = Math.min(1, t / .25), e = 1 - Math.pow(1 - u, 3);
   ctx.save(); ctx.globalAlpha = .78 * u; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); ctx.restore();
@@ -4149,12 +4160,13 @@ function drawReward() {
   plate(30, py, W - 60, 300, R.joy);
   uiText(R.title, W / 2, py + 34, 24, R.joy ? UIC.gold2 : '#c9b9a0', 'center', FONT, { glow: R.joy ? 'rgba(255,200,90,.6)' : null, glowR: 10 });
   const n = R.who.length, sz = n > 1 ? 70 : 96;
-  R.who.forEach((id, k) => { const cx = W / 2 + (k - (n - 1) / 2) * (sz + 16), bob = R.joy ? -Math.abs(Math.sin(t * 6 + k)) * 6 : 2, x = cx - sz / 2, y = py + 78 + bob;
-    ctx.save(); rr(x, y, sz, sz, 8); ctx.clip(); if (!R.joy) ctx.filter = 'grayscale(.75) brightness(.8)'; if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], x, y, sz, sz); ctx.restore();
+  R.who.forEach((id, k) => { const cx = W / 2 + (k - (n - 1) / 2) * (sz + 16), x = cx - sz / 2, y = py + 78;
+    ctx.save(); rr(x, y, sz, sz, 8); ctx.clip(); const em = IMG['emo_' + id + (R.joy ? '_joy' : '_sad')]; if (ready(em)) ctx.drawImage(em, x, y, sz, sz); else { if (!R.joy) ctx.filter = 'grayscale(.75) brightness(.8)'; if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], x, y, sz, sz); } ctx.restore();   /* 表情图 emo_<人>_joy/sad，没有时退回胸像 */
     if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, x - 1, y - 1, sz + 2, sz + 2, 60, 60, 60, 60, .1);
     const say = R.joy ? ['哈哈！', '妙！', '好！'][k % 3] : ['唉……', '可恶！', '再来'][k % 3];
     uiText(say, cx, y - 8, 13, R.joy ? '#ffe39a' : '#b8a890', 'center', FONT, { lw: 3 }); });
-  R.lines.forEach((l, i) => uiText(l, W / 2, py + 78 + sz + 30 + i * 22, 15, R.joy ? UIC.cream : '#d8c8b0', 'center', PLAIN, { lw: 3 }));
+  const iy = py + 78 + sz + 46, ni = R.items.length; R.items.forEach(([k, n], i) => { const cx = W / 2 + (i - (ni - 1) / 2) * 64; drawItemIcon(k, cx, iy, 40); uiText('+' + n, cx, iy + 32, 14, UIC.cream, 'center', PLAIN, { lw: 3 }); uiText(k, cx, iy + 48, 10, 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false }); });   /* 10-27 用户：「这些都用图」 */
+  R.lines.forEach((l, i) => uiText(l, W / 2, (ni ? iy + 70 : py + 78 + sz + 30) + i * 20, 14, R.joy ? UIC.cream : '#d8c8b0', 'center', PLAIN, { lw: 3 }));
   if (t > .5) uiText('点任意处继续', W / 2, py + 286, 11, 'rgba(244,230,196,.55)', 'center', PLAIN, { stroke: false });
   ctx.restore();
   hit(0, 0, W, H, () => { if (uiNow() - R.t0 > .4) REWARD = null; });
