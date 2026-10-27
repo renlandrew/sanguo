@@ -74,7 +74,7 @@ function smooth(pts, n = 6) { const o = []; for (let i = 0; i < pts.length - 1; 
 // 牌面头像和菜单三人图：用户定的新画风（10-24：「用这个图吧，风格可以改一下，不要那么水墨」），透明底，原图在 美术/刘关张/桃园三英_透明.png
 const IMG = {}; for (const k of ['guan', 'zhang', 'liu']) { IMG[k] = new Image(); IMG[k].src = 'img/p_' + k + '.jpg'; }
 for (const k of ['jianyong', 'liru']) { IMG['p_' + k] = new Image(); IMG['p_' + k].src = 'img/p_' + k + '.jpg'; }   // 军师头像（10-25，ChatGPT 画，原图 美术/界面/军师头像_简雍李儒.jpg）
-IMG.trio = new Image(); IMG.trio.src = 'img/trio.png';
+IMG.trio = new Image(); IMG.trio.src = 'img/trio.png?v=1027';
 // 3D 建模渲出来的小兵图集（Meshy → Blender → 水墨着色，见 ../工具/）；没有时退回程序画的
 const BUST = '?t=' + Date.now();                     // 原型阶段图集常改，别吃浏览器缓存
 // 城墙、战场背景（ChatGPT 画的，../工具/make_scene.py 处理）；没有时退回程序画的
@@ -4353,7 +4353,7 @@ const navFace = (k, fc) => (cx, cy, s) => { const im = IMG[k], r = s * .42; ctx.
 function drawMenu() {
   drawBg(); const t = uiNow();
   const vg = ctx.createLinearGradient(0, 0, 0, H); vg.addColorStop(0, 'rgba(10,6,4,.35)'); vg.addColorStop(.25, 'rgba(10,6,4,0)'); vg.addColorStop(.62, 'rgba(10,6,4,.05)'); vg.addColorStop(1, 'rgba(10,6,4,.8)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-  if (ready(IMG.trio)) ctx.drawImage(IMG.trio, 0, 150, W, W * IMG.trio.height / IMG.trio.width);        // 刘关张站满一屏宽
+  if (ready(IMG.trio)) { const im = IMG.trio, wide = im.width > im.height, h = wide ? W * im.height / im.width : 318, w = h * im.width / im.height; ctx.drawImage(im, W / 2 - w / 2, wide ? 150 : 138, w, h); }   // 横图铺满一屏宽；10-27 换成 Codex 画的竖版三人（灰底抠图），按高度画、居中，脚落在关卡牌上面
   uiText('群雄逐鹿', W / 2, 96, 50, UIC.gold2, 'center', FONT, { glow: `rgba(255,190,80,${.5 + .2 * Math.sin(t * 2)})`, glowR: 20, lw: 7 });
   const nt = dailyTick(); if (nt) MENU.note = { ...nt, t0: t };
   // 左上角资料卡：过了几关、几颗星、精铁
@@ -4398,10 +4398,10 @@ function drawMenu() {
 // 战役页：三段页签、每段十关两列（原来摆在主页上）
 // 战役地图（10-26 用户：「这里可以画一张涿州地图？或者需要三张？每次只标注10关？」）：三个页签各一张 ChatGPT 画的古舆图（img/map_1..3.jpg），
 // 十关照图上的地标摆：朱印写关号、底下关名和星；没解锁的淡、下一关一呼一吸发光；点关进出阵
-const MAP_NODE = [                                                                  // 屏幕坐标，照着图上的地标摆（图 360×540 居中画在 100–576 之间）
-  [[150, 118], [92, 172], [190, 166], [276, 236], [205, 272], [132, 314], [232, 348], [95, 438], [222, 408], [214, 512]],   // 桃园、乡里、大兴山口、青州、山下、长社草营、董卓车驾、安喜、广宗、黄巾大营
-  [[230, 118], [210, 505], [118, 455], [216, 402], [152, 352], [246, 308], [118, 272], [252, 246], [118, 210], [195, 178]],  // 洛阳城门、酸枣大营，再一路往上过河到汜水关
-  [[200, 505], [108, 445], [236, 420], [118, 372], [254, 352], [212, 202], [118, 122], [282, 118], [100, 290], [236, 282]],  // 联军营地、关前几仗、撞关、洛阳废墟、回关前三英战吕布
+const MAP_NODE = [                                                                  // 屏幕坐标，照着图上的地标摆（图 360×540 居中画在 100–576 之间）；10-27 换 Codex 画的新图后重摆
+  [[185, 112], [212, 150], [180, 196], [285, 250], [165, 270], [140, 340], [195, 388], [212, 472], [272, 432], [150, 522]],   // 桃园、乡里、大兴山口、青州、山下、长社草营、董卓车驾、安喜、广宗、黄巾大营
+  [[200, 110], [140, 525], [175, 482], [155, 432], [178, 385], [205, 338], [205, 292], [190, 246], [200, 206], [210, 166]],  // 洛阳城门、酸枣大营，再沿路往上过桥到汜水关
+  [[190, 515], [235, 455], [215, 400], [240, 350], [195, 300], [215, 182], [200, 110], [262, 118], [252, 252], [172, 238]],  // 联军营地、关前几仗、撞关、洛阳火、井、回关前三英战吕布
 ];
 const MAP_TOP = 100, MAP_BOT = 576;
 function drawCampaignMap(mim, t) {
