@@ -2761,7 +2761,7 @@ function drawSword(s) {
   ctx.restore();
 }
 // 双股剑命中：青、金两道剑痕交叉划开、再变细收回，桃花瓣爆开；砍中晕住的（破绽）更大，金星四溅
-// 双股剑命中：敌人脚下一块焦黑烧痕，几道裂纹透着余火（余火 1 秒内熄，焦痕 14 秒淡完）；一次命中只留一块
+// 刘备普攻（剑气）的斩痕底下：一块焦黑烧痕，几道裂纹透着余火（余火 1 秒内熄，焦痕 14 秒淡完）；一次命中只留一块
 function scorch(f) {
   if (f.scorched || !G) return; f.scorched = true; G.scorch = G.scorch || []; const s = f.crit ? 1.4 : 1;
   const cracks = Array.from({ length: 5 }, () => { const a = VR(0, 6.283), L = VR(16, 30) * s; let x = 0, y = 0; const pts = [[0, 0]]; for (let k = 1; k <= 4; k++) { x += Math.cos(a + VR(-.5, .5)) * L / 4; y += Math.sin(a + VR(-.5, .5)) * L / 4 * .45; pts.push([x, y]); } return pts; });
@@ -2770,7 +2770,7 @@ function scorch(f) {
 function drawScorch() {
   for (const d of G.scorch || []) {
     const a = clamp(1 - d.t / 14, 0, 1), ember = clamp(1 - d.t / 1.1, 0, 1); ctx.save(); ctx.translate(d.x, d.y);
-    const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 30 * d.s); g.addColorStop(0, `rgba(18,10,6,${.75 * a})`); g.addColorStop(.6, `rgba(30,18,10,${.45 * a})`); g.addColorStop(1, 'rgba(30,18,10,0)');
+    const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 30 * d.s); g.addColorStop(0, `rgba(10,5,2,${.92 * a})`); g.addColorStop(.6, `rgba(22,12,6,${.6 * a})`); g.addColorStop(1, 'rgba(30,18,10,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, 30 * d.s, 13 * d.s, 0, 0, 6.283); ctx.fill();
     ctx.lineCap = 'round';
     for (const c of d.cracks) { ctx.beginPath(); c.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
@@ -2779,7 +2779,7 @@ function drawScorch() {
     ctx.restore(); }
 }
 function drawCross(f) {
-  scorch(f); const u = f.t / .5; if (u > 1) return; const sc = (f.crit ? 1.55 : 1) * 1.5, p = ease(f.t / .07), shrink = clamp((f.t - .1) / .4, 0, 1);
+  const u = f.t / .5; if (u > 1) return; const sc = f.crit ? 1.55 : 1, p = ease(f.t / .07), shrink = clamp((f.t - .1) / .4, 0, 1);
   if (!f.boom) { f.boom = true; burst('petal', f.x, f.y, f.crit ? 10 : 6, 120 * sc, { life: .9, s: 3, g: 40, drag: 3 }); if (f.crit) burst('spark', f.x, f.y, 10, 220, { life: .4, s: 2.4 }); }
   for (const [k, c, hi] of [[-1, AZ_MID, AZ_HI], [1, GOLD, GOLD_HI]]) {
     const L = 17 * sc, a = k * .78 + (f.rot || 0), x0 = f.x - Math.cos(a) * L, y0 = f.y - Math.sin(a) * L, x1 = f.x + Math.cos(a) * L * (2 * p - 1), y1 = f.y + Math.sin(a) * L * (2 * p - 1);
@@ -3219,7 +3219,8 @@ function drawQiPaint(s) {
 }
 function drawCleave(f) {
   const im = IMG.fx_cleave, u = f.t / .8; if (u >= 1 || !ready(im)) return;
-  const T = f.wt || 0, ps = f.ps, L = (120 + 12 * T) * ps + 30, h = L * im.height / im.width, open = u < .1 ? .3 + .7 * ease(u / .1) : 1, a = u > .45 ? 1 - (u - .45) / .55 : 1;
+  scorch({ get scorched() { return f.scorched; }, set scorched(v) { f.scorched = v; }, x: f.x, y: f.y - 8, crit: true });   // 10-28 用户：「那个是普攻自带的，你就加大这个痕，焦黑一些」——斩痕底下留焦痕
+  const T = f.wt || 0, ps = f.ps, L = ((120 + 12 * T) * ps + 30) * 1.5, h = L * im.height / im.width, open = u < .1 ? .3 + .7 * ease(u / .1) : 1, a = u > .45 ? 1 - (u - .45) / .55 : 1;
   ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(Math.atan2(Math.sin(f.ang) * .3, Math.cos(f.ang)) * .5); ctx.scale(open, .7 * (u < .12 ? .6 + .4 * u / .12 : 1)); ctx.globalAlpha = a;   // 裂缝贴着敌人脚下，顺着剑气略斜；裂开那一下横着撑开、金光往上窜
   ctx.drawImage(im, -L / 2, -h * .775, L, h); ctx.globalAlpha = a * .7; ctx.drawImage(im, -L / 2, -h * .775, L, h); ctx.restore();   // 画里裂缝在 77.5% 高处；叠两层，纸色地面上才够亮
 }
@@ -3256,7 +3257,7 @@ function spxSword(s) {
 }
 // 双股剑命中：青、金两道剑气交叉斩下（雾港 Twin），一笔墨垫底；砍中晕住的更大，金色星爆
 function spxCross(f) {
-  const sc = (f.crit ? 1.4 : 1) * 1.5, rot = f.rot || 0; scorch(f);   // 10-28 用户：「这个地裂，再大些，地下焦黑些」——剑光放大一半，脚下留焦痕
+  const sc = f.crit ? 1.4 : 1, rot = f.rot || 0;
   if (hasPaint('sword')) {                                                                       // 10-25 用户指着剑16 的金色扇形光：「这个太丑了」——换成两道 GPT 剑气交叉斩下，再炸开
     [-1, 1].forEach((k, j) => { const a = k * .78 + rot, tx = Math.sin(a), ty = -Math.cos(a);
       spxPaintBody('sword', f.x, f.y, 74 * sc, a, .36, { pop: .55, delay: j * .05, boost: .45, offset: [-tx * 34, -ty * 34], drift: [tx * 70, ty * 70] }); });
