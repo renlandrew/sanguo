@@ -157,7 +157,7 @@ function bakeGeneral(id) {
 // 小兵：正面朝镜头跑过来，f 是跑动的相位
 const FOES = {
   bing:  { name: '黄巾兵', hp: 40, spd: 33, leak: 3, exp: 1, r: 9, box: [34, 52], s: 1, wpn: 'spear', sheet: 'huangjin', sh: 40 },
-  gong:  { name: '黄巾弓手', hp: 32, spd: 36, leak: 2, exp: 2, r: 9, box: [34, 52], s: 1, wpn: 'bow', stopY: 300, shoot: { every: 2.4, dmg: 3 }, sheet: 'gong', sh: 38 },
+  gong:  { name: '黄巾弓手', hp: 32, spd: 36, leak: 2, exp: 2, r: 9, box: [34, 52], s: 1, wpn: 'bow', stopY: 300, shoot: { every: 2.4, dmg: 3 }, sheet: 'gong', sh: 38, tint: 'gong', tintOwn: true },   // 10-28 用户：「第三关提示打弓箭手，但我好像没看到」——混在黄巾堆里分不出，头巾衣服调成青蓝
   lishi: { name: '黄巾力士', hp: 190, spd: 20, leak: 10, exp: 4, r: 13, box: [48, 66], s: 1.32, wpn: 'club', bulk: 12, sheet: 'lishi', sh: 58 },
   cyz:   { name: '程远志', hp: 1500, spd: 12, dps: 18, exp: 20, r: 22, box: [76, 96], s: 1.9, wpn: 'blade', bulk: 11, boss: true, sheet: 'cyz', sh: 70, title: '黄巾大将' },
   // 第一章新兵种（10-24，见 ../设计/第一章设定.md 3.1）
@@ -1829,7 +1829,7 @@ function drawSheetFlash(name, anim, f, x, y, k, col, alpha) {
   FLX.globalCompositeOperation = 'source-in'; FLX.fillStyle = col; FLX.fillRect(0, 0, r[2], r[3]);
   ctx.globalAlpha = alpha; ctx.drawImage(FLASH, 0, 0, r[2], r[3], x - A.anchor[0] * k, y - A.anchor[1] * k, r[2] * k, r[3] * k); ctx.globalAlpha = 1;
 }
-const TINT = { xiliang: 'hue-rotate(-42deg) saturate(1.5) brightness(.72)', gongqi: 'hue-rotate(-28deg) saturate(1.2) brightness(.95)', langqi: 'grayscale(.9) brightness(1.18) contrast(1.1)',
+const TINT = { gong: 'hue-rotate(170deg) saturate(1.4)', xiliang: 'hue-rotate(-42deg) saturate(1.5) brightness(.72)', gongqi: 'hue-rotate(-28deg) saturate(1.2) brightness(.95)', langqi: 'grayscale(.9) brightness(1.18) contrast(1.1)',
   huaxiong: 'hue-rotate(-40deg) saturate(1.4) brightness(.8)', lvbu: 'hue-rotate(250deg) saturate(1.6) brightness(1.05)', huzhen: 'hue-rotate(-35deg) brightness(.75)', lijue: 'hue-rotate(160deg) saturate(.8) brightness(.8)' };
 function drawSheet(name, anim, f, x, y, k, alpha = 1) {
   const S = SHEETS[name], A = S.anims[anim], r = A.rects[clamp(Math.floor(f), 0, A.rects.length - 1)];
@@ -1838,7 +1838,8 @@ function drawSheet(name, anim, f, x, y, k, alpha = 1) {
 // 专属图集还没做的兵种先借一张（alt）：张角借术士（同是黄袍道士），骑兵借黄巾兵
 const sheetOf = T => [T.sheet, T.alt].find(k => k && SHEETS[k] && ready(IMG[k]));
 // 换色（tint）和立绘（pt）只在还借着别人的图集时用；Veo 录的专属图集到了就用原色（10-25）
-const tintOf = T => T.tint && sheetOf(T) !== T.sheet ? TINT[T.tint] : 'none', ownSheet = T => sheetOf(T) === T.sheet;
+const tintOf = T => T.tint && (T.tintOwn || sheetOf(T) !== T.sheet) ? TINT[T.tint] : 'none',   // tintOwn：用自己的贴图也调色（弓手调成青蓝，和黄巾兵分得开）
+  ownSheet = T => sheetOf(T) === T.sheet;
 for (const k of ['huaxiong', 'lvbu']) { IMG['pt_' + k]   /* 胡轸、李傕、高顺 10-25 已有自己的 Veo 图集，不再找立绘（原来读不到报 404） */ = new Image(); IMG['pt_' + k].src = 'img/pt_' + k + '.png' + BUST; }
 // 敌将立绘：一张抠好的正面立绘，呼吸起伏；出招时往前一扑、放大一点；挨打闪白
 function drawPortrait(e, T, x, y, ps) {
@@ -3654,13 +3655,12 @@ function drawPick() {
       // 卡框（画的），没到时描金边
       if (ready(IMG.ui_card_tall)) ctx.drawImage(IMG.ui_card_tall, 0, 0, w, h); else { ctx.strokeStyle = special ? UIC.red2 : UIC.gold2; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(2, 2, w - 4, h - 4, 9); ctx.stroke(); }
       // 线标签、名字、说明
-      const tag = p.trap ? '邹靖' : p.combo ? '连携' : p.need ? '绝技' : p.gen ? GEN[p.gen].name : '军械', n = G.perks[p.id] || 0;
+      const n = G.perks[p.id] || 0, tag = (p.trap ? '邹靖' : p.combo ? '连携' : p.need ? '绝技' : p.gen ? GEN[p.gen].name : '军械') + (n ? ' · 已有' + n : '');   // 「已有」写进标签（10-28 用户：卡底那行压在框上）
       ctx.font = `10px ${PLAIN}`; const tw = ctx.measureText(tag).width + 12; ctx.fillStyle = 'rgba(10,6,4,.8)'; ctx.beginPath(); ctx.roundRect(w / 2 - tw / 2, ay + ah - 12, tw, 16, 8); ctx.fill(); ctx.strokeStyle = tc; ctx.lineWidth = 1; ctx.stroke();
       uiText(tag, w / 2, ay + ah - 4, 10, tc, 'center', PLAIN, { stroke: false });
       uiText(p.name, w / 2, ay + ah + 19, p.name.length > 4 ? 15 : 18, goldGrad(ay + ah + 20, 18), 'center', FONT, { lw: 4, glow: 'rgba(255,200,90,.4)', glowR: 6 });
       { let dz = 9.5, dl = fitLines(p.desc, w - 30, dz, PLAIN); while (dl.length > 5 && dz > 8) { dz -= .5; dl = fitLines(p.desc, w - 30, dz, PLAIN); }   // 按实际字宽断行，最多五行，放不下先缩字、不截断（10-28：底下角花挡住第三行，「斩将」的说明还被截掉）
         if (dl.length > 5) { dl.length = 5; dl[4] = dl[4].slice(0, -1) + "…"; } dl.forEach((ln, m) => uiText(ln, w / 2, ay + ah + 37 + m * (dz + 2.5), dz, '#e6d6b4', 'center', PLAIN, { stroke: false })); }   // 10-25 夜用户：「字超出左边了」——卡框里能写字的宽约 w-24   // 标点不打头、「%」不落单（10-25 截图里一行开头是「、」）
-      if (n) uiText('已有 ' + n, w / 2, h - 11, 9, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });   // 落在底下两朵角花中间
       if (picked) { const ss = 1.8 - .8 * su; ctx.save(); ctx.translate(w - 22, 26); ctx.scale(ss, ss); ctx.globalAlpha = su; uiSeal(0, 0, 26, '选', UIC.red); ctx.restore(); }
       if (P.adv && P.adv.i === k && fu >= 1 && !picked) uiSeal(20, 22, 26, '荐', '#3a5f8a', true);   // 军师荐的那张
     }
