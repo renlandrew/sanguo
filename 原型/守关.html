@@ -399,10 +399,10 @@ const LEVELS = [
       [26, 'cyz', 1, 0, 'rand', { g: 'c', lead: true }], [27, 'bing', 26, 0, 'wedge', { g: 'c' }], [31, 'lishi', 10, 4, 'rand', { g: 'c' }], [34, 'bing', 30, 10, 'rand', { g: 'c' }], [38, 'gong', 8, 4, 'line', { g: 'c' }]],
     tips: [[1, '残局：开局黄巾兵已经冲到半路了'], [4, '关羽学会了青龙斩：一刀扫倒一片'], [7, '弓手停在远处朝城上放箭，点他让刘备、关羽先打他'], [15, '程远志来了！他头顶有将旗——斩了他，他带的兵全都溃散']] },
   { id: 4, name: '青州解围', sub: '黄巾围青州，刘备两侧设伏', hpMul: 4.028,   /* 10-26 去掉限手后 1.318 变 3 星，用户：「第四关不难，可以增加点血量」→ 2.17 星 5/6 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'plain', reward: '熟铁',
-    rules: { ambush: { t: 32, y0: 180, y1: 340 } },                                  // 10-26 去掉「限手 36 次」：第四关起本来就默认自己点牌（用户：「好」）
+    rules: { ambush: { y0: 180, y1: 340, need: 50 } },   // 10-28 用户：「剧情先说有伏兵，然后让玩家选择几时（按地图一个明显的按钮），这个选择会影响2星还是3星」——伏兵改成玩家点令旗放，扫到 need 人以上才能拿三星                                  // 10-26 去掉「限手 36 次」：第四关起本来就默认自己点牌（用户：「好」）
     waves: [[2, 'bing', 20, 8, 'rand'], [8, 'qibing', 4, 4, 'rand'], [14, 'bing', 18, 0, 'wedge', { g: 'a' }], [15, 'qushuai', 1, 0, 'rand', { g: 'a', lead: true }], [22, 'qibing', 6, 5, 'rand'], [26, 'bing', 30, 6, 'rand'],
       [36, 'lishi', 6, 4, 'rand'], [40, 'bing', 26, 0, 'line', { g: 'b' }], [41, 'qushuai', 1, 0, 'rand', { g: 'b', lead: true }], [48, 'qibing', 6, 6, 'rand'], [55, 'bing', 24, 12, 'rand'], [62, 'lishi', 4, 4, 'rand'], [66, 'qibing', 6, 6, 'rand', { g: 'c' }], [67, 'qushuai', 1, 0, 'rand', { g: 'c', lead: true }]],
-    tips: [[1, '张飞学会了当阳一喝！骑兵冲得快，喝晕就落马'], [6, '从这关起招式要自己点：牌亮了就点它出招；右边「自动」只会好了就放，接不住冲阵'], [12, '头顶挂「冲」字小旗的那队会冲阵：留着张飞的一喝，等他们冲过地上的红线再喝，再接青龙斩'], [30, '伏兵就要杀出来了，把敌人引到半路'], [40, '渠帅也是头目，斩了他溃散一片']] },
+    tips: [[1, '张飞学会了当阳一喝！骑兵冲得快，喝晕就落马'], [6, '从这关起招式要自己点：牌亮了就点它出招；右边「自动」只会好了就放，接不住冲阵'], [12, '头顶挂「冲」字小旗的那队会冲阵：留着张飞的一喝，等他们冲过地上的红线再喝，再接青龙斩'], [3, '两侧河沟里藏着乡勇：等黄巾大队走进河沟那一段，点左边的「伏兵」令旗。扫到的人多才有三星'], [40, '渠帅也是头目，斩了他溃散一片']] },
   { id: 5, name: '邓茂', sub: '拦路将 · 大兴山下，邓茂挺枪拦路', kind: 'duel', boss: 'dengmao', hpMul: 6.073, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'canyon', reward: '镔铁 · 兵书残卷',
     moves: ['heavy', 'summon', 'heavy', 'buff', 'heavy', 'summon'], gap: 3.2, heavy: 14, adds: [['bing', 6], ['lishi', 1]],
     tips: [[1, '斗将：邓茂站在场中出招，城防就是你们的血'], [4, '「挺枪突刺」会自动举盾挡下，挡下来还能反击'], [14, '「无双·喝断它」举盾挡不住！留着张飞的一喝，看到它再喝']] },
@@ -1088,6 +1088,7 @@ const TEACH = {
   charge: ['冲阵！', '头顶挂「冲」字小旗的那队要冲城了。地上亮红光的地方是张飞一喝够得着的范围：等他们冲进红光再点张飞，喝住了马上点关羽。'],
   duel:   ['斗将', '敌将站在场中出招，城防就是你们的血。他普通的重招，会自动举盾挡下。'],
   uns:    ['无双！', '这一招举盾挡不住。现在就点张飞，一喝喝断它！'],
+  ambush: ['伏兵', '两侧河沟里藏着乡勇。黄巾大队走进河沟这一段时，点左边的「伏兵」令旗——扫到的人越多越好，人少了这关最多两星。'],
 };
 function teach(key) {
   if (G.sim || window.__sg.simming || window.__sg.auto || !TEACH[key]) return; INV.taught = INV.taught || {}; if (INV.taught[key] || G.teach) return;
@@ -1292,10 +1293,9 @@ function stepRules(dt) {
     for (let k = 0; k < A.n; k++) spawn({ kind: A.kind, x: R(A.x0, A.x1), w: G.wave, lane: false, g: 'foeAdv' }, A.y + R(-24, 24));
     G.total += A.n; G.fx.push({ k: 'banner', t: 0, text: FA.name + '的伏兵', sub: A.n + ' 骑' + FOES[A.kind].name + '从' + (A.x0 > W / 2 ? '右' : '左') + '侧杀出' }); G.shake = .25;
   }
-  if (RU.ambush && !G.ambushed && G.t >= RU.ambush.t * TIMEX.v) {        // 伏兵从两侧杀出
-    G.ambushed = true; let n = 0;
-    for (const e of alive()) if (!FOES[e.kind].boss && e.y > RU.ambush.y0 && e.y < RU.ambush.y1) { hurt(e, 400 * HPX, 'slash'); n++; }
-    G.fx.push({ k: 'ambush', t: 0 }); G.fx.push({ k: 'banner', t: 0, text: '伏兵杀出', sub: '扫掉 ' + n + ' 人' }); G.shake = .3;
+  if (RU.ambush && !G.ambushed) {                                // 伏兵：玩家点令旗放（drawAmbushBtn）；河沟那段第一次挤进一堆人时教一次；机器人等人够多才放
+    const n = ambushCount(); if (n >= 8) teach('ambush');
+    if ((G.sim || window.__sg.auto) && (n >= RU.ambush.need + 4 || (G.qi >= G.queue.length && n >= 6))) fireAmbush();
   }
   for (const h of G.huts) {                                    // 草营：着火的敌人点着草棚，火顺着草棚烧
     if (h.burnt) continue;
@@ -1628,9 +1628,35 @@ function botAim(kind, al) {
   for (const c of cs) { const inS = al.filter(e => !FOES[e.kind].civ && Math.abs(e.x - c) < hw && e.y > WALL_Y - reach && (kind === 'log' || seen(e))); const v = inS.length + (n >= 2 ? 6 * inS.filter(e => FOES[e.kind].boss && !e.duel && e.y > WALL_Y - reach * .6).length : 0); if (v > bc) { bc = v; best = c; boss = inS.some(e => FOES[e.kind].boss && !e.duel && e.y > WALL_Y - reach * .6); } }   // 走过来的头目、敌将冲近了才算
   if (bc >= need || (boss && n >= 2) || (G.wall < G.wallMax * .35 && bc > 2)) { if (kind === 'log') fireLog(best); else fireNu(best); }
 }
+const ambushCount = () => alive().filter(e => !FOES[e.kind].boss && e.y > G.RU.ambush.y0 && e.y < G.RU.ambush.y1).length;
+function fireAmbush() {                                          // 伏兵从两侧杀出：河沟那一段的兵各吃一记重伤
+  if (!G.RU.ambush || G.ambushed || G.state !== 'play') return; G.ambushed = true; let n = 0;
+  for (const e of alive()) if (!FOES[e.kind].boss && e.y > G.RU.ambush.y0 && e.y < G.RU.ambush.y1) { hurt(e, 400 * HPX, 'slash'); n++; }
+  G.ambushN = n; const ok = n >= G.RU.ambush.need;
+  G.fx.push({ k: 'ambush', t: 0 }); G.fx.push({ k: 'banner', t: 0, text: ok ? '伏兵杀出！' : '伏兵杀出', sub: '扫掉 ' + n + ' 人' + (ok ? ' · 时机正好' : ' · 人少了，这关最多两星') }); G.shake = .3; sfx('horn');
+}
+// 河沟那一段：两边草里露出乡勇的枪尖和小旗（还没放时）；左边一面大令旗按钮「伏兵」，放过就收起
+function drawAmbushBtn() {
+  const A = G.RU.ambush; if (!A || G.ambushed || G.state !== 'play') return;
+  const cy = (A.y0 + A.y1) / 2, t = uiNow();
+  ctx.save(); ctx.globalAlpha = .55;
+  for (const sd of [-1, 1]) for (let k = 0; k < 5; k++) { const x = sd < 0 ? 8 + (k % 2) * 9 : W - 8 - (k % 2) * 9, y = A.y0 + 18 + k * (A.y1 - A.y0 - 36) / 4;
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x, y + 8); ctx.lineTo(x, y - 12); ctx.stroke(); ctx.fillStyle = '#c8c0b0'; ctx.beginPath(); ctx.moveTo(x - 2, y - 12); ctx.lineTo(x, y - 18); ctx.lineTo(x + 2, y - 12); ctx.fill(); }
+  ctx.restore();
+  const bx = 34, by = cy, r = 24, pulse = .5 + .5 * Math.sin(t * 5);
+  ctx.save(); ctx.shadowColor = `rgba(255,190,80,${.5 + .4 * pulse})`; ctx.shadowBlur = 16; ctx.fillStyle = '#2a1a10'; ctx.beginPath(); ctx.arc(bx, by, r, 0, 6.283); ctx.fill(); ctx.restore();
+  ctx.save(); ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(bx, by, r, 0, 6.283); ctx.stroke();
+  ctx.strokeStyle = '#e8d8b0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(bx - 8, by + 14); ctx.lineTo(bx - 8, by - 14); ctx.stroke();
+  const wv = Math.sin(t * 6) * 2; ctx.fillStyle = CINNABAR; ctx.beginPath(); ctx.moveTo(bx - 8, by - 14); ctx.quadraticCurveTo(bx + 4, by - 12 + wv, bx + 14, by - 9); ctx.lineTo(bx + 12, by + 2 + wv); ctx.quadraticCurveTo(bx + 2, by - 1, bx - 8, by + 1); ctx.closePath(); ctx.fill();
+  txt('令', bx + 2, by - 6 + wv * .5, 10, '#f6efe0', 'center'); ctx.restore();
+  uiText('伏兵', bx, by + r + 11, 12, UIC.gold2, 'center', FONT, { lw: 3 });
+  hit(bx - r, by - r, r * 2, r * 2 + 18, fireAmbush);
+}
 function end(win, why) {
   G.state = 'over'; sfx(win ? 'win' : 'lose');
-  const frac = Math.min(G.wall / G.wallMax, G.cart && !G.RU.cart.optional ? G.cart.hp / G.cart.max : 1), stars = win ? 1 + (frac >= .5) + (frac >= .85) : 0;
+  const frac = Math.min(G.wall / G.wallMax, G.cart && !G.RU.cart.optional ? G.cart.hp / G.cart.max : 1);
+  let stars = win ? 1 + (frac >= .5) + (frac >= .85) : 0;
+  if (G.RU.ambush && stars > 2 && (G.ambushN || 0) < G.RU.ambush.need) stars = 2;   // 伏兵没放、或者放得人少：最多两星
   G.result = { win, stars, frac, time: G.t, why, first: win && !BEST[G.lv.id] };
   if (G.result.first && !G.sim && STORY['l' + G.lv.id] && !storySeen('l' + G.lv.id)) G.result.story = 'l' + G.lv.id;   // 首通每一关：结算完演一场（10-26 起三十关都有）
   if (win && !G.sim) { BEST[G.lv.id] = Math.max(BEST[G.lv.id] || 0, stars); saveBest(); }
@@ -3656,6 +3682,7 @@ function drawBattleBtns() {
   if (spdOpen()) { const on = (INV.spd || 1) > 1, sy = py - 42; ctx.save(); if (on) { ctx.shadowColor = `rgba(255,200,90,${.5 + .3 * Math.sin(uiNow() * 4)})`; ctx.shadowBlur = 12; } roundBtn(px, sy, 16, '', '', () => { INV.spd = on ? 1 : 2; saveInv(); }, false); ctx.restore();
     uiText(on ? '×2' : '×1', px, sy + 1, 12, on ? UIC.gold2 : UIC.cream, 'center', PLAIN, { lw: 3 }); }
   const over = G.fx.some(f => f.k === 'skname' && f.t < f.dur && Math.abs(f.x - 32) < 45);              // 最左那员武将出招时，竖排招名的旗带正好落在这颗按钮上：按钮先淡下去让字露出来
+  drawAmbushBtn();
   ctx.save(); if (over) ctx.globalAlpha = .22; roundBtn(32, 402, 20, '功', '军功', () => { G.panel = true; G.panelAdv = null; MENU.panelT = uiNow(); }, false); ctx.restore();
 }
 function drawPause() {
@@ -3873,8 +3900,11 @@ const STORY = {
     ['story_zhang', '', '探马来报：黄巾大将程远志，带五万人往这边来了。'], [null, 'zhang', '五万？我们才五百！跑吧！'], [null, 'jianyong', '跑？城外全是黄巾，往哪跑？'], [null, 'liu', '……那就关门。']],
   l3: [[null, 'zhang', '（深吸一口气）哇——！！！'], [null, '', '城下的黄巾兵，倒了一片。'], [null, 'zhang', '我不是在喊阵……我是被程远志的脸吓的。'], [null, 'liu', '不管是什么，下回再吓一次。'],
     ['story_zhang', '', '张飞学会了「当阳一喝」。三兄弟，齐了。'], [null, '', '程远志被斩，黄巾溃散。'], [null, 'jianyong', '三位闭门不出，以逸待劳，竟斩敌将！上策啊！'], [null, 'liu', '对。我们是故意不出城的。'],
-    ['story_liu', '', '没歇两天，青州太守求援：城被黄巾围了。'], [null, 'zhang', '去青州？那是出城啊！'], [null, 'liu', '我看了地图，青州城墙高。到了就进城，进了就不出来。']],
-  l4: [['story_liu', '', '两路伏兵一起杀出，青州之围解了。'], [null, 'zhang', '其实我们是躲在河沟里，不想让黄巾看见。'], [null, 'guan', '（看水里倒影）躲了一下午，发型没乱。'], [null, 'liu', '结果黄巾正好从河沟边上过，乡勇以为是信号，全冲出去了。'],
+    ['story_liu', '', '没歇两天，青州太守求援：城被黄巾围了。'], [null, 'zhang', '去青州？那是出城啊！'], [null, 'liu', '我看了地图，青州城墙高。到了就进城，进了就不出来。'],
+    [null, 'jianyong', '青州城外两侧都是河沟，可以藏伏兵。乡勇藏进去，三位守城头。'], [null, 'liu', '藏人好。……我们能不能也藏进去？'],
+    [null, 'jianyong', '不能。城头要有人举旗——等黄巾大队走到河沟边，举旗为号，伏兵杀出。'], [null, 'zhang', '举早了呢？'], [null, 'jianyong', '扑个空。'],
+    [null, 'zhang', '举晚了呢？'], [null, 'jianyong', '城破。'], [null, 'guan', '……这个旗，大哥你来举。']],
+  l4: [['story_liu', '', '两路伏兵一起杀出，青州之围解了。'], [null, 'zhang', '大哥，你那旗是算准了才举的？'], [null, 'liu', '……我手一抖，旗自己掉下去了。'], [null, 'guan', '（看河沟里的倒影）掉得正是时候。'],
     [null, 'zoujing', '好一个埋伏！玄德用兵如神！'], [null, 'liu', '……对，我设计的。'], [null, 'zoujing', '慢着！大兴山下有个邓茂，挺着长枪拦路，指名要你们单挑！'],
     [null, 'zhang', '单挑？我连吵架都吵不赢。'], [null, 'liu', '不出去。他要打，就让他到城下来打。']],
   l5: [['story_zhang', '', '邓茂倒下了。'], [null, 'zhang', '我本来想下城去茅房，脚一滑，抱着盾摔到了邓茂跟前。'], [null, 'guan', '他一枪扎过来，正好扎在你盾上。'], [null, 'zhang', '然后我吓得喊了一嗓子，他就不动了。'],
