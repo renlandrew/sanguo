@@ -1821,7 +1821,7 @@ function drawWallProps() {
   if (G.RU.night) items.push({ im: IMG.ui_ico_fire, n: G.lightN, used: G.lightN <= 0 });
   if (G.RU.decoy) items.push({ cloth: true, n: G.decoyN || 0, used: !G.decoyN });
   if (G.duel) items.push({ shield: true, on: G.shieldT > 0 });
-  const sz = 22, gap = 4, y = WALL_Y - 70 - sz; let x = W - 58 - sz;   // 摆在城前地上、武将头顶再往外一点（城垛上会被武将挡住）；右边让开暂停、倍速那一列圆钮
+  const sz = 22, gap = 4, y = WALL_Y - 48 - sz; let x = W - 50 - sz;   // 城垛正上方、暂停钮左边那块空地（10-28 用户框的位置）
   for (const it of items) {
     ctx.save(); ctx.globalAlpha = it.used ? .3 : .75;
     if (it.on) { ctx.shadowColor = 'rgba(255,220,120,.95)'; ctx.shadowBlur = 14; }
@@ -1834,13 +1834,16 @@ function drawWallProps() {
   }
 }
 // 冲阵蓄势、冲锋时，地上画出一喝喝得到的那条线（离城 zhangR）：冲阵队过了这条线再喝（10-28）。一喝好了是亮的朱红虚线，还在冷却就淡一点
-function drawRoarLine() {
+function drawRoarLine() {   // 10-28 用户：「这个红线，不像游戏」——虚线加字改成地上一片朱红光区：城墙边最淡、往外渐浓，边缘一道柔光；一喝好了一呼一吸，在冷却就很淡
   const on = Object.values(G.chg || {}).some(c => c.state === 'warn' || c.state === 'run'), zi = G.order.indexOf('zhang');
   if (!on || zi < 0 || !knows('zhang')) return;
-  const y = WALL_Y - G.st.zhangR, ready = G.t >= G.ready[zi] && G.seal[zi] <= 0;
-  ctx.save(); ctx.globalAlpha = ready ? .65 + .25 * Math.sin(G.t * 8) : .25; ctx.strokeStyle = CINNABAR; ctx.lineWidth = 2; ctx.setLineDash([10, 7]);
-  ctx.beginPath(); ctx.moveTo(10, y); ctx.lineTo(W - 10, y); ctx.stroke(); ctx.setLineDash([]);
-  txt('一喝', W - 30, y - 10, 12, CINNABAR, 'center'); ctx.restore();
+  const y = WALL_Y - G.st.zhangR, ready = G.t >= G.ready[zi] && G.seal[zi] <= 0, pulse = ready ? .75 + .25 * Math.sin(G.t * 6) : .3;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const g = ctx.createLinearGradient(0, WALL_Y, 0, y); g.addColorStop(0, 'rgba(226,86,58,0)'); g.addColorStop(.75, `rgba(226,86,58,${.1 * pulse})`); g.addColorStop(1, `rgba(255,120,70,${.22 * pulse})`);
+  ctx.fillStyle = g; ctx.fillRect(0, y, W, WALL_Y - y);
+  const e = ctx.createLinearGradient(0, y - 7, 0, y + 7); e.addColorStop(0, 'rgba(255,140,80,0)'); e.addColorStop(.5, `rgba(255,150,90,${.55 * pulse})`); e.addColorStop(1, 'rgba(255,140,80,0)');
+  ctx.fillStyle = e; ctx.fillRect(0, y - 7, W, 14);
+  ctx.restore();
 }
 function drawFoe(e) {
   const T = FOES[e.kind], ps = persp(e.y), w = T.box[0] * ps, h = T.box[1] * ps, f = Math.floor(e.f) % 4;
