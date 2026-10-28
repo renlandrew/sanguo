@@ -1720,9 +1720,9 @@ function drawLoading() {                                                        
   if ((fr >= 1 && waited > .4) || waited > 30) { LOADED = true; return true; }
   loadShown += (fr - loadShown) * .15;
   ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0); ctx.fillStyle = '#140d08'; ctx.fillRect(0, 0, W, H);
-  if (IMG.trio && IMG.trio.complete && IMG.trio.naturalWidth) { const im = IMG.trio, h = 300, w = h * im.width / im.height; ctx.globalAlpha = .9; ctx.drawImage(im, W / 2 - w / 2, 150, w, h); ctx.globalAlpha = 1; }
-  ctx.font = '40px ' + FONT; ctx.textAlign = 'center'; ctx.fillStyle = '#f6d27a'; ctx.fillText('群雄逐鹿', W / 2, 120);
-  const bx = 50, by = 500, bw = W - 100; ctx.fillStyle = '#2a1608'; ctx.fillRect(bx, by, bw, 10); ctx.fillStyle = '#e0a83a'; ctx.fillRect(bx, by, bw * loadShown, 10);
+  // 10-28 用户：「加载页不要三个人，就游戏名和进度条即可」——名字和进度条摆在屏幕中间
+  ctx.font = '44px ' + FONT; ctx.textAlign = 'center'; ctx.fillStyle = '#f6d27a'; ctx.fillText('群雄逐鹿', W / 2, H * .42);
+  const bx = 60, by = H * .42 + 50, bw = W - 120; ctx.fillStyle = '#2a1608'; ctx.fillRect(bx, by, bw, 10); ctx.fillStyle = '#e0a83a'; ctx.fillRect(bx, by, bw * loadShown, 10);
   ctx.strokeStyle = '#9a7432'; ctx.lineWidth = 1; ctx.strokeRect(bx - .5, by - .5, bw + 1, 11);
   ctx.font = '13px sans-serif'; ctx.fillStyle = 'rgba(244,230,196,.8)'; ctx.fillText('整军备马… ' + Math.round(loadShown * 100) + '%', W / 2, by + 32);
   ctx.restore(); return false;
