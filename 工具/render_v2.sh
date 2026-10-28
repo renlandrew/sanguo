@@ -1,8 +1,19 @@
 #!/bin/bash
 # 10-26 新模型（美术/<兵种>/v2/动作）→ 渲染 → 全彩 → 打包进 原型/img/<键>
 # 10-28 改成 Eevee 真光照（light=lit key=2.8 rim=4 amb=.05，对比图 C）+ 512 大图（用户：「很模糊」「像纸片」）；调色 vivid 1.25→1.05（真光照本身够鲜）
+set -euo pipefail
 cd "$(dirname "$0")/.."; SP="${SP:-$(mktemp -d)}"
 B=/Applications/Blender.app/Contents/MacOS/Blender
+# 单独重渲骑兵，沿用步兵真光照；原始帧留在 SP，方便检查循环和方向。
+if [ "${UNIT:-}" = qibing ]; then
+  "$B" -b -t "${THREADS:-6}" -P 工具/blender/render_frames.py -- 素材/3d/qibing.glb "$SP/qibing_raw" unit=qibing n=8 size=512 scale=4.8 light=lit key=2.8 rim=4 amb=.05
+  python3 工具/align_cavalry.py "$SP/qibing_raw" "$SP/qibing_aligned"
+  for d in {0..7}; do
+    python3 工具/blender/ink_post.py "$SP/qibing_aligned/$d" "$SP/qibing_col/$d" keep=1 vivid=1.05 line=1
+  done
+  python3 工具/pack_cavalry.py "$SP/qibing_col" 原型/img
+  exit 0
+fi
 r() { cn=$1; key=$2; opts=$3; col=$4; pack=$5; g="美术/$cn/v2/动作/animation_glb_url.glb"; [ -f "美术/$cn/v2/动作/done" ] || { echo "skip $key (模型没好)"; return; }
   [ -f "$SP/v2_$key.done" ] && return; rm -rf "$SP/v2_${key}_raw" "$SP/v2_${key}_col"
   eval "$B -b -P 工具/blender/render_frames.py -- \"$g\" \"$SP/v2_${key}_raw\" n=8 size=512 light=lit key=2.8 rim=4 amb=.05 $opts" 2>&1 | grep -E "渲完|rror"

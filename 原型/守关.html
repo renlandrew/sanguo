@@ -87,7 +87,7 @@ const BUST = '?t=' + Date.now();                     // 原型阶段图集常改
 for (const [k, ext] of [['wall', 'png'], ['bg', 'jpg']]) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.' + ext + BUST; }
 // 各关地图自己的整张背景（10-25 用户：程序画的谷口山崖太假，「要让 gpt 画」「直接重新画就好了」）：有图就用它、不再叠程序画的那层，没有就用通用战场
 for (const m of ['canyon', 'peach', 'camp', 'yamen', 'grass', 'luoyang', 'suanzao', 'sishui', 'hulao', 'ruins']) { const k = 'bg_' + m; IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.jpg' + BUST; }
-const SHEETS = {}; for (const k of ['huangjin', 'lishi', 'gong', 'cyz', 'yayi', 'dengmao', 'shushi', 'qibing', 'zhangjiao', 'g_guan', 'g_zhang', 'g_liu', 'xiliang', 'feixiong', 'xianzhen', 'baixing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'gaoshun', 'lvbu', 'panfeng', 'wuanguo']) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.png' + BUST; fetch('img/' + k + '.json' + BUST).then(r => r.json()).then(j => { SHEETS[k] = j; }).catch(() => {}); }
+const SHEETS = {}; for (const k of ['huangjin', 'lishi', 'gong', 'cyz', 'yayi', 'dengmao', 'shushi', 'qibing', ...Array.from({ length: 7 }, (_, i) => 'qibing_' + (i + 1)), 'zhangjiao', 'g_guan', 'g_zhang', 'g_liu', 'xiliang', 'feixiong', 'xianzhen', 'baixing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'gaoshun', 'lvbu', 'panfeng', 'wuanguo']) { const file = k === 'qibing' ? 'enemy_qibing_0' : k.startsWith('qibing_') ? 'enemy_' + k : k; IMG[k] = new Image(); IMG[k].src = 'img/' + file + '.png' + BUST; fetch('img/' + file + '.json' + BUST).then(r => r.json()).then(j => { SHEETS[k] = j; }).catch(() => {}); }
 let BG, WALL, MIST, GBODY = {}, SPR = {}, SPRHIT = {}, BLOTS = [];
 function bakeBg() {
   return layer(W, H, g => {
@@ -162,7 +162,7 @@ const FOES = {
   lishi: { name: '黄巾力士', hp: 190, spd: 20, leak: 10, exp: 4, r: 13, box: [48, 66], s: 1.32, wpn: 'club', bulk: 12, sheet: 'lishi', sh: 58 },
   cyz:   { name: '程远志', hp: 1500, spd: 12, dps: 18, exp: 20, r: 22, box: [76, 96], s: 1.9, wpn: 'blade', bulk: 11, boss: true, sheet: 'cyz', sh: 70, title: '黄巾大将' },
   // 第一章新兵种（10-24，见 ../设计/第一章设定.md 3.1）
-  qibing: { name: '黄巾骑兵', hp: 64, spd: 66, leak: 5, exp: 2, r: 11, box: [34, 52], s: 1.1, wpn: 'spear', sheet: 'qibing', alt: 'huangjin', sh: 60, mount: 'bing' },   // 图集是 Veo 录的人马合高（10-25）          // 喝晕就落马，变成黄巾兵
+  qibing: { name: '黄巾骑兵', hp: 64, spd: 66, leak: 5, exp: 2, r: 11, box: [34, 52], s: 1.1, wpn: 'spear', sheet: 'qibing', alt: 'huangjin', sh: 60, mount: 'bing' },   // Rigify 马与独立黄巾骑手，八方向真光照图集          // 喝晕就落马，变成黄巾兵
   shushi: { name: '黄巾术士', hp: 48, spd: 26, leak: 2, exp: 3, r: 9, box: [34, 52], s: 1, wpn: 'bow', sheet: 'shushi', sh: 44, heal: { every: 5, r: 80, pct: .2 } },
   qishou: { name: '黄巾旗手', hp: 80, spd: 26, leak: 3, exp: 3, r: 10, box: [34, 52], s: 1, wpn: 'spear', sheet: 'huangjin', sh: 40, flag: 100 },           // 旗下撞城 ×1.5；砍倒旗手，旗下的兵溃散
   yayi:   { name: '衙役', hp: 22, spd: 40, leak: 1, exp: 1, r: 9, box: [34, 52], s: 1, wpn: 'club', sheet: 'yayi', sh: 40, zig: true },
@@ -959,7 +959,7 @@ function die(e, src) {
   const s = FOES[e.kind].s, ps = persp(e.y);
   const sp = s * ps * 1.4;                                                   // 墨点跟着人一起按远近缩放
   if (G.fx.filter(f => f.k === 'splash' && f.t < .05).length < 4) G.fx.push({ k: 'splash', t: 0, x: e.x, y: e.y - 12 * s * ps, s: s * ps, p: Array.from({ length: 3 }, () => ({ a: VR(0, 6.28), v: VR(30, 70) * sp, r: VR(2.6, 4.2) * sp, i: Math.floor(VR(0, 8)) })) });   // 少而大，不堆成一片
-  if (FOES[e.kind].sheet) G.fx.push({ k: 'corpse', t: -(!G.sim && G.visDelay ? G.visDelay(e) : 0), x: e.x, y: e.y, ps, kind: e.kind, anim: src === 'slash' || src === 'roar' || src === 'log' ? 'fly' : 'die', ...(BIGSRC.has(src) && !G.sim ? { vx: VR(-50, 50), vy: -VR(170, 240), spin: VR(-5, 5) } : {}) });   // 大招打死的往后上方击飞、打着转   // 倒地的动作，演完淡掉
+  if (FOES[e.kind].sheet) G.fx.push({ k: 'corpse', t: -(!G.sim && G.visDelay ? G.visDelay(e) : 0), x: e.x, y: e.y, ps, kind: e.kind, qdir: e.qdir || 0, anim: src === 'slash' || src === 'roar' || src === 'log' ? 'fly' : 'die', ...(BIGSRC.has(src) && !G.sim ? { vx: VR(-50, 50), vy: -VR(170, 240), spin: VR(-5, 5) } : {}) });   // 大招打死的往后上方击飞、打着转   // 倒地的动作，演完淡掉
   G.decals.push({ x: e.x + R(-3, 3), y: e.y - 2, s: R(.5, .8) * s * ps, i: Math.floor(R(0, 8)), t: 0 }); if (G.decals.length > 140) G.decals.shift();
   if (G.state === 'play') checkRank();
 }
@@ -1887,7 +1887,7 @@ function drawCorpse(f) {
   const T = FOES[f.kind]; if (!hasSheet(T)) return;
   const u = Math.max(0, f.t) / .9; if (u > 1) return;
   ctx.filter = tintOf(T);
-  const k = sheetOf(T), fr = Math.min(SHEETS[k].anims[f.anim].rects.length - 1, u / .7 * SHEETS[k].anims[f.anim].rects.length), al = u < .7 ? 1 : (1 - u) / .3;
+  const dk = T.sheet === 'qibing' && f.qdir ? 'qibing_' + f.qdir : null, k = dk && SHEETS[dk] && ready(IMG[dk]) ? dk : sheetOf(T), fr = Math.min(SHEETS[k].anims[f.anim].rects.length - 1, u / .7 * SHEETS[k].anims[f.anim].rects.length), al = u < .7 ? 1 : (1 - u) / .3;
   if (f.vy) { const t = Math.max(0, f.t), oy = Math.min(0, f.vy * t + 520 * t * t) * f.ps; ctx.save(); ctx.translate(f.x + f.vx * t * f.ps, f.y + oy); ctx.rotate(f.spin * Math.min(t, .5)); drawSheet(k, f.anim, fr, 0, 0, T.sh / SHEETS[k].stand * f.ps, al); ctx.restore(); ctx.filter = 'none'; return; }
   drawSheet(k, f.anim, fr, f.x, f.y, T.sh / SHEETS[k].stand * f.ps, al); ctx.filter = 'none';
 }
@@ -1928,6 +1928,20 @@ function drawRoarLine() {   // 10-28 用户：「这个红线，不像游戏」�
   ctx.fillStyle = e; ctx.fillRect(0, y - 7, W, 14);
   ctx.restore();
 }
+// 只记录绘制朝向，不参与移动、速度、碰撞和结算。0 朝城墙，顺时针每 45° 一档。
+function cavalrySheet(e, T, base) {
+  if (T.sheet !== 'qibing') return base;
+  const dx = e.x - (e.qx ?? e.x), dy = e.y - (e.qy ?? e.y);
+  if (!(e.stun > 0 || e.knock > 0) && Math.hypot(dx, dy) > .02) {
+    const a = Math.atan2(dx * Math.sin(35 * Math.PI / 180), dy), old = (e.qdir || 0) * Math.PI / 4;
+    const delta = Math.atan2(Math.sin(a - old), Math.cos(a - old));
+    // 边界留 7° 回差，轻微横向抖动不会在两个方向间来回闪。
+    if (Math.abs(delta) > Math.PI / 8 + .12) e.qdir = (Math.round(a / (Math.PI / 4)) + 8) % 8;
+  }
+  e.qx = e.x; e.qy = e.y;
+  const key = e.qdir ? 'qibing_' + e.qdir : 'qibing';
+  return SHEETS[key] && ready(IMG[key]) ? key : base;
+}
 function drawFoe(e) {
   const T = FOES[e.kind], ps = persp(e.y), w = T.box[0] * ps, h = T.box[1] * ps, f = Math.floor(e.f) % 4;
   let x = e.x, y = e.y - (e.kick || 0) * ps;
@@ -1937,7 +1951,7 @@ function drawFoe(e) {
     // 跑：8 帧循环；撞城：0.6 秒演完前 8 帧；喝晕、被打退：受击摇晃
     // 弓手停下来就拉弓，放箭那一下对上 shootT 归零；大将在城下来回连劈
     let anim = 'run', fr = 0;
-    const SK = sheetOf(T), stopY = T.stopY ? T.stopY + e.jit : WALL_Y - 3, has = a => SHEETS[SK].anims[a], nOf = a => has(a).rects.length;
+    const SK = cavalrySheet(e, T, sheetOf(T)), stopY = T.stopY ? T.stopY + e.jit : WALL_Y - 3, has = a => SHEETS[SK].anims[a], nOf = a => has(a).rects.length;
     fr = e.f / 4 * nOf('run');                                                 // 每段帧数照图集里的算（Meshy 的 8 帧、Veo 切的不一定）
     if (e.duel) {
       // 斗将的敌将：平时待机（没有待机就慢慢跑步原地踏），出招时演施法／召兵／撞城那段

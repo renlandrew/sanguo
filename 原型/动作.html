@@ -29,7 +29,7 @@
 <main id="main"></main>
 <script>
 // 动作查看（10-24）：看 img/ 下每张图集里的每段动作，放大循环播放，下面逐帧摊开。
-const SETS = { g_guan: '关羽', g_zhang: '张飞', g_liu: '刘备', huangjin: '黄巾兵', lishi: '黄巾力士', gong: '黄巾弓手', cyz: '程远志', yayi: '衙役', dengmao: '邓茂', shushi: '黄巾术士', qibing: '黄巾骑兵', zhangjiao: '张角' };
+const SETS = { g_guan: '关羽', g_zhang: '张飞', g_liu: '刘备', huangjin: '黄巾兵', lishi: '黄巾力士', gong: '黄巾弓手', cyz: '程远志', yayi: '衙役', dengmao: '邓茂', shushi: '黄巾术士', qibing: '黄巾骑兵 0°', ...Object.fromEntries(Array.from({length:7}, (_,i) => ['qibing_'+(i+1), '骑兵 '+((i+1)*45)+'°'])), zhangjiao: '张角' };
 const NAMES = { idle: '待机', atk: '普攻', skill: '出招', hit: '受击', run: '跑', ram: '撞城', fly: '被打飞', die: '倒地', shoot: '射箭', cast: '施法', summon: '召兵', atk2: '普攻二', atk3: '普攻三' };
 const BUST = '?t=' + Date.now();
 let cur = new URLSearchParams(location.search).get('k') || 'g_guan', slow = false, paused = false, cards = [];
@@ -39,8 +39,9 @@ document.getElementById('slow').onclick = e => { slow = !slow; e.target.classLis
 document.getElementById('pause').onclick = e => { paused = !paused; e.target.classList.toggle('on', paused); };
 async function load(k) {
   cur = k; for (const b of who.children) b.classList.toggle('on', b.dataset.k === k);
-  const meta = await fetch('img/' + k + '.json' + BUST).then(r => r.json());
-  const img = new Image(); img.src = 'img/' + k + '.png' + BUST; await img.decode();
+  const file = k === 'qibing' ? 'enemy_qibing_0' : k.startsWith('qibing_') ? 'enemy_' + k : k;
+  const meta = await fetch('img/' + file + '.json' + BUST).then(r => r.json());
+  const img = new Image(); img.src = 'img/' + file + '.png' + BUST; await img.decode();
   main.innerHTML = ''; cards = [];
   for (const [anim, A] of Object.entries(meta.anims)) {
     const card = document.createElement('div'); card.className = 'card';
