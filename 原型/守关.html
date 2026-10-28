@@ -1641,20 +1641,13 @@ function drawAmbushBtn() {
   const cy = (A.y0 + A.y1) / 2, t = uiNow();
   // 10-28 用户：「哪些是伏兵啊」——两侧各四丛草，草里露出乡勇的蓝头巾、枪尖和小蓝旗；河沟那一段地上铺一层淡金色，扫的就是这一块
   ctx.save(); const g = ctx.createLinearGradient(0, A.y0, 0, A.y1); g.addColorStop(0, 'rgba(255,215,120,0)'); g.addColorStop(.5, `rgba(255,215,120,${.08 + .04 * Math.sin(t * 3)})`); g.addColorStop(1, 'rgba(255,215,120,0)'); ctx.fillStyle = g; ctx.fillRect(0, A.y0, W, A.y1 - A.y0); ctx.restore();
-  for (const sd of [-1, 1]) for (let k = 0; k < 4; k++) {
-    const x = sd < 0 ? 16 + (k % 2) * 14 : W - 16 - (k % 2) * 14, y = A.y0 + 26 + k * (A.y1 - A.y0 - 52) / 3, bob = Math.sin(t * 2 + k + sd) * 1.2;
-    ctx.save(); ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x + 6 * sd * -1, y + 4); ctx.lineTo(x + 8 * sd * -1, y - 22); ctx.stroke();
-    ctx.fillStyle = '#d8d0c0'; ctx.beginPath(); ctx.moveTo(x - 8 * sd - 2, y - 22); ctx.lineTo(x - 8 * sd, y - 29); ctx.lineTo(x - 8 * sd + 2, y - 22); ctx.fill();   // 枪尖
-    ctx.fillStyle = '#3f7fd0'; ctx.beginPath(); ctx.moveTo(x + 4 * sd, y - 4); ctx.lineTo(x + 4 * sd, y - 20); ctx.lineTo(x + 4 * sd + 10 * sd * -1, y - 16 + bob); ctx.lineTo(x + 4 * sd, y - 12); ctx.fill();   // 小蓝旗
-    for (const dx of [-5, 3]) { ctx.fillStyle = '#e0b890'; ctx.beginPath(); ctx.arc(x + dx, y - 3 + bob * .5, 3.4, 0, 6.283); ctx.fill(); ctx.fillStyle = '#2f63b0'; ctx.fillRect(x + dx - 3.6, y - 6 + bob * .5, 7.2, 2.2); }   // 探头的脸、蓝头巾
-    ctx.fillStyle = '#4f7a2e'; ctx.beginPath(); ctx.ellipse(x, y + 3, 13, 7, 0, 0, 6.283); ctx.fill(); ctx.fillStyle = '#6a9a3a'; ctx.beginPath(); ctx.ellipse(x - 5, y + 1, 7, 5, 0, 0, 6.283); ctx.ellipse(x + 6, y + 2, 6, 4.5, 0, 0, 6.283); ctx.fill();   // 草丛
-    ctx.restore(); }
-  const bx = 34, by = cy, r = 24, pulse = .5 + .5 * Math.sin(t * 5);
-  ctx.save(); ctx.shadowColor = `rgba(255,190,80,${.5 + .4 * pulse})`; ctx.shadowBlur = 16; ctx.fillStyle = '#2a1a10'; ctx.beginPath(); ctx.arc(bx, by, r, 0, 6.283); ctx.fill(); ctx.restore();
-  ctx.save(); ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(bx, by, r, 0, 6.283); ctx.stroke();
-  ctx.strokeStyle = '#e8d8b0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(bx - 8, by + 14); ctx.lineTo(bx - 8, by - 14); ctx.stroke();
-  const wv = Math.sin(t * 6) * 2; ctx.fillStyle = CINNABAR; ctx.beginPath(); ctx.moveTo(bx - 8, by - 14); ctx.quadraticCurveTo(bx + 4, by - 12 + wv, bx + 14, by - 9); ctx.lineTo(bx + 12, by + 2 + wv); ctx.quadraticCurveTo(bx + 2, by - 1, bx - 8, by + 1); ctx.closePath(); ctx.fill();
-  txt('令', bx + 2, by - 6 + wv * .5, 10, '#f6efe0', 'center'); ctx.restore();
+  // 10-28 用户：「这个用gpt image，不要这些html」——草丛里的乡勇、令旗按钮都用画的图（工具/画图/draw_ambush.sh）；图还没画好时按钮先用一块素圆垫着
+  const hide = IMG.ui_ambush_hide; if (ready(hide)) for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) { const w = 64, h = w * hide.height / hide.width, y = A.y0 + 30 + k * (A.y1 - A.y0 - 60) / 2;
+    ctx.save(); ctx.translate(sd < 0 ? 4 + w / 2 : W - 4 - w / 2, y + Math.sin(t * 2 + k) * .8); ctx.scale(sd < 0 ? 1 : -1, 1); ctx.drawImage(hide, -w / 2, -h / 2, w, h); ctx.restore(); }
+  const bx = 34, by = cy, r = 26, pulse = .5 + .5 * Math.sin(t * 5), btn = IMG.ui_ambush_btn;
+  ctx.save(); ctx.shadowColor = `rgba(255,190,80,${.5 + .4 * pulse})`; ctx.shadowBlur = 16;
+  if (ready(btn)) ctx.drawImage(btn, bx - r, by - r, r * 2, r * 2); else { ctx.fillStyle = '#2a1a10'; ctx.beginPath(); ctx.arc(bx, by, r, 0, 6.283); ctx.fill(); }
+  ctx.restore();
   uiText('伏兵', bx, by + r + 11, 12, UIC.gold2, 'center', FONT, { lw: 3 });
   hit(bx - r, by - r, r * 2, r * 2 + 18, fireAmbush);
 }
@@ -3610,6 +3603,7 @@ function drawTip() {
 // 军功晋升（10-25 用户截图：「这里是不是太html？」）：照雾港「位阶提升」改成抽卡——三张竖版卡扣着发下来、一张张翻开，背后一团呼吸的光；
 // 卡框、卡背、军械图标是画出来的（img/ui_card_tall.png、ui_card_back.png、ui_ico_<战法>.png），武将战法用武将头像，连携露两张脸；
 // 连携、绝技的卡边一圈红金光一闪一闪；点一张，那张往上一抬、盖章，别的落下去，0.4 秒后回到战斗
+for (const k of ['ui_ambush_btn', 'ui_ambush_hide']) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.png' + BUST; }
 for (const k of ['ui_card_tall', 'ui_card_back', 'ui_ico_fire', 'ui_ico_log', 'ui_ico_jum', 'ui_ico_order', 'ui_ico_mend', 'ui_ico_nu', 'ui_ico_pozhen', 'ui_ico_banma', 'ui_ico_jinshu']) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.png' + BUST; }
 function drawPick() {
   const P = G.pick; P.t0 ??= uiNow(); const t = uiNow() - P.t0, sel = P.sel;
