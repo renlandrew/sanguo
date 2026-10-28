@@ -399,10 +399,10 @@ const LEVELS = [
       [26, 'cyz', 1, 0, 'rand', { g: 'c', lead: true }], [27, 'bing', 26, 0, 'wedge', { g: 'c' }], [31, 'lishi', 10, 4, 'rand', { g: 'c' }], [34, 'bing', 30, 10, 'rand', { g: 'c' }], [38, 'gong', 8, 4, 'line', { g: 'c' }]],
     tips: [[1, '残局：开局黄巾兵已经冲到半路了'], [4, '关羽学会了青龙斩：一刀扫倒一片'], [7, '弓手停在远处朝城上放箭，点他让刘备、关羽先打他'], [15, '程远志来了！他头顶有将旗——斩了他，他带的兵全都溃散']] },
   { id: 4, name: '青州解围', sub: '黄巾围青州，刘备两侧设伏', hpMul: 4.028,   /* 10-26 去掉限手后 1.318 变 3 星，用户：「第四关不难，可以增加点血量」→ 2.17 星 5/6 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'plain', reward: '熟铁',
-    rules: { ambush: { y0: 180, y1: 340, need: 50 } },   // 10-28 用户：「剧情先说有伏兵，然后让玩家选择几时（按地图一个明显的按钮），这个选择会影响2星还是3星」——伏兵改成玩家点令旗放，扫到 need 人以上才能拿三星                                  // 10-26 去掉「限手 36 次」：第四关起本来就默认自己点牌（用户：「好」）
+    rules: {},                                                                         // 10-28 伏兵挪成简雍的计（第五关起带简雍才有），这关不再自带                                  // 10-26 去掉「限手 36 次」：第四关起本来就默认自己点牌（用户：「好」）
     waves: [[2, 'bing', 20, 8, 'rand'], [8, 'qibing', 4, 4, 'rand'], [14, 'bing', 18, 0, 'wedge', { g: 'a' }], [15, 'qushuai', 1, 0, 'rand', { g: 'a', lead: true }], [22, 'qibing', 6, 5, 'rand'], [26, 'bing', 30, 6, 'rand'],
       [36, 'lishi', 6, 4, 'rand'], [40, 'bing', 26, 0, 'line', { g: 'b' }], [41, 'qushuai', 1, 0, 'rand', { g: 'b', lead: true }], [48, 'qibing', 6, 6, 'rand'], [55, 'bing', 24, 12, 'rand'], [62, 'lishi', 4, 4, 'rand'], [66, 'qibing', 6, 6, 'rand', { g: 'c' }], [67, 'qushuai', 1, 0, 'rand', { g: 'c', lead: true }]],
-    tips: [[1, '张飞学会了当阳一喝！骑兵冲得快，喝晕就落马'], [6, '从这关起招式要自己点：牌亮了就点它出招；右边「自动」只会好了就放，接不住冲阵'], [12, '头顶挂「冲」字小旗的那队会冲阵：留着张飞的一喝，等他们冲过地上的红线再喝，再接青龙斩'], [3, '两侧河沟里藏着乡勇：等黄巾大队走进河沟那一段，点左边的「伏兵」令旗。扫到的人多才有三星'], [40, '渠帅也是头目，斩了他溃散一片']] },
+    tips: [[1, '张飞学会了当阳一喝！骑兵冲得快，喝晕就落马'], [6, '从这关起招式要自己点：牌亮了就点它出招；右边「自动」只会好了就放，接不住冲阵'], [12, '头顶挂「冲」字小旗的那队会冲阵：留着张飞的一喝，等他们冲过地上的红线再喝，再接青龙斩'], [40, '渠帅也是头目，斩了他溃散一片']] },
   { id: 5, name: '邓茂', sub: '拦路将 · 大兴山下，邓茂挺枪拦路', kind: 'duel', boss: 'dengmao', hpMul: 6.073, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'canyon', reward: '镔铁 · 兵书残卷',
     moves: ['heavy', 'summon', 'heavy', 'buff', 'heavy', 'summon'], gap: 3.2, heavy: 14, adds: [['bing', 6], ['lishi', 1]],
     tips: [[1, '斗将：邓茂站在场中出招，城防就是你们的血'], [4, '「挺枪突刺」会自动举盾挡下，挡下来还能反击'], [14, '「无双·喝断它」举盾挡不住！留着张飞的一喝，看到它再喝']] },
@@ -812,6 +812,7 @@ function startLevel(i) {
   if (!window.__sg.simming && !G.sim) G.order = applyLineup(G.order, lv);
   if (PREP && PREP.li === i) { G.order = PREP.order.slice(); for (const id of PREP.kits) { const p = PERKS.find(p => p.id === id); if (p) { p.fn(G.st); G.perks[id] = (G.perks[id] || 0) + 1; } } }
   G.adv = PREP && PREP.li === i && PREP.adviser ? { id: PREP.adviser, cond: PREP.cond, used: false, militiaT: 3 } : null;
+  G.amb = lv.id >= 5 ? ambushFor(lv) : null; G.ambushed = false; G.ambushN = 0;
   G.foeAdv = RU.foeAdv ? { ...FOE_ADV[RU.foeAdv], ambushed: false } : null; G.slowT = 0; G.events = [];
   if (RU.fire) { const p = PERKS.find(p => p.id === 'fire'); p.fn(G.st); G.perks.fire = 1; }
   for (const id of RU.give || []) { const p = PERKS.find(p => p.id === id); p.fn(G.st); G.perks[id] = (G.perks[id] || 0) + 1; }      // 开局送的战法（连弩）
@@ -1024,10 +1025,10 @@ function autoPick() { if (window.__sg.naive) return Math.floor(rnd() * G.pick.le
 // 智力只管整体靠不靠谱（估值的噪声）；每人还有专长（这类事看得准、敌情报得准）、偏好（老想往某类战法上推）和盲点（这类事常看走眼）。
 // 所以低智力的在他的专长里也可能比高智力的准，玩家要摸清楚什么时候听谁的。只是建议，选哪张还是玩家定；机器人试跑不看建议
 const COUNSEL = {
-  zoujing: { name: '邹靖', title: '幽州校尉', zhi: 41, spec: '黄巾', bias: '攻', blind: '对症', unlock: 0,
+  zoujing: { name: '邹靖', title: '幽州校尉', zhi: 41, spec: '黄巾', bias: '攻', blind: '对症', unlock: 0, wrong: true,   // 10-28 用户：「前4关……邹靖的建议全部是错的，如果全部采纳，1，2，3，4关容易出问题」——他永远荐三张里最差的
     say: '剿过黄巾，黄巾那几路兵我门儿清', note: '剿过黄巾：黄巾的兵报得准；就爱猛攻，对症的军械老看走眼' },
-  jianyong: { name: '简雍', title: '涿郡同乡', zhi: 72, spec: '时机', bias: '守', blind: '将', unlock: 2,
-    say: '打仗嘛，先把城守住', note: '看时机准：补墙、滚木、敌方军师的伏兵；偏守，打敌将的战法常低估' },
+  jianyong: { name: '简雍', title: '涿郡同乡', zhi: 72, spec: '时机', bias: '守', blind: '将', unlock: 4, plan: 'ambush',   // 10-28：第四关后剧情自荐当军师，第五关起能带；带的计是伏兵
+    say: '打仗嘛，先把城守住', note: '带「伏兵」：两侧河沟藏乡勇，看准时机点令旗——用对了才有三星。偏守，打敌将的战法常低估' },
   luzhi: { name: '卢植', title: '北中郎将 · 刘备之师', zhi: 88, spec: '兵法', bias: '控', blind: 'cav', unlock: 9,
     say: '兵者，诡道也', note: '兵法正道：连携、对症都看得准；没跟西凉骑兵打过，骑兵的事常看走眼' },
 };
@@ -1050,7 +1051,7 @@ const SHALLOW = ['这张看着最厉害', '数字最大，选它准没错', '听
 function counselAdvise(list) {
   const [ck, C] = counselNow(), I = foeIntel(), sd = (100 - C.zhi) * 6;
   const sc = list.map(p => { const e = perkEval(p, I), k = PERK_KIND[p.id], seen = counselSees(C, p); return { p, e, v: e.v + (k === C.bias ? 140 : 0) - (seen >= 2 ? (100 - C.zhi) * 7 : 0) + VR(-1, 1) * sd * seen }; });   // 盲点：不光看不准，还老低估；智力越低低估得越狠（10-26 加重：邹靖 -413、简雍 -196、卢植 -84）
-  const best = sc.reduce((a, b) => b.v > a.v ? b : a), truth = sc.reduce((a, b) => b.e.v > a.e.v ? b : a), right = best === truth;
+  const truth = sc.reduce((a, b) => b.e.v > a.e.v ? b : a), best = C.wrong ? sc.reduce((a, b) => b.e.v < a.e.v ? b : a) : sc.reduce((a, b) => b.v > a.v ? b : a), right = best === truth;   // wrong：荐真值最低的那张
   let why = C.zhi < 55 && !(counselSees(C, best.p) < .6) ? SHALLOW[Math.floor(VR(0, SHALLOW.length))] : right || best.e.v > 0 ? best.e.why : '这张也能用';
   if (PERK_KIND[best.p.id] === C.bias && !right) why = { 攻: '打得狠才守得住', 守: '稳一点，先保城', 控: '先控住，再说打' }[C.bias] || why;
   return { ck, C, i: list.indexOf(best.p), why, right, ti: list.indexOf(truth.p) };
@@ -1088,7 +1089,7 @@ const TEACH = {
   charge: ['冲阵！', '头顶挂「冲」字小旗的那队要冲城了。地上亮红光的地方是张飞一喝够得着的范围：等他们冲进红光再点张飞，喝住了马上点关羽。'],
   duel:   ['斗将', '敌将站在场中出招，城防就是你们的血。他普通的重招，会自动举盾挡下。'],
   uns:    ['无双！', '这一招举盾挡不住。现在就点张飞，一喝喝断它！'],
-  ambush: ['伏兵', '两侧河沟里藏着乡勇。黄巾大队走进河沟这一段时，点左边的「伏兵」令旗——扫到的人越多越好，人少了这关最多两星。'],
+  ambush: ['伏兵（简雍的计）', '两侧河沟里藏着乡勇。敌人大队走进河沟这一段时，点左边的「伏兵」令旗——扫到的人越多越好，人少了这关最多两星。'],
 };
 function teach(key) {
   if (G.sim || window.__sg.simming || window.__sg.auto || !TEACH[key]) return; INV.taught = INV.taught || {}; if (INV.taught[key] || G.teach) return;
@@ -1293,9 +1294,9 @@ function stepRules(dt) {
     for (let k = 0; k < A.n; k++) spawn({ kind: A.kind, x: R(A.x0, A.x1), w: G.wave, lane: false, g: 'foeAdv' }, A.y + R(-24, 24));
     G.total += A.n; G.fx.push({ k: 'banner', t: 0, text: FA.name + '的伏兵', sub: A.n + ' 骑' + FOES[A.kind].name + '从' + (A.x0 > W / 2 ? '右' : '左') + '侧杀出' }); G.shake = .25;
   }
-  if (RU.ambush && !G.ambushed) {                                // 伏兵：玩家点令旗放（drawAmbushBtn）；河沟那段第一次挤进一堆人时教一次；机器人等人够多才放
+  if (G.amb && !G.ambushed) {                                // 伏兵：玩家点令旗放（drawAmbushBtn）；河沟那段第一次挤进一堆人时教一次；机器人等人够多才放
     const n = ambushCount(); if (n >= 8) teach('ambush');
-    if ((G.sim || window.__sg.auto) && (n >= RU.ambush.need + 4 || (G.qi >= G.queue.length && n >= 6))) fireAmbush();
+    if ((G.sim || window.__sg.auto) && (n >= G.amb.need + 4 || (G.qi >= G.queue.length && n >= 6))) fireAmbush();
   }
   for (const h of G.huts) {                                    // 草营：着火的敌人点着草棚，火顺着草棚烧
     if (h.burnt) continue;
@@ -1628,16 +1629,21 @@ function botAim(kind, al) {
   for (const c of cs) { const inS = al.filter(e => !FOES[e.kind].civ && Math.abs(e.x - c) < hw && e.y > WALL_Y - reach && (kind === 'log' || seen(e))); const v = inS.length + (n >= 2 ? 6 * inS.filter(e => FOES[e.kind].boss && !e.duel && e.y > WALL_Y - reach * .6).length : 0); if (v > bc) { bc = v; best = c; boss = inS.some(e => FOES[e.kind].boss && !e.duel && e.y > WALL_Y - reach * .6); } }   // 走过来的头目、敌将冲近了才算
   if (bc >= need || (boss && n >= 2) || (G.wall < G.wallMax * .35 && bc > 2)) { if (kind === 'log') fireLog(best); else fireNu(best); }
 }
-const ambushCount = () => alive().filter(e => !FOES[e.kind].boss && e.y > G.RU.ambush.y0 && e.y < G.RU.ambush.y1).length;
+// 军师的计（10-28 用户：「好的军师不但推荐准确，还带战法，火攻，伏兵等」「只在地形合适的关，但后期军师可以有强大的法术，就局限比较小了」）：
+// 简雍带「伏兵」，第五关起、地形合适（AMBUSH_MAP 里的图，有河沟草丛能藏人）、不是斗将的关才有；扫到 need 人以上才有三星，没放或放得人少最多两星
+const AMBUSH_MAP = new Set(['plain', 'grass', 'canyon', 'ruins']);   // 平原、草地、峡谷、废墟：有河沟草丛藏人；汜水、虎牢是关隘城下，不能伏
+const AMBUSH_NEED = { 6: 55, 7: 43, 18: 45, 27: 60, 28: 48 };   // 各关门槛：按推演里河沟那一段的人数高峰定
+function ambushFor(lv) { const [ck] = counselNow(); return ck === 'jianyong' && lv.kind !== 'duel' && AMBUSH_MAP.has(lv.map) && AMBUSH_NEED[lv.id] ? { y0: 180, y1: 340, need: AMBUSH_NEED[lv.id] } : null; }
+const ambushCount = () => alive().filter(e => !FOES[e.kind].boss && e.y > G.amb.y0 && e.y < G.amb.y1).length;
 function fireAmbush() {                                          // 伏兵从两侧杀出：河沟那一段的兵各吃一记重伤
-  if (!G.RU.ambush || G.ambushed || G.state !== 'play') return; G.ambushed = true; let n = 0;
-  for (const e of alive()) if (!FOES[e.kind].boss && e.y > G.RU.ambush.y0 && e.y < G.RU.ambush.y1) { hurt(e, 400 * HPX, 'slash'); n++; }
-  G.ambushN = n; const ok = n >= G.RU.ambush.need;
+  if (!G.amb || G.ambushed || G.state !== 'play') return; G.ambushed = true; let n = 0;
+  for (const e of alive()) if (!FOES[e.kind].boss && e.y > G.amb.y0 && e.y < G.amb.y1) { hurt(e, 400 * HPX, 'slash'); n++; }
+  G.ambushN = n; const ok = n >= G.amb.need;
   G.fx.push({ k: 'ambush', t: 0 }); G.fx.push({ k: 'banner', t: 0, text: ok ? '伏兵杀出！' : '伏兵杀出', sub: '扫掉 ' + n + ' 人' + (ok ? ' · 时机正好' : ' · 人少了，这关最多两星') }); G.shake = .3; sfx('horn');
 }
 // 河沟那一段：两边草里露出乡勇的枪尖和小旗（还没放时）；左边一面大令旗按钮「伏兵」，放过就收起
 function drawAmbushBtn() {
-  const A = G.RU.ambush; if (!A || G.ambushed || G.state !== 'play') return;
+  const A = G.amb; if (!A || G.ambushed || G.state !== 'play') return;
   const cy = (A.y0 + A.y1) / 2, t = uiNow();
   // 10-28 用户：「哪些是伏兵啊」——两侧各四丛草，草里露出乡勇的蓝头巾、枪尖和小蓝旗；河沟那一段地上铺一层淡金色，扫的就是这一块
   ctx.save(); const g = ctx.createLinearGradient(0, A.y0, 0, A.y1); g.addColorStop(0, 'rgba(255,215,120,0)'); g.addColorStop(.5, `rgba(255,215,120,${.08 + .04 * Math.sin(t * 3)})`); g.addColorStop(1, 'rgba(255,215,120,0)'); ctx.fillStyle = g; ctx.fillRect(0, A.y0, W, A.y1 - A.y0); ctx.restore();
@@ -1655,7 +1661,7 @@ function end(win, why) {
   G.state = 'over'; sfx(win ? 'win' : 'lose');
   const frac = Math.min(G.wall / G.wallMax, G.cart && !G.RU.cart.optional ? G.cart.hp / G.cart.max : 1);
   let stars = win ? 1 + (frac >= .5) + (frac >= .85) : 0;
-  if (G.RU.ambush && stars > 2 && (G.ambushN || 0) < G.RU.ambush.need) stars = 2;   // 伏兵没放、或者放得人少：最多两星
+  if (G.amb && stars > 2 && (G.ambushN || 0) < G.amb.need) stars = 2;   // 伏兵没放、或者放得人少：最多两星
   G.result = { win, stars, frac, time: G.t, why, first: win && !BEST[G.lv.id] };
   if (G.result.first && !G.sim && STORY['l' + G.lv.id] && !storySeen('l' + G.lv.id)) G.result.story = 'l' + G.lv.id;   // 首通每一关：结算完演一场（10-26 起三十关都有）
   if (win && !G.sim) { BEST[G.lv.id] = Math.max(BEST[G.lv.id] || 0, stars); saveBest(); }
@@ -3370,7 +3376,7 @@ function drawFx(f) {
     for (let k = 0; k < 14; k++) { const a = k * 2.4 + f.x, d = f.r * (.25 + .75 * Math.min(1, u * 2)) * (.6 + .4 * Math.sin(k * 1.7)); blot(ctx, f.x + Math.cos(a) * d, f.y + Math.sin(a) * d * .45 - u * 14, 2.4 * (1 - u * .5), k % 3 ? JADE : '#9cc9a8', .7 * (1 - u), vr, 7); }
     txt('符水', f.x, f.y - 30 - u * 10, 14, JADE, 'center', FONT, 1 - u);
   } else if (f.k === 'ambush') { const u = f.t / 1.2; if (u > 1) return;          // 伏兵从两侧山后杀出：两排墨笔横扫过半场
-    const p = Math.min(1, u / .35), fade = u < .5 ? 1 : (1 - u) / .5, RU = G.RU.ambush;
+    const p = Math.min(1, u / .35), fade = u < .5 ? 1 : (1 - u) / .5, RU = G.amb;
     for (const sd of [-1, 1]) for (let k = 0; k < 9; k++) { const y = RU.y0 + 20 + k * (RU.y1 - RU.y0 - 40) / 8, x0 = sd < 0 ? -10 : W + 10, x1 = W / 2 + sd * (20 + (k % 3) * 18);
       const xe = x0 + (x1 - x0) * p; brush(ctx, [[x0, y], [(x0 + xe) / 2, y - 6], [xe, y + 3]], 9, INK, .75 * fade, u2 => Math.pow(u2, .5) * (1 - u2 * .2), .3, vr);
       brush(ctx, [[xe, y - 2], [xe - sd * 6, y - 26]], 1.6, INK, .9 * fade, () => 1, 0, vr); brush(ctx, quad([xe - sd * 6, y - 26], [xe - sd * 14, y - 23], [xe - sd * 18, y - 18]), 5, CINNABAR, .85 * fade, u2 => 1 - u2 * .5, .2, vr); }
@@ -3900,12 +3906,11 @@ const STORY = {
     ['story_zhang', '', '探马来报：黄巾大将程远志，带五万人往这边来了。'], [null, 'zhang', '五万？我们才五百！跑吧！'], [null, 'jianyong', '跑？城外全是黄巾，往哪跑？'], [null, 'liu', '……那就关门。']],
   l3: [[null, 'zhang', '（深吸一口气）哇——！！！'], [null, '', '城下的黄巾兵，倒了一片。'], [null, 'zhang', '我不是在喊阵……我是被程远志的脸吓的。'], [null, 'liu', '不管是什么，下回再吓一次。'],
     ['story_zhang', '', '张飞学会了「当阳一喝」。三兄弟，齐了。'], [null, '', '程远志被斩，黄巾溃散。'], [null, 'jianyong', '三位闭门不出，以逸待劳，竟斩敌将！上策啊！'], [null, 'liu', '对。我们是故意不出城的。'],
-    ['story_liu', '', '没歇两天，青州太守求援：城被黄巾围了。'], [null, 'zhang', '去青州？那是出城啊！'], [null, 'liu', '我看了地图，青州城墙高。到了就进城，进了就不出来。'],
-    [null, 'jianyong', '青州城外两侧都是河沟，可以藏伏兵。乡勇藏进去，三位守城头。'], [null, 'liu', '藏人好。……我们能不能也藏进去？'],
-    [null, 'jianyong', '不能。城头要有人举旗——等黄巾大队走到河沟边，举旗为号，伏兵杀出。'], [null, 'zhang', '举早了呢？'], [null, 'jianyong', '扑个空。'],
-    [null, 'zhang', '举晚了呢？'], [null, 'jianyong', '城破。'], [null, 'guan', '……这个旗，大哥你来举。']],
-  l4: [['story_liu', '', '两路伏兵一起杀出，青州之围解了。'], [null, 'zhang', '大哥，你那旗是算准了才举的？'], [null, 'liu', '……我手一抖，旗自己掉下去了。'], [null, 'guan', '（看河沟里的倒影）掉得正是时候。'],
-    [null, 'zoujing', '好一个埋伏！玄德用兵如神！'], [null, 'liu', '……对，我设计的。'], [null, 'zoujing', '慢着！大兴山下有个邓茂，挺着长枪拦路，指名要你们单挑！'],
+    ['story_liu', '', '没歇两天，青州太守求援：城被黄巾围了。'], [null, 'zhang', '去青州？那是出城啊！'], [null, 'liu', '我看了地图，青州城墙高。到了就进城，进了就不出来。']],
+  l4: [['story_liu', '', '两路伏兵一起杀出，青州之围解了。'], [null, 'zhang', '其实我们是躲在河沟里，不想让黄巾看见。'], [null, 'guan', '（看水里倒影）躲了一下午，发型没乱。'], [null, 'liu', '结果黄巾正好从河沟边上过，乡勇以为是信号，全冲出去了。'],
+    [null, 'zoujing', '好一个埋伏！此乃本校尉教得好！'], [null, 'zhang', '邹校尉，你一路上教我们的，好像没一句对过。'],
+    [null, 'jianyong', '玄德，这埋伏是碰巧。下回让在下来安排：乡勇藏进河沟，城头举旗为号。'], [null, 'zhang', '举早了呢？'], [null, 'jianyong', '扑个空。'], [null, 'zhang', '举晚了呢？'], [null, 'jianyong', '城破。'],
+    [null, 'liu', '……简雍，你来当军师吧。邹校尉，你去……前面喊冲。'], [null, '', '从下一关起，可以在军帐里换简雍当军师。他带「伏兵」：有河沟草丛的战场，看准时机点令旗。'], [null, 'zoujing', '慢着！大兴山下有个邓茂，挺着长枪拦路，指名要你们单挑！'],
     [null, 'zhang', '单挑？我连吵架都吵不赢。'], [null, 'liu', '不出去。他要打，就让他到城下来打。']],
   l5: [['story_zhang', '', '邓茂倒下了。'], [null, 'zhang', '我本来想下城去茅房，脚一滑，抱着盾摔到了邓茂跟前。'], [null, 'guan', '他一枪扎过来，正好扎在你盾上。'], [null, 'zhang', '然后我吓得喊了一嗓子，他就不动了。'],
     [null, 'liu', '你把他的大招喊断了。'], [null, 'zhang', '我以后能不能都不下城？'], ['story_liu', '', '长社城里，皇甫嵩被黄巾围住了。城外，全是草搭的营。'], [null, 'liu', '我们不去。'],
