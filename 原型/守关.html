@@ -1639,10 +1639,16 @@ function fireAmbush() {                                          // 伏兵从两
 function drawAmbushBtn() {
   const A = G.RU.ambush; if (!A || G.ambushed || G.state !== 'play') return;
   const cy = (A.y0 + A.y1) / 2, t = uiNow();
-  ctx.save(); ctx.globalAlpha = .55;
-  for (const sd of [-1, 1]) for (let k = 0; k < 5; k++) { const x = sd < 0 ? 8 + (k % 2) * 9 : W - 8 - (k % 2) * 9, y = A.y0 + 18 + k * (A.y1 - A.y0 - 36) / 4;
-    ctx.strokeStyle = INK; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x, y + 8); ctx.lineTo(x, y - 12); ctx.stroke(); ctx.fillStyle = '#c8c0b0'; ctx.beginPath(); ctx.moveTo(x - 2, y - 12); ctx.lineTo(x, y - 18); ctx.lineTo(x + 2, y - 12); ctx.fill(); }
-  ctx.restore();
+  // 10-28 用户：「哪些是伏兵啊」——两侧各四丛草，草里露出乡勇的蓝头巾、枪尖和小蓝旗；河沟那一段地上铺一层淡金色，扫的就是这一块
+  ctx.save(); const g = ctx.createLinearGradient(0, A.y0, 0, A.y1); g.addColorStop(0, 'rgba(255,215,120,0)'); g.addColorStop(.5, `rgba(255,215,120,${.08 + .04 * Math.sin(t * 3)})`); g.addColorStop(1, 'rgba(255,215,120,0)'); ctx.fillStyle = g; ctx.fillRect(0, A.y0, W, A.y1 - A.y0); ctx.restore();
+  for (const sd of [-1, 1]) for (let k = 0; k < 4; k++) {
+    const x = sd < 0 ? 16 + (k % 2) * 14 : W - 16 - (k % 2) * 14, y = A.y0 + 26 + k * (A.y1 - A.y0 - 52) / 3, bob = Math.sin(t * 2 + k + sd) * 1.2;
+    ctx.save(); ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x + 6 * sd * -1, y + 4); ctx.lineTo(x + 8 * sd * -1, y - 22); ctx.stroke();
+    ctx.fillStyle = '#d8d0c0'; ctx.beginPath(); ctx.moveTo(x - 8 * sd - 2, y - 22); ctx.lineTo(x - 8 * sd, y - 29); ctx.lineTo(x - 8 * sd + 2, y - 22); ctx.fill();   // 枪尖
+    ctx.fillStyle = '#3f7fd0'; ctx.beginPath(); ctx.moveTo(x + 4 * sd, y - 4); ctx.lineTo(x + 4 * sd, y - 20); ctx.lineTo(x + 4 * sd + 10 * sd * -1, y - 16 + bob); ctx.lineTo(x + 4 * sd, y - 12); ctx.fill();   // 小蓝旗
+    for (const dx of [-5, 3]) { ctx.fillStyle = '#e0b890'; ctx.beginPath(); ctx.arc(x + dx, y - 3 + bob * .5, 3.4, 0, 6.283); ctx.fill(); ctx.fillStyle = '#2f63b0'; ctx.fillRect(x + dx - 3.6, y - 6 + bob * .5, 7.2, 2.2); }   // 探头的脸、蓝头巾
+    ctx.fillStyle = '#4f7a2e'; ctx.beginPath(); ctx.ellipse(x, y + 3, 13, 7, 0, 0, 6.283); ctx.fill(); ctx.fillStyle = '#6a9a3a'; ctx.beginPath(); ctx.ellipse(x - 5, y + 1, 7, 5, 0, 0, 6.283); ctx.ellipse(x + 6, y + 2, 6, 4.5, 0, 0, 6.283); ctx.fill();   // 草丛
+    ctx.restore(); }
   const bx = 34, by = cy, r = 24, pulse = .5 + .5 * Math.sin(t * 5);
   ctx.save(); ctx.shadowColor = `rgba(255,190,80,${.5 + .4 * pulse})`; ctx.shadowBlur = 16; ctx.fillStyle = '#2a1a10'; ctx.beginPath(); ctx.arc(bx, by, r, 0, 6.283); ctx.fill(); ctx.restore();
   ctx.save(); ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(bx, by, r, 0, 6.283); ctx.stroke();
