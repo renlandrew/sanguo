@@ -388,7 +388,7 @@ const LEVELS = [
   { id: 1, name: '桃园结义', sub: '黄巾兵来犯涿县，三兄弟头一回并肩', hpMul: 0.219, slots: ['guan', null, null, null], join: [[7, 'zhang'], [14, 'liu']], walk: 1.2, far: 1.6, wait: 2, tx: .6, map: 'peach', reward: '刘关张入队 · 刘备学会双股剑',
     rules: { give: ['log'] },                                                        // 10-25 夜：第一关还没学招，开局送一层滚木；只打四波，很快打完
     waves: [[2, 'bing', 12, 6, 'rand'], [9, 'bing', 14, 0, 'line'], [15, 'bing', 16, 6, 'rand'], [21, 'lishi', 3, 2, 'rand'], [22, 'bing', 14, 0, 'wedge']],   // 10-26 用户手机试玩：「前三关太久了，要让玩家尽快开始爽」——六波减到五波、敌人走快 1.4 倍
-    tips: [[1, '黄巾兵冲过来了！关羽在城头劈出刀气，穿透一路'], [5, '城头备了滚木：点它，再点战场，那一列碾平（一关一次）'], [7, '张飞加入：蛇矛专刺冲到城下的'], [14, '刘备加入：剑气打得最远，会追着打'], [22, '三人还没学会招式，这一关全靠普攻和滚木']] },
+    tips: [[1, '黄巾兵冲过来了！关羽在城头劈出刀气，穿透一路'], [5, '城头备了滚木：敌人挤成一堆时会自己滚下去，那一列碾平（一关一次）'], [7, '张飞加入：蛇矛专刺冲到城下的'], [14, '刘备加入：剑气打得最远，会追着打'], [22, '三人还没学会招式，这一关全靠普攻和滚木']] },
   { id: 2, name: '招募乡勇', sub: '架空 · 乡勇刚招来，黄巾又到', hpMul: 0.197, slots: ['zhang', 'liu', 'guan', null], join: [], walk: 1.2, far: 1.6, wait: 2, tx: .6, map: 'plain', reward: '乡里良马 · 关羽学会青龙斩',
     rules: { volley: { every: 10, n: 8, dmg: 22 } },
     waves: [[2, 'bing', 22, 6, 'rand'], [9, 'bing', 20, 0, 'wedge'], [15, 'lishi', 6, 2, 'rand'], [18, 'bing', 34, 10, 'rand'], [30, 'bing', 22, 0, 'line'], [34, 'lishi', 10, 6, 'rand']],   // 10-26：十二波砍到六波、走快 1.4 倍
@@ -424,7 +424,7 @@ const LEVELS = [
     waves: [[2, 'bing', 24, 8, 'rand'], [8, 'shushi', 3, 4, 'rand'], [12, 'lishi', 6, 4, 'rand'], [16, 'bing', 28, 0, 'wedge'], [24, 'shushi', 4, 4, 'rand'], [26, 'bing', 34, 10, 'rand'], [34, 'gong', 8, 4, 'line'],
       [38, 'zhangbao', 1, 0, 'rand', { g: 'a', lead: true }], [38, 'bing', 30, 8, 'rand', { g: 'a' }], [46, 'shushi', 4, 4, 'rand', { g: 'a' }], [52, 'lishi', 10, 5, 'rand'],
       [58, 'zhangliang', 1, 0, 'rand', { g: 'b', lead: true }], [58, 'bing', 36, 10, 'rand', { g: 'b' }], [66, 'lishi', 8, 4, 'rand', { g: 'b' }]],
-    tips: [[1, '夜战：只看得见城前和火光里的敌人，黑处的打不到，还走得快'], [4, '底下「火把」：点它再点战场，照亮一片 20 秒；着了火的敌人自己会亮'], [7, '术士洒符水给身边的黄巾回血，先点他'], [37, '地公将军张宝会刮妖风：武将普攻几秒内减半'], [57, '人公将军张梁给身边的兵挡刀']] },
+    tips: [[1, '夜战：只看得见城前和火光里的敌人，黑处的打不到，还走得快'], [4, '三支火把会自己插到敌人多的地方，照亮一片 20 秒；着了火的敌人自己会亮'], [7, '术士洒符水给身边的黄巾回血，先点他'], [37, '地公将军张宝会刮妖风：武将普攻几秒内减半'], [57, '人公将军张梁给身边的兵挡刀']] },
   { id: 10, name: '张角', sub: '大战 · 天公将军张角', kind: 'duel', boss: 'zhangjiao', hpMul: 4.55, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'camp', reward: '太平要术 · 兵书',
     moves: ['heavy', 'summon', 'heal', 'heavy', 'seal', 'summon', 'heavy', 'buff'], gap: 3.2, heavy: 11, adds: [['bing', 4], ['lishi', 1]], phase2: [['zhangbao', 120], ['zhangliang', 240]],
     tips: [[1, '天公将军张角：天雷自动举盾挡，符水要用张飞喝断'], [10, '妖术迷魂会封住一位武将几秒'], [30, '张角血少一半时，张宝、张梁会上阵']] },
@@ -448,7 +448,7 @@ const LEVELS = [
     rules: { night: { vis: 250, torches: [[70, 320], [180, 250], [290, 320]] }, decoy: { uses: 1, dur: 5, r: 120 } },
     waves: [[2, 'tieqi', 8, 6, 'rand'], [10, 'xiliang', 20, 8, 'rand'], [16, 'tieqi', 10, 6, 'rand'], [24, 'xiliang', 24, 0, 'wedge'], [30, 'tieqi', 12, 8, 'rand'],
       [40, 'xiaowei', 1, 0, 'rand', { g: 'a', lead: true }], [40, 'tieqi', 12, 0, 'line', { g: 'a' }], [48, 'xiliang', 30, 10, 'rand'], [58, 'tieqi', 14, 8, 'rand']],
-    tips: [[1, '夜袭：铁骑摸黑冲营，黑处的打不到；点「火把」再点战场照亮一片'], [4, '右下角「赤帻」：点它再点地面，附近的敌人 5 秒都冲它去（每关一次）']] },
+    tips: [[1, '夜袭：铁骑摸黑冲营，黑处的打不到；火把会自己照亮敌人多的地方'], [4, '赤帻：城前压了一片时会自己扔下去，附近的敌人 5 秒都冲它去（每关一次）']] },
   { id: 15, name: '胡轸', sub: '拦路将 · 董卓都督胡轸挡在汜水关前', kind: 'duel', boss: 'huzhen', hpMul: 2.782, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '熟铁 · 兵书残卷',
     moves: ['heavy', 'summon', 'combo', 'heavy', 'buff', 'summon', 'combo'], gap: 3.2, heavy: 6, adds: [['xiliang', 5]],
     tips: [[1, '斗将：胡轸双刀连斩，砍两下，盾要举两次'], [12, '张飞的一喝能喝晕他，打断蓄势']] },
@@ -456,7 +456,7 @@ const LEVELS = [
     rules: { give: ['nu'] },
     waves: [[2, 'xiliang', 20, 8, 'rand'], [8, 'gongqi', 4, 4, 'rand'], [14, 'xiliang', 24, 0, 'wedge'], [20, 'gongqi', 6, 5, 'rand'], [26, 'tieqi', 6, 4, 'rand'], [32, 'xiliang', 30, 10, 'rand'],
       [40, 'gongqi', 8, 6, 'rand'], [46, 'xiaowei', 1, 0, 'rand', { g: 'a', lead: true }], [46, 'xiliang', 26, 0, 'line', { g: 'a' }], [56, 'gongqi', 8, 6, 'rand'], [60, 'tieqi', 8, 6, 'rand']],
-    tips: [[1, '开局送「连弩」：一关只能放一次，点它再点战场，那一列万箭齐发；晋升再选能叠得更大'], [7, '西凉弓骑边跑边射，跑到城下就掉头，点他让武将先打']] },
+    tips: [[1, '开局送「连弩」：敌人最密时自己放，一关一次，那一列万箭齐发；晋升再选能叠得更大'], [7, '西凉弓骑边跑边射，跑到城下就掉头，点他让武将先打']] },
   { id: 17, name: '酒尚温', sub: '汜水关下 · 关羽出马前，曹操斟了一杯热酒', hpMul: 1.547, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '温酒（军需）',
     rules: { timed: { t: 75, label: '酒还温着', text: '酒尚温', sub: '关羽回来，酒还是热的' }, cart: { kind: 'man', label: '俞涉', dmgX: .5, hp: 60, y0: 230, y1: 452, dur: 55, optional: true, bonus: 30, okText: '救下俞涉', okSub: '军功 +30', lostText: '俞涉被斩' } },
     waves: [[2, 'xiliang', 20, 8, 'rand'], [6, 'tieqi', 6, 4, 'rand'], [14, 'xiliang', 24, 0, 'wedge'], [22, 'tieqi', 8, 6, 'rand'], [30, 'xiliang', 30, 10, 'rand'],
@@ -1203,7 +1203,8 @@ function step(dt) {
   stepGenerals(dt, al);
   // 滚木
   // 滚木、连弩改成自己点（10-25 用户：「滚木那类主动战法让用户自己点」）：好了就在底栏空格里亮着，点一下放；机器人试跑时有敌人就点
-  if ((G.sim || window.__sg.auto) && (G.botAT = (G.botAT || 0) - dt) <= 0) { G.botAT = .25; if (G.st.logs > 0 && !G.logUsed) botAim('log', al); if (G.st.nu && !G.nuUsed) botAim('nu', al); }
+  if ((G.botAT = (G.botAT || 0) - dt) <= 0) {   // 10-28 用户：「滚木，弩，挡马那些因为或自动或不需要按，就直接显示在城墙外即可……5个框留给最多5个武将」——滚木、连弩改自动放（推演一直按这套时机）
+    G.botAT = .25; if (G.st.logs > 0 && !G.logUsed) botAim('log', al); if (G.st.nu && !G.nuUsed) botAim('nu', al); }
   for (const L of G.logs) {
     if (L.stopped) { L.fade = (L.fade || 0) + dt; continue; }
     L.y -= 230 * dt; L.rot += dt * 9;
@@ -1238,7 +1239,7 @@ function stepRules(dt) {
     G.timedDone = true; for (const f of G.foes) if (!FOES[f.kind].civ) routFoe(f, true); G.qi = G.queue.length; G.fx.push({ k: 'banner', t: 0, text: RU.timed.text, sub: RU.timed.sub || '' });
   }
   if (G.decoy) { G.decoy.t -= dt; if (G.decoy.t <= 0) G.decoy = null; }
-  if (RU.decoy && G.decoyN > 0 && (window.__sg.auto || G.sim)) {      // 机器人替玩家放赤帻：城前压了一片
+  if (RU.decoy && G.decoyN > 0) {      // 自动放赤帻：城前压了一片（10-28 起玩家也自动，底栏不再占格）
     const near = alive().filter(e => e.y > WALL_Y - 150 && !FOES[e.kind].boss); if (near.length >= 10) placeDecoy(near.reduce((a, e) => a + e.x, 0) / near.length, WALL_Y - 120);
   }
   if (G.ally) stepAlly(dt);
@@ -1255,7 +1256,8 @@ function stepRules(dt) {
   if (G.slowT > 0) G.slowT -= dt;
   if (G.trenchT > 0) G.trenchT -= dt;
   if (G.lights.length) { for (const L of G.lights) L.t -= dt; G.lights = G.lights.filter(L => L.t > 0); }
-  if (G.lightN > 0 && (G.sim || window.__sg.auto) && (G.lightChk -= dt) <= 0) { G.lightChk = 1; botLight(alive()); }
+  if (G.lightN > 0 && (G.lightChk -= dt) <= 0) {   // 夜战火把也自动插（10-28）
+    G.lightChk = 1; botLight(alive()); }
   // 敌方军师：看破拒马——第二波起放火箭烧掉
   if (G.foeAdv && G.foeAdv.seeJum && G.st.jum && G.wave >= 1) { G.st.jum = false; G.jumBurnt = true; G.events.push([G.t, '烧']); G.fx.push({ k: 'banner', t: 0, text: G.foeAdv.name + '火烧拒马', sub: '看破：拒马第二波起被火箭烧掉' }); G.shake = .2; }
   // 敌方军师：伏兵
@@ -1699,6 +1701,7 @@ function renderScreen() {
   const fs = G.foes.slice().sort((a, b) => a.y - b.y);
   drawAura(fs);
   drawRoarLine();
+  drawWallProps();
   for (const e of fs) drawFoe(e);
   drawFieldThings(); drawCart(); drawNight();
   if (G.windT > 0) { const a = Math.min(1, G.windT / .6); for (let k = 0; k < 9; k++) { const y = TOP + 40 + k * 44, x = ((G.t * 420 + k * 137) % (W + 200)) - 100; brush(ctx, [[x - 90, y], [x - 30, y - 6], [x + 40, y + 2]], 5, '#6e675d', .35 * a, u => Math.sin(Math.PI * u), .3, vr); } }
@@ -1739,7 +1742,7 @@ function playUlt(k, foe, force) {
   G.ult = { k, t: 0, sp, dur: (n / m.fps + .45) / sp, foe: !!foe };
 }
 const ULT_HOLD = {};                                                     // 武将页预览定格在哪一帧（不写就是最后一帧）
-function drawUlt(k, t, dur, foe, hold, label = '觉醒') {                                                // hold：武将页预览，演完停在最后一帧，等玩家点「退出」才退（hold 是退场已过的秒数，没点时 -1）
+function drawUlt(k, t, dur, foe, hold, label = '觉醒', center = false) {   // center：剧情里学会招式用，人居中、从头播到最后一帧停住（10-28 用户：「录像要居中，完整播放」「张飞则往右那么一点点」）                                                // hold：武将页预览，演完停在最后一帧，等玩家点「退出」才退（hold 是退场已过的秒数，没点时 -1）
   if (!ultReady(k)) return; const { im, meta: m } = ULT[k], [col, rgb] = ULT_COL[k];
   const a = hold != null ? (t < .14 ? t / .14 : 1) * (hold >= 0 ? Math.max(0, 1 - hold / .28) : 1) : t < .14 ? t / .14 : t > dur - .28 ? Math.max(0, (dur - t) / .28) : 1, enter = ease(Math.min(1, t / .2)), dir = k === 'zhang' || k === 'lvbu' ? 1 : -1;
   ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
@@ -1747,8 +1750,8 @@ function drawUlt(k, t, dur, foe, hold, label = '觉醒') {                      
   ctx.globalAlpha = a; ctx.globalCompositeOperation = 'lighter';
   const gx = W / 2 - dir * 20, gy = H * .5, gl = ctx.createRadialGradient(gx, gy, 10, gx, gy, 300); gl.addColorStop(0, rgb + '.42)'); gl.addColorStop(1, rgb + '0)');
   ctx.fillStyle = gl; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over';                           // 身后一大团人物色的光
-  const f0 = Math.floor(Math.max(0, t - .06) * m.fps), hf = ULT_HOLD[k] ?? m.n - 1, fi = hold != null && f0 >= m.n ? Math.max(hf, 2 * (m.n - 1) - f0) : Math.min(m.n - 1, f0) /* 预览演完倒放回定格那一帧停住（10-26 用户：「大招停止后不断闪最后一帧」「张飞最后停这里了」——张飞最后一帧是挥矛中途的拖影） */, sx = (fi % m.cols) * m.w, sy = Math.floor(fi / m.cols) * m.h;
-  const dh = H * .82 * (1.06 - .06 * enter), dw = dh * m.w / m.h, x = W / 2 - dw / 2 - dir * 18 + (1 - enter) * dir * -W * .7, y = H - dh - (hold != null ? 78 : 0);   /* 预览时整体往上，让出底下的退出钮（10-26 用户：「整体是不是可以往上？」） */
+  const f0 = Math.floor(Math.max(0, t - .06) * m.fps), hf = ULT_HOLD[k] ?? m.n - 1, fi = !center && hold != null && f0 >= m.n ? Math.max(hf, 2 * (m.n - 1) - f0) : Math.min(m.n - 1, f0) /* 预览演完倒放回定格那一帧停住（10-26 用户：「大招停止后不断闪最后一帧」「张飞最后停这里了」——张飞最后一帧是挥矛中途的拖影） */, sx = (fi % m.cols) * m.w, sy = Math.floor(fi / m.cols) * m.h;
+  const dh = H * .82 * (1.06 - .06 * enter), dw = dh * m.w / m.h, x = W / 2 - dw / 2 - (center ? 0 : dir * 18) + (1 - enter) * dir * -W * .7, y = H - dh - (hold != null ? 78 : 0);   /* 预览时整体往上，让出底下的退出钮（10-26 用户：「整体是不是可以往上？」） */
   ctx.drawImage(im, sx, sy, m.w, m.h, x, y, dw, dh);                                                                    // 人从一侧冲进来
   const name = ULT_NAME[k], tx = dir > 0 ? 44 : W - 44, tu = clamp((t - .18) / .22, 0, 1), ts = 1.5 - .5 * ease(tu);   // 竖排招名，大字砸下来
   ctx.globalAlpha = a * tu; [...name].forEach((c, j) => { ctx.save(); ctx.translate(tx, 150 + j * 64); ctx.scale(ts, ts); uiText(c, 0, 0, 56, col, 'center', FONT, { glow: rgb + '.9)', glowR: 18, lw: 7 }); ctx.restore(); });
@@ -1808,6 +1811,28 @@ function drawCorpse(f) {
 }
 // 斗将出招演哪段：先找和招同名的那段（Veo 录的敌将），没有就退到施法／撞城
 const MOVE_ANIM = { heavy: ['heavy'], combo: ['combo', 'heavy'], rush: ['rush', 'heavy'], summon: ['summon'], buff: ['taunt', 'summon'], heal: ['summon'], guard: ['idle'], seal: ['cast'] };
+// 城墙外一排小图标（10-28 用户：「滚木，弩，挡马那些……直接显示在城墙外即可，小一些，不要挡视野」）：
+// 这一关拿到的军械、城防战法（滚木、连弩、拒马、绊马索、破阵弩……）和自动的赤帻、火把、举盾。画在敌人底下，敌人走过来会盖住它们；用掉了（滚木、连弩一关一次）变灰
+function drawWallProps() {
+  const items = [];
+  for (const p of PERKS) if (G.perks[p.id] && !p.gen && !p.combo && ready(IMG['ui_ico_' + p.id])) items.push({ im: IMG['ui_ico_' + p.id], n: G.perks[p.id], used: (p.id === 'log' && G.logUsed) || (p.id === 'nu' && G.nuUsed) });
+  if (G.st.logs > 0 && !G.perks.log && ready(IMG.ui_ico_log)) items.push({ im: IMG.ui_ico_log, n: G.st.logs, used: G.logUsed });   // 关卡送的（第一关开局送一层滚木）
+  if (G.st.nu > 0 && !G.perks.nu && ready(IMG.ui_ico_nu)) items.push({ im: IMG.ui_ico_nu, n: G.st.nu, used: G.nuUsed });
+  if (G.RU.night) items.push({ im: IMG.ui_ico_fire, n: G.lightN, used: G.lightN <= 0 });
+  if (G.RU.decoy) items.push({ cloth: true, n: G.decoyN || 0, used: !G.decoyN });
+  if (G.duel) items.push({ shield: true, on: G.shieldT > 0 });
+  const sz = 22, gap = 4, y = WALL_Y - 70 - sz; let x = W - 58 - sz;   // 摆在城前地上、武将头顶再往外一点（城垛上会被武将挡住）；右边让开暂停、倍速那一列圆钮
+  for (const it of items) {
+    ctx.save(); ctx.globalAlpha = it.used ? .3 : .75;
+    if (it.on) { ctx.shadowColor = 'rgba(255,220,120,.95)'; ctx.shadowBlur = 14; }
+    if (it.im) ctx.drawImage(it.im, x, y, sz, sz);
+    else if (it.shield) { if (hasProp('shield')) drawProp('shield', x + sz / 2, y + sz, sz, it.on ? 1 : .85); else { ctx.fillStyle = '#6b5236'; ctx.beginPath(); ctx.arc(x + sz / 2, y + sz / 2, sz / 2, 0, 6.283); ctx.fill(); } }
+    else if (it.cloth) { ctx.fillStyle = '#d0301f'; ctx.beginPath(); ctx.moveTo(x + 4, y + 4); ctx.quadraticCurveTo(x + sz, y + 6, x + sz / 2, y + sz - 2); ctx.closePath(); ctx.fill(); }
+    ctx.restore();
+    if (it.n > 1) uiText('×' + it.n, x + sz - 2, y + sz - 3, 9, UIC.cream, 'center', PLAIN, { lw: 2 });
+    x -= sz + gap;
+  }
+}
 // 冲阵蓄势、冲锋时，地上画出一喝喝得到的那条线（离城 zhangR）：冲阵队过了这条线再喝（10-28）。一喝好了是亮的朱红虚线，还在冷却就淡一点
 function drawRoarLine() {
   const on = Object.values(G.chg || {}).some(c => c.state === 'warn' || c.state === 'run'), zi = G.order.indexOf('zhang');
@@ -3416,21 +3441,22 @@ function drawSlots() {
   else uiPanel(-4, SLOT_Y - 4, W + 8, H - SLOT_Y + 8, { r: 0, alpha: .95 });
   const now = G.t;
   // 主动战法（滚木、连弩）放进右边的空格；空格不够就在底栏上方右边排小方钮（10-25 用户圈了两个空格：「滚木那类主动战法让用户自己点，你想办法把人头变小点」）
-  const acts = [], actAt = {}; if (G.st.logs > 0) acts.push({ ico: 'ui_ico_log', name: G.logArm ? '点战场' : G.logUsed ? '已用' : '滚木', n: Math.min(3, G.st.logs), cd: 1, left: G.logUsed ? 1 : 0, fn: pressLog, armed: G.logArm }); if (G.st.nu) acts.push({ ico: 'ui_ico_nu', name: G.nuArm ? '点战场' : G.nuUsed ? '已用' : '连弩', n: Math.min(3, G.st.nu), cd: 1, left: G.nuUsed ? 1 : 0, fn: pressNu, armed: G.nuArm });
-  if (G.RU.night) acts.push({ ico: 'ui_ico_fire', name: G.lightArm ? '点战场' : '火把', n: G.lightN, cd: 1, left: G.lightN > 0 ? 0 : 1, fn: () => { if (G.lightN > 0) G.lightArm = !G.lightArm; }, armed: G.lightArm });
+  const acts = [], actAt = {}; if (false && G.st.logs > 0) acts.push({ ico: 'ui_ico_log', name: G.logArm ? '点战场' : G.logUsed ? '已用' : '滚木', n: Math.min(3, G.st.logs), cd: 1, left: G.logUsed ? 1 : 0, fn: pressLog, armed: G.logArm }); if (G.st.nu) acts.push({ ico: 'ui_ico_nu', name: G.nuArm ? '点战场' : G.nuUsed ? '已用' : '连弩', n: Math.min(3, G.st.nu), cd: 1, left: G.nuUsed ? 1 : 0, fn: pressNu, armed: G.nuArm });
+  if (false && G.RU.night) acts.push({ ico: 'ui_ico_fire', name: G.lightArm ? '点战场' : '火把', n: G.lightN, cd: 1, left: G.lightN > 0 ? 0 : 1, fn: () => { if (G.lightN > 0) G.lightArm = !G.lightArm; }, armed: G.lightArm });
+  acts.length = 0;   // 10-28：军械都挪到城墙外（drawWallProps），底栏五格只放武将
   { const free = []; for (let i = NS - 1; i >= 0; i--) if (!G.order[i] && !(i === NS - 1 && (G.RU.decoy || G.duel))) free.push(i); acts.forEach((a, k) => { if (free[k] != null) actAt[free[k]] = a; else a.over = k; }); }
   for (const a of acts) if (a.over != null) drawActBtn(a, W - 50 - a.over * 48, SLOT_Y - 52, 44, 44);
   for (let i = 0; i < NS; i++) {
     const x = genX(i) - 29, y = SLOT_Y + 6, w = 58, h = 70, id = G.order[i];   // 牌缩小一圈、对齐城头站位
     const casting = G.cast && G.cast.slot === i, lift = 0;                          // 不抬（10-27 用户：「也不需要突出了，加个闪光流动边框，显示技能字眼？平时不显示字眼」）
-    if (!id && G.RU.decoy && i === NS - 1) {                                       // 赤帻：点一下再点地面放下（每关一次）
+    if (false) {                                                                  // 赤帻：10-28 起自动放，挪到城墙外显示（drawWallProps），底栏五格只放武将
       const on = G.decoyArm, left = G.decoyN || 0;
       uiPanel(x, y, w, h, { r: 7, top: on ? '#c0402a' : left ? '#3a2b1f' : '#2a221c', bot: on ? '#6e140c' : UIC.lac, glow: on ? 'rgba(255,120,80,.8)' : null });
       ctx.fillStyle = left ? '#d0301f' : '#5a4a40'; ctx.beginPath(); ctx.moveTo(x + w / 2 - 14, y + 14); ctx.quadraticCurveTo(x + w / 2 + 20, y + 20, x + w / 2 - 4, y + 44); ctx.closePath(); ctx.fill();
       uiText(on ? '点地面' : '赤帻 ×' + left, x + w / 2, y + h - 13, 14, on ? '#fff' : UIC.cream, 'center');
       hit(x, y, w, h, () => { if (G.decoyN > 0) G.decoyArm = !G.decoyArm; }); continue;
     }
-    if (!id && G.duel && i === NS - 1) {                                           // 举盾：10-28 起自动举盾，这格只显示状态（举着发亮），不能点
+    if (false) {                                                                  // 举盾：10-28 起自动，挪到城墙外显示（drawWallProps）
       const cd = Math.max(0, G.shieldCd), mv = G.duel.mv, warn = mv && (mv.k === 'heavy' || mv.k === 'combo' || mv.k === 'rush'), on = G.shieldT > 0, pulse = .5 + .5 * Math.sin(now * 18);
       uiPanel(x, y, w, h, { r: 7, top: on ? '#e6b44a' : '#3a2b1f', bot: on ? '#8a5a10' : UIC.lac, glow: on ? 'rgba(255,220,120,.9)' : null, glowR: 16 });
       if (hasProp('shield')) drawProp('shield', x + w / 2, y + 52, 44); else { ctx.save(); ctx.translate(x + w / 2, y + 30); ctx.fillStyle = '#6b5236'; ctx.beginPath(); ctx.arc(0, 0, 18, 0, 6.283); ctx.fill(); ctx.restore(); }   /* 举盾钮用画的木盾（10-27 用户圈着程序画的圆：「不要用svg」） */
@@ -3550,7 +3576,7 @@ function drawPick() {
         const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, 26); g.addColorStop(0, special ? `rgba(255,110,60,${.35 * f})` : `rgba(255,220,120,${.35 * f})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(ex - 26, ey - 26, 52, 52); } }
       ctx.fillStyle = '#1b140f'; ctx.beginPath(); ctx.roundRect(4, 4, w - 8, h - 8, 8); ctx.fill();
       // 卡图：武将战法是头像，连携两张脸，军械是画的图标
-      const who = p.combo || (p.gen ? [p.gen] : []), ax = 9, ay = 9, aw = w - 18, ah = 104;
+      const who = p.combo || (p.gen ? [p.gen] : []), ax = 9, ay = 9, aw = w - 18, ah = 84;   // 10-28 用户：「字经常被挡住，我看要往上一点」——图 104→84，名字、说明整体上移 20
       ctx.save(); ctx.beginPath(); ctx.roundRect(ax, ay, aw, ah, 6); ctx.clip();
       const bgc = ctx.createLinearGradient(0, ay, 0, ay + ah); bgc.addColorStop(0, '#3a2b1f'); bgc.addColorStop(1, '#120c08'); ctx.fillStyle = bgc; ctx.fillRect(ax, ay, aw, ah);
       if (who.length === 1 && ready(IMG[who[0]])) ctx.drawImage(IMG[who[0]], ax - 6, ay - 2, aw + 12, aw + 12);
@@ -3564,9 +3590,10 @@ function drawPick() {
       const tag = p.combo ? '连携' : p.need ? '绝技' : p.gen ? GEN[p.gen].name : '军械', n = G.perks[p.id] || 0;
       ctx.font = `10px ${PLAIN}`; const tw = ctx.measureText(tag).width + 12; ctx.fillStyle = 'rgba(10,6,4,.8)'; ctx.beginPath(); ctx.roundRect(w / 2 - tw / 2, ay + ah - 12, tw, 16, 8); ctx.fill(); ctx.strokeStyle = tc; ctx.lineWidth = 1; ctx.stroke();
       uiText(tag, w / 2, ay + ah - 4, 10, tc, 'center', PLAIN, { stroke: false });
-      uiText(p.name, w / 2, ay + ah + 20, p.name.length > 4 ? 15 : 18, goldGrad(ay + ah + 20, 18), 'center', FONT, { lw: 4, glow: 'rgba(255,200,90,.4)', glowR: 6 });
-      { const dl = cardLines(p.desc, 9, 3), dz = Math.min(9, ...dl.map(ln => fitSize(ln, 9, w - 24, 99, PLAIN))); dl.forEach((ln, m) => uiText(ln, w / 2, ay + ah + 40 + m * 12, dz, '#e6d6b4', 'center', PLAIN, { stroke: false })); }   // 10-25 夜用户：「字超出左边了」——卡框里能写字的宽约 w-24   // 标点不打头、「%」不落单（10-25 截图里一行开头是「、」）
-      if (n) uiText('已有 ' + n, w / 2, h - 14, 10, 'rgba(244,230,196,.55)', 'center', PLAIN, { stroke: false });
+      uiText(p.name, w / 2, ay + ah + 19, p.name.length > 4 ? 15 : 18, goldGrad(ay + ah + 20, 18), 'center', FONT, { lw: 4, glow: 'rgba(255,200,90,.4)', glowR: 6 });
+      { let dz = 9.5, dl = fitLines(p.desc, w - 30, dz, PLAIN); while (dl.length > 5 && dz > 8) { dz -= .5; dl = fitLines(p.desc, w - 30, dz, PLAIN); }   // 按实际字宽断行，最多五行，放不下先缩字、不截断（10-28：底下角花挡住第三行，「斩将」的说明还被截掉）
+        if (dl.length > 5) { dl.length = 5; dl[4] = dl[4].slice(0, -1) + "…"; } dl.forEach((ln, m) => uiText(ln, w / 2, ay + ah + 37 + m * (dz + 2.5), dz, '#e6d6b4', 'center', PLAIN, { stroke: false })); }   // 10-25 夜用户：「字超出左边了」——卡框里能写字的宽约 w-24   // 标点不打头、「%」不落单（10-25 截图里一行开头是「、」）
+      if (n) uiText('已有 ' + n, w / 2, h - 11, 9, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });   // 落在底下两朵角花中间
       if (picked) { const ss = 1.8 - .8 * su; ctx.save(); ctx.translate(w - 22, 26); ctx.scale(ss, ss); ctx.globalAlpha = su; uiSeal(0, 0, 26, '选', UIC.red); ctx.restore(); }
       if (P.adv && P.adv.i === k && fu >= 1 && !picked) uiSeal(20, 22, 26, '荐', '#3a5f8a', true);   // 军师荐的那张
     }
@@ -3932,27 +3959,22 @@ function drawStoryImg(k, a) {
   else { const h = W * im.height / im.width; ctx.drawImage(im, 0, 0, W, h); }          // 整张场景图：铺满宽，下面一截被对话框压住（画的时候就留空了）
   ctx.restore();
 }
-// 把画布上已经画好的东西整片糊掉（学会招式时剧情图完全虚化，只看得见武将特写；10-28 用户：「背景应该完全虚化」）。
-// 能用 ctx.filter 就用高斯模糊；苹果旧版浏览器不支持，就一半一半缩到 1/32 再一级级放大回来（一下子缩放会出方格）
-const BLUR = [0, 1, 2, 3, 4, 5].map(() => document.createElement('canvas'));
-let blurOK = null;
-function blurCanvas() {
-  const cw = cv.width, ch = cv.height; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-  if (blurOK === null) { const t = BLUR[0].getContext('2d'); t.filter = 'blur(2px)'; blurOK = t.filter === 'blur(2px)'; }
-  if (blurOK) { const b = BLUR[0]; b.width = cw; b.height = ch; const bx = b.getContext('2d'); bx.filter = `blur(${Math.round(cw / 20)}px)`; bx.drawImage(cv, 0, 0); ctx.drawImage(b, 0, 0); }
-  else { let src = cv, w = cw, h = ch;
-    for (let i = 0; i < 5; i++) { const b = BLUR[i + 1]; w = Math.max(1, w >> 1); h = Math.max(1, h >> 1); b.width = w; b.height = h; b.getContext('2d').drawImage(src, 0, 0, src === cv ? cw : w * 2, src === cv ? ch : h * 2, 0, 0, w, h); src = b; }
-    for (let i = 4; i > 0; i--) { const b = BLUR[i], bx = b.getContext('2d'); bx.imageSmoothingQuality = 'high'; bx.drawImage(BLUR[i + 1], 0, 0, BLUR[i + 1].width, BLUR[i + 1].height, 0, 0, b.width, b.height); }
-    ctx.imageSmoothingQuality = 'high'; ctx.drawImage(BLUR[1], 0, 0, BLUR[1].width, BLUR[1].height, 0, 0, cw, ch); }
-  ctx.restore();
+// 学会招式时剧情图完全虚化（10-28 用户：「背景应该完全虚化」「左上好像有些脏东西」）：原来把整块画布拍下来再糊，画布边上的残留也糊进去、有的手机上成了脏斑；
+// 现在只拿这张剧情图本身，一半一半缩到 18 像素宽（缓存），再放大铺满游戏画面，压暗一层
+const BLURIMG = {};
+function drawBlurImg(k) {
+  const im = IMG[k]; ctx.fillStyle = '#0c0805'; ctx.fillRect(0, 0, W, H); if (!ready(im)) return;
+  let c = BLURIMG[k];
+  if (!c) { let src = im, w = im.width, h = im.height; while (w > 18) { const n = document.createElement('canvas'); n.width = Math.max(18, w >> 1); n.height = Math.max(1, Math.round(n.width * im.height / im.width)); const nx = n.getContext('2d'); nx.imageSmoothingQuality = 'high'; nx.drawImage(src, 0, 0, n.width, n.height); src = n; w = n.width; } c = BLURIMG[k] = src; }
+  ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(c, 0, 0, c.width, c.height, -20, -20, W + 40, (W + 40) * im.height / im.width); ctx.fillStyle = 'rgba(8,6,4,.35)'; ctx.fillRect(0, 0, W, H); ctx.restore();
 }
 function drawStory() {
   if (!STP) { screen = 'menu'; return; }
   const t = uiNow(), L = STORY[STP.key], [k0, who, text, alt] = L[STP.i], k = alt && !ready(IMG[k0]) ? alt : k0;   // 剧情图没读到就退回立绘
   ctx.fillStyle = '#0c0805'; ctx.fillRect(0, 0, W, H);
   const fu = STP.prev && STP.prev !== k ? clamp((t - STP.fadeT) / .35, 0, 1) : 1;    // 换图时淡入淡出
-  if (fu < 1) drawStoryImg(STP.prev, 1); drawStoryImg(k, fu);
-  if (STP.learn) { blurCanvas(); const hb = HITS.length; drawUlt(STP.learn.k, t - STP.learn.t0, 0, false, -1, '习得'); HITS.length = hb; }   // 学会招式：大招特写盖在剧情图上，停在最后一帧
+  if (STP.learn) { drawBlurImg(k); const hb = HITS.length; drawUlt(STP.learn.k, t - STP.learn.t0, 0, false, -1, '习得', true); HITS.length = hb; }   // 学会招式：剧情图整张糊掉，大招特写居中、从头播到尾停在最后一帧
+  else { if (fu < 1) drawStoryImg(STP.prev, 1); drawStoryImg(k, fu); }   // 学会招式：大招特写盖在剧情图上，停在最后一帧
   const sg = ctx.createLinearGradient(0, 400, 0, H); sg.addColorStop(0, 'rgba(8,5,4,0)'); sg.addColorStop(.35, 'rgba(8,5,4,.85)'); sg.addColorStop(1, 'rgba(8,5,4,.95)'); ctx.fillStyle = sg; ctx.fillRect(0, 400, W, H - 400);
   // 对话框
   const bx = 10, by = 482, bw = W - 20, bh = 132; plate(bx, by, bw, bh);
@@ -4228,7 +4250,10 @@ function fitLines(t, maxW, size, font) {
     }
     cur += ch;
   }
-  if (cur) out.push(cur); return out;
+  if (cur) out.push(cur);
+  if (out.length > 1) { const last = [...out[out.length - 1]].filter(ch => !noHead(ch)).length, prev = [...out[out.length - 2]];   // 末行只剩一个字（「齐」「了。」）：从上一行挪一个字下来
+    if (last <= 1 && prev.length > 3) { let k = prev.length - 1; while (k > 1 && noHead(prev[k])) k--; out[out.length - 1] = prev.slice(k).join('') + out[out.length - 1]; out[out.length - 2] = prev.slice(0, k).join(''); } }
+  return out;
 }
 function cardLines(t, per, maxL) {
   const out = []; let cur = '';
