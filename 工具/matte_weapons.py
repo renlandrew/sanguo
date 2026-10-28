@@ -14,6 +14,7 @@ HERE = Path(__file__).resolve().parent
 src, prefix = Path(sys.argv[1]), sys.argv[2]
 HEIGHT = int(sys.argv[3]) if len(sys.argv) > 3 else 640
 COUNT = int(sys.argv[4]) if len(sys.argv) > 4 else 5
+GAP = int(os.environ.get('GAP', 12))   # 隔多少列空白才算另一把；刘备一对双股剑挨得近，GAP=60 把一对当一样（10-28）
 a = np.asarray(Image.open(src).convert('RGB')).astype(np.float32)
 border = np.concatenate([a[:6].reshape(-1, 3), a[-6:].reshape(-1, 3), a[:, :6].reshape(-1, 3), a[:, -6:].reshape(-1, 3)])
 bgc = np.median(border, axis=0)
@@ -38,7 +39,7 @@ runs, x = [], 0                                                                 
 while x < len(cols):
     if cols[x]:
         x0 = x
-        while x < len(cols) and (cols[x] or (x + 12 < len(cols) and cols[x:x + 12].any())): x += 1
+        while x < len(cols) and (cols[x] or (x + GAP < len(cols) and cols[x:x + GAP].any())): x += 1
         if x - x0 > 20: runs.append((x0, x))
     else: x += 1
 cnt = (alpha > .4).sum(axis=0)
