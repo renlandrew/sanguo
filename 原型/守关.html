@@ -1642,9 +1642,9 @@ function drawAmbushBtn() {
   // 10-28 用户：「哪些是伏兵啊」——两侧各四丛草，草里露出乡勇的蓝头巾、枪尖和小蓝旗；河沟那一段地上铺一层淡金色，扫的就是这一块
   ctx.save(); const g = ctx.createLinearGradient(0, A.y0, 0, A.y1); g.addColorStop(0, 'rgba(255,215,120,0)'); g.addColorStop(.5, `rgba(255,215,120,${.08 + .04 * Math.sin(t * 3)})`); g.addColorStop(1, 'rgba(255,215,120,0)'); ctx.fillStyle = g; ctx.fillRect(0, A.y0, W, A.y1 - A.y0); ctx.restore();
   // 10-28 用户：「这个用gpt image，不要这些html」——草丛里的乡勇、令旗按钮都用画的图（工具/画图/draw_ambush.sh）；图还没画好时按钮先用一块素圆垫着
-  const hide = IMG.ui_ambush_hide; if (ready(hide)) for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) { const w = 64, h = w * hide.height / hide.width, y = A.y0 + 30 + k * (A.y1 - A.y0 - 60) / 2;
+  const hide = IMG.ui_ambush_hide; if (ready(hide)) for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) { const w = 40, h = w * hide.height / hide.width, y = A.y0 + 30 + k * (A.y1 - A.y0 - 60) / 2;
     ctx.save(); ctx.translate(sd < 0 ? 4 + w / 2 : W - 4 - w / 2, y + Math.sin(t * 2 + k) * .8); ctx.scale(sd < 0 ? 1 : -1, 1); ctx.drawImage(hide, -w / 2, -h / 2, w, h); ctx.restore(); }
-  const bx = 96, by = cy, r = 26, pulse = .5 + .5 * Math.sin(t * 5), btn = IMG.ui_ambush_btn;
+  const bx = 66, by = cy, r = 24, pulse = .5 + .5 * Math.sin(t * 5), btn = IMG.ui_ambush_btn;
   ctx.save(); ctx.shadowColor = `rgba(255,190,80,${.5 + .4 * pulse})`; ctx.shadowBlur = 16;
   if (ready(btn)) ctx.drawImage(btn, bx - r, by - r, r * 2, r * 2); else { ctx.fillStyle = '#2a1a10'; ctx.beginPath(); ctx.arc(bx, by, r, 0, 6.283); ctx.fill(); }
   ctx.restore();
