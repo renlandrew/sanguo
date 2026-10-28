@@ -3759,7 +3759,8 @@ const storySeen = k => !!(INV.story && INV.story[k]);
 // 剧情里几句配声效、画面一抖：按句子里的字认
 const THUNDER = [[0, 1], [.95, .75], [1.85, .5]], THUNDER_LEN = 3.2;                                 // 三下雷的时刻、响度（画面白闪跟着它）
 // 剧情里学会招式那一句：演这位武将的大招特写（大招录像），大字招名下写「习得」，配招式声和一声锣；演完才能往下翻（10-26 用户：「学会技能时（剧情中）要有一个特效之类的」）
-const STORY_LEARN = [['学会了「双股剑」', 'liu'], ['学会了「青龙斩」', 'guan'], ['学会了「当阳一喝」', 'zhang']], LEARN_LEN = 2.2;
+const STORY_LEARN = [['学会了「双股剑」', 'liu'], ['学会了「青龙斩」', 'guan'], ['学会了「当阳一喝」', 'zhang']];
+const learnLen = k => ultReady(k) ? ULT[k].meta.n / ULT[k].meta.fps + .2 : 2.2;   // 10-28 用户：「学会技能似乎没播放完」——原来定死 2.2 秒就能翻页，大招特写 48 帧要 3 秒，后半截被点掉；改成按特写帧数演完才能翻
 const STORY_SFX = [['轰——', 'thunder'], ['马蹄声', 'hooves'], ['哇——！！！', 'zhang']];
 const STORY_KEYS = () => ['open', ...LEVELS.map(l => 'l' + l.id)].filter(k => STORY[k]);
 function storyEnter() { const ln = STORY[STP.key][STP.i]; STP.t0 = uiNow(); const lr = STORY_LEARN.find(([w]) => ln[2].includes(w)); STP.learn = lr && ultReady(lr[1]) ? { k: lr[1], t0: uiNow() } : null; if (STP.learn) { sfx(lr[1]); sfx('gong'); } const fx = STORY_SFX.find(([w]) => ln[2].includes(w)); STP.fx = fx ? { k: fx[1], t0: uiNow() } : null; if (fx) sfx(fx[1]); }
@@ -3769,7 +3770,7 @@ function playStory(key, then, read) { if (!read) { INV.story = { ...(INV.story |
 function storyJump(key, last) { if (storyBusy()) return; const lv = LEVELS.find(l => 'l' + l.id === key); STP.prev = STORY[STP.key][STP.i][0]; STP.fadeT = uiNow(); STP.key = key; STP.bg = lv ? lv.map : null; STP.i = last ? STORY[key].length - 1 : 0; storyEnter(); }
 function storyPrev() { if (storyBusy()) return; if (STP.i > 0) { STP.prev = STORY[STP.key][STP.i][0]; STP.i--; STP.fadeT = uiNow(); storyEnter(); STP.t0 = -99; return; }
   const ks = STORY_KEYS(), j = ks.indexOf(STP.key); if (j > 0) { storyJump(ks[j - 1], true); STP.t0 = -99; } }
-const storyBusy = () => STP && ((STP.fx && STP.fx.k === 'thunder' && uiNow() - STP.fx.t0 < THUNDER_LEN) || (STP.learn && uiNow() - STP.learn.t0 < LEARN_LEN));   // 雷没打完不能翻（10-26 用户：「雷声没打完前不能继续」）
+const storyBusy = () => STP && ((STP.fx && STP.fx.k === 'thunder' && uiNow() - STP.fx.t0 < THUNDER_LEN) || (STP.learn && uiNow() - STP.learn.t0 < learnLen(STP.learn.k)));   // 雷没打完不能翻（10-26 用户：「雷声没打完前不能继续」）
 function storyNext() { if (storyBusy()) return; const L = STORY[STP.key], ln = L[STP.i], n = [...ln[2]].length, shown = (uiNow() - STP.t0) * 30;
   if (shown < n) { STP.t0 = uiNow() - n / 30 - .01; return; }                       // 还没打完：先打完这句
   if (STP.i + 1 < L.length) { STP.prev = ln[0]; STP.i++; STP.fadeT = uiNow(); storyEnter(); return; }
@@ -3784,13 +3785,27 @@ function drawStoryImg(k, a) {
   else { const h = W * im.height / im.width; ctx.drawImage(im, 0, 0, W, h); }          // 整张场景图：铺满宽，下面一截被对话框压住（画的时候就留空了）
   ctx.restore();
 }
+// 把画布上已经画好的东西整片糊掉（学会招式时剧情图完全虚化，只看得见武将特写；10-28 用户：「背景应该完全虚化」）。
+// 能用 ctx.filter 就用高斯模糊；苹果旧版浏览器不支持，就一半一半缩到 1/32 再一级级放大回来（一下子缩放会出方格）
+const BLUR = [0, 1, 2, 3, 4, 5].map(() => document.createElement('canvas'));
+let blurOK = null;
+function blurCanvas() {
+  const cw = cv.width, ch = cv.height; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (blurOK === null) { const t = BLUR[0].getContext('2d'); t.filter = 'blur(2px)'; blurOK = t.filter === 'blur(2px)'; }
+  if (blurOK) { const b = BLUR[0]; b.width = cw; b.height = ch; const bx = b.getContext('2d'); bx.filter = `blur(${Math.round(cw / 20)}px)`; bx.drawImage(cv, 0, 0); ctx.drawImage(b, 0, 0); }
+  else { let src = cv, w = cw, h = ch;
+    for (let i = 0; i < 5; i++) { const b = BLUR[i + 1]; w = Math.max(1, w >> 1); h = Math.max(1, h >> 1); b.width = w; b.height = h; b.getContext('2d').drawImage(src, 0, 0, src === cv ? cw : w * 2, src === cv ? ch : h * 2, 0, 0, w, h); src = b; }
+    for (let i = 4; i > 0; i--) { const b = BLUR[i], bx = b.getContext('2d'); bx.imageSmoothingQuality = 'high'; bx.drawImage(BLUR[i + 1], 0, 0, BLUR[i + 1].width, BLUR[i + 1].height, 0, 0, b.width, b.height); }
+    ctx.imageSmoothingQuality = 'high'; ctx.drawImage(BLUR[1], 0, 0, BLUR[1].width, BLUR[1].height, 0, 0, cw, ch); }
+  ctx.restore();
+}
 function drawStory() {
   if (!STP) { screen = 'menu'; return; }
   const t = uiNow(), L = STORY[STP.key], [k0, who, text, alt] = L[STP.i], k = alt && !ready(IMG[k0]) ? alt : k0;   // 剧情图没读到就退回立绘
   ctx.fillStyle = '#0c0805'; ctx.fillRect(0, 0, W, H);
   const fu = STP.prev && STP.prev !== k ? clamp((t - STP.fadeT) / .35, 0, 1) : 1;    // 换图时淡入淡出
   if (fu < 1) drawStoryImg(STP.prev, 1); drawStoryImg(k, fu);
-  if (STP.learn) { const hb = HITS.length; drawUlt(STP.learn.k, t - STP.learn.t0, 0, false, -1, '习得'); HITS.length = hb; }   // 学会招式：大招特写盖在剧情图上，停在最后一帧
+  if (STP.learn) { blurCanvas(); const hb = HITS.length; drawUlt(STP.learn.k, t - STP.learn.t0, 0, false, -1, '习得'); HITS.length = hb; }   // 学会招式：大招特写盖在剧情图上，停在最后一帧
   const sg = ctx.createLinearGradient(0, 400, 0, H); sg.addColorStop(0, 'rgba(8,5,4,0)'); sg.addColorStop(.35, 'rgba(8,5,4,.85)'); sg.addColorStop(1, 'rgba(8,5,4,.95)'); ctx.fillStyle = sg; ctx.fillRect(0, 400, W, H - 400);
   // 对话框
   const bx = 10, by = 482, bw = W - 20, bh = 132; plate(bx, by, bw, bh);
