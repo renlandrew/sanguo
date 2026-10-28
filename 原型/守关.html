@@ -3545,11 +3545,11 @@ function drawMerit() {
 const SND = { ac: null, mus: null, sfx: null, noise: null, mode: null, next: 0, step: 0, note: 2, lastHit: 0 };
 const sndCfg = () => (INV.snd = INV.snd || { m: 1, mv: .5, s: 1, sv: .7 });
 function sndInit() {
-  if (SND.ac) { if (SND.ac.state === 'suspended') SND.ac.resume(); return; }
+  if (SND.ac) { if (SND.ac.state !== 'running') SND.ac.resume().catch(() => {}); mpKick(); return; }   // 苹果的浏览器来电、切走再回来后是 'interrupted'，不是 'suspended'——原来只认 suspended，音乐从此不响（10-28 用户：「音乐似乎时有时无」）
   try { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; SND.ac = new AC(); } catch (e) { return; }
   const c = SND.ac; SND.mus = c.createGain(); SND.sfx = c.createGain(); SND.mus.connect(c.destination); { const lim = c.createDynamicsCompressor(); lim.threshold.value = -2; lim.knee.value = 4; lim.ratio.value = 12; lim.attack.value = .003; lim.release.value = .25; SND.sfx.connect(lim); lim.connect(c.destination); }   // 声效总线压一下，雷加大了不炸音
   SND.noise = c.createBuffer(1, c.sampleRate, c.sampleRate); const d = SND.noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;   // 声音的随机不碰游戏随机数
-  sndApply();
+  sndApply(); mpKick();
 }
 function sndApply() { if (!SND.ac) return; const k = sndCfg(); SND.mus.gain.value = k.m ? k.mv * .55 : 0; SND.sfx.gain.value = k.s ? k.sv : 0; }
 function osc(type, f0, f1, t0, dur, vol, out, a = .005) { const c = SND.ac, o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.setValueAtTime(f0, t0); if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
@@ -3587,23 +3587,39 @@ function sfx(k) {
 // 按场合分组轮流放，换曲、换场合时淡入淡出；哪一组一首都没有（文件还没生成或读不到），就用下面现合的占位
 const MUSIC = { calm: ['home_1', 'home_2', 'camp_1'], war: ['war_1', 'war_2', 'war_3', 'war_4'], duel: ['duel_1'], story: ['story_1'], omen: ['omen_1'] };
 const MP = { el: null, old: [], want: null, i: 0, fail: new Set() };
+// 10-28 用户：「第一章前 10 关的背景音乐和战斗音乐要固定下来」——前 10 关（打仗时按这一关，主页、结算等按还没打过的第一关）每个场合只放一首、单曲循环，不再轮换
+const MUSIC_FIX = { calm: 'home_1', war: 'war_1' };
+const musicFixed = want => { const id = G && screen === 'play' ? G.lv.id : (LEVELS[frontier()] || {}).id; return id <= 10 && MUSIC_FIX[want] ? [MUSIC_FIX[want]] : null; };
 const musicWant = () => screen === 'story' ? (STP && STP.key === 'l10' ? 'omen' : 'story') : G && screen === 'play' && G.state !== 'over' && !G.sim ? (G.lv.kind === 'duel' ? 'duel' : 'war') : 'calm';
 // 苹果的浏览器（含微信）里 <audio> 的 volume 是只读的、永远 1：原来靠 el.volume 淡入淡出、调到 0 才暂停，所以手机上关不掉、还会几首叠着放（10-26 用户：「网页上关不了音乐音效」）。
 // 现在每首接进 WebAudio：<audio> → 自己的增益（淡入淡出）→ SND.mus（开关、音量，sndApply 管）。el.volume 不再碰
 const mpGain = el => el._g ? el._g.gain.value : 0;
 function mpSetGain(el, v) { if (el._g) el._g.gain.value = v; }
-function mpPlay(name) { const el = new Audio('music/' + name + '.mp3'); el.onerror = () => { MP.fail.add(name); if (MP.el === el) MP.el = null; };
-  try { const src = SND.ac.createMediaElementSource(el), g = SND.ac.createGain(); g.gain.value = 0; src.connect(g); g.connect(SND.mus); el._g = g; } catch (e) { el.volume = 0; }
-  el.onended = () => { if (MP.el === el) { MP.i++; MP.el = null; } }; el.play().catch(() => {}); if (MP.el) MP.old.push(MP.el); MP.el = el; MP.name = name; }
-function mpStop(el) { el.pause(); try { el.removeAttribute('src'); el.load(); } catch (e) {} }
-function musicTick() {
-  if (!SND.ac || SND.ac.state !== 'running') return; const k = sndCfg(), want = musicWant(), duck = SND.duck && SND.ac.currentTime < SND.duck, vol = (k.m ? 1 : 0) * (duck ? .06 : 1), list = MUSIC[want].filter(n => !MP.fail.has(n));
+// 10-28：原来每换一首就 new Audio()、在每帧的 musicTick 里 play()——苹果的浏览器（含微信）不是点屏那一下发起的 play() 会被拒，catch 吞掉以后这首一直「在放」却没声，
+// 要等换场合才再试（用户：「音乐似乎时有时无」）。现在三个 <audio> 第一次点屏时建好、接进 WebAudio，轮着用；被拒的在下一次点屏时补放（mpKick）
+function mpPool() {
+  if (!MP.pool) MP.pool = [0, 1, 2].map(() => { const el = new Audio(); el.preload = 'auto';
+    try { const src = SND.ac.createMediaElementSource(el), g = SND.ac.createGain(); g.gain.value = 0; src.connect(g); g.connect(SND.mus); el._g = g; } catch (e) { el.volume = 0; }
+    el.onerror = () => { if (el._name) MP.fail.add(el._name); if (MP.el === el) MP.el = null; };
+    el.onended = () => { if (MP.el === el) { MP.i++; MP.el = null; } }; return el; });
+  return MP.pool;
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && SND.ac && SND.ac.state !== 'running') SND.ac.resume().catch(() => {}); });   // 切回来时把声音接上
+function mpKick() { const el = MP.el; if (!el) musicTick(true); else if (el.paused && !el.ended) el.play().catch(() => {}); }   // 在点屏的那一下里补放被拒的那首
+function mpPlay(name, loop) { const el = mpPool().find(e => e !== MP.el && !MP.old.includes(e)) || MP.old.shift(); if (!el) return;
+  if (el._g) el._g.gain.value = 0; el._name = name; el.loop = !!loop; el.src = 'music/' + name + '.mp3'; el.play().catch(() => {});
+  if (MP.el) MP.old.push(MP.el); MP.el = el; MP.name = name; }
+function mpStop(el) { el.pause(); }   // 只停不清 src：清 src 会晚一点冒出 error，那时这个 <audio> 可能已经换去放别的曲子，会把那首误记成坏的
+function musicTick(force) {   // force：点屏那一下里调，AudioContext 还没转成 running 也先把这首 play() 起来
+  if (!SND.ac || (!force && SND.ac.state !== 'running')) return; const k = sndCfg(), want = musicWant(), duck = SND.duck && SND.ac.currentTime < SND.duck, vol = (k.m ? 1 : 0) * (duck ? .06 : 1), fixed = musicFixed(want), list = (fixed || MUSIC[want]).filter(n => !MP.fail.has(n));
   MP.old = MP.old.filter(el => { const v = Math.max(0, mpGain(el) - .02); mpSetGain(el, v); if (v <= .01 || !el._g) { mpStop(el); return false; } return true; });   // 上一首淡出
   if (!k.m) { if (MP.el) { mpStop(MP.el); MP.el = null; } MP.old.forEach(mpStop); MP.old = []; SND.mode = null; return; }   // 音乐关了：立刻停，不等淡出
   if (!list.length) { if (MP.el) { MP.old.push(MP.el); MP.el = null; } synthTick(want === 'calm' || want === 'story' || want === 'omen' ? 'calm' : 'war'); return; }
   SND.mode = null;
-  if (MP.want !== want) { MP.want = want; MP.i = Math.floor(Math.random() * list.length); MP.el && MP.old.push(MP.el); MP.el = null; }
-  if (!MP.el && vol > 0) mpPlay(list[MP.i % list.length]);
+  const wkey = want + (fixed ? ':' + fixed[0] : '');
+  if (MP.el && MP.el.loop !== !!fixed) MP.el.loop = !!fixed;
+  if (MP.want !== wkey) { MP.want = wkey; MP.i = Math.floor(Math.random() * list.length); MP.el && MP.old.push(MP.el); MP.el = null; }
+  if (!MP.el && vol > 0) mpPlay(list[MP.i % list.length], !!fixed);
   if (MP.el) { const g = mpGain(MP.el); mpSetGain(MP.el, Math.min(1, Math.max(0, g + (vol - g) * (duck ? .35 : .04)))); }
 }
 // 现合的占位音乐：每帧排后面四分之一秒的音符；主页、结算、各页是「静」，打仗时是「战」
@@ -4206,7 +4222,7 @@ function drawReward() {
 // 神兵（10-25 用户发来三张别家「神兵」截图：「画好不同等级的青龙偃月刀等武器，要越来越绚」）：三人的兵器各画五级（ChatGPT 画、工具/matte_weapons.py 抠，img/wpn_<人><1..5>.png），
 // 兵器精炼等级（INV.up.wpn，三人共用）0–4 对应第 1–5 级的样子，+5 用第 5 级再加一圈金光：凡铁、精钢、龙纹、鎏金、神兵、绝世。
 // 一页：中间一把大的斜着、慢慢浮，身后按等级发光（越高越亮、越多颜色），右边三格换着看三人的；底下写下一级要什么、几天后够，够了就打造
-const G_FIX = { guan: { idle: 1.03, atk: .95 }, zhang: { atk: 1.05 }, liu: { idle: .64 } };   // 按图集里身体高度量出来的（行里像素够多才算身体，兵器细杆不算），让三人待机、普攻一样高   // 10-27 新录战场人物：刘备待机首帧蹲得低，按它定的比例画出来大一圈（用户：「大小不一？」），缩回和关张一样高
+const G_FIX = { guan: { idle: 1.03, atk: .95 }, zhang: { atk: 1.05 }, liu: { idle: .93 } };   // 按图集里身体高度量出来的（行里像素够多才算身体，兵器细杆不算），让三人待机、普攻一样高   // 10-27 新录战场人物：刘备待机首帧蹲得低，按它定的比例画出来大一圈（用户：「大小不一？」），缩回和关张一样高   // 10-28 用户：「这里 2 个刘备」——那条待机 Veo 整条都叠了两个人，待机改用普攻那条末尾站定的 9 帧（31–39），比例改回和他普攻一样高
 const ARM = { who: 'guan', t0: 0, flash: 0 };
 const WPN = { guan: '青龙偃月刀', zhang: '丈八蛇矛', liu: '雌雄双股剑' }, WPN_TIER = ['凡铁', '精钢', '龙纹', '鎏金', '神兵', '绝世'];
 const WPN_GLOW = { guan: '90,220,170', zhang: '255,120,60', liu: '110,180,255' }, WPN_ROT = { guan: .62, zhang: .62, liu: .14 };   // 双股剑是交叉的一对，只斜一点

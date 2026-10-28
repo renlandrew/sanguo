@@ -55,6 +55,9 @@ PLAN = {
     'wuanguo': {'idle': ('ram', range(0, 4)), 'ram': ('ram', range(0, 40, 3))},
 }
 
+# 10-27 新画风重录时个别人的段换来源：刘备待机那条 Veo 整条叠了两个人（10-28 用户：「这里 2 个刘备」），改用普攻那条末尾站定的 9 帧
+NEW_PLAN = {'liu': {'idle': ('atk', range(31, 40))}}
+
 # 镜头中途推近了的那几条（10-25：西凉铁骑撞城那条，人马越来越大）：这一段按它自己第一帧的马身宽度缩回和定脚底那条一样大，脚底也用它自己的
 FIT = {('tieqi', 'ram'), ('gaoshun', 'run')}
 
@@ -118,7 +121,7 @@ for g in (sys.argv[2:] or ['guan', 'zhang', 'liu']):
     k = STAND / fig0; bw0 = body(m0)[0]
     strips, meta = [], {'stand': STAND, 'anims': {}}
     import os; NEWP = os.environ.get('NEWPLAN') == '1'   # 10-27 新画风重录：刘关张不用旧的 PLAN（那是按旧视频挑的帧），照 PICK
-    for anim, (src, idx) in (PLAN[g] if g in FOE else {**{a: (a, i) for a, i in PICK.items()}, **({} if NEWP else PLAN.get(g, {}))}).items():
+    for anim, (src, idx) in (PLAN[g] if g in FOE else {**{a: (a, i) for a, i in PICK.items()}, **(NEW_PLAN.get(g, {}) if NEWP else PLAN.get(g, {}))}).items():
         if src not in takes: continue
         tid = takes[src].stem; end = END.get(tid, N - 1); cs = cells(takes[src])
         frames = []
