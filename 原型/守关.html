@@ -3178,7 +3178,7 @@ function spxRoar(f) {
   const ZX = clamp(f.ox ?? HX, 60, W - 60);
   // 声浪（10-25 夜用户：「张飞喝退太像火，修改下颜色和形状为声波？有点像街霸里面的波动拳」）：ChatGPT 画的一团声浪（img/fx_shout.png，白金芯、暗红墨边，不是火），
   // 从张飞身上往前冲出去、越冲越大再淡掉，后面跟一道小一点的回声；打到的人只扬尘、不着火。没有画稿时照旧用下面的地火
-  if (ready(IMG.fx_shout)) { G.fx.push({ k: 'shout', t: 0, dur: .72, x: ZX, y: WALL_Y - 30, s: kR }); G.fx.push({ k: 'shout', t: -.12, dur: .6, x: ZX, y: WALL_Y - 30, s: kR * .7 });
+  if (ready(IMG.fx_shout)) { G.fx.push({ k: 'shout', t: 0, dur: .72, x: W / 2, y: WALL_Y - 30, s: kR }); G.fx.push({ k: 'shout', t: -.12, dur: .6, x: W / 2, y: WALL_Y - 30, s: kR * .7 });
     for (const h of (f.hits || []).slice(0, 8)) spxHeart(h[0], h[1], 9, 'dust', 'smoke', .62, { delay: .1 + (WALL_Y - h[1]) / f.R * .22, bits: .3, count: 3 });
     spxDim(.36); punch(ZX, WALL_Y - 80, .05); G.freeze = Math.max(G.freeze || 0, .06); return; }
   if (ML) { ML.fx.roar(ZX, WALL_Y - 26); setTimeout(() => ML && ML.fx.fireWhip(ZX, WALL_Y - 10), 0); spxDim(.4); spxWash(ZX, WALL_Y - 40, 'fire', .45); punch(ZX, WALL_Y - 60, .05); G.freeze = Math.max(G.freeze || 0, .06); return; }   // 墨流层：火爆＋火丝
@@ -3454,7 +3454,14 @@ function drawFx(f) {
   else if (f.k === 'wave') drawWaveBanner(f);
   else if (f.k === 'shout') {                                                       // 张飞的声浪：往上冲、从小撑大、头尾淡
     const im = IMG.fx_shout, u = f.t / f.dur; if (u > 0 && ready(im)) { const tr = ease(Math.min(1, u * 1.3)), y = f.y - 250 * tr, k = (.5 + .9 * tr) * f.s, h = 150 * k, w = h * im.width / im.height, a = u < .1 ? u / .1 : u > .65 ? (1 - u) / .35 : 1;
-      ctx.save(); ctx.globalAlpha = a; ctx.drawImage(im, f.x - w / 2, y - h * .35, w, h); ctx.restore(); } }
+      // 10-28 用户：「移到中间，加上光芒闪烁，不要静态，而是流动的」——放屏幕正中；按横条切开、每条左右波动着画（像气流在扭），后面一团金光、上面再叠一遍提亮闪烁
+      const x0 = f.x - w / 2, y0 = y - h * .35, fl = .55 + .45 * Math.sin(f.t * 47) * Math.sin(f.t * 23 + 1);
+      ctx.save(); ctx.globalAlpha = a * (.45 + .35 * fl); const g = ctx.createRadialGradient(f.x, y0 + h * .4, 4, f.x, y0 + h * .4, w * .7); g.addColorStop(0, 'rgba(255,235,170,.9)'); g.addColorStop(.5, 'rgba(255,170,80,.35)'); g.addColorStop(1, 'rgba(255,150,60,0)');
+      ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(f.x - w, y0 - h * .2, w * 2, h * 1.4); ctx.restore();
+      const N = 28, sh = im.height / N, dh = h / N;
+      for (const [mode, al] of [['source-over', a], ['lighter', a * .35 * fl]]) { ctx.save(); ctx.globalCompositeOperation = mode; ctx.globalAlpha = al;
+        for (let i = 0; i < N; i++) { const dx = Math.sin(i * .55 - f.t * 18) * 6 * k * (1 - i / N * .5); ctx.drawImage(im, 0, i * sh, im.width, sh + 1, x0 + dx, y0 + i * dh, w, dh + 1); }
+        ctx.restore(); } } }
   else if (f.k === 'banner') {                                                    // 事件横幅（10-26 换成和换波横幅一样的漆黑描金带，大字砸进来，副标题一行金字）
     const u = f.t / 2.6, inU = Math.min(1, f.t / .18), out = u > .8 ? (u - .8) / .2 : 0, y = 250, bw = (W - 16) * ease(inU), x0 = (W - bw) / 2;
     const g = ctx.createLinearGradient(0, y - 40, 0, y + 40); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.2, 'rgba(22,16,12,.9)'); g.addColorStop(.8, 'rgba(22,16,12,.9)'); g.addColorStop(1, 'rgba(0,0,0,0)');
