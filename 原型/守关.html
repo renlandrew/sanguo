@@ -20,10 +20,11 @@
 // 杀敌攒军功、升级三选一战法，守住城门过关。规则、数值、关卡见 ../设计/方案初稿.md「守关」一节。
 // 调试：window.__sg（start、sim、auto、turbo）。
 (() => {
+// 10-28 用户：加载完进主页底栏图标还没出来——浏览器拿到图后还要解码，第一次画会空着；所以等每张图 decode() 完才算好
 // 加载页（10-27 用户：「做一个加载页面，全部加载完才进入游戏界面」）：开头这段时间里 new 出来的图都记下来，全部好了（或坏了）才进主页；最多等 30 秒
-const LOADQ = [], _Img = window.Image; window.Image = function (...a) { const im = new _Img(...a); if (!LOADED) LOADQ.push(im); return im; };
+const LOADQ = [], _Img = window.Image; window.Image = function (...a) { const im = new _Img(...a); if (!LOADED) { LOADQ.push(im); im.addEventListener('load', () => (im.decode ? im.decode() : Promise.resolve()).catch(() => {}).then(() => { im._ok = 1; })); im.addEventListener('error', () => { im._ok = 1; }); } return im; };
 let LOADED = false; const LOAD_T0 = performance.now(); let loadShown = 0;
-const loadFrac = () => LOADQ.length ? LOADQ.filter(im => im.complete).length / LOADQ.length : 0;
+const loadFrac = () => LOADQ.length ? LOADQ.filter(im => im._ok).length / LOADQ.length : 0;
 'use strict';
 const W = 360, H = 640, TOP = 78, WALL_Y = 488, HX = 180, GY = 532, SLOT_Y = 558, DT = 1 / 60;
 const DUEL_Y = 250;                                    // 斗将时敌将站的位置
