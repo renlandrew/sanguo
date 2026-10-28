@@ -3957,7 +3957,7 @@ function drawStory() {
   // 对话框
   const bx = 10, by = 482, bw = W - 20, bh = 132; plate(bx, by, bw, bh);
   if (who) { const [nm, col] = SPEAK[who]; if (ready(IMG.ui_plaque_dark)) ctx.drawImage(IMG.ui_plaque_dark, bx + 8, by - 16, 112, 112 * 122 / 600); uiText(nm, bx + 64, by - 16 + 112 * 61 / 600, fitSize(nm, 15, 70), col, 'center', FONT, { lw: 3 }); }
-  const lines = cardLines(text, 19, 4), shown = Math.floor((t - STP.t0) * 30); let left = shown;
+  const lines = fitLines(text, bw - 40, 16, PLAIN), shown = Math.floor((t - STP.t0) * 30); let left = shown;
   lines.forEach((ln, i) => { const cs = [...ln], part = cs.slice(0, Math.max(0, left)).join(''); left -= cs.length; if (part) uiText(part, bx + 20, by + 34 + i * 24, 16, who ? UIC.cream : 'rgba(246,210,122,.95)', 'left', PLAIN, { lw: 3 }); });
   const allIn = shown >= [...text].length && !storyBusy(); if (allIn) uiText('点一下继续', bx + bw - 14, by + bh - 14, 10, `rgba(244,230,196,${.35 + .35 * Math.sin(t * 4)})`, 'right', PLAIN, { stroke: false });
   /* 10-26 用户圈了对话框左下角「10 / 31」：「不要这个」——不报第几句 */
@@ -4216,6 +4216,20 @@ function drawItemIcon(k, cx, cy, s) {
   ctx.fillStyle = ITEM_C[k] || UIC.gold; rr(cx - s * .35, cy - s * .35, s * .7, s * .7, 5); ctx.fill(); uiText(k[0], cx, cy + 1, s * .4, '#2a1a0e', 'center', FONT, { stroke: false });
 }
 // 卡上的说明按字数断行：标点、「%」、「秒」这种不放行首，挪到上一行末尾；超出行数最后一行加省略号
+// 按实际字宽断行（10-28 用户截图：「练兵可以……我们在后面……」那行「……」超出对话框——原来按每行 19 个字数，标点不能放行首就硬塞在行尾）：
+// 放不下就换行；下一个字是不能放行首的标点（，。……」等）时，把这一行最后一个字带到下一行，不往行尾硬塞
+function fitLines(t, maxW, size, font) {
+  ctx.font = `${size}px ${font}`; const out = []; let cur = '';
+  const noHead = ch => /[，。、；：%）」』！？…—]/.test(ch);
+  for (const ch of t) {
+    if (cur && ctx.measureText(cur + ch).width > maxW) {
+      if (noHead(ch) && cur.length > 1) { const cs = [...cur]; let k = cs.length - 1; while (k > 1 && noHead(cs[k])) k--; out.push(cs.slice(0, k).join('')); cur = cs.slice(k).join(''); }
+      else { out.push(cur); cur = ''; }
+    }
+    cur += ch;
+  }
+  if (cur) out.push(cur); return out;
+}
 function cardLines(t, per, maxL) {
   const out = []; let cur = '';
   for (const ch of t) { if (cur.length >= per && !/[，。、；：%）」』！？…]/.test(ch)) { out.push(cur); cur = ''; } cur += ch; }
