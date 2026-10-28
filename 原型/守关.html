@@ -2774,11 +2774,9 @@ function drawScorch() {
   for (const d of G.scorch || []) {
     const a = clamp(1 - d.t / 14, 0, 1), ember = clamp(1 - d.t / 1.1, 0, 1); ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.rot); ctx.lineCap = ctx.lineJoin = 'round';
     const path = (m) => { ctx.beginPath(); d.top.forEach(([x, y], i) => i ? ctx.lineTo(x, y * m) : ctx.moveTo(x, y * m)); for (let i = d.bot.length - 1; i >= 0; i--) ctx.lineTo(d.bot[i][0], d.bot[i][1] * m); ctx.closePath(); };
-    path(1.9); ctx.fillStyle = `rgba(30,16,8,${.45 * a})`; ctx.fill();                       // 外圈烧黄的地皮
+    // 10-28 用户：「假，去掉阴影」——不要外圈的烧黄地皮和两侧分叉，只留裂口本身
     path(1); ctx.fillStyle = `rgba(8,4,2,${.95 * a})`; ctx.fill();                           // 裂口本身，焦黑
     if (ember > 0) { path(.35); ctx.fillStyle = `rgba(255,${140 + 80 * ember | 0},50,${ember})`; ctx.fill(); }   // 刚斩开时缝里透红
-    for (const c of d.cracks) { ctx.beginPath(); c.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.strokeStyle = `rgba(10,5,2,${.8 * a})`; ctx.lineWidth = 1.6; ctx.stroke();
-      if (ember > 0) { ctx.strokeStyle = `rgba(255,170,60,${ember * .8})`; ctx.lineWidth = .8; ctx.stroke(); } }
     ctx.restore(); }
 }
 function drawCross(f) {
