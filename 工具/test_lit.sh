@@ -7,13 +7,13 @@
 cd "$(dirname "$0")/.."; CN="${1:-黄巾兵}"; B=/Applications/Blender.app/Contents/MacOS/Blender
 G="美术/$CN/v2/动作/animation_glb_url.glb"; [ -f "$G" ] || { echo "没找到 $G"; exit 1; }
 T=$(mktemp -d); W="wpn=spear ax=x 'carry={\"Run_02\": [0.3, -0.2, 1]}' scale=2.8 only=Run_02"
-for v in "A light=studio size=256" "B light=lit size=512 key=4.5 rim=3.5 amb=.25" "C light=lit size=512 key=5.5 rim=5 amb=.12"; do set -- $v; k=$1; shift
+for v in "A light=studio size=256" "B light=lit size=512 key=1.8 rim=2.2 amb=.15" "C light=lit size=512 key=2.8 rim=4 amb=.05"; do set -- $v; k=$1; shift
   eval "$B -b -P 工具/blender/render_frames.py -- \"$G\" \"$T/$k\" n=8 $* $W" 2>&1 | grep -E "渲完|rror" ; done
 python3 - "$T" "美术/对比_立体化_$CN.png" <<'PY'
 import sys, os
 from PIL import Image, ImageDraw
 T, out = sys.argv[1], sys.argv[2]; rows = []
-for k, name in (('A', 'A 现在（未调色）'), ('B', 'B 真光照 512'), ('C', 'C 真光照 512 更硬')):
+for k, name in (('A', 'A 现在（未调色）'), ('B', 'B 真光照 柔和'), ('C', 'C 真光照 对比强')):
     fs = sorted(f for f in os.listdir(os.path.join(T, k)) if f.endswith('.png'))[:4]
     ims = [Image.open(os.path.join(T, k, f)).convert('RGBA').resize((256, 256)) for f in fs]
     row = Image.new('RGBA', (256 * len(ims), 290), (196, 170, 120, 255)); d = ImageDraw.Draw(row)

@@ -118,7 +118,11 @@ if opt.get('light') == 'lit':
     lamp('rim', 'SUN', float(opt.get('rim', 2.4)), (-120, 0, 160), (.85, .9, 1))             # 轮廓光：背后上方，冷，勾出边
     w = sc.world or bpy.data.worlds.new('w'); sc.world = w; w.use_nodes = True
     bg = w.node_tree.nodes.get('Background'); bg.inputs[0].default_value = (.55, .52, .48, 1); bg.inputs[1].default_value = float(opt.get('amb', .6))   # 天光补暗面
-    sc.view_settings.view_transform = 'Standard'
+    for vt in ('AgX', 'Filmic'):                                                 # 亮部渐变不截断（Standard 一过曝就成一片平，10-28 第一轮对比 B、C 看不出差别）
+        try: sc.view_settings.view_transform = vt; break
+        except TypeError: pass
+    try: sc.view_settings.look = opt.get('look', 'AgX - Medium High Contrast' if sc.view_settings.view_transform == 'AgX' else 'Medium High Contrast')
+    except TypeError: pass
 else:
     sc.render.engine = 'BLENDER_WORKBENCH'
     sh = sc.display.shading; sh.light = 'STUDIO' if opt.get('light') == 'studio' else 'FLAT';   # light=studio：有明暗体积（10-26 去水墨）

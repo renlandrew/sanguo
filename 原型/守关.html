@@ -1137,6 +1137,7 @@ function step(dt) {
   G.vt = (G.vt || 0) + dt;
   G.fx = G.fx.filter(f => f.t < (f.dur || (f.k === 'banner' ? 2.6 : f.k === 'txt' ? 1.1 : 1.2)));
   for (const d of G.decals) d.t += dt;
+  if (G.scorch) { for (const d of G.scorch) d.t += dt; G.scorch = G.scorch.filter(d => d.t < 14); }
   stepParts(dt);
   if (G.shake > 0) G.shake -= dt;
   if (G.freeze > 0) { G.freeze -= dt; return; }
@@ -1767,6 +1768,7 @@ function renderScreen() {
   if (pt < .35) { const k = 1 + pu.k * (pt < .06 ? pt / .06 : Math.pow(1 - (pt - .06) / .29, 2)); ctx.translate(pu.x, pu.y); ctx.scale(k, k); ctx.translate(-pu.x, -pu.y); }
   drawBg();
   { const mk = mapKey(G.lv.map); if (MAPL[mk] && !ready(IMG['bg_' + mk])) ctx.drawImage(MAPL[mk], 0, 0, W, H); }
+  drawScorch();
   for (const d of G.decals) { const a = .22 * clamp(1 - d.t / 30, 0, 1); if (a <= 0) continue; ctx.globalAlpha = a; const sz = 40 * d.s; ctx.drawImage(BLOTS[d.i], d.x - sz / 2, d.y - sz * .35, sz, sz * .7); }
   ctx.globalAlpha = 1;
   if (G.st.jum) drawJum();
@@ -2759,8 +2761,25 @@ function drawSword(s) {
   ctx.restore();
 }
 // 双股剑命中：青、金两道剑痕交叉划开、再变细收回，桃花瓣爆开；砍中晕住的（破绽）更大，金星四溅
+// 双股剑命中：敌人脚下一块焦黑烧痕，几道裂纹透着余火（余火 1 秒内熄，焦痕 14 秒淡完）；一次命中只留一块
+function scorch(f) {
+  if (f.scorched || !G) return; f.scorched = true; G.scorch = G.scorch || []; const s = f.crit ? 1.4 : 1;
+  const cracks = Array.from({ length: 5 }, () => { const a = VR(0, 6.283), L = VR(16, 30) * s; let x = 0, y = 0; const pts = [[0, 0]]; for (let k = 1; k <= 4; k++) { x += Math.cos(a + VR(-.5, .5)) * L / 4; y += Math.sin(a + VR(-.5, .5)) * L / 4 * .45; pts.push([x, y]); } return pts; });
+  G.scorch.push({ x: f.x, y: f.y + 10, s, t: 0, cracks }); if (G.scorch.length > 24) G.scorch.shift();
+}
+function drawScorch() {
+  for (const d of G.scorch || []) {
+    const a = clamp(1 - d.t / 14, 0, 1), ember = clamp(1 - d.t / 1.1, 0, 1); ctx.save(); ctx.translate(d.x, d.y);
+    const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 30 * d.s); g.addColorStop(0, `rgba(18,10,6,${.75 * a})`); g.addColorStop(.6, `rgba(30,18,10,${.45 * a})`); g.addColorStop(1, 'rgba(30,18,10,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, 30 * d.s, 13 * d.s, 0, 0, 6.283); ctx.fill();
+    ctx.lineCap = 'round';
+    for (const c of d.cracks) { ctx.beginPath(); c.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+      ctx.strokeStyle = `rgba(12,6,3,${.8 * a})`; ctx.lineWidth = 2.2; ctx.stroke();
+      if (ember > 0) { ctx.strokeStyle = `rgba(255,${150 + 60 * ember | 0},60,${ember})`; ctx.lineWidth = 1.2; ctx.stroke(); } }
+    ctx.restore(); }
+}
 function drawCross(f) {
-  const u = f.t / .5; if (u > 1) return; const sc = f.crit ? 1.55 : 1, p = ease(f.t / .07), shrink = clamp((f.t - .1) / .4, 0, 1);
+  scorch(f); const u = f.t / .5; if (u > 1) return; const sc = (f.crit ? 1.55 : 1) * 1.5, p = ease(f.t / .07), shrink = clamp((f.t - .1) / .4, 0, 1);
   if (!f.boom) { f.boom = true; burst('petal', f.x, f.y, f.crit ? 10 : 6, 120 * sc, { life: .9, s: 3, g: 40, drag: 3 }); if (f.crit) burst('spark', f.x, f.y, 10, 220, { life: .4, s: 2.4 }); }
   for (const [k, c, hi] of [[-1, AZ_MID, AZ_HI], [1, GOLD, GOLD_HI]]) {
     const L = 17 * sc, a = k * .78 + (f.rot || 0), x0 = f.x - Math.cos(a) * L, y0 = f.y - Math.sin(a) * L, x1 = f.x + Math.cos(a) * L * (2 * p - 1), y1 = f.y + Math.sin(a) * L * (2 * p - 1);
@@ -3237,7 +3256,7 @@ function spxSword(s) {
 }
 // 双股剑命中：青、金两道剑气交叉斩下（雾港 Twin），一笔墨垫底；砍中晕住的更大，金色星爆
 function spxCross(f) {
-  const sc = f.crit ? 1.4 : 1, rot = f.rot || 0;
+  const sc = (f.crit ? 1.4 : 1) * 1.5, rot = f.rot || 0; scorch(f);   // 10-28 用户：「这个地裂，再大些，地下焦黑些」——剑光放大一半，脚下留焦痕
   if (hasPaint('sword')) {                                                                       // 10-25 用户指着剑16 的金色扇形光：「这个太丑了」——换成两道 GPT 剑气交叉斩下，再炸开
     [-1, 1].forEach((k, j) => { const a = k * .78 + rot, tx = Math.sin(a), ty = -Math.cos(a);
       spxPaintBody('sword', f.x, f.y, 74 * sc, a, .36, { pop: .55, delay: j * .05, boost: .45, offset: [-tx * 34, -ty * 34], drift: [tx * 70, ty * 70] }); });
