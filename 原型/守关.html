@@ -1876,22 +1876,23 @@ const MOVE_ANIM = { heavy: ['heavy'], combo: ['combo', 'heavy'], rush: ['rush', 
 // 城墙外一排小图标（10-28 用户：「滚木，弩，挡马那些……直接显示在城墙外即可，小一些，不要挡视野」）：
 // 这一关拿到的军械、城防战法（滚木、连弩、拒马、绊马索、破阵弩……）和自动的赤帻、火把、举盾。画在敌人底下，敌人走过来会盖住它们；用掉了（滚木、连弩一关一次）变灰
 function drawWallProps() {
-  const items = [];
-  for (const p of PERKS) if (G.perks[p.id] && !p.gen && !p.combo && ready(IMG['ui_ico_' + p.id])) items.push({ im: IMG['ui_ico_' + p.id], n: G.perks[p.id], used: (p.id === 'log' && G.logUsed) || (p.id === 'nu' && G.nuUsed) });
-  if (G.st.logs > 0 && !G.perks.log && ready(IMG.ui_ico_log)) items.push({ im: IMG.ui_ico_log, n: G.st.logs, used: G.logUsed });   // 关卡送的（第一关开局送一层滚木）
-  if (G.st.nu > 0 && !G.perks.nu && ready(IMG.ui_ico_nu)) items.push({ im: IMG.ui_ico_nu, n: G.st.nu, used: G.nuUsed });
-  if (G.RU.night) items.push({ im: IMG.ui_ico_fire, n: G.lightN, used: G.lightN <= 0 });
-  if (G.RU.decoy) items.push({ cloth: true, n: G.decoyN || 0, used: !G.decoyN });
-  if (G.duel) items.push({ shield: true, on: G.shieldT > 0 });
+  const items = []; G.propRects = [];
+  for (const p of PERKS) if (G.perks[p.id] && !p.gen && !p.combo && ready(IMG['ui_ico_' + p.id])) items.push({ im: IMG['ui_ico_' + p.id], n: G.perks[p.id], used: (p.id === 'log' && G.logUsed) || (p.id === 'nu' && G.nuUsed), name: p.name, desc: p.desc });
+  if (G.st.logs > 0 && !G.perks.log && ready(IMG.ui_ico_log)) items.push({ im: IMG.ui_ico_log, n: G.st.logs, used: G.logUsed, name: '滚木', desc: '敌人挤成一堆时自己滚下去，那一列碾平（一关一次）' });   // 关卡送的（第一关开局送一层滚木）
+  if (G.st.nu > 0 && !G.perks.nu && ready(IMG.ui_ico_nu)) items.push({ im: IMG.ui_ico_nu, n: G.st.nu, used: G.nuUsed, name: '连弩', desc: '敌人最密时自己放，一列万箭齐发（一关一次）' });
+  if (G.RU.night) items.push({ im: IMG.ui_ico_fire, n: G.lightN, used: G.lightN <= 0, name: '火把', desc: '自己插到敌人多的地方，照亮一片 20 秒' });
+  if (G.RU.decoy) items.push({ cloth: true, n: G.decoyN || 0, used: !G.decoyN, name: '赤帻', desc: '城前压了一片时自己扔下去，附近敌人 5 秒都冲它去' });
+  if (G.duel) items.push({ shield: true, on: G.shieldT > 0, name: '自动举盾', desc: '敌将普通的重招自动挡下；无双挡不住，要一喝喝断' });
   const sz = 22, gap = 4, y = WALL_Y - 20 - sz; let x = W - 50 - sz;   // 贴在城垛正上方、暂停钮左边（10-28 用户框的位置，又往下挪了一截）
   for (const it of items) {
-    ctx.save(); ctx.globalAlpha = it.used ? .3 : .75;
+    ctx.save(); ctx.globalAlpha = it.used ? .4 : 1;   // 10-28 用户：「这些图标没必要虚化，清晰点」
     if (it.on) { ctx.shadowColor = 'rgba(255,220,120,.95)'; ctx.shadowBlur = 14; }
     if (it.im) ctx.drawImage(it.im, x, y, sz, sz);
     else if (it.shield) { if (hasProp('shield')) drawProp('shield', x + sz / 2, y + sz, sz, it.on ? 1 : .85); else { ctx.fillStyle = '#6b5236'; ctx.beginPath(); ctx.arc(x + sz / 2, y + sz / 2, sz / 2, 0, 6.283); ctx.fill(); } }
     else if (it.cloth) { ctx.fillStyle = '#d0301f'; ctx.beginPath(); ctx.moveTo(x + 4, y + 4); ctx.quadraticCurveTo(x + sz, y + 6, x + sz / 2, y + sz - 2); ctx.closePath(); ctx.fill(); }
     ctx.restore();
     if (it.n > 1) uiText('×' + it.n, x + sz - 2, y + sz - 3, 9, UIC.cream, 'center', PLAIN, { lw: 2 });
+    const ix = x, info = it; hit(x - 2, y - 2, sz + 4, sz + 4, () => { G.propTip = { ...info, x: ix + sz / 2, y, t0: uiNow() }; }); (G.propRects = G.propRects || []).push([x - 2, y - 2, sz + 4, sz + 4, it]);
     x -= sz + gap;
   }
 }
@@ -3435,7 +3436,7 @@ function drawWaveBanner(f) {
   ctx.save(); ctx.globalAlpha = 1 - out;
   if (ready(IMG.ui_banner)) {                                                     // 画出来的横幅（10-25）：同上从中间露出来；最后一波漆面透一层朱红
     const bx = 10 + out * 90, k = 60 / 89; ctx.save(); ctx.beginPath(); ctx.rect(x0, y - 34, bw, 68); ctx.clip(); draw9(IMG.ui_banner, bx, y - 30, W - 20, 60, 90, 90, 0, 0, k);
-    if (f.last) { ctx.globalAlpha *= .55; ctx.fillStyle = '#9a180e'; ctx.fillRect(bx + 90 * k, y - 24, W - 20 - 180 * k, 42); } ctx.restore();
+    if (f.last) { ctx.globalAlpha *= .55; ctx.fillStyle = '#9a180e'; ctx.fillRect(bx + 90 * k, y - 24, W - 20 - 180 * k, 48); }   // 上下对称铺满漆面（10-28 用户：「这个红色不到头」——原来高 42、下边短一截） ctx.restore();
   }
   else {
   ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + 26, y - 26); ctx.lineTo(x0 + bw - 26, y - 26); ctx.lineTo(x0 + bw, y); ctx.lineTo(x0 + bw - 26, y + 26); ctx.lineTo(x0 + 26, y + 26); ctx.closePath(); ctx.fill();
@@ -3694,6 +3695,8 @@ function drawBattleBtns() {
     uiText(on ? '×2' : '×1', px, sy + 1, 12, on ? UIC.gold2 : UIC.cream, 'center', PLAIN, { lw: 3 }); }
   const over = G.fx.some(f => f.k === 'skname' && f.t < f.dur && Math.abs(f.x - 32) < 45);              // 最左那员武将出招时，竖排招名的旗带正好落在这颗按钮上：按钮先淡下去让字露出来
   drawAmbushBtn();
+  if (G.propTip && (G.propTip.hover || uiNow() - G.propTip.t0 < 2.2)) { const T = G.propTip, lines = fitLines(T.desc, 150, 11, PLAIN), bw = 170, bh = 26 + lines.length * 14, bx = clamp(T.x - bw / 2, 6, W - bw - 6), by = T.y - bh - 8;   // 军械小图标的说明（点一下 / 鼠标停住）
+    uiPanel(bx, by, bw, bh, { r: 6, alpha: .95 }); uiText(T.name, bx + 10, by + 13, 13, UIC.gold2, 'left', FONT, { stroke: false }); lines.forEach((ln, i) => uiText(ln, bx + 10, by + 30 + i * 14, 11, UIC.cream, 'left', PLAIN, { stroke: false })); }
   ctx.save(); if (over) ctx.globalAlpha = .22; roundBtn(32, 402, 20, '功', '军功', () => { G.panel = true; G.panelAdv = null; MENU.panelT = uiNow(); }, false); ctx.restore();
 }
 function drawPause() {
@@ -4867,6 +4870,11 @@ function drawLevels() {
 cv.addEventListener('pointermove', ev => { if (ev.pointerType !== 'mouse') return; const r = cv.getBoundingClientRect(); MOUSE = { x: (ev.clientX - r.left) / S, y: (ev.clientY - r.top) / S }; });   // 悬停说明只给鼠标
 cv.addEventListener('pointerleave', () => { MOUSE = null; });
 for (const ev of ['pointerup', 'pointercancel']) cv.addEventListener(ev, e => { const P = PRESS; if (!P) return; PRESS = null; clearTimeout(P.tm); if (e.type === 'pointerup') { sfx('tap'); P.h.fn(); } });
+cv.addEventListener('pointermove', ev => {   // 电脑上鼠标停在城墙军械图标上：显示说明
+  if (ev.pointerType !== 'mouse' || !G || !G.propRects) return; const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) / S, y = (ev.clientY - r.top) / S;
+  const h = G.propRects.find(([px, py, w, hh]) => x >= px && x <= px + w && y >= py && y <= py + hh);
+  if (h) G.propTip = { ...h[4], x: h[0] + h[2] / 2, y: h[1] + 2, t0: uiNow(), hover: true }; else if (G.propTip && G.propTip.hover) G.propTip = null;
+});
 cv.addEventListener('pointerdown', ev => {
   if (G && G.ult) return;
   const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) / S, y = (ev.clientY - r.top) / S;
