@@ -310,6 +310,8 @@ const freshStats = () => ({ n: { guan: 0, zhang: 0, liu: 0 }, spd: { guan: 1, zh
 // 连携要指定的两项都有（need 每组里有一个就行）才出现，凑齐了下一次晋升一定给；桃园同心要先有一个连携、再有第三位兄弟线上的战法
 // （10-25 夜一关最多晋升五次，原来「两个连携」要七次才凑得齐，改成这样正好五次：两项、连携、第三人一项、桃园同心）。
 const PERKS = [
+  // 邹靖的坑卡（10-28 用户：「邹靖专荐坑卡」）：只在邹靖当军师时混进三选一、他一定荐它；普攻快一点，可冲出城门城防立刻 -25，黄巾被激怒走快两成
+  { id: 'xianchong', trap: true, name: '先冲！', desc: '邹靖压箱底：普攻 +20%；可城门一开冲出去，城防立刻 -25，黄巾被激怒走快两成', max: 2, fn: s => { s.atkMul *= 1.2; s.foeSpd = (s.foeSpd || 1) * 1.2; G.wall = Math.max(1, G.wall - 25); } },
   { id: 'nu', name: '连弩', desc: '一关一次：叠一层射一列，两层射半场，三层万箭齐发、压住弓手术士', max: 3, gift: true, fn: s => { s.nu = (s.nu || 0) + 1; } },   // 1-16 开局送；只在送过的关里还能再选
   // 关羽：刀气穿透、青龙斩清群、斩将
   { id: 'guanWave', gen: 'guan', name: '拖刀', desc: '关羽的刀气多一道，扇形推出去', max: 2, fn: s => s.n.guan++ },
@@ -967,7 +969,7 @@ const owned = id => (G.perks[id] || 0) > 0;
 const unlocked = p => (!p.need || p.need.every(g => g.some(owned))) && (!p.ok || p.ok());
 function availPerks() {
   const has = id => G.order.includes(id);
-  return PERKS.filter(p => (G.perks[p.id] || 0) < p.max && !(p.id === 'log' && G.logUsed) && !(p.id === 'nu' && G.nuUsed) && (!p.gift || G.perks[p.id]) && (!p.gen || has(p.gen)) && (!p.combo || p.combo.every(has)) && (!p.sk || p.sk.every(knows)) && (!p.anySk || G.order.some(id => id && knows(id))) && unlocked(p) && (p.id !== 'mend' || G.wall < G.wallMax * .8));
+  return PERKS.filter(p => !p.trap && (G.perks[p.id] || 0) < p.max && !(p.id === 'log' && G.logUsed) && !(p.id === 'nu' && G.nuUsed) && (!p.gift || G.perks[p.id]) && (!p.gen || has(p.gen)) && (!p.combo || p.combo.every(has)) && (!p.sk || p.sk.every(knows)) && (!p.anySk || G.order.some(id => id && knows(id))) && unlocked(p) && (p.id !== 'mend' || G.wall < G.wallMax * .8));
 }
 function choose3() {
   const ok = availPerks(), out = [], combo = ok.filter(p => p.combo);
@@ -976,6 +978,7 @@ function choose3() {
   if (cc.length) out.push(cc[Math.floor(rnd() * cc.length)]);
   const w = p => (p.need ? 2 : 1) * (1 + 1.5 * PERKS.filter(q => q.gen && q.gen === p.gen && owned(q.id)).length) * (p.id === 'mend' ? 1 + 3 * (1 - G.wall / G.wallMax) : 1);
   const pool = ok.filter(p => !out.includes(p));
+  const trap = PERKS.find(p => p.trap); if (counselNow()[0] === 'zoujing' && (G.perks[trap.id] || 0) < trap.max) out.push(trap);   // 带邹靖：三张里固定一张「先冲！」
   while (out.length < 3 && pool.length) { let r = rnd() * pool.reduce((a, p) => a + w(p), 0), k = 0; while (k < pool.length - 1 && (r -= w(pool[k])) > 0) k++; out.push(pool.splice(k, 1)[0]); }
   return out;
 }
@@ -983,6 +986,7 @@ function choose3() {
 // __sg.naive 时随手点（看乱选能不能过）
 const BUILD = ['zhangRoar', 'guanBlade', 'zhangDaze', 'liuSword', 'order', 'guanExec', 'liuJi', 'zhangRoar', 'guanBlade', 'liuSword', 'zhangSpear', 'guanWave', 'liuQi', 'order', 'zhangWan', 'guanBoss', 'jum', 'fire', 'log', 'liuRen', 'zhangDaze', 'guanBlade', 'order'];
 function perkScore(p) {
+  if (p.trap) return -999;
   const L = G.lv, RU = G.RU;
   if (p.id === 'mend') return G.wall < G.wallMax * .6 ? 1000 : -1;
   if (p.combo) return 900;
@@ -1003,6 +1007,7 @@ const PERK_KIND = { guanWave: '攻', guanBlade: '攻', guanBoss: '攻', guanExec
 // 这张战法这时候值多少、为什么（「会搭配」的机器人照这个选，也是军师心里那杆秤的「真值」）
 function perkEval(p, I = foeIntel()) {
   const v0 = perkScore(p), why = (v, t) => ({ v, why: t });
+  if (p.trap) return why(-400, '冲出城？黄巾正等着呢');
   if (p.id === 'pozhen') return I.shield >= 4 ? why(830 + I.shield, `后面还有 ${I.shield} 个举盾的，刀气剑气打他们只有一半`) : why(-50, '这关没有举盾的兵，用不上');
   if (p.id === 'banma') return I.cav >= 4 ? why(830 + I.cav, `后面还有 ${I.cav} 骑要冲过来，不绊马打骑兵只有一半`) : why(-50, '这关没有骑兵，用不上');
   if (p.id === 'jinshu') return I.healer >= 2 ? why(830 + I.healer * 4, `${I.healer} 个术士会给兵回血加速`) : why(-50, '这关没有术士，用不上');
@@ -1051,7 +1056,7 @@ const SHALLOW = ['这张看着最厉害', '数字最大，选它准没错', '听
 function counselAdvise(list) {
   const [ck, C] = counselNow(), I = foeIntel(), sd = (100 - C.zhi) * 6;
   const sc = list.map(p => { const e = perkEval(p, I), k = PERK_KIND[p.id], seen = counselSees(C, p); return { p, e, v: e.v + (k === C.bias ? 140 : 0) - (seen >= 2 ? (100 - C.zhi) * 7 : 0) + VR(-1, 1) * sd * seen }; });   // 盲点：不光看不准，还老低估；智力越低低估得越狠（10-26 加重：邹靖 -413、简雍 -196、卢植 -84）
-  const truth = sc.reduce((a, b) => b.e.v > a.e.v ? b : a), best = C.wrong ? sc.reduce((a, b) => b.e.v < a.e.v ? b : a) : sc.reduce((a, b) => b.v > a.v ? b : a), right = best === truth;   // wrong：荐真值最低的那张
+  const trapC = sc.find(x => x.p.trap), truth = sc.filter(x => !x.p.trap).reduce((a, b) => b.e.v > a.e.v ? b : a), best = C.wrong && trapC ? trapC : C.wrong ? sc.reduce((a, b) => b.e.v < a.e.v ? b : a) : sc.reduce((a, b) => b.v > a.v ? b : a), right = best === truth;   // wrong：荐真值最低的那张
   let why = C.zhi < 55 && !(counselSees(C, best.p) < .6) ? SHALLOW[Math.floor(VR(0, SHALLOW.length))] : right || best.e.v > 0 ? best.e.why : '这张也能用';
   if (PERK_KIND[best.p.id] === C.bias && !right) why = { 攻: '打得狠才守得住', 守: '稳一点，先保城', 控: '先控住，再说打' }[C.bias] || why;
   return { ck, C, i: list.indexOf(best.p), why, right, ti: list.indexOf(truth.p) };
@@ -1197,7 +1202,7 @@ function step(dt) {
     e.onCart = false;
     const stopY = T.stopY ? T.stopY + e.jit : WALL_Y - 3;
     if (e.y < stopY) {
-      const v = T.spd * SPD_X * WALK(e) * 1.04 * depth(e.y) * (TUNE.spd || 1) * (G.st.jum && e.y > WALL_Y - 74 ? .5 : 1) * (e.hasteT > 0 ? 1.3 : 1) * (e.chargeT > 0 ? CHARGE.spd : 1) * (G.slowT > 0 ? .15 : 1) * (e.inTrench ? .5 : 1) * (G.RU.night && !seen(e) ? 1.3 : 1), ny = Math.min(stopY, e.y + v * dt);
+      const v = T.spd * SPD_X * WALK(e) * 1.04 * depth(e.y) * (TUNE.spd || 1) * (G.st.jum && e.y > WALL_Y - 74 ? .5 : 1) * (e.hasteT > 0 ? 1.3 : 1) * (G.st.foeSpd || 1) * (e.chargeT > 0 ? CHARGE.spd : 1) * (G.slowT > 0 ? .15 : 1) * (e.inTrench ? .5 : 1) * (G.RU.night && !seen(e) ? 1.3 : 1), ny = Math.min(stopY, e.y + v * dt);
       fan(e, ny - e.y); e.y = ny; e.f = (e.f + dt * v * .16) % 4; e.atk = false;
       if (T.zig) e.x = clamp(e.x + Math.sin(G.t * 3 + e.ph) * 55 * dt, 16, W - 16);          // 衙役乱跑
     } else if (T.shoot) {
@@ -3642,13 +3647,13 @@ function drawPick() {
       const bgc = ctx.createLinearGradient(0, ay, 0, ay + ah); bgc.addColorStop(0, '#3a2b1f'); bgc.addColorStop(1, '#120c08'); ctx.fillStyle = bgc; ctx.fillRect(ax, ay, aw, ah);
       if (who.length === 1 && ready(IMG[who[0]])) ctx.drawImage(IMG[who[0]], ax - 6, ay - 2, aw + 12, aw + 12);
       else if (who.length > 1) who.forEach((id, m) => { if (ready(IMG[id])) { const ww = aw / who.length + 20; ctx.drawImage(IMG[id], ax + m * (aw - ww) / (who.length - 1 || 1), ay, ww, ww * 1.08); } });
-      else { const ic = IMG['ui_ico_' + p.id]; if (ready(ic)) { const bw = aw - 10, bh = ah - 20, k = Math.min(bw / ic.width, bh / ic.height), iw = ic.width * k, ih = ic.height * k; ctx.drawImage(ic, ax + (aw - iw) / 2, ay + 4 + (bh - ih) / 2, iw, ih); } else uiText({ fire: '火', log: '木', jum: '拒', order: '令', mend: '墙', nu: '弩' }[p.id] || '械', ax + aw / 2, ay + ah / 2, 40, UIC.gold2, 'center'); }
+      else { const ic = IMG['ui_ico_' + p.id]; if (ready(ic)) { const bw = aw - 10, bh = ah - 20, k = Math.min(bw / ic.width, bh / ic.height), iw = ic.width * k, ih = ic.height * k; ctx.drawImage(ic, ax + (aw - iw) / 2, ay + 4 + (bh - ih) / 2, iw, ih); } else uiText({ fire: '火', log: '木', jum: '拒', order: '令', mend: '墙', nu: '弩', xianchong: '冲' }[p.id] || '械', ax + aw / 2, ay + ah / 2, 40, UIC.gold2, 'center'); }
       const fade = ctx.createLinearGradient(0, ay + ah - 30, 0, ay + ah); fade.addColorStop(0, 'rgba(18,12,8,0)'); fade.addColorStop(1, 'rgba(18,12,8,.9)'); ctx.fillStyle = fade; ctx.fillRect(ax, ay + ah - 30, aw, 30);
       ctx.restore();
       // 卡框（画的），没到时描金边
       if (ready(IMG.ui_card_tall)) ctx.drawImage(IMG.ui_card_tall, 0, 0, w, h); else { ctx.strokeStyle = special ? UIC.red2 : UIC.gold2; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(2, 2, w - 4, h - 4, 9); ctx.stroke(); }
       // 线标签、名字、说明
-      const tag = p.combo ? '连携' : p.need ? '绝技' : p.gen ? GEN[p.gen].name : '军械', n = G.perks[p.id] || 0;
+      const tag = p.trap ? '邹靖' : p.combo ? '连携' : p.need ? '绝技' : p.gen ? GEN[p.gen].name : '军械', n = G.perks[p.id] || 0;
       ctx.font = `10px ${PLAIN}`; const tw = ctx.measureText(tag).width + 12; ctx.fillStyle = 'rgba(10,6,4,.8)'; ctx.beginPath(); ctx.roundRect(w / 2 - tw / 2, ay + ah - 12, tw, 16, 8); ctx.fill(); ctx.strokeStyle = tc; ctx.lineWidth = 1; ctx.stroke();
       uiText(tag, w / 2, ay + ah - 4, 10, tc, 'center', PLAIN, { stroke: false });
       uiText(p.name, w / 2, ay + ah + 19, p.name.length > 4 ? 15 : 18, goldGrad(ay + ah + 20, 18), 'center', FONT, { lw: 4, glow: 'rgba(255,200,90,.4)', glowR: 6 });
