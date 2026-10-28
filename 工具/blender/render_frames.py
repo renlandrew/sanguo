@@ -1,5 +1,5 @@
 # 把一个带动作的 glb 按游戏视角渲成一帧帧透明 PNG（10-24）：Workbench 平涂 + 描边，水墨着色在 ink_post.py 里做。
-# 用法：Blender -b -P render_frames.py -- <glb> <输出目录> [n=8] [size=256] [wpn=spear|club|bow|blade|none] [ax=z] [only=动作1,动作2] [carry=JSON] [yaw=JSON] [scale=2.8]
+# 用法：Blender -b -P render_frames.py -- <glb> <输出目录> [n=8] [size=256] [light=flat|studio|lit（Eevee 真光照，见下）] [key=3.2 rim=2.4 amb=.6] [wpn=spear|club|bow|blade|none] [ax=z] [only=动作1,动作2] [carry=JSON] [yaw=JSON] [scale=2.8]
 #   wpn：程序做的兵器，长矛、棒挂右手，弓挂左手，大刀挂右手；saber 环首刀（右手，10-25 西凉兵）、axe 大斧（右手，飞熊军）
 #   shield=1：左手再挂一面圆盾（西凉兵），盾面朝前
 #   ax：兵器跟着手骨转时，兵器的长轴对着手骨的哪根轴（x/-x/y/-y/z/-z，每种兵器试一次定下来）
@@ -101,9 +101,28 @@ if SHIELD:              # 圆盾：直径 0.6 米的扁圆，中间一个铁泡�
 AXR = {'z': (0, 0, 0), '-z': (math.pi, 0, 0), 'x': (0, math.pi / 2, 0), '-x': (0, -math.pi / 2, 0), 'y': (-math.pi / 2, 0, 0), '-y': (math.pi / 2, 0, 0)}[AX]
 E = Euler(AXR).to_matrix().to_4x4()
 
-sc.render.engine = 'BLENDER_WORKBENCH'
-sh = sc.display.shading; sh.light = 'STUDIO' if opt.get('light') == 'studio' else 'FLAT';   # light=studio：有明暗体积（10-26 去水墨）
-sh.color_type = 'TEXTURE'; sh.show_object_outline = True; sh.object_outline_color = (.08, .07, .06)
+if opt.get('light') == 'lit':
+    # light=lit（10-28 用户：「黄巾军感觉有点像纸片，尤其是骑兵」）：Eevee 真光照——左上主光、背后轮廓光、天光补暗面，环境光遮蔽 + 软阴影，不描边；
+    # 平涂（Workbench）只有贴图颜色，侧面一片平，所以看着像纸片。Blender 4.2 起引擎叫 BLENDER_EEVEE_NEXT
+    for eng in ('BLENDER_EEVEE_NEXT', 'BLENDER_EEVEE'):
+        try: sc.render.engine = eng; break
+        except TypeError: pass
+    ee = sc.eevee
+    for k, v in (('use_gtao', True), ('gtao_distance', .4), ('use_soft_shadows', True), ('taa_render_samples', 32), ('use_shadows', True)):
+        if hasattr(ee, k): setattr(ee, k, v)
+    def lamp(name, kind, energy, rot, color=(1, 1, 1), size=None):
+        ld = bpy.data.lights.new(name, kind); ld.energy = energy; ld.color = color
+        if size is not None and hasattr(ld, 'angle'): ld.angle = size
+        ob = bpy.data.objects.new(name, ld); ob.rotation_euler = [math.radians(a) for a in rot]; sc.collection.objects.link(ob); return ob
+    lamp('key', 'SUN', float(opt.get('key', 3.2)), (50, -10, -35), (1, .96, .88), .15)       # 主光：左上前方，暖
+    lamp('rim', 'SUN', float(opt.get('rim', 2.4)), (-120, 0, 160), (.85, .9, 1))             # 轮廓光：背后上方，冷，勾出边
+    w = sc.world or bpy.data.worlds.new('w'); sc.world = w; w.use_nodes = True
+    bg = w.node_tree.nodes.get('Background'); bg.inputs[0].default_value = (.55, .52, .48, 1); bg.inputs[1].default_value = float(opt.get('amb', .6))   # 天光补暗面
+    sc.view_settings.view_transform = 'Standard'
+else:
+    sc.render.engine = 'BLENDER_WORKBENCH'
+    sh = sc.display.shading; sh.light = 'STUDIO' if opt.get('light') == 'studio' else 'FLAT';   # light=studio：有明暗体积（10-26 去水墨）
+    sh.color_type = 'TEXTURE'; sh.show_object_outline = True; sh.object_outline_color = (.08, .07, .06)
 sc.render.film_transparent = True; sc.render.resolution_x = sc.render.resolution_y = SIZE; sc.render.resolution_percentage = 100
 cd = bpy.data.cameras.new('cam'); cd.type = 'ORTHO'; cd.ortho_scale = OSCALE
 cam = bpy.data.objects.new('cam', cd); sc.collection.objects.link(cam); sc.camera = cam
