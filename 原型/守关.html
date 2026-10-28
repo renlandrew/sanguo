@@ -3615,7 +3615,7 @@ function drawTip() {
 // 卡框、卡背、军械图标是画出来的（img/ui_card_tall.png、ui_card_back.png、ui_ico_<战法>.png），武将战法用武将头像，连携露两张脸；
 // 连携、绝技的卡边一圈红金光一闪一闪；点一张，那张往上一抬、盖章，别的落下去，0.4 秒后回到战斗
 for (const k of ['ui_ambush_btn', 'ui_ambush_hide']) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.png' + BUST; }
-for (const k of ['ui_card_tall', 'ui_card_back', 'ui_ico_fire', 'ui_ico_log', 'ui_ico_jum', 'ui_ico_order', 'ui_ico_mend', 'ui_ico_nu', 'ui_ico_pozhen', 'ui_ico_banma', 'ui_ico_jinshu']) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.png' + BUST; }
+for (const k of ['ui_card_tall', 'ui_card_back', 'ui_ico_xianchong', 'ui_ico_fire', 'ui_ico_log', 'ui_ico_jum', 'ui_ico_order', 'ui_ico_mend', 'ui_ico_nu', 'ui_ico_pozhen', 'ui_ico_banma', 'ui_ico_jinshu']) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.png' + BUST; }
 function drawPick() {
   const P = G.pick; P.t0 ??= uiNow(); const t = uiNow() - P.t0, sel = P.sel;
   ctx.fillStyle = `rgba(8,5,4,${Math.min(.8, t * 3)})`; ctx.fillRect(0, 0, W, H);
@@ -4311,10 +4311,10 @@ function drawItemIcon(k, cx, cy, s) {
 // 放不下就换行；下一个字是不能放行首的标点（，。……」等）时，把这一行最后一个字带到下一行，不往行尾硬塞
 function fitLines(t, maxW, size, font) {
   ctx.font = `${size}px ${font}`; const out = []; let cur = '';
-  const noHead = ch => /[，。、；：%）」』！？…—]/.test(ch);
+  const noHead = ch => /[，。、；：%）」』！？…—\d]/.test(ch);   // 数字也不打头：「+15%」不拆成「+1」「5%」
   for (const ch of t) {
     if (cur && ctx.measureText(cur + ch).width > maxW) {
-      if (noHead(ch) && cur.length > 1) { const cs = [...cur]; let k = cs.length - 1; while (k > 1 && noHead(cs[k])) k--; out.push(cs.slice(0, k).join('')); cur = cs.slice(k).join(''); }
+      if ((noHead(ch) || (/[\d.%]/.test(ch) && /[+\-\d.]$/.test(cur))) && cur.length > 1) { const cs = [...cur]; let k = cs.length - 1; while (k > 1 && noHead(cs[k])) k--; out.push(cs.slice(0, k).join('')); cur = cs.slice(k).join(''); }
       else { out.push(cur); cur = ''; }
     }
     cur += ch;
