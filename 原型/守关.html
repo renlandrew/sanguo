@@ -1410,6 +1410,7 @@ function stepGenerals(dt, al) {
     return;
   }
   if (!al.some(e => e.y > HZ + 16)) return;
+  if (playerAuto()) { const i = nextCaster(); if (i >= 0 && G.t >= G.ready[i]) startCast(i); return; }   // 玩家按「自动」：谁先好谁先放
   for (let k = 0; k < NS; k++) { const i = (G.turn + k) % NS; if (G.order[i]) { G.turn = i; break; } }
   const i = G.turn, id = G.order[i];
   if (id && G.seal[i] > 0) { G.turn = (i + 1) % NS; return; }        // 被迷魂封住：跳过这一轮
@@ -1421,6 +1422,9 @@ function stepGenerals(dt, al) {
 }
 // 第一到三关照旧自动轮流出招（教学）；第四关起默认自己点牌，战场右边「自动」钮可以改回自动（记在 INV.autoCast）。机器人推演一律按自动轮流算，平衡不受影响
 const manualOn = () => G && !G.sim && !window.__sg.auto && !G.RU.casts && !G.autoCast;
+// 10-28 用户：「按自动时，似乎某些人的技能要等其他人1轮2轮才能开始自动？」——原来死板轮流，轮到的还在冷却，好了的人也得干等；三人冷却不一样长，快的常要等慢的一两轮。
+// 玩家的自动（含一到三关）改成谁先冷却好谁先放，同时好了按轮流顺序；机器人推演（G.sim、__sg.auto）仍按死板轮流，平衡表不受影响
+const playerAuto = () => G && !G.sim && !window.__sg.auto && !G.RU.casts && G.autoCast;
 function startCast(i) {
   const id = G.order[i];
   if (G.RU.casts) G.casts--;
@@ -1438,7 +1442,8 @@ function startCast(i) {
 function castSlot(i) { if (G.state !== 'play' || G.cast || !G.order[i] || !knows(G.order[i]) || G.t < G.ready[i] || G.seal[i] > 0 || G.casts <= 0) return; startCast(i); }
 // 机器人试玩时替玩家点：城前压了一片才放
 // 底栏金色小三角标的「下一个出招的」：从轮到的位置往后找第一个学会了招式、没被封的（10-26 用户：「这2个箭头乱闪」——没学招的每帧被跳过，G.turn 在几张牌间来回跳）；没人能出招就不标
-const nextCaster = () => { for (let k = 0; k < NS; k++) { const i = (G.turn + k) % NS; if (G.order[i] && knows(G.order[i]) && G.seal[i] <= 0) return i; } return -1; };
+const nextCaster = () => { if (playerAuto()) { let b = -1; for (let k = 0; k < NS; k++) { const i = (G.turn + k) % NS; if (G.order[i] && knows(G.order[i]) && G.seal[i] <= 0 && (b < 0 || G.ready[i] < G.ready[b])) b = i; } return b; }   // 自动：冷却最快好的那位
+  for (let k = 0; k < NS; k++) { const i = (G.turn + k) % NS; if (G.order[i] && knows(G.order[i]) && G.seal[i] <= 0) return i; } return -1; };
 function botCast(al) {
   const near = al.filter(e => e.y > WALL_Y - 190).length, close = al.some(e => e.y > WALL_Y - 40);
   if (near < 12 && !close) return;
