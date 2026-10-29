@@ -4704,7 +4704,7 @@ function drawCamp() {
     uiText(`出外探访 · 派${GEN[id].name}`, 62, y + 15, 13, left ? UIC.cream : 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false });
     if (vr0) uiText((vr0.god ? `带回陨铁！还有精铁 +${vr0.iron}` : `带回精铁 +${vr0.iron} · 机缘 +${vr0.luck}`) + (vr0.page ? ' · 路上捡到残页 +1' : ''), 62, y + 32, 11, vr0.god ? ITEM_C.陨铁 : UIC.gold2, 'left', PLAIN, { stroke: false });
     else { const s2 = `机缘 ${INV.luck || 0}/${LUCK_FULL} 满了得陨铁 · 宜派政治、魅力高的`; uiText(s2, 62, y + 32, fitSize(s2, 10, W - 104 - 62, 99, PLAIN), 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false }); }
-    if (left) pill(W - 92, y + 10, 64, 24, `派出 ${left}`, () => { const r = doVisit(); if (r) { CAMP.visit = { ...r, t0: uiNow() }; showReward(r.god ? '带回陨铁！' : '探访归来', [], [r.id], true, [['精铁', r.iron], r.god ? ['陨铁', r.god] : ['机缘', r.luck], ...(r.page ? [['残页', r.page]] : [])]); REWARD.wait = 2; REWARD.waitText = GEN[r.id].name + '正在四处寻觅'; } }); else uiSeal(W - 42, y + 22, 26, '毕', UIC.red, true);
+    if (left) uiText(`今天还能派 ${left} 次`, W - 60, y + 40, 9, 'rgba(244,230,196,.55)', 'center', PLAIN, { stroke: false }); if (left) pill(W - 92, y + 8, 64, 24, '派出', () => { const r = doVisit(); if (r) { CAMP.visit = { ...r, t0: uiNow() }; showReward(r.god ? '带回陨铁！' : '探访归来', [], [r.id], true, [['精铁', r.iron], r.god ? ['陨铁', r.god] : ['机缘', r.luck], ...(r.page ? [['残页', r.page]] : [])]); REWARD.wait = 2; REWARD.waitText = GEN[r.id].name + '正在四处寻觅'; } }); else uiSeal(W - 42, y + 22, 26, '毕', UIC.red, true);
     y += 56; }
   { const left = choresLeft(), hh = 40 + 4 * 21, y0 = y; y += 5;   /* 上下各多 5（10-27 用户：「上下padding 略大一点点」） */                                    // 日常杂务七项一项一项列出来（10-25 用户：「不能这样，要7个都列出来」），两列；点一项做一项，「一键完成」全做
     plate(14, y0, W - 28, hh, false);
