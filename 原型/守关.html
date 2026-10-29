@@ -78,7 +78,11 @@ function smooth(pts, n = 6) { const o = []; for (let i = 0; i < pts.length - 1; 
 
 // ---------- 图 ----------
 // 牌面头像和菜单三人图：用户定的新画风（10-24：「用这个图吧，风格可以改一下，不要那么水墨」），透明底，原图在 美术/刘关张/桃园三英_透明.png
-const IMG = {}; for (const k of ['guan', 'zhang', 'liu']) { IMG[k] = new Image(); IMG[k].src = 'img/p_' + k + '.jpg?v=1027'; }
+const IMG = {}; for (const k of ['guan', 'zhang', 'liu']) { IMG[k] = new Image(); IMG[k].src = k === 'guan' ? 'img/p_guan_rank_1.jpg?v=20261029' : 'img/p_' + k + '.jpg?v=1027'; }
+// 关羽的官阶头像：简洁肩甲是乡勇，原胸像是义勇头领；2–6 对应后续官阶。
+const GUAN_RANK_FILES = ['p_guan_rank_1_head.jpg', 'p_guan_rank_2_head_v2.jpg', 'p_guan_rank_3_head_v2.jpg', 'p_guan_rank_4_head_v2.jpg', 'p_guan_rank_5_head_v2.jpg', 'p_guan_rank_6_v2.jpg'];
+const GUAN_RANK_PORTRAITS = GUAN_RANK_FILES.map(file => { const im = new Image(); im.src = `img/${file}?v=20261029d`; return im; });
+const heroRankPortrait = id => { const rank = INV.officeRank; const im = id === 'guan' && Number.isInteger(rank) && rank >= 1 && rank <= 6 ? GUAN_RANK_PORTRAITS[rank - 1] : null; return ready(im) ? im : IMG[id]; };
 for (const k of ['jianyong', 'liru']) { IMG['p_' + k] = new Image(); IMG['p_' + k].src = 'img/p_' + k + '.jpg'; }   // 军师头像（10-25，ChatGPT 画，原图 美术/界面/军师头像_简雍李儒.jpg）
 IMG.trio = new Image(); IMG.trio.src = 'img/trio.png?v=1027b';
 // 3D 建模渲出来的小兵图集（Meshy → Blender → 水墨着色，见 ../工具/）；没有时退回程序画的
@@ -349,6 +353,31 @@ const PERKS = [
   { id: 'order', anySk: true, name: '军令如山', desc: '三人出招冷却 -12%', max: 3, fn: s => s.cdMul *= .88 },
   { id: 'mend', name: '修补城墙', desc: '城防回 25%', max: 9, fn: () => { G.wall = Math.min(G.wallMax, G.wall + G.wallMax * .25); } },
 ];
+// ---------- 配招（10-29 方案 设计/成长方案_Claude_20261029.md）：每人带 1 个主动（他那张牌的按钮）＋最多 2 个被动 ----------
+// unlock：打过这一关（BEST）才学会；被动格：打过第 9 关开第 1 格、第 24 关开第 2 格（官阶做好后改按官阶）。默认带原来的招、不带被动，30 关平衡不变
+const SKILLS = {
+  guan:  { act: { qinglong: { name: '青龙斩', desc: '扫倒一片，晕住的多受伤' } },
+           pas: { tuodao: { name: '拖刀', desc: '刀气多一道' }, zhanjiang: { name: '斩将威名', desc: '斩了头目，全场敌兵吓住 1.5 秒' }, meiran: { name: '美髯公', desc: '城防低于三成，普攻 +40%' } } },
+  zhang: { act: { roar: { name: '当阳一喝', desc: '喝退城前、短晕、喝断蓄力' }, pojian: { name: '丈八破阵', desc: '向前直刺一路，穿透整列', unlock: 9 } },
+           pas: { weizhen: { name: '威震', desc: '被晕的敌人谁打都多受 30%' }, nuqi: { name: '燕人怒气', desc: '城防每挨一下，普攻 +5%，叠 6 层' }, mengjin: { name: '猛进', desc: '出招后 4 秒，普攻快一倍' } } },
+  liu:   { act: { shuang: { name: '双股剑', desc: '追击补刀，砍晕的翻倍' } },
+           pas: { rende: { name: '仁德', desc: '斩头目回城防' }, jijiang: { name: '激将', desc: '他出招后，下一位兄弟招式 +40%' }, jieyi: { name: '结义', desc: '三兄弟都在场，冷却 -10%' } } },
+};
+const ACT0 = { guan: 'qinglong', zhang: 'roar', liu: 'shuang' };
+const actOpen = (id, k) => { const u = SKILLS[id].act[k].unlock; return !u || window.__sg.all || !!BEST[u]; };
+const pasSlots = () => window.__sg.all ? 2 : BEST[24] ? 2 : BEST[9] ? 1 : 0;
+const loadOf = id => { const L = (INV.load || {})[id] || {}; return { act: L.act && SKILLS[id].act[L.act] && actOpen(id, L.act) ? L.act : ACT0[id], pas: (L.pas || []).filter(k => SKILLS[id].pas[k]).slice(0, pasSlots()) }; };
+const skName = id => { const a = G && G.act ? G.act[id] : loadOf(id).act; return (SKILLS[id] && SKILLS[id].act[a] || {}).name || GEN[id].skill; };
+const hasPas = (id, k) => !!(G && G.pas && G.pas[id] && G.pas[id].includes(k));
+// 连携：出征时带的招对上了就成立；战斗里一人先出手，接手的在窗口期内接上就打出来（10-29 用户：「先把时间拖长点，照顾手残党」）
+const WIN_ROAR = 5, WIN_POJ = 4;
+const COMBOS = [
+  { id: 'cYun', name: '晕而斩之', need: L => L.zhang && L.zhang.act === 'roar' && L.guan && L.guan.act === 'qinglong', desc: '张飞喝后 5 秒内青龙斩：伤害 2.5 倍、范围 +30%' },
+  { id: 'cHeng', name: '横竖斩', need: L => L.zhang && L.zhang.act === 'pojian' && L.guan && L.guan.act === 'qinglong', desc: '张飞破阵后 4 秒内青龙斩：范围 +30%' },
+  { id: 'cShuang', name: '双剑破阵', need: L => L.liu && L.liu.act === 'shuang' && L.zhang && (L.zhang.act === 'roar' || L.zhang.pas.includes('weizhen')), desc: '双股剑砍中喝过的敌人：再晕 1 秒、溅伤一圈' },
+  { id: 'cTao', name: '桃园同心', need: L => L.guan && L.zhang && L.liu && L.liu.pas.includes('jieyi'), desc: '按张飞、刘备、关羽顺序出招：关羽这一刀翻倍、三人冷却 -2 秒' },
+];
+const combosOf = L => COMBOS.filter(c => c.need(L));
 // 敌方军师（10-25 样本）：李儒——第三波开始 4 秒后伏一队铁骑从左侧杀出；看破拒马（你带拒马，第二波起他放火箭烧掉）
 const FOE_ADV = { liru: { name: '李儒', title: '董卓谋主', ambush: { wave: 2, delay: 4, kind: 'tieqi', n: 8, x0: 16, x1: 70, y: 300 }, seeJum: true },
   liru27: { name: '李儒', title: '献策焚城', ambush: { wave: 3, delay: 3, kind: 'tieqi', n: 6, x0: 290, x1: 344, y: 290 } } };   // 10-26：火烧洛阳是李儒的主意，第二次出场换右侧伏兵、不烧拒马
@@ -817,6 +846,11 @@ function startLevel(i) {
   // 出阵布置（10-25 沙盘推演样本）：出手顺序、开局带的锦囊（一条战法），推演和正式出战都用同一份
   if (!window.__sg.simming && !G.sim) G.order = applyLineup(G.order, lv);
   if (PREP && PREP.li === i) { G.order = PREP.order.slice(); for (const id of PREP.kits) { const p = PERKS.find(p => p.id === id); if (p) { p.fn(G.st); G.perks[id] = (G.perks[id] || 0) + 1; } } }
+  { const L = {}; G.act = {}; G.pas = {}; for (const id of team) if (SKILLS[id]) { const l = window.__sg.simming || G.sim ? (window.__sg.load || {})[id] || { act: ACT0[id], pas: [] } : loadOf(id); L[id] = { act: l.act || ACT0[id], pas: l.pas || [] }; G.act[id] = L[id].act; G.pas[id] = L[id].pas; }
+    if (hasPas('guan', 'tuodao')) G.st.n.guan++; if (hasPas('zhang', 'weizhen')) G.st.daze += .3; if (hasPas('liu', 'rende')) G.st.ren++; if (hasPas('liu', 'jijiang')) { G.st.ji = true; G.jiMul = 1.4; }
+    if (hasPas('liu', 'jieyi') && ['guan', 'zhang', 'liu'].every(x => team.includes(x))) G.st.cdMul *= .9;
+    G.combos = combosOf(L).map(c => c.id); for (const c of G.combos) { const p = PERKS.find(q => q.id === c); if (p) { p.fn(G.st); G.perks[c] = 1; } }   /* 配招成的连携直接生效，三选一里不再出这张 */
+    G.nuqi = 0; G.mengT = 0; G.pojT = -9; }
   G.adv = PREP && PREP.li === i && PREP.adviser ? { id: PREP.adviser, cond: PREP.cond, used: false, militiaT: 3 } : null;
   G.amb = lv.id >= 5 ? ambushFor(lv) : null; G.ambushed = false; G.ambushN = 0;
   G.foeAdv = RU.foeAdv ? { ...FOE_ADV[RU.foeAdv], ambushed: false } : null; G.slowT = 0; G.events = [];
@@ -853,10 +887,10 @@ function spawn(q, y) {
   if (T.boss) { G.boss = e; G.fx.push({ k: 'banner', t: 0, text: T.name, sub: T.title || '黄巾大将' }); }
   return e;
 }
-const WHO = { qi: 'liu', sword: 'liu', wave: 'guan', slash: 'guan', thrust: 'zhang', roar: 'zhang' };
+const WHO = { qi: 'liu', sword: 'liu', wave: 'guan', slash: 'guan', thrust: 'zhang', roar: 'zhang', pierce: 'zhang' };
 // 游戏化（10-25 用户：「还不够游戏化」，发来《宗师之上》的录屏）：敌人头上一串串带招名的伤害数字，受击闪白、往后一仰，大招打死的击飞；
 // 招式从武将身上打出去、连到敌人；出招时武将旁边竖着弹出招名；大招顿一下、镜头往前推一下
-const BIGSRC = new Set(['slash', 'roar', 'sword', 'log']);
+const BIGSRC = new Set(['slash', 'roar', 'sword', 'log', 'pierce']);
 const DMG_STYLE = { guan: ['#a8f0c8', '#0b3a2a'], zhang: ['#ffc08a', '#4a0f08'], liu: ['#bfe3ff', '#0c2a4a'] };
 const DMG_NAME = { slash: '青龙斩', roar: '当阳一喝', sword: '双股剑', burn: '灼烧', log: '滚木' };
 function popDmg(e, d, src, vd = 0) {
@@ -902,6 +936,8 @@ function hurt(e, d, src) {
   const who = WHO[src], big = FOES[e.kind].boss || e.lead;
   if (e.stun > 0 && G.st.daze && src !== 'burn') d *= 1 + G.st.daze;                                                     // 威震
   if (big && who === 'guan') d *= G.st.guanBoss;                                                                          // 斩将
+  if (who === 'guan' && !BIGSRC.has(src) && hasPas('guan', 'meiran') && G.wall < G.wallMax * .3) d *= 1.4;                  // 美髯公
+  if (who === 'zhang' && !BIGSRC.has(src) && G.nuqi) d *= 1 + .05 * G.nuqi;                                              // 燕人怒气
   if (big && who === 'zhang' && G.st.wan) d *= 2;                                                                         // 万人敌
   if (who && G.pow) d *= BIGSRC.has(src) ? G.lead[who] : G.pow[who];
   if (who && src !== 'log' && src !== 'burn') d *= BIGSRC.has(src) ? SK_X * (TUNE.sk || 1) : ATK_X * (TUNE.atk2 || 1);                                                     // 武力管普攻、统率管招式
@@ -956,6 +992,7 @@ function routGroup(e) {
 function die(e, src) {
   e.dead = true; if (FOES[e.kind].civ) return; G.killed++; G.exp += FOES[e.kind].exp; if (G.focus === e) G.focus = null; if (G.focusBy) for (const h in G.focusBy) if (G.focusBy[h] === e) delete G.focusBy[h];
   if (e.lead || FOES[e.kind].flag) routGroup(e);
+  if ((e.lead || FOES[e.kind].boss) && hasPas('guan', 'zhanjiang')) { for (const f of alive()) if (f !== e && !FOES[f.kind].boss) f.stun = Math.max(f.stun || 0, 1.5); if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: W / 2, y: 300, text: '斩将威名', size: 22, color: CINNABAR }); }
   if (e.duel) { for (const f of G.foes) if (f !== e) routFoe(f, true); G.qi = G.queue.length; G.boss = null; }
   if (G.st.ren) { const big = e.lead || FOES[e.kind].boss, heal = (big ? 6 : 0) + (G.killed % 25 === 0 ? 3 : 0); if (heal) { G.wall = Math.min(G.wallMax, G.wall + heal * G.st.ren); G.fx.push({ k: 'txt', t: 0, x: 90, y: WALL_Y - 30, text: '仁德 +' + heal * G.st.ren, size: 15, color: AZURE }); } }
   if (G.st.huodao && e.burnT > 0) { const o = alive().filter(f => f !== e && f.burnT <= 0 && Math.hypot(f.x - e.x, f.y - e.y) < 40)[0]; if (o) { o.burnT = 3; o.burnDps = e.burnDps; } }
@@ -1136,6 +1173,7 @@ function step(dt) {
   if (G.paused || G.panel || G.teach) return;                                       // 暂停、看军功、教学说明时整个战场停住
   if (G.ult) { G.ult.t += dt; if (G.ult.t >= G.ult.dur) G.ult = null; return; }          // 大招特写：整个战场停住，演完再接着打
   if (!G || G.state !== 'play') return;
+  if (G.pas && G.lastWall != null && G.wall < G.lastWall - .01 && hasPas('zhang', 'nuqi') && G.nuqi < 6) G.nuqi++; G.lastWall = G.wall;   // 燕人怒气：城防挨一下叠一层
   if (G.wallLog && G.t >= G.wallNext) { G.wallLog.push([Math.round(G.t), Math.max(0, Math.round(G.wall / G.wallMax * 100))]); G.wallNext = G.t + 2; }
   for (const f of G.fx) f.t += dt;
   G.vt = (G.vt || 0) + dt;
@@ -1426,7 +1464,7 @@ function stepAttacks(dt, al) {
     if (G.anim[i]) { G.anim[i].t += dt; if (!G.order[i] || G.anim[i].t > atkAnim(G.order[i])) G.anim[i] = null; }
     const id = G.order[i]; if (!id || G.seal[i] > 0) continue;
     const rage = id === 'zhang' && G.rageT > 0;
-    G.atkT[i] -= dt * G.st.spd[id] * (rage ? 2 : 1) * (G.tauntT > 0 ? .5 : 1) * Math.pow(.9, G.flagsDown || 0); if (G.atkT[i] > 0) continue;
+    G.atkT[i] -= dt * G.st.spd[id] * (rage ? 2 : 1) * (id === 'zhang' && G.t < (G.mengT || 0) ? 2 : 1) * (G.tauntT > 0 ? .5 : 1) * Math.pow(.9, G.flagsDown || 0); if (G.atkT[i] > 0) continue;
     const A0 = GEN[id].atk, A = { ...A0, range: A0.range + G.st.reach[id] + (rage ? 40 : 0), n: rage ? 3 : A0.n }, gx = genX(i), gy = GY - 40;
     const inR = al.filter(e => e.y > TOP - 4 && !FOES[e.kind].civ && !FOES[e.kind].invuln && Math.hypot(e.x - gx, e.y - 14 - gy) < A.range && seen(e));   // 夜里黑处的打不到
     if (!inR.length) { G.atkT[i] = .1; continue; }
@@ -1486,7 +1524,7 @@ function stepShot(s, dt) {
     s.trail.push([s.x, s.y]); if (s.trail.length > 10) s.trail.shift();
     if (!G.sim && vr() < .12) part('petal', s.x, s.y, { vx: VR(-30, 30), vy: VR(-20, 20), life: 1, s: VR(2.8, 3.8), g: 20, drag: 2 });   // 飞剑拖一路桃花
     if (d < v + 4) {
-      const crit = e.stun > 0, d0 = G.st.liuDmg * (s.boost || 1); hurt(e, d0 * (crit ? 2 : 1), 'sword');
+      const crit = e.stun > 0 || (G.st.shuang && G.t - (e.roaredT ?? -9) < WIN_ROAR), d0 = G.st.liuDmg * (s.boost || 1); hurt(e, d0 * (crit ? 2 : 1), 'sword');
       if (G.up && G.up.liu2 && !e.dead && !FOES[e.kind].boss) e.rootT = Math.max(e.rootT || 0, G.up.liu3 ? 6 : 4);   // 剑印
       if (crit && G.st.shuang) { if (!e.dead) e.stun += 1; for (const f of alive()) if (f !== e && Math.hypot(f.x - e.x, f.y - e.y) < 40) hurt(f, d0 * .5, 'sword'); }
       G.fx.push({ k: 'cross', t: 0, x: e.x, y: ty, crit, rot: VR(-.3, .3), ang: s.ang }); s.done = true;
@@ -1532,7 +1570,8 @@ function smartCast(al) {
   const stunned = foes.filter(e => e.stun > .3), sinceRoar = G.t - (G.roarT ?? -99), zSoon = zi >= 0 && knows('zhang') && G.seal[zi] <= 0 ? G.ready[zi] - G.t : 99;
   const pend = Object.entries(G.chg || {}).some(([id, c]) => c.state === 'warn' || (c.state === 'mark' && foes.some(e => e.ch == id && d(e) < CHARGE.stage + 90))), run = foes.filter(e => e.chargeT > 0), runIn = run.filter(e => d(e) < R0 * .9);
   const zCan = zSoon < 4;                                                   // 张飞的一喝来得及接冲阵
-  if (ok(zi)) {
+  if (ok(zi) && G.act && G.act.zhang === 'pojian') { const a = pojAim(al); if (a && (a.n >= 6 || (duel && a.n >= 3))) return startCast(zi); }
+  else if (ok(zi)) {
     if (duel) { const m = duel.mv, unsNext = (duel.hvN || 0) % UNS_EVERY === UNS_EVERY - 1;   // 下一记重招就是无双：一喝留给它
       if (m && m.uns && m.t > .5) return startCast(zi);
       if (!unsNext && (duel.guardT2 > 0 || foes.filter(e => d(e) < R0 && !e.duel).length >= 8)) return startCast(zi); }
@@ -1554,13 +1593,13 @@ function startCast(i) {
   const id = G.order[i];
   if (G.RU.casts) G.casts--;
   let boost = 1;
-  if (G.jiNext && id !== 'liu') { boost *= 1.6; G.jiNext = false; G.fx.push({ k: 'txt', t: 0, x: genX(i), y: GY - 120, text: '激将 +60%', size: 16, color: AZURE }); }
+  if (G.jiNext && id !== 'liu') { boost *= G.jiMul || 1.6; G.jiNext = false; G.fx.push({ k: 'txt', t: 0, x: genX(i), y: GY - 120, text: '激将 +' + Math.round(((G.jiMul || 1.6) - 1) * 100) + '%', size: 16, color: AZURE }); }
   const tao = G.st.taoyuan && id === 'guan' && G.seq.slice(-2).join() === 'zhang,liu'; if (tao) boost *= 2;
   G.seq.push(id); if (G.seq.length > 4) G.seq.shift();
   G.cast = { id, slot: i, t: 0, dur: GEN[id].cast, boost, tao }; sfx(id);
   if (id === 'liu') spPlay('sigil_gold', genX(i), GY - 4, 150, { ground: true, sy: .45, fps: 22 });   /* 刘备出双股剑：脚下金色符文法阵 */
-  G.ready[i] = G.t + cdOf(id); G.turn = (i + 1) % NS;
-  G.fx.push({ k: 'skname', t: 0, dur: 1.3, x: genX(i), y: GY - 150, text: GEN[id].skill, id });                      // 竖在这员武将头顶，四个位置隔 86，不会叠
+  G.ready[i] = G.t + cdOf(id); G.turn = (i + 1) % NS; if (id === 'zhang' && hasPas('zhang', 'mengjin')) G.mengT = G.t + 4;
+  G.fx.push({ k: 'skname', t: 0, dur: 1.3, x: genX(i), y: GY - 150, text: skName(id), id });                      // 竖在这员武将头顶，四个位置隔 86，不会叠
   if (G.awake === id) playUlt(id);
 }
 // 限手关：点一张好了的牌放招
@@ -1579,9 +1618,10 @@ function taoyuan() { for (let i = 0; i < NS; i++) if (G.order[i]) G.ready[i] = M
 function resolveSkill(id, boost = 1) {
   const al = alive();
   if (id === 'liu' && G.st.ji) G.jiNext = true;
+  if (id === 'zhang' && G.act && G.act.zhang === 'pojian') { resolvePojian(boost); return; }
   if (id === 'zhang') {
     const R0 = G.st.zhangR;
-    for (const e of al) { const d = WALL_Y - e.y; if (d < R0 || e.duel) { const T = FOES[e.kind], res = T.boss ? (T.taunt || T.rampage ? 1 : .35) : (T.stunRes || 1); if (T.taunt || T.rampage) shoutBack(e); hurt(e, 24 * HPX * boost, 'roar'); if (e.duel && e.mv && e.mv.k !== 'heal') { if (e.mv.uns) G.unsBroken = (G.unsBroken || 0) + 1; e.mv = null; e.moveT = (G.lv.gap || 3) * TIMEX.v; if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 110, text: '打断！', size: 24, color: CINNABAR }); }   /* 一喝喝断敌将正在蓄的招（10-26 用户：「张飞的喝不能阻断」——原来只晕 0.5 秒，晕完突刺照样落下） */ if (!e.duel) e.knock += SPD_X * (28 + 50 * (1 - d / R0)) * res; e.stun = Math.max(e.stun, G.st.zhangStun * res); } }
+    for (const e of al) { const d = WALL_Y - e.y; if (d < R0 || e.duel) { e.roaredT = G.t; const T = FOES[e.kind], res = T.boss ? (T.taunt || T.rampage ? 1 : .35) : (T.stunRes || 1); if (T.taunt || T.rampage) shoutBack(e); hurt(e, 24 * HPX * boost, 'roar'); if (e.duel && e.mv && e.mv.k !== 'heal') { if (e.mv.uns) G.unsBroken = (G.unsBroken || 0) + 1; e.mv = null; e.moveT = (G.lv.gap || 3) * TIMEX.v; if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 110, text: '打断！', size: 24, color: CINNABAR }); }   /* 一喝喝断敌将正在蓄的招（10-26 用户：「张飞的喝不能阻断」——原来只晕 0.5 秒，晕完突刺照样落下） */ if (!e.duel) e.knock += SPD_X * (28 + 50 * (1 - d / R0)) * res; e.stun = Math.max(e.stun, G.st.zhangStun * res); } }
     G.fx.push({ k: 'roar', t: 0, ox: genX(G.order.indexOf('zhang')), R: R0, hits: al.filter(e => WALL_Y - e.y < R0).map(e => [e.x, e.y - 14]), rays: Array.from({ length: 15 }, (_, i) => ({ a: -Math.PI * .93 + Math.PI * .86 * (i + R(-.35, .35)) / 14, l: R0 * R(.45, 1.02), w: R(12, 24), bend: R(-.12, .12) })) });
     G.shake = .3; G.roarT = G.t;
     if (G.up && G.up.zhang2) { G.trenchT = 4; G.trenchY = WALL_Y - Math.min(R0, 160) * .62; }   // 怒雷：城前留一道火沟
@@ -1593,17 +1633,32 @@ function resolveSkill(id, boost = 1) {
     const { cx, cy, r } = aim; let hit = 0; const dir = cx >= genX(G.order.indexOf('guan')) ? 1 : -1;
     G.visDelay = e => clamp((dir > 0 ? e.x - (cx - r * 1.15) : (cx + r * 1.15) - e.x) / (2.3 * r), 0, 1) * .18;   // 刀头从左往右（或反过来）扫 0.18 秒
     const inS = al.filter(e => Math.hypot(e.x - cx, (e.y - 14 - cy) * 1.25) < r);
-    for (const e of inS) { if (G.up && G.up.guan2) e.breakT = 4; hurt(e, G.st.guanDmg * boost * (e.stun > 0 ? (G.st.yunzhan ? 2.5 : 1.5) : 1), 'slash'); hit++; }
+    for (const e of inS) { if (G.up && G.up.guan2) e.breakT = 4; hurt(e, G.st.guanDmg * boost * (e.stun > 0 ? (G.st.yunzhan ? 2.5 : 1.5) : G.st.yunzhan && G.t - (e.roaredT ?? -9) < WIN_ROAR ? 2.5 : 1), 'slash'); hit++; }
     if (G.st.exec) { let k = 0; for (const e of inS) if (!e.dead && !FOES[e.kind].boss && e.hp < e.max * .3) { e.hp = 0; die(e, 'slash'); k++; } const gi = G.order.indexOf('guan'); if (k) { G.ready[gi] = Math.max(G.t, G.ready[gi] - .3 * k); G.fx.push({ k: 'txt', t: 0, x: cx, y: cy - r * .6 - 20, text: '刀下无生 ' + k, size: 16, color: JADE }); } }
     const hits = inS.map(e => [e.x, e.y - 14, G.visDelay(e)]); G.visDelay = null;
     G.fx.push({ k: 'slash', t: 0, x: cx, y: cy, r, dir, rot: R(-.35, .35), n: hit, hits, sp: Array.from({ length: 22 }, () => ({ u: R(0, 1), d: R(2, 22), r: R(.8, 3) })) });
     G.freeze = .07; G.shake = .28;
   }
 }
+// 丈八破阵（10-29 新招）：选敌人最密的一路，矛势从城头直刺到底，整列都穿；三层伤害按穿过的人数衰减很少
+const POJ_W = 30;
+function pojAim(al) {
+  const foes = al.filter(e => !FOES[e.kind].civ && !FOES[e.kind].invuln && seen(e) && e.y > TOP); let best = null, bn = 0;
+  for (let x = 30; x <= W - 30; x += 12) { let n = 0; for (const e of foes) if (Math.abs(e.x - x) < POJ_W) n += 1 + (e.y / WALL_Y) + (FOES[e.kind].boss ? 2 : 0); if (n > bn) { bn = n; best = x; } }
+  return best == null ? null : { x: best, n: bn };
+}
+function resolvePojian(boost = 1) {
+  const al = alive(), a = pojAim(al); if (!a) return; const zx = genX(G.order.indexOf('zhang'));
+  const inL = al.filter(e => Math.abs(e.x - a.x) < POJ_W && e.y > TOP - 10).sort((p, q) => q.y - p.y);
+  G.visDelay = e => clamp((WALL_Y - e.y) / (WALL_Y - TOP), 0, 1) * .22;                  // 矛尖从城头往远处推 0.22 秒
+  inL.forEach((e, k) => { hurt(e, 52 * HPX * boost * Math.pow(.97, k), 'pierce'); if (!e.dead) e.knock += 20 * SPD_X; });
+  const hits = inL.map(e => [e.x, e.y - 14, G.visDelay(e)]); G.visDelay = null;
+  G.fx.push({ k: 'pojian', t: 0, dur: .75, x0: zx, x: a.x, hits }); for (const [hx, hy, d] of hits.slice(0, 8)) fbPlay('hit_fire', hx, hy, 70, null, { delay: d, glow: .5 }); G.pojT = G.t; G.shake = .25; G.freeze = .05;
+}
 // 青龙斩砍哪一片：出招前 0.2 秒就定下（刀光从关羽身上飞过去，到了正好砍下）
 function guanAim(al) {
   const civ = al.filter(e => FOES[e.kind].civ); al = al.filter(e => !FOES[e.kind].civ && !FOES[e.kind].invuln && seen(e));   // 不朝百姓堆砍；砍到边上的百姓扣分
-  let best = null, bn = -1; const r = G.st.guanR * (G.st.yunzhan && G.t - (G.roarT ?? -9) < 2 ? 1.3 : 1);
+  let best = null, bn = -1; const r = G.st.guanR * ((G.st.yunzhan && G.t - (G.roarT ?? -9) < WIN_ROAR) || (G.combos && G.combos.includes('cHeng') && G.t - (G.pojT ?? -9) < WIN_POJ) ? 1.3 : 1);
   const far = al.every(e => e.y < HZ + 70);                    // 都还在远处时才砍远处
   for (const c of al) { if (c.y < (far ? HZ + 8 : HZ + 70)) continue; let n = 0; for (const e of al) if (Math.hypot(e.x - c.x, (e.y - c.y) * 1.3) < r) n += 1 + 2 * Math.pow(e.y / WALL_Y, 2) + (e.stun > 0 ? .5 : 0); if (n > bn) { bn = n; best = c; } }
   return best ? { cx: best.x, cy: best.y - 14, r } : null;
@@ -2113,6 +2168,13 @@ function tintPaint(nm, col) {                                                   
   g.globalCompositeOperation = 'color'; g.fillStyle = col; g.fillRect(0, 0, sw, sh);
   g.globalCompositeOperation = 'destination-in'; g.drawImage(IMG.paint, P.cell[0] + P.box[0], P.cell[1] + P.box[1], sw, sh, 0, 0, sw, sh);
   return (BTINT[key] = c);
+}
+// 丈八破阵的画面：火红矛势从张飞身前直刺到最远，再收回（画稿 spear 拉长，不画几何光柱）
+function drawPojian(f) {
+  const t = f.t, p = Math.min(1, t / .22), a = t < .45 ? 1 : Math.max(0, 1 - (t - .45) / .3), y0 = GY - 40, y1 = y0 - (y0 - TOP + 20) * (1 - Math.pow(1 - p, 3));
+  const x1 = f.x0 + (f.x - f.x0) * p, len = Math.hypot(x1 - f.x0, y1 - y0), rot = Math.atan2(y1 - y0, x1 - f.x0) + Math.PI / 2;
+  drawTint('spear', '#ff6a2a', (f.x0 + x1) / 2, (y0 + y1) / 2, Math.max(60, len * 1.08), rot, a, .9);
+  if (ML && t < .25 && vr() < .8) ML.splat(x1, y1, VR(-60, 60), -300, VR(6, 10), [0, 1, .4, 0]);   // 矛尖喷火
 }
 function drawTint(nm, col, x, y, len, rot, alpha, glow = .5, sy = 1) {
   const c = tintPaint(nm, col); if (!c) return; const k = len / Math.max(c.width, c.height);
@@ -3443,6 +3505,7 @@ function drawFx(f) {
   else if (f.k === 'dust') { const u = f.t / .5; if (u > 1) return; blot(ctx, f.x, f.y - u * 8, 3 + u * 6, '#8a7e6c', .4 * (1 - u), vr, 8); }
   else if (f.k === 'cross') drawCross(f);
   else if (f.k === 'slash') drawSlash(f);
+  else if (f.k === 'pojian') drawPojian(f);
   else if (f.k === 'roar') drawRoar(f);
   else if (f.k === 'guard') { const u = f.t / .5; if (u > 1) return;           // 张梁的盾阵挡下一下
     ctx.globalAlpha = .8 * (1 - u); ctx.fillStyle = '#8f877a'; ctx.beginPath(); ctx.ellipse(f.x, f.y, 9, 11, 0, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1;
@@ -3644,7 +3707,7 @@ function drawSlots() {
     if (G.seal[i] > 0) { ctx.fillStyle = 'rgba(120,40,140,.55)'; ctx.fillRect(x, y + lift, w, h); }
     else if (G.RU.casts && G.casts <= 0) { ctx.fillStyle = 'rgba(8,5,3,.62)'; ctx.fillRect(x, y + lift, w, h); }
     ctx.restore();
-    if (!learnt || ok || casting) uiText(learnt ? GEN[id].skill : '未学招式', x + w / 2, y + lift + h - 11, fitSize(learnt ? GEN[id].skill : '未学招式', learnt ? 13 : 11, w - 6, 99, FONT, 3), ok ? UIC.gold2 : learnt ? UIC.cream : 'rgba(244,230,196,.6)', 'center', FONT, { lw: 3 });
+    if (!learnt || ok || casting) uiText(learnt ? skName(id) : '未学招式', x + w / 2, y + lift + h - 11, fitSize(learnt ? skName(id) : '未学招式', learnt ? 13 : 11, w - 6, 99, FONT, 3), ok ? UIC.gold2 : learnt ? UIC.cream : 'rgba(244,230,196,.6)', 'center', FONT, { lw: 3 });
     if (frac > 0) uiText(remain.toFixed(1), x + w / 2, y + lift + 30, 20, '#fff', 'center', PLAIN, { lw: 4 });
     if (G.seal[i] > 0) uiText('迷魂 ' + G.seal[i].toFixed(1), x + w / 2, y + lift + 30, 14, '#ffd0ff', 'center', PLAIN);
     else if (G.RU.casts && G.casts <= 0) uiText('招式用完', x + w / 2, y + lift + 30, 12, UIC.cream, 'center', PLAIN);
@@ -4344,7 +4407,7 @@ function drawLineup(t) {
   for (let i = 0; i < NS; i++) { const x = x0 + i * (cw + gap), y = y0 + 12, id = L[i], sel = MENU.lineSel === i;
     ctx.save(); if (sel) { ctx.shadowColor = 'rgba(255,210,110,.9)'; ctx.shadowBlur = 12; }
     ctx.fillStyle = 'rgba(14,10,7,.8)'; ctx.beginPath(); ctx.roundRect(x, y, cw, cw, 7); ctx.fill(); ctx.shadowBlur = 0;
-    if (id) { ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, cw, cw, 7); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], x - 3, y - 2, cw + 6, cw + 6); ctx.restore(); }
+    if (id) { const im = heroRankPortrait(id); ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, cw, cw, 7); ctx.clip(); if (ready(im)) ctx.drawImage(im, x - 3, y - 2, cw + 6, cw + 6); ctx.restore(); }
     else uiText('空', x + cw / 2, y + cw / 2, 15, 'rgba(244,230,196,.3)', 'center', FONT, { stroke: false });
     ctx.strokeStyle = sel ? '#ffe08a' : 'rgba(217,166,64,.7)'; ctx.lineWidth = sel ? 2 : 1.2; ctx.beginPath(); ctx.roundRect(x, y, cw, cw, 7); ctx.stroke(); ctx.restore();
     uiText(CNUM(i + 1), x + 8, y + 9, 10, '#fff2dc', 'center', FONT, { lw: 3 });
@@ -4367,7 +4430,7 @@ function drawRoster() {
   const ids = ['guan', 'zhang', 'liu'], sel = ids.includes(MENU.rosterSel) ? MENU.rosterSel : 'guan', cw = 104, chh = 150, y0 = 140;
   ids.forEach((id, k) => { const x = 16 + k * (cw + 8), R0 = ROSTER[id], on = id === sel, u = ease((t - (MENU.rosterT || 0) - k * .08) / .3);
     ctx.save(); ctx.globalAlpha = clamp(u, 0, 1) * (on ? 1 : .7); plate(x, y0, cw, chh, on);
-    ctx.save(); ctx.beginPath(); ctx.roundRect(x + 10, y0 + 8, cw - 20, cw - 20, 8); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], x + 6, y0 + 4, cw - 12, cw - 12); ctx.restore();
+    { const im = heroRankPortrait(id); ctx.save(); ctx.beginPath(); ctx.roundRect(x + 10, y0 + 8, cw - 20, cw - 20, 8); ctx.clip(); if (ready(im)) ctx.drawImage(im, x + 6, y0 + 4, cw - 12, cw - 12); ctx.restore(); }
     ctx.strokeStyle = on ? '#ffe08a' : 'rgba(217,166,64,.6)'; ctx.lineWidth = on ? 1.8 : 1; ctx.beginPath(); ctx.roundRect(x + 10, y0 + 8, cw - 20, cw - 20, 8); ctx.stroke();
     uiText(GEN[id].name, x + cw / 2 - 12, y0 + cw + 2, 16, UIC.cream, 'center', FONT, { lw: 3 }); uiText('Lv ' + R0.lv, x + cw / 2 + 26, y0 + cw + 3, 12, UIC.gold2, 'center', PLAIN, { lw: 3 });
     const need = needLv(R0.lv), fr = R0.lv >= LV_CAP ? 1 : R0.exp / need;
@@ -4390,8 +4453,10 @@ function drawRoster() {
   const d = st.map((v, j) => v - GROW[id].base[j]);
   if (R0.lv > 1) { uiText(`普攻 +${Math.round(d[1] * 1.5)}% · 招式 +${Math.round(d[0] * 1.5)}% · 冷却 -${Math.round((1 - 1 / (1 + .008 * d[2])) * 100)}% · 城防 +${Math.round(d[3] * .8)}%`, W / 2, py + 176, 11, '#ffd76e', 'center', PLAIN, { stroke: false }); }
   { const lg = '武力 - 攻击 · 统率 - 招式伤害 · 智力 - 冷却 · 政治 - 城防 · 魅力 - 晋升'; uiText(lg, W / 2, py + 198, fitSize(lg, 10, W - 44, 99, PLAIN), 'rgba(244,230,196,.5)', 'center', PLAIN, { stroke: false }); }
-  if (ultReady(id)) pill(W / 2 - 50, py + 210, 100, 28, '看大招', () => { MENU.ultPrev = { k: id, t0: uiNow() }; }, false);   // 觉醒大招特写
+  if (ultReady(id)) pill(W / 2 - 110, py + 210, 100, 28, '看大招', () => { MENU.ultPrev = { k: id, t0: uiNow() }; }, false);   // 觉醒大招特写
+  pill(W / 2 + 10, py + 210, 100, 28, '配招', () => { MENU.load = { order: ['guan', 'zhang', 'liu'], load: true }; }, true);   // 10-29 配招：大多数关不进布阵页，在武将页配
   plaque(112, 606, 136, 32, '返回', () => { screen = 'menu'; }, false);
+  if (MENU.load) { if (MENU.load.load) drawLoadout(MENU.load); else MENU.load = null; }
   const up = MENU.ultPrev; if (up) { const t = uiNow() - up.t0, hold = up.close ? uiNow() - up.close : -1;   // 10-26 用户：「大招不要自动消失，等用户自己退出」
     if (hold < .3) { HITS = []; drawUlt(up.k, t, 0, false, hold); if (!up.close) plaque(112, 606, 136, 32, '退出', () => { up.close = uiNow(); }, false); }   // 10-26 用户：「这里直接做退出btn即可」
     else MENU.ultPrev = null; }
@@ -4715,6 +4780,7 @@ function drawPrep() {
   const P = PREP, lv = LEVELS[P.li], t = uiNow() - (P.t0 || 0); prepBg(lv); prepHead(lv);
   plaque(278, 14, 72, 26, '返回', () => { screen = 'menu'; }, false);
   plaque(196, 14, 76, 26, '本关目标', () => { P.goal = true; }, false);
+  plaque(114, 14, 76, 26, '配招', () => { P.load = true; }, !!combosOf(prepLoads(P)).length);
   // 敌情
   const fc = foeCounts(lv), nW = buildQueue(lv).nWaves; secTitle(`敌情 · ${nW} 波 · 约 ${fc.reduce((a, b) => a + b[1], 0)} 人`, 74);
   fc.slice(0, 4).forEach(([k, n], j) => { const y = 88 + j * 36, note = FOE_NOTE[k] || ['', ''];
@@ -4762,6 +4828,7 @@ function drawPrep() {
   plaque(12, bb, 166, 46, '沙盘推演', () => runSand(), false); plaque(182, bb, 166, 46, '出战', () => startLevel(P.li), true);
   const L = P.last; uiText(L ? `上次推演：预计 ${L.stars.toFixed(1)} 星 · 城防剩 ${L.wall}% · 漏 ${L.leak} 个` + (L.same ? '' : '（布置改过了）') : '还没推演：先推一遍看看哪里会漏', W / 2, H - 18, 11, L ? UIC.gold2 : 'rgba(244,230,196,.55)', 'center', PLAIN, { stroke: false });
   if (L) L.same = L.key === prepKey();
+  if (P.load) drawLoadout(P);
   if (P.goal) {                                                                  // 本关目标弹层：点哪都关
     const amb = ambushFor(lv) && lv.id >= 5 ? ambushFor(lv) : null, gl = goalLines(lv, amb).flatMap(([st, tx]) => fitLines(tx, W - 150, 15, PLAIN).map((ln, i) => [i ? '' : st, ln])), bh = 92 + gl.length * 22, by = H * .36 - bh / 2;
     ctx.fillStyle = 'rgba(8,5,3,.6)'; ctx.fillRect(0, 0, W, H); plate(24, by, W - 48, bh);
@@ -4771,17 +4838,43 @@ function drawPrep() {
     hit(0, 0, W, H, () => { P.goal = false; });
   }
 }
-const prepKey = () => PREP.order.join(',') + '|' + PREP.kits.join(',') + '|' + (PREP.adviser || '') + '|' + PREP.cond;
+// 配招页（10-29）：出阵的每人一行——主动招选一个、被动按格数选；底下亮出已成的连携
+const prepLoads = P => { const L = {}; for (const id of new Set(P.order.filter(Boolean))) if (SKILLS[id]) L[id] = loadOf(id); return L; };
+function drawLoadout(P) {
+  const L = prepLoads(P), ids = Object.keys(L), slots = pasSlots(), rowH = 118, h = 70 + ids.length * rowH + 92, y0 = Math.max(16, (H - h) / 2);
+  ctx.fillStyle = 'rgba(6,4,3,.82)'; ctx.fillRect(0, 0, W, H); hit(0, 0, W, H, () => {});
+  plate(10, y0, W - 20, h, true); uiText('配招', W / 2, y0 + 26, 20, UIC.gold2, 'center', FONT);
+  uiText(slots ? `每人带一个招式、${slots} 个被动` : '每人带一个招式（打过第九关开被动格）', W / 2, y0 + 48, 10, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
+  const set = (id, f) => { INV.load = INV.load || {}; const l = loadOf(id); f(l); INV.load[id] = l; saveInv(); sfx('tap'); };
+  ids.forEach((id, r) => { const y = y0 + 62 + r * rowH, l = L[id], S = SKILLS[id];
+    ctx.save(); rr(20, y, 40, 40, 6); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], 20, y, 40, 40); ctx.restore();
+    uiText(GEN[id].name, 40, y + 52, 11, UIC.cream, 'center', FONT, { stroke: false });
+    let x = 68; for (const [k, a] of Object.entries(S.act)) { const open = actOpen(id, k), on = l.act === k, w = 128;
+      uiPanel(x, y, w, 40, { r: 7, top: on ? '#6e1a10' : '#2b1f16', bot: on ? '#3a0c06' : UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.45)', glow: on ? 'rgba(255,170,90,.6)' : null });
+      ctx.save(); if (!open) ctx.globalAlpha = .4; uiText(a.name, x + w / 2, y + 13, 13, on ? '#fff2dc' : UIC.cream, 'center', FONT, { lw: 3 });
+      uiText(open ? a.desc : `打过第${CNUM(a.unlock)}关学会`, x + w / 2, y + 30, fitSize(open ? a.desc : '', 9, w - 8, 10, PLAIN), 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false }); ctx.restore();
+      if (open) hit(x, y, w, 40, () => set(id, q => { q.act = k; })); x += w + 6; }
+    let px = 68; for (const [k, a] of Object.entries(S.pas)) { const on = l.pas.includes(k), w = 84, py = y + 48;
+      ctx.save(); if (!slots) ctx.globalAlpha = .35; uiPanel(px, py, w, 52, { r: 7, top: on ? '#24304a' : '#2b1f16', bot: UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.4)', glow: on ? 'rgba(140,190,255,.5)' : null });
+      uiText(a.name, px + w / 2, py + 12, 12, on ? '#dfeaff' : UIC.cream, 'center', FONT, { lw: 3 });
+      cardLines(a.desc, 9, 2).forEach((ln, i) => uiText(ln, px + w / 2, py + 27 + i * 11, fitSize(ln, 9, w - 6, 99, PLAIN), 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false })); ctx.restore();
+      if (slots) hit(px, py, w, 52, () => set(id, q => { if (q.pas.includes(k)) q.pas = q.pas.filter(z => z !== k); else { q.pas.push(k); if (q.pas.length > slots) q.pas.shift(); } })); px += w + 4; } });
+  const cy = y0 + 62 + ids.length * rowH, cs = combosOf(L);
+  uiText(cs.length ? '已成连携' : '还没有连携（换换招试试）', 22, cy + 6, 12, UIC.gold2, 'left', FONT, { stroke: false });
+  cs.slice(0, 2).forEach((c, i) => uiText(`${c.name}：${c.desc}`, 22, cy + 26 + i * 16, fitSize(`${c.name}：${c.desc}`, 10, W - 50, 99, PLAIN), '#ffe39a', 'left', PLAIN, { stroke: false }));
+  pill(W / 2 - 50, y0 + h - 34, 100, 26, '好了', () => { P.load = false; }, true);
+}
+const prepKey = () => PREP.order.join(',') + '|' + JSON.stringify(prepLoads(PREP)) + '|' + PREP.kits.join(',') + '|' + (PREP.adviser || '') + '|' + PREP.cond;
 const yieldUI = () => new Promise(r => setTimeout(r, 16));
 // 推演：换三个种子各跑一遍（G.sim，不发经验、不记星），跑完把 G 清掉、自动选战法关掉
 async function runSand() {
-  const P = PREP, i = P.li, N = 3, runs = []; P.running = { k: 0, n: N }; screen = 'sand'; P.st0 = uiNow();
+  const P = PREP, i = P.li, N = 3, runs = []; P.running = { k: 0, n: N }; screen = 'sand'; P.st0 = uiNow(); window.__sg.load = prepLoads(P);
   for (let k = 0; k < N; k++) {
     P.running.k = k; await yieldUI(); await yieldUI();
     window.__sg.seed = 11 + k * 37; const r = window.__sg.sim(i, 400); screen = 'sand';
     runs.push({ stars: r.stars || 0, win: !!r.win, wall: Math.max(0, Math.round(G.wall / G.wallMax * 100)), t: G.t, wallLog: G.wallLog.slice(), leakLog: G.leakLog.slice(), waveLog: (G.waveLog || []).slice(), nWaves: G.nWaves, dmg: { ...G.dmgBy }, events: (G.events || []).slice() });
   }
-  window.__sg.seed = 0; window.__sg.auto = false; G = null;
+  window.__sg.seed = 0; window.__sg.auto = false; window.__sg.load = null; G = null;
   const avg = f => runs.reduce((a, r) => a + f(r), 0) / runs.length;
   P.prev = P.last; P.last = { runs, stars: avg(r => r.stars), wall: Math.round(avg(r => r.wall)), leak: Math.round(avg(r => r.leakLog.length)), wins: runs.filter(r => r.win).length, key: prepKey(), same: true, at: uiNow() };
   P.running = null; screen = 'sand';
