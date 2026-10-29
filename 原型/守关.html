@@ -4686,7 +4686,7 @@ function drawCamp() {
   uiText('今日军务', 18, 250 + TOPY, 16, UIC.gold2, 'left', FONT, { stroke: false });
   uiText(`${dailyDone()}/${dailyTotal()}`, W - 18, 250 + TOPY, 12, 'rgba(244,230,196,.6)', 'right', PLAIN, { stroke: false });
   if (!ts.length) { const y = 264 + TOPY; plate(14, y, W - 28, 80, false);                 // 10-29 用户：「不要用描述性文字，直接告诉玩家出征后得到什么」
-    uiSeal(40, y + 30, 28, '令', UIC.red); uiText('出征一次，得 3 道征战军令', 64, y + 22, 15, UIC.gold2, 'left', FONT, { lw: 3 });
+    uiSeal(40, y + 30, 28, '令', UIC.red); uiText('征战军令 ×3', 64, y + 22, 15, UIC.gold2, 'left', FONT, { lw: 3 }); uiText('全部完成得', 168, y + 22, 11, 'rgba(244,230,196,.65)', 'left', PLAIN, { stroke: false });   /* 奖励是完成三道军令才有，不是出征就有（10-29 用户问） */
     [['残页', TASK_PAY * 3], ['资历', 3]].forEach(([k, n], i) => { const x = 74 + i * 86; if (k === '资历') uiSeal(x, y + 52, 18, '资', '#6a4a14', true); else drawItemIcon(k, x, y + 52, 24); uiText(`${k} +${n}`, x + 16, y + 52, 13, UIC.cream, 'left', PLAIN, { stroke: false }); });
     pill(W - 110, y + 38, 90, 28, '去出征', () => { screen = 'menu'; }, true); }
   shown.forEach((t, k) => { const y = 264 + TOPY + k * 44, li = LEVELS.findIndex(lv => lv.id === t.lv);
@@ -4970,22 +4970,22 @@ function drawPrep() {
 }
 // 官阶页（10-29）：现在、下一阶解锁什么、资历进度、晋阶按钮；晋阶时一大团金光
 const RANKMSG = { t0: -99, text: '' };
-function drawRank() {
+function drawRank() {                                                               // 10-29 用户：「这页有点难看，干巴巴的」——左边现在的装、右边下一阶的装，中间箭头；解锁做成奖励牌
   campBg('官阶'); const t = uiNow(), r = rankNow(), R = RANKS[r], N = nextRank();
-  plate(16, 66, W - 32, 80, true);
-  uiText(R.name, W / 2, 106, 30, goldGrad(112, 30), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 });
-  /* 10-29 用户：「不需要告诉有多少阶」 */
-  if (N) { plate(16, 160, W - 32, 300 + N.gets.length * 20 + 14 + 38 + 34 + 22 - 160, false);   /* 底下留够边（10-29 用户：「下面padding不够」） */
-    uiText('下一阶', 34, 224, 12, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false }); uiText(N.name, W / 2, 248, 24, UIC.gold2, 'center', FONT, { lw: 4 });
-    uiText(`打第${CNUM(N.node)}关之前晋阶`, W / 2, 272, 11, 'rgba(244,230,196,.65)', 'center', PLAIN, { stroke: false });
-    N.gets.forEach((g, i) => uiText('· ' + g, 40, 300 + i * 20, 13, UIC.cream, 'left', PLAIN, { stroke: false }));
-    const py = 300 + N.gets.length * 20 + 14, fr = Math.min(1, (INV.prep || 0) / PREP_NEED);
-    uiText(`资历 ${INV.prep || 0}/${PREP_NEED}`, 40, py, 13, UIC.gold2, 'left', PLAIN, { stroke: false });
-    uiBar('prep', 130, py - 6, W - 180, 12, fr, '#8a5a14', '#ffd76e');
-    uiText('征战军令、出外探访、日常杂务每做一项 +1', W / 2, py + 22, 10, 'rgba(244,230,196,.55)', 'center', PLAIN, { stroke: false });
-    if (fr >= 1) pill(W / 2 - 70, py + 38, 140, 34, '晋阶', () => promote(), true);
-    else pill(W / 2 - 70, py + 38, 140, 34, '去军帐做军务', () => { screen = 'camp'; }, false); }
-  else uiText('已是第一章最高官阶', W / 2, 260, 16, UIC.gold2, 'center', FONT);
+  const col = (rk, x, lab, big) => { uiText(lab, x, 74, 11, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false }); uiText(RANKS[rk].name, x, 96, big ? 20 : 17, big ? goldGrad(96, 20) : UIC.cream, 'center', FONT, { lw: 4, glow: big ? 'rgba(255,200,90,.6)' : null, glowR: 10 });
+    ['guan', 'liu', 'zhang'].forEach((id, k) => { const sz = 46, xx = x + (k - 1) * (sz + 4) - sz / 2, yy = 112 + (k === 1 ? -4 : 0), im = heroRankPortrait(id, rk);
+      ctx.save(); if (!big && N) ctx.globalAlpha = .75; rr(xx, yy, sz, sz, 6); ctx.clip(); if (ready(im)) ctx.drawImage(im, xx, yy, sz, sz); ctx.restore(); if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, xx - 1, yy - 1, sz + 2, sz + 2, 60, 60, 60, 60, .1); }); };
+  plate(10, 60, W - 20, 176, true);
+  if (N) { col(r, 94, '现在', false); col(r + 1, W - 94, '下一阶', true); const pu = .6 + .4 * Math.sin(t * 4); ctx.save(); ctx.globalAlpha = pu; uiText('▶', W / 2, 140, 22, '#ffd76e', 'center', PLAIN, { glow: 'rgba(255,200,90,.9)', glowR: 10 }); ctx.restore();
+    uiText(`打第${CNUM(N.node)}关之前晋阶`, W / 2, 210, 11, 'rgba(244,230,196,.65)', 'center', PLAIN, { stroke: false }); }
+  else col(r, W / 2, '', true);
+  if (N) { uiText('晋阶得到', 22, 262, 14, UIC.gold2, 'left', FONT, { stroke: false });
+    const n = N.gets.length, tw = 78; N.gets.forEach((g2, i) => { const ic = unlockIcon(g2, r + 1), x = W / 2 + (i - (n - 1) / 2) * (tw + 12), y = 318;
+      ctx.save(); rr(x - tw / 2, y - tw / 2, tw, tw, 9); ctx.fillStyle = '#2a1208'; ctx.fill(); rr(x - tw / 2, y - tw / 2, tw, tw, 9); ctx.clip(); if (ic.im && ready(ic.im)) { const f = ic.fit ? Math.min(tw / ic.im.width, tw / ic.im.height) * .78 : tw / Math.min(ic.im.width, ic.im.height); ctx.drawImage(ic.im, x - ic.im.width * f / 2, y - ic.im.height * f / 2, ic.im.width * f, ic.im.height * f); } else uiSeal(x, y, 36, ic.ch, UIC.red, true); ctx.restore();
+      if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, x - tw / 2 - 2, y - tw / 2 - 2, tw + 4, tw + 4, 60, 60, 60, 60, .1); uiText(ic.label, x, y + tw / 2 + 14, 12, '#fff', 'center', FONT, { lw: 3 }); });
+    const fr = Math.min(1, (INV.prep || 0) / PREP_NEED), py = 410; plate(14, py, W - 28, 110, fr >= 1);
+    uiText(`资历 ${INV.prep || 0}/${PREP_NEED}`, 30, py + 26, 14, UIC.gold2, 'left', FONT, { stroke: false }); uiBar('prep', 130, py + 20, W - 160, 12, fr, '#8a5a14', '#ffd76e');
+    if (fr >= 1) pill(W / 2 - 70, py + 50, 140, 40, '晋阶', () => promote(), true); else pill(W / 2 - 70, py + 50, 140, 40, '去做军务', () => { screen = 'camp'; }, false); }
   if (t - RANKMSG.t0 < 3) { const a = Math.min(1, (3 - (t - RANKMSG.t0)) / .5); ctx.save(); ctx.globalAlpha = a; plate(30, 470, W - 60, 40, true); uiText(RANKMSG.text, W / 2, 490, fitSize(RANKMSG.text, 13, W - 80, 99, PLAIN), '#ffe39a', 'center', PLAIN, { lw: 3 }); ctx.restore(); }
   plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; }, false);
   if (RANKFX.on) drawPromote(t - RANKFX.t0);
