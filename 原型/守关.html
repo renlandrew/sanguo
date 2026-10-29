@@ -1635,7 +1635,7 @@ function stepShot(s, dt) {
       if (((G.up && G.up.liu2) || G.shiRoot) && !e.dead && !FOES[e.kind].boss) e.rootT = Math.max(e.rootT || 0, G.up && G.up.liu3 ? 6 : G.up && G.up.liu2 ? 4 : 3);   // 剑印
       if (crit && G.st.shuang) { if (G.cnt) G.cnt.cShuang++; if (!e.dead) e.stun += G.comboLv && G.comboLv.cShuang > 1 ? 2 : 1; const spl = []; for (const f of alive()) if (f !== e && Math.hypot(f.x - e.x, f.y - e.y) < 40) { hurt(f, d0 * .5, 'sword'); spl.push([f.x, f.y - 14 * FOES[f.kind].s * persp(f.y)]); }
         if (!G.sim) { const title = (G.vt || 0) - (G.shuangTitle ?? -9) > 6, zi = G.order.indexOf('zhang'); if (title) G.shuangTitle = G.vt || 0;   // 连携「双剑破阵」专属画面（只管画面）
-          G.fx.push({ k: 'cShuang', t: 0, dur: title ? 1.5 : .6, x: e.x, y: ty, spl: spl.slice(0, 6), title, zx: genX(zi >= 0 ? zi : 0), lx: genX(G.order.indexOf('liu')) });
+          G.fx.push({ k: 'cShuang', t: 0, dur: title ? 1.7 : .7, x: e.x, y: ty, spl: spl.slice(0, 6), title, zx: genX(zi >= 0 ? zi : 0), lx: genX(G.order.indexOf('liu')) });
           burst(e.x, ty, 'azure', 90, .12, 4); burst(e.x, ty, 'gold', 70, .16, 3); for (const [sx, sy] of spl.slice(0, 6)) burst(sx, sy, 'gold', 46, .3, 2);
           if (ML) for (let q = 0; q < 3; q++) ML.splat(e.x + VR(-8, 8), ty + 10, VR(-30, 30), VR(-200, -120), VR(7, 10), [0, VR(.7, 1), .25, 0]);   // 被劈的人身上冒张飞的火（又晕住）
           if (title) { punch(e.x, ty, .06); spxWash(e.x, ty, 'azure', .4); const sk = G.fx.filter(q => q.k === 'skname' && q.id === 'liu').pop(); if (sk) { sk.text = '双剑破阵'; sk.t = 0; } } } }
@@ -1754,7 +1754,7 @@ function resolveSkill(id, boost = 1) {
     if (G.st.exec) { let k = 0; for (const e of inS) if (!e.dead && !FOES[e.kind].boss && e.hp < e.max * .3) { e.hp = 0; die(e, 'slash'); k++; } const gi = G.order.indexOf('guan'); if (k) { G.ready[gi] = Math.max(G.t, G.ready[gi] - .3 * k); G.fx.push({ k: 'txt', t: 0, x: cx, y: cy - r * .6 - 20, text: '刀下无生 ' + k, size: 16, color: JADE }); } }
     const yun = G.st.yunzhan && !G.sim ? inS.filter(e => e.stun > 0 || G.t - (e.roaredT ?? -9) < WIN_ROAR) : [];   // 连携「晕而斩之」专属画面（只管画面，sim 里不做）
     if (yun.length) { const ys = yun.map(e => [e.x, e.y - 14, G.visDelay(e)]), zi = G.order.indexOf('zhang');
-      G.fx.push({ k: 'cYun', t: 0, dur: 1.6, x: cx, y: cy, hits: ys.slice(0, 8), zx: genX(zi >= 0 ? zi : 0), gx: genX(G.order.indexOf('guan')) });
+      G.fx.push({ k: 'cYun', t: 0, dur: 1.8, x: cx, y: cy, hits: ys.slice(0, 8), zx: genX(zi >= 0 ? zi : 0), gx: genX(G.order.indexOf('guan')) });
       for (const [hx, hy, d] of ys.slice(0, 6)) { burst(hx, hy, 'fire', 64, d, 3); burst(hx, hy, 'jade', 86, d + .04, 3); }
       spxWash(cx, cy, 'fire', .5); punch(cx, cy, .08); G.freeze = Math.max(G.freeze || 0, .12);
       // 10-29 用户：「这个不是青龙斩吗？晕而斩之只是几个字？」——青刀扫完，张飞的火化成一道朱红火刀从另一头反扫回来，两刀交成一个叉；
@@ -3729,34 +3729,45 @@ function comboLink(t, x0, x1, c0, c1) {
 }
 // 连携公用：正中砸下连携名，每个字按出招那人的颜色（cols[j] = [光, 字芯]），上面一枚「连携」金印
 function comboTitle(t, out, text, cols) {
-  const tu = clamp((t - .06) / .18, 0, 1); if (tu <= 0) return;
-  const sc = tu < 1 ? 1.8 - .8 * (1 - Math.pow(1 - tu, 3)) : 1 + .03 * Math.max(0, 1 - (t - .24) / .15), cy = 196, chars = [...text];
+  const t0 = .32, tu = clamp((t - t0) / .18, 0, 1); if (tu <= 0) return;                                  // 10-29：招先打完再出字，字挪到上方、小一号，别盖住招
+  const sc = tu < 1 ? 1.6 - .6 * (1 - Math.pow(1 - tu, 3)) : 1 + .03 * Math.max(0, 1 - (t - t0 - .18) / .15), cy = 118, chars = [...text], FS = 34;
   ctx.save(); ctx.globalAlpha = tu * out; ctx.translate(W / 2, cy); ctx.scale(sc, sc);
-  const g0 = ctx.createRadialGradient(0, 0, 10, 0, 0, 170); g0.addColorStop(0, 'rgba(20,8,4,.55)'); g0.addColorStop(1, 'rgba(20,8,4,0)'); ctx.fillStyle = g0; ctx.fillRect(-170, -60, 340, 120);   // 字后一团暗，压得住战场
-  chars.forEach((c, j) => { const x = (j - (chars.length - 1) / 2) * 46, [gl, fc] = cols[j];
-    uiText(c, x, 0, 46, '#ffffff', 'center', FONT, { glow: gl, glowR: 22, lw: 6 });
-    uiText(c, x, 0, 46, fc, 'center', FONT, { stroke: false }); });
-  shimmerText(text, 0, 0, 46, t);
+  { ctx.save(); ctx.scale(1, .32); const g0 = ctx.createRadialGradient(0, 0, 0, 0, 0, 150); g0.addColorStop(0, 'rgba(20,8,4,.5)'); g0.addColorStop(.6, 'rgba(20,8,4,.22)'); g0.addColorStop(1, 'rgba(20,8,4,0)'); ctx.fillStyle = g0; ctx.beginPath(); ctx.arc(0, 0, 150, 0, 6.283); ctx.fill(); ctx.restore(); }   // 字后一团压扁的暗（10-29 用户：「这里有一个明显的长方形，不行」——原来圆光画进矮方框，上下切出直边）
+  chars.forEach((c, j) => { const x = (j - (chars.length - 1) / 2) * FS, [gl, fc] = cols[j];
+    uiText(c, x, 0, FS, '#ffffff', 'center', FONT, { glow: gl, glowR: 18, lw: 5 });
+    uiText(c, x, 0, FS, fc, 'center', FONT, { stroke: false }); });
+  shimmerText(text, 0, 0, FS, t);
   ctx.restore();
-  if (t > .2) { const a = clamp((t - .2) / .15, 0, 1) * out; ctx.save(); ctx.globalAlpha = a; uiSeal(W / 2, cy - 46, 30, '连携', UIC.red); ctx.restore(); }
+  if (t > t0 + .12) { const a = clamp((t - t0 - .12) / .15, 0, 1) * out; ctx.save(); ctx.globalAlpha = a; uiSeal(W / 2 - chars.length * FS / 2 - 18, cy, 26, '连携', UIC.red); ctx.restore(); }   // 印盖在字左边
 }
 // 连携「双剑破阵」（10-29 用户：「做双剑破阵」）：双股剑砍中被张飞喝晕的敌人——一青一金两把剑从两边斜劈下来在他身上交成一个叉，
 // 交点炸开，再从交点甩出一圈剑气打到身边每个被溅到的敌人；被劈的那个身上冒张飞的火（又晕一秒）。连携名一关里隔 6 秒才再砸一次，免得满屏是字
 function drawCShuang(f) {
-  const t = f.t, out = t > f.dur - .3 ? Math.max(0, (f.dur - t) / .3) : 1, x = f.x, y = f.y;
-  if (hasPaint2('sword')) { const u = clamp(t / .14, 0, 1), e = 1 - Math.pow(1 - u, 3), fade = t < .28 ? 1 : Math.max(0, 1 - (t - .28) / .25);   // 两把剑从两边劈下来交叉
-    if (fade > 0) for (const sd of [-1, 1]) { const a0 = sd * 1.25, a1 = sd * .62, rot = a0 + (a1 - a0) * e, d = 90 * (1 - e), cx = x + sd * d * .9, cy = y - d;
-      ctx.save(); if (sd > 0) ctx.filter = 'sepia(1) saturate(3.5) hue-rotate(-8deg) brightness(1.25)';                   // 右边那把是金剑
-      drawPaintLive('sword', cx, cy, 136, rot, fade, 1.15, t, .9, .16, 34); ctx.restore(); } }
+  // 10-29 用户：「不是很理解，就几个字就是效果吗？」——招本身要是主角：压暗，两把大剑（青、金）从左右两边飞进来，在被劈的人身上交成一个占半个屏幕的大叉，
+  // 留下两道斜的剑痕；交点炸开，八道小剑气往外飞（先飞向被溅到的人）；连携名等招打完才在上方出来，小一号
+  const t = f.t, out = t > f.dur - .3 ? Math.max(0, (f.dur - t) / .3) : 1, x = f.x, y = f.y, big = f.title, L = big ? 260 : 140, gold = 'sepia(1) saturate(3.5) hue-rotate(-8deg) brightness(1.25)';
+  if (big) { const a = t < .06 ? t / .06 : Math.max(0, 1 - (t - .45) / .35); if (a > 0) { ctx.save(); ctx.globalAlpha = .45 * a; const dg = ctx.createLinearGradient(0, 0, 0, WALL_Y + 40); dg.addColorStop(0, '#05070c'); dg.addColorStop(.8, '#05070c'); dg.addColorStop(1, 'rgba(5,7,12,0)'); ctx.fillStyle = dg; ctx.fillRect(0, 0, W, WALL_Y + 40); ctx.restore(); } }   // 压暗：到城墙那里渐隐，不留直边
+  if (hasPaint2('sword')) {
+    const u = clamp(t / .12, 0, 1), e = 1 - Math.pow(1 - u, 3), fade = t < .3 ? 1 : Math.max(0, 1 - (t - .3) / .3), pulse = t > .12 && t < .22 ? 1 + .08 * Math.sin((t - .12) / .1 * Math.PI) : 1;
+    if (fade > 0) for (const sd of [-1, 1]) { const rot = sd * .72, d = (big ? 200 : 100) * (1 - e), cx = x - sd * d * Math.cos(.72 + Math.PI / 2) * -1, cy = y - d;   // 沿着剑身的方向从远处飞进来
+      ctx.save(); if (sd > 0) ctx.filter = gold; drawPaintLive('sword', cx + sd * d * .7, cy, L * pulse, rot, fade, 1.15, t, 1, .16, 34); ctx.restore(); }
+    if (t > .1 && t < .7) { const a = t < .14 ? (t - .1) / .04 : Math.max(0, 1 - (t - .14) / .56);                          // 两道斜的剑痕，交在被劈的人身上
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (const [sd, col] of [[-1, '140,200,255'], [1, '255,214,120']]) { const ang = sd * .72 + Math.PI / 2, dx = Math.cos(ang), dy = Math.sin(ang), hl = L * .62;
+        for (const [w, al] of [[14, .25], [5, .6], [1.8, 1]]) { const gr = ctx.createLinearGradient(x - dx * hl, y - dy * hl, x + dx * hl, y + dy * hl);
+          gr.addColorStop(0, `rgba(${col},0)`); gr.addColorStop(.5, w < 2 ? `rgba(255,255,255,${a})` : `rgba(${col},${a * al})`); gr.addColorStop(1, `rgba(${col},0)`);
+          ctx.strokeStyle = gr; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x - dx * hl, y - dy * hl); ctx.lineTo(x + dx * hl, y + dy * hl); ctx.stroke(); } }
+      ctx.restore(); }
+    const N = big ? 8 : 5;                                                                                                   // 交点往外飞的小剑气：先对准被溅到的人
+    for (let k = 0; k < N; k++) { const u2 = (t - .13) / .32; if (u2 <= 0 || u2 >= 1) continue; const tgt = f.spl[k], ang = tgt ? Math.atan2(tgt[1] - y, tgt[0] - x) : k / N * 6.283 + .4, dist = tgt ? Math.hypot(tgt[0] - x, tgt[1] - y) : (big ? 120 : 70);
+      const e2 = 1 - Math.pow(1 - Math.min(1, u2 * 1.6), 2), px = x + Math.cos(ang) * dist * e2, py = y + Math.sin(ang) * dist * e2, al = u2 < .7 ? 1 : (1 - u2) / .3;
+      ctx.save(); if (k % 2) ctx.filter = gold; drawPaintLive('sword', px, py, big ? 52 : 38, ang + Math.PI / 2, al, 1, t, .8, .16, 34); ctx.restore(); }
+  }
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  { const u = (t - .12) / .3; if (u > 0 && u < 1) { const r = 18 + 50 * u, a = 1 - u, g = ctx.createRadialGradient(x, y, 0, x, y, r);     // 交点一团白金光
+  { const u = (t - .11) / .3; if (u > 0 && u < 1) { const r = (big ? 30 : 18) + (big ? 90 : 50) * u, a = 1 - u, g = ctx.createRadialGradient(x, y, 0, x, y, r);     // 交点一团白金光
       g.addColorStop(0, `rgba(255,250,230,${a})`); g.addColorStop(.4, `rgba(140,200,255,${a * .7})`); g.addColorStop(1, 'rgba(140,200,255,0)'); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); } }
-  for (const [sx, sy] of f.spl) { const u = (t - .14) / .18; if (u <= 0 || u > 1.6) continue;                               // 剑气甩到身边的人：一道青→金的光从交点射过去
-    const v = Math.min(1, u), hx = x + (sx - x) * v, hy = y + (sy - y) * v, tx = x + (sx - x) * Math.max(0, v - .5), ty = y + (sy - y) * Math.max(0, v - .5), a = u > 1 ? Math.max(0, 1 - (u - 1) / .6) : 1;
-    const gr = ctx.createLinearGradient(tx, ty, hx, hy); gr.addColorStop(0, 'rgba(120,190,255,0)'); gr.addColorStop(1, 'rgba(255,230,150,1)');
-    for (const [lw, al] of [[7, .35], [2.4, 1]]) { ctx.globalAlpha = a * al; ctx.strokeStyle = gr; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(hx, hy); ctx.stroke(); } }
   ctx.restore();
-  if (f.title) { comboLink(t, f.zx, f.lx, 'rgba(255,110,50,1)', 'rgba(120,190,255,1)');
+  if (big) { comboLink(t, f.zx, f.lx, 'rgba(255,110,50,1)', 'rgba(120,190,255,1)');
     comboTitle(t, out, '双剑破阵', [['rgba(90,170,255,.95)', '#dcefff'], ['rgba(255,200,80,.95)', '#fff0c8'], ['rgba(255,100,40,.95)', '#ffd9b0'], ['rgba(255,100,40,.95)', '#ffd9b0']]); }
 }
 function drawFx(f) {
