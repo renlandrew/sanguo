@@ -5018,7 +5018,7 @@ function shimmerText(text, x, y, size, t) {                                     
   SHX.setTransform(k, 0, 0, k, 0, 0); SHX.clearRect(0, 0, w, h); SHX.font = `${size}px ${FONT}`; SHX.textAlign = 'center'; SHX.textBaseline = 'middle'; SHX.fillStyle = '#fff'; SHX.fillText(text, w / 2, h / 2);
   SHX.globalCompositeOperation = 'source-atop'; const p = ((t * .7) % 1.4) - .2, bx = p * w, g = SHX.createLinearGradient(bx - 40, 0, bx + 40, h); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,236,170,1)'); g.addColorStop(1, 'rgba(255,255,255,0)');
   SHX.fillStyle = 'rgba(0,0,0,0)'; SHX.fillRect(0, 0, w, h); SHX.globalCompositeOperation = 'destination-in'; SHX.fillStyle = g; SHX.fillRect(0, 0, w, h); SHX.globalCompositeOperation = 'source-over';
-  const T = ctx.getTransform(); ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .55; ctx.drawImage(SHIM, x - w / 2, y - h / 2, w, h); ctx.restore();
+  const T = ctx.getTransform(); ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= .55; ctx.drawImage(SHIM, x - w / 2, y - h / 2, w, h); ctx.restore();   /* 跟着外层透明度：官名还没出来时流光也不出（10-29 用户：「这个阶段不需要出现字」） */
 }
 // 配招页（10-29）：出阵的每人一行——主动招选一个、被动按格数选；底下亮出已成的连携
 const prepLoads = P => { const L = {}; for (const id of new Set(P.order.filter(Boolean))) if (SKILLS[id]) L[id] = loadOf(id); return L; };
