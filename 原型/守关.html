@@ -5001,7 +5001,7 @@ function drawPromote(ft) {
     ctx.shadowColor = 'rgba(255,90,50,.9)'; ctx.shadowBlur = 18; rr(-tw / 2, -tw / 2, tw, tw, 10); ctx.fillStyle = '#2a1208'; ctx.fill(); ctx.shadowBlur = 0;
     ctx.save(); rr(-tw / 2, -tw / 2, tw, tw, 10); ctx.clip(); if (ic.im && ready(ic.im)) { const f = ic.fit ? Math.min(tw / ic.im.width, tw / ic.im.height) * .78 : tw / Math.min(ic.im.width, ic.im.height); ctx.drawImage(ic.im, -ic.im.width * f / 2, -ic.im.height * f / 2, ic.im.width * f, ic.im.height * f); } else uiSeal(0, 0, 40, ic.ch, UIC.red, true); ctx.restore();
     if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, -tw / 2 - 2, -tw / 2 - 2, tw + 4, tw + 4, 60, 60, 60, 60, .1);
-    uiText(ic.label, 0, tw / 2 + 16, 13, '#b5301c', 'center', FONT, { glow: 'rgba(120,20,10,.6)', glowR: 4, lw: 3 });   /* 暗朱红 */ ctx.restore();
+    uiText(ic.label, 0, tw / 2 + 16, 13, '#ffffff', 'center', FONT, { lw: 3 });   /* 白字（10-29 用户） */ ctx.restore();
     if (t1 > 0 && t1 < .5 && hasFb('hit_gold')) { const M = FBM.hit_gold; fbFrame('hit_gold', Math.min(M.n - 1, Math.floor(t1 / .5 * M.n)), x, y, 150, i, out, 1, .7); } });
   if (ft > 3.6) { ctx.save(); ctx.globalAlpha = out * .6; uiText('点任意处继续', cx, 600, 11, '#f4e6c4', 'center', PLAIN, { stroke: false }); ctx.restore(); }
 }
