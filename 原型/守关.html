@@ -674,9 +674,13 @@ const ITEM_TIP = {                                                              
   陨铁: '陨铁\n天外陨铁，兵器二阶以上锻造所需\n来源：出外探访积累机缘',
   体力: '体力\n日常杂务每项消耗十点\n每五分钟恢复一点，上限一百二十' };
 const ITEM_C = { 精铁: '#c9cdd2', 残页: '#f0d9a0', 将印: '#e2563a', 陨铁: '#8fe8ff', 体力: '#9be0a0' };
-const WPN_IRON = [4, 4, 10, 10, 15, 15, 20, 20, 25, 25];   /* 10-27 用户：「要增加武器的升级频率」——5 级拆成 10 级，每级 +8%，精铁对半拆，陨铁在 4、6、8、10 级各一块；斗将关要 2/4/6/8/10 级，到关的天数不变 */
+const WPN_IRON = [4, 4, 10, 10, 15, 15, 20, 20, 25, 25];
+const WPN_ONE = k => { const c = { 精铁: Math.ceil(WPN_IRON[k - 1] / 3) }; if (k >= 4 && k % 2 === 0) c.陨铁 = 1; return c; };   // 一人一把：精铁三分之一；陨铁还是一块（三人共三块，陨铁每次探访多给，见 doVisit）   /* 10-27 用户：「要增加武器的升级频率」——5 级拆成 10 级，每级 +8%，精铁对半拆，陨铁在 4、6、8、10 级各一块；斗将关要 2/4/6/8/10 级，到关的天数不变 */
 const WPN_MAX = 10, wpnVis = w => Math.min(5, Math.floor((w || 0) / 2));   // 画面档位：两级换一次样子（兵器图、刀气光效仍是 0–5 档）                                                // 兵器 +1…+5 各要多少精铁：天天玩的约第 1、4、7、10、14 天攒够，正好赶上第 5、15、20、25、30 关的斗将
 const UPS = {                                                                        // 能打造、开封的东西：每级要什么、做什么
+  wpn_guan: { name: '青龙偃月刀', hero: 'guan', max: WPN_MAX, cost: k => WPN_ONE(k), desc: k => `关羽普攻、招式 +${8 * k}%` },   // 10-29 用户：「单独打造，但是资源不变」——每人一把单独升，每次花原来的三分之一
+  wpn_zhang: { name: '丈八蛇矛', hero: 'zhang', max: WPN_MAX, cost: k => WPN_ONE(k), desc: k => `张飞普攻、招式 +${8 * k}%` },
+  wpn_liu: { name: '双股剑', hero: 'liu', max: WPN_MAX, cost: k => WPN_ONE(k), desc: k => `刘备普攻、招式 +${8 * k}%` },
   wpn:    { name: '兵器', max: WPN_MAX, cost: k => k >= 4 && k % 2 === 0 ? { 精铁: WPN_IRON[k - 1], 陨铁: 1 } : { 精铁: WPN_IRON[k - 1] }, desc: k => `普攻、招式 +${8 * k}%` },   // 10-26 用户：「神兵不能那么容易升级，必须和卡关卡同步」——每级 +12%、精铁 8/20/30/40/50   // 10-25 用户：「神兵材料是升级武器的要素」
   liu2:   { name: '双股剑 · 剑印', gen: 'liu', max: 1, cost: () => ({ 残页: 6 }), desc: () => '砍中的定住 4 秒：走不动、放不了箭、施不了法' },
   guan2:  { name: '青龙斩 · 龙鳞破甲', gen: 'guan', max: 1, cost: () => ({ 残页: 12 }), desc: () => '扫过的 4 秒内盾和甲都失效、多受 20%' },
@@ -693,10 +697,11 @@ const GATE_WHY = { 5: '邓茂挺枪护身：兵器不够利，砍不进去', 9: 
 const GATE_SAY = { 5: '邓茂甲厚，兵器不到 +2 砍不动他', 9: '术士给兵回血，先研习刘备的剑印', 11: '西凉兵举盾，先研习关羽的龙鳞破甲',
   15: '胡轸刀快，兵器最好先到 +4', 20: '华雄护罩厚，兵器要到 +6', 22: '狼骑成群，先研习张飞的怒雷',
   25: '李傕护罩更厚，兵器要到 +8', 27: '追兵砍百姓，先研习剑印终阶', 30: '吕布？兵器 +10，再觉醒一人' };
-const upAt = id => { const u = {}; for (const [g, req] of Object.entries(GATES)) if (+g <= id) for (const [k, v] of Object.entries(req)) u[k] = Math.max(u[k] || 0, v); return u; };   // 按推荐打到第 id 关时手里有的
+const upAt = id => { const u = {}; for (const [g, req] of Object.entries(GATES)) if (+g <= id) for (const [k, v] of Object.entries(req)) u[k] = Math.max(u[k] || 0, v); if (u.wpn) for (const h of ['guan', 'zhang', 'liu']) u['wpn_' + h] = u.wpn; return u; };   // 按推荐打到第 id 关时手里有的
 let INV = { it: { 精铁: 0, 残页: 0, 将印: 0, 陨铁: 0 }, up: {}, awake: null, seal20: false, luck: 0 };
 try { const o = JSON.parse(localStorage.getItem(IKEY) || '{}'); INV = { ...INV, ...o, it: { ...INV.it, ...(o.it || {}) }, up: { ...(o.up || {}) } }; } catch (e) {}
 if (INV.up.wpn && !INV.wpn10) INV.up.wpn = Math.min(10, INV.up.wpn * 2); INV.wpn10 = true;   // 10-27 兵器 5 级改 10 级：旧档等级翻倍
+if (!INV.wpnSplit) { for (const h of ['guan', 'zhang', 'liu']) INV.up['wpn_' + h] = Math.max(INV.up['wpn_' + h] || 0, INV.up.wpn || 0); INV.wpnSplit = true; }   // 10-29 三人分开打造：旧档三人都按原来的等级
 if (INV.it.神兵 != null) { INV.it.陨铁 = (INV.it.陨铁 || 0) + INV.it.神兵; delete INV.it.神兵; }        // 旧档：神兵材料 → 陨铁
 for (const k of Object.keys(INV.it)) if (!(k in ITEMS)) delete INV.it[k];           // 砍掉的物品（甲片、马鬃、温酒、符水）从旧存档里清掉
 const saveInv = () => { try { localStorage.setItem(IKEY, JSON.stringify(INV)); } catch (e) {} };
@@ -855,7 +860,8 @@ function doUp(key, who) {
   INV.up[key] = (INV.up[key] || 0) + 1; if (key === 'awake') INV.awake = who || 'guan'; saveInv(); return true;
 }
 // 第一次打这一关还缺什么门槛：[{ key, need, have }]
-const gateLack = id => Object.entries(GATES[id] || {}).filter(([k, v]) => (INV.up[k] || 0) < v).map(([k, v]) => ({ key: k, need: v, have: INV.up[k] || 0 }));
+const wpnMin = () => Math.min(...['guan', 'zhang', 'liu'].map(h => INV.up['wpn_' + h] || 0));
+const gateLack = id => Object.entries(GATES[id] || {}).filter(([k, v]) => (k === 'wpn' ? wpnMin() : INV.up[k] || 0) < v).map(([k, v]) => ({ key: k, need: v, have: INV.up[k] || 0 }));
 // 要过这道门还差的材料合起来、几天后够
 function gateEta(id) {
   const tot = {}; for (const g of gateLack(id)) { let lv = g.have; while (lv < g.need) { lv++; for (const [i, n] of Object.entries(UPS[g.key].cost(lv))) tot[i] = (tot[i] || 0) + n; } if (UPS[g.key].need && !INV.up[UPS[g.key].need]) for (const [i, n] of Object.entries(UPS[UPS[g.key].need].cost(1))) tot[i] = (tot[i] || 0) + n; }
@@ -909,7 +915,7 @@ function startLevel(i) {
   // 打造、开封过的东西（10-25）：机器人按推荐打到这关时该有的算；?all 跳关试玩时，没有的按推荐补上（同等级的规矩）
   const own = INV.up, exp = upAt(lv.id); if (sim && window.__sg.wpnLess && exp.wpn) exp.wpn -= window.__sg.wpnLess;   // wpnLess：推演「兵器差几级」
   G.up = sim ? (window.__sg.noUp ? {} : exp) : window.__sg.all ? Object.fromEntries([...new Set([...Object.keys(own), ...Object.keys(exp)])].map(k => [k, Math.max(own[k] || 0, exp[k] || 0)])) : { ...own };
-  G.upMul = 1 + .08 * (G.up.wpn || 0); G.awake = G.up.awake ? (!sim && INV.awake) || 'guan' : null;
+  G.upMul = 1; G.wpnLv = {}; for (const h of ['guan', 'zhang', 'liu']) G.wpnLv[h] = G.up['wpn_' + h] ?? G.up.wpn ?? 0; G.awake = G.up.awake ? (!sim && INV.awake) || 'guan' : null;
   G.blocks = 0; G.trenchT = 0; G.logUsed = false; G.nuUsed = false; G.logArm = false; G.nuArm = false; G.lights = []; G.lightN = RU.night ? 3 : 0; G.lightArm = false; G.lightChk = 0;
   if (G.up.liu3) G.st.liuSwords += 2;
   G.wpnNeed = (GATES[lv.id] || {}).wpn || 0;
@@ -1004,7 +1010,7 @@ function hurt(e, d, src) {
   if (uncountered(T0) && src !== 'burn') d *= UNC_X;                                                                    // 没对症：见下
   if (e.guardT2 > 0) d *= .5;                                                                                           // 斗将护罩
   if (e.chargeT > 0 && !BIGSRC.has(src)) d *= CHARGE.atk;                                                                // 冲阵：普攻打不动，要靠招式（一喝喝住、青龙斩、双股剑）
-  if (e.duel && G.wpnNeed && (G.up.wpn || 0) < G.wpnNeed && src !== 'burn') { d *= .22;   /* 斗将：兵器没到这关要的那级只打两成二（10-26 三成半；10-27 普攻加强后差一级也能赢，再压） */ if (!G.sim && (G.vt || 0) - (e.dullT || -9) > 1.5) { e.dullT = G.vt || 0; G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 110, text: '兵器不够利，砍不进去', size: 15, color: INK }); } }   // 门槛：兵器没精炼到这一关要的级别
+  if (e.duel && G.wpnNeed && who && (G.wpnLv[who] || 0) < G.wpnNeed && src !== 'burn') { d *= .22;   /* 斗将：兵器没到这关要的那级只打两成二（10-26 三成半；10-27 普攻加强后差一级也能赢，再压） */ if (!G.sim && (G.vt || 0) - (e.dullT || -9) > 1.5) { e.dullT = G.vt || 0; G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 110, text: '兵器不够利，砍不进去', size: 15, color: INK }); } }   // 门槛：兵器没精炼到这一关要的级别
   const who = WHO[src], big = FOES[e.kind].boss || e.lead;
   if (e.stun > 0 && G.st.daze && src !== 'burn') d *= 1 + G.st.daze;                                                     // 威震
   if (big && who === 'guan') d *= G.st.guanBoss;                                                                          // 斩将
@@ -1014,7 +1020,7 @@ function hurt(e, d, src) {
   if (big && who === 'zhang' && G.st.wan) d *= 2;                                                                         // 万人敌
   if (who && G.pow) d *= BIGSRC.has(src) ? G.lead[who] : G.pow[who];
   if (who && src !== 'log' && src !== 'burn') d *= BIGSRC.has(src) ? SK_X * (TUNE.sk || 1) : ATK_X * (TUNE.atk2 || 1);                                                     // 武力管普攻、统率管招式
-  if (who && G.upMul) d *= G.upMul * (G.awake === who && BIGSRC.has(src) ? 1.2 : 1);   // 兵器精炼、觉醒
+  if (who && G.wpnLv) d *= (1 + .08 * (G.wpnLv[who] || 0)) * (G.awake === who && BIGSRC.has(src) ? 1.2 : 1);   // 兵器精炼、觉醒
   if (who && G.dmgBy) { const dd = Math.max(0, Math.min(d, e.hp)); G.dmgBy[who] += dd; if (BIGSRC.has(src)) G.dmgSk[who] += dd; }   // 结算分开写招式、普攻各打了多少
   if (e.duel) G.exp += Math.min(d, e.hp) / e.max * 40;                                                                  // 斗将：砍敌将也给军功（一场约 40）
   e.hp -= d; if (src !== 'burn') e.hitT = .1;
@@ -4647,8 +4653,8 @@ function campBg(title) {
   uiText(title, W / 2, 32, 28, goldGrad(32, 28), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 });
 }
 // 一页：上面一张大的「下一个目标」（还差多少、几天后够、够了就一键打造），下面今天的军务（10-25 用户看了两页军帐：「好复杂」）
-function campGoal() {                                                                // 下一道门里第一样还没有的
-  const ng = nextGate(); if (!ng) return null; const g = gateLack(ng)[0], U = UPS[g.key];
+function campGoal() {                                                                // 下一道门里第一样还没有的（兵器不在军帐出现：10-29 用户）
+  const ng = nextGate(); if (!ng) return null; const g = gateLack(ng).filter(x => x.key !== 'wpn')[0]; if (!g) return null; const _g = g, U = UPS[g.key];
   const key = U.need && !INV.up[U.need] ? U.need : g.key;                           // 终阶要先开封二阶
   const tot = upCost(key); return { ng, key, U: UPS[key], tot, ...eta(tot) };       // 只看下一步要的（兵器 +1 → +2 一级一级来）
 }
@@ -4806,7 +4812,7 @@ function drawWeapon(id, lvl, cx, cy, h, rot, t, big) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, 9); g.addColorStop(0, `rgba(255,240,200,${.8 * a})`); g.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = g; ctx.fillRect(ex - 9, ey - 9, 18, 18); ctx.restore(); }
 }
 function drawArmory2() {
-  const wl = INV.up.wpn || 0, lvl = wpnVis(wl), room = IMG['room_' + (wl >= 6 ? 2 : 1)];   /* 第一章神兵室最多到第二间（10-27 用户：「不需要10个神兵室，那太快了」），兵器 6 级起换，其余留给后面章节；lvl 是画面档位 */
+  const AK = 'wpn_' + ARM.who, wl = INV.up[AK] || 0, lvl = wpnVis(wl), room = IMG['room_' + (wl >= 6 ? 2 : 1)];   /* 第一章神兵室最多到第二间（10-27 用户：「不需要10个神兵室，那太快了」），兵器 6 级起换，其余留给后面章节；lvl 是画面档位 */
   if (ready(room)) { const h = W * room.height / room.width; ctx.drawImage(room, 0, 0, W, h); const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, 'rgba(8,5,4,.45)'); bg.addColorStop(.35, 'rgba(8,5,4,.1)'); bg.addColorStop(.62, 'rgba(8,5,4,.25)'); bg.addColorStop(1, 'rgba(6,4,3,.92)'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
     uiText('神兵', W / 2, 32, 28, goldGrad(32, 28), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 }); }
   else campBg('神兵');
@@ -4816,22 +4822,22 @@ function drawArmory2() {
   if (fl) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = fl; ctx.fillStyle = '#fff6dc'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
   uiText(WPN[id], 22, 78, 22, UIC.gold2, 'left', FONT, { glow: `rgba(${WPN_GLOW[id]},.5)`, glowR: 10 });
   uiText(`${WPN_TIER[lvl]}${wl ? ' · +' + wl : ''}`, 22, 104, 15, `rgb(${WPN_GLOW[id]})`, 'left', FONT);
-  uiText(wl ? UPS.wpn.desc(wl) : '还没精炼', 22, 124, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });
+  uiText(wl ? UPS[AK].desc(wl) : '还没精炼', 22, 124, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });
   ['guan', 'zhang', 'liu'].forEach((g, k) => { const x = W - 70, y = 70 + k * 92, on = g === id;                       // 右边三格：三人的兵器
     ctx.save(); if (!on) ctx.globalAlpha = .5; ctx.fillStyle = 'rgba(14,10,7,.8)'; rr(x, y, 58, 84, 7); ctx.fill();   /* 和底栏武将牌一样：暗底加细金框（关卡牌那张缩小了里面的金边像个方框） */
-    drawWeapon(g, lvl, x + 29, y + 36, 66, WPN_ROT[g], t, false); if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, x - 1, y - 1, 60, 86, 60, 60, 60, 60, .1); ctx.restore();
+    const gl = INV.up['wpn_' + g] || 0; drawWeapon(g, wpnVis(gl), x + 29, y + 36, 66, WPN_ROT[g], t, false); if (canUp('wpn_' + g)) uiSeal(x + 52, y + 8, 12, '升', UIC.red, true); if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, x - 1, y - 1, 60, 86, 60, 60, 60, 60, .1); ctx.restore();
     if (on) { ctx.save(); ctx.shadowColor = 'rgba(255,200,90,.8)'; ctx.shadowBlur = 10; ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 1.6; rr(x + .5, y + .5, 57, 83, 7); ctx.stroke(); ctx.restore(); }
-    uiText(GEN[g].name, x + 29, y + 74, 11, on ? UIC.gold2 : UIC.cream, 'center', PLAIN, { stroke: false }); hit(x, y, 58, 84, () => { ARM.who = g; }); });
+    uiText(`${GEN[g].name} +${gl}`, x + 29, y + 74, 11, on ? UIC.gold2 : UIC.cream, 'center', PLAIN, { stroke: false }); hit(x, y, 58, 84, () => { ARM.who = g; }); });
   // 底下：下一级
   const y = 470; plate(14, y, W - 28, 112, wl < WPN_MAX);
   if (wl >= WPN_MAX) uiText('已是绝世神兵', W / 2, y + 56, 18, UIC.gold2, 'center', FONT);
-  else { const cost = upCost('wpn'), e = eta(cost), nim = wpnImg(id, lvl + 1);
+  else { const cost = upCost(AK), e = eta(cost), nim = wpnImg(id, lvl + 1);
     ctx.save(); ctx.beginPath(); ctx.rect(20, y + 6, 70, 100); ctx.clip(); drawWeapon(id, wpnVis(wl + 1), 55, y + 56, 96, WPN_ROT[id], t, false); ctx.restore();
     uiText(`下一级 · ${WPN_TIER[wpnVis(wl + 1)]} +${wl + 1}`, 100, y + 20, 15, UIC.gold2, 'left', FONT, { stroke: false });
-    uiText(UPS.wpn.desc(wl + 1), 100, y + 40, 11, UIC.cream, 'left', PLAIN, { stroke: false });
+    uiText(UPS[AK].desc(wl + 1), 100, y + 40, 11, UIC.cream, 'left', PLAIN, { stroke: false });
     Object.entries(cost).forEach(([it, n], j) => { const have = INV.it[it] || 0, yy = y + 60 + j * 16;
       uiText(`${it} ${Math.min(have, n)}/${n}`, 100, yy, 12, ITEM_C[it], 'left', PLAIN, { stroke: false }); uiBar('arm_' + it, 170, yy - 3, 90, 6, have / n, '#8a5a14', '#ffd76e', { edge: 'rgba(0,0,0,0)' }); });
-    if (canUp('wpn')) pill(W - 98, y + 66, 76, 30, '打造', () => { doUp('wpn'); ARM.flash = uiNow(); });
+    if (canUp(AK)) pill(W - 98, y + 66, 76, 30, '打造', () => { doUp(AK); ARM.flash = uiNow(); ARM.forge = { t0: uiNow(), id, lv: INV.up[AK] }; sfx('gong'); });
     else uiText(etaText(e.d, e.lack), W - 24, y + 94, 12, etaColor(e.d), 'right', FONT, { stroke: false }); }
   /* 10-26 用户圈了「三人的兵器一起精炼」：「去掉这句」 */
   plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; }, false);
@@ -5037,19 +5043,24 @@ function shimmerText(text, x, y, size, t) {                                     
   SHX.fillStyle = 'rgba(0,0,0,0)'; SHX.fillRect(0, 0, w, h); SHX.globalCompositeOperation = 'destination-in'; SHX.fillStyle = g; SHX.fillRect(0, 0, w, h); SHX.globalCompositeOperation = 'source-over';
   const T = ctx.getTransform(); ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= .55; ctx.drawImage(SHIM, x - w / 2, y - h / 2, w, h); ctx.restore();   /* 跟着外层透明度：官名还没出来时流光也不出（10-29 用户：「这个阶段不需要出现字」） */
 }
-function drawAch() {
-  campBg('功绩簿'); const L = achList(), can = L.filter(a => a.ok && !a.got);
-  let y = 66; const row = a => { const c = a.got ? 'rgba(244,230,196,.4)' : a.ok ? '#ffe39a' : UIC.cream; plate(14, y, W - 28, 40, a.ok && !a.got);
-    uiText(a.name, 26, y + 14, 13, c, 'left', PLAIN, { stroke: false }); if (a.prog) uiText(`${a.prog[0]}/${a.prog[1]}`, 26, y + 30, 10, 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false });
-    a.pay.forEach(([k, n], i) => { drawItemIcon(k, W - 140 + i * 40, y + 20, 18); uiText('+' + n, W - 128 + i * 40, y + 20, 11, c, 'left', PLAIN, { stroke: false }); }); if (a.prep) uiText('整备+' + a.prep, W - 140 + a.pay.length * 40, y + 20, 10, '#9be0a0', 'left', PLAIN, { stroke: false });
-    if (a.got) uiSeal(W - 34, y + 20, 22, '领', UIC.red, true); else if (a.ok) pill(W - 62, y + 9, 44, 22, '领取', () => { const g = claimAch([a]); showReward('领取功绩', [a.name], ['guan', 'zhang', 'liu'], true, g); }, true);
-    y += 44; };
-  for (const sec of ['本阶功绩', '星绩']) { const S = L.filter(a => a.sec === sec); if (!S.length) continue; uiText(sec, 18, y + 8, 14, UIC.gold2, 'left', FONT, { stroke: false }); y += 18; S.forEach(row); y += 4; }
-  const F = L.filter(a => a.sec === '首通'), fcOk = F.filter(a => a.ok).length; uiText(`首通 ${fcOk}/${F.length}`, 18, y + 8, 14, UIC.gold2, 'left', FONT, { stroke: false }); y += 18;
-  F.forEach((a, i) => { const cw = (W - 28 - 9 * 4) / 10, x = 14 + (i % 10) * (cw + 4), yy = y + Math.floor(i / 10) * (cw + 4);   // 30 关一格一关：领过金、可领闪、没过灰
-    ctx.save(); if (!a.ok) { ctx.globalAlpha = .35; ctx.filter = 'grayscale(1)'; } uiPanel(x, yy, cw, cw, { r: 5, single: true, top: a.got ? '#7a4a10' : '#2b1f16', bot: UIC.lac, edge: a.ok && !a.got ? UIC.gold2 : 'rgba(217,166,64,.4)', glow: a.ok && !a.got ? 'rgba(255,200,90,.8)' : null });
-    uiText(CNUM(a.lv), x + cw / 2, yy + cw / 2, 11, a.got ? '#fff2c0' : UIC.cream, 'center', FONT, { stroke: false }); ctx.restore(); });
-  if (can.length) pill(W / 2 - 70, 560, 140, 30, `一键领取（${can.length}）`, () => { const g = claimAch(can); showReward('领取功绩', [`领了 ${can.length} 项`], ['guan', 'zhang', 'liu'], true, g); }, true);
+const ACHUI = { tab: 0, scroll: 0 };
+function drawAch() {                                                                // 10-29 用户：「这个好丑，整个页面看不懂」——分三页签，每行写清「做到什么 → 得什么」，可领的排最前
+  campBg('功绩簿'); const L = achList(), TABS = [['本阶功绩', a => a.sec === '本阶功绩'], ['星绩', a => a.sec === '星绩'], ['首通', a => a.sec === '首通']];
+  TABS.forEach(([nm, f], k) => { const x = 16 + k * ((W - 32) / 3), w = (W - 32) / 3 - 6, on = ACHUI.tab === k, n = L.filter(a => f(a) && a.ok && !a.got).length;
+    uiPanel(x, 58, w, 30, { r: 8, top: on ? '#6e1a10' : '#2b1f16', bot: on ? '#3a0c06' : UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.45)' });
+    uiText(nm, x + w / 2, 73, 14, on ? '#fff2dc' : UIC.cream, 'center', FONT, { lw: 3 }); if (n) uiSeal(x + w - 8, 60, 11, String(n), UIC.red, true); hit(x, 58, w, 30, () => { ACHUI.tab = k; ACHUI.scroll = 0; }); });
+  const tip = ['完成后另给整备点，帮你更快晋阶', '各关最好成绩的星数加起来', '每关第一次打赢给一次'][ACHUI.tab]; uiText(tip, W / 2, 104, 11, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
+  const S = L.filter(TABS[ACHUI.tab][1]).sort((a, b) => (b.ok && !b.got) - (a.ok && !a.got) || a.got - b.got), rowH = 58, y0 = 116, maxN = 7, off = Math.max(0, Math.min(ACHUI.scroll, S.length - maxN));
+  if (!S.length) uiText('这一阶没有功绩', W / 2, 200, 14, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
+  S.slice(off, off + maxN).forEach((a, k) => { const y = y0 + k * rowH, can = a.ok && !a.got; plate(14, y, W - 28, rowH - 6, can);
+    const nm = a.sec === '首通' ? `第${CNUM(a.lv)}关 · ${a.name}` : a.name; uiText(nm, 26, y + 16, 14, a.got ? 'rgba(244,230,196,.45)' : UIC.cream, 'left', FONT, { lw: 3 });
+    const prog = a.prog || [a.ok ? 1 : 0, 1]; slotBar(26, y + 30, 130, 10, [[Math.min(1, prog[0] / prog[1]), '#8a5a14', '#ffd76e']]); uiText(a.prog ? `${prog[0]}/${prog[1]}` : a.ok ? '已达成' : '未达成', 162, y + 35, 10, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false });
+    a.pay.forEach(([kk, n], i) => { drawItemIcon(kk, 214 + i * 34, y + 18, 20); uiText('×' + n, 214 + i * 34, y + 38, 10, UIC.cream, 'center', PLAIN, { stroke: false }); });
+    if (a.got) uiSeal(W - 40, y + 26, 22, '已领', UIC.red, true); else if (can) pill(W - 74, y + 13, 54, 26, '领取', () => { const g = claimAch([a]); showReward('领取功绩', a.prep ? [`整备 +${a.prep}`] : [], ['guan', 'zhang', 'liu'], true, g); }, true);
+    else uiText('未完成', W - 46, y + 26, 11, 'rgba(244,230,196,.4)', 'center', PLAIN, { stroke: false }); });
+  if (S.length > maxN) { uiText(`${off + 1}–${Math.min(S.length, off + maxN)} / ${S.length}`, W / 2, y0 + maxN * rowH + 6, 10, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
+    pill(30, y0 + maxN * rowH - 6, 60, 24, '上页', () => { ACHUI.scroll = Math.max(0, off - maxN); }, false); pill(W - 90, y0 + maxN * rowH - 6, 60, 24, '下页', () => { ACHUI.scroll = off + maxN; }, false); }
+  const can = L.filter(a => a.ok && !a.got); if (can.length) pill(W / 2 - 70, 562, 140, 30, `全部领取（${can.length}）`, () => { const g = claimAch(can); showReward('领取功绩', [`领了 ${can.length} 项`], ['guan', 'zhang', 'liu'], true, g); }, true);
   plaque(112, 600, 136, 32, '返回', () => { screen = 'camp'; }, false);
   if (REWARD) drawReward();
 }
