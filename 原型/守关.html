@@ -4990,10 +4990,19 @@ function drawPromote(ft) {
   ctx.save(); ctx.globalAlpha = out * tu; ctx.translate(cx, 372); ctx.scale(ts, ts);
   if (ready(IMG.ui_banner)) { const bw = 320, bh = bw * IMG.ui_banner.height / IMG.ui_banner.width; ctx.drawImage(IMG.ui_banner, -bw / 2, -bh / 2, bw, bh); } else { ctx.fillStyle = 'rgba(20,10,4,.92)'; rr(-130, -32, 260, 64, 12); ctx.fill(); ctx.strokeStyle = '#d9a640'; ctx.lineWidth = 2; ctx.stroke(); }
   ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = (.55 + .25 * Math.sin(ft * 6)) * out * tu; uiText(RANKFX.name, 0, 1, 26, '#ffd76e', 'center', FONT, { stroke: false, glow: 'rgba(255,230,140,1)', glowR: 26 }); ctx.restore();   /* 10-29 用户：「官阶的字太暗，要光亮的」——底下一层发光、上面亮金白字 */
-  uiText(RANKFX.name, 0, 1, 26, '#fff6d6', 'center', FONT, { glow: 'rgba(255,220,120,1)', glowR: 14, lw: 3 });   /* 字收在横匾里（10-29 用户：「字不要超出」） */ ctx.restore();
+  uiText(RANKFX.name, 0, 1, 26, '#fff6d6', 'center', FONT, { glow: 'rgba(255,220,120,1)', glowR: 14, lw: 3 });   /* 字收在横匾里（10-29 用户：「字不要超出」） */
+  shimmerText(RANKFX.name, 0, 1, 26, ft);   /* 一道白光不停地从左扫到右（10-29 用户：「这几个字要不断流光溢彩」） */ ctx.restore();
   (RANKFX.gets || []).forEach((g2, i) => { const a = out * clamp((ft - 2.4 - i * .25) / .25, 0, 1), y = 446 + i * 34, pop = 1 + .25 * Math.max(0, 1 - (ft - 2.4 - i * .25) / .2); ctx.save(); ctx.globalAlpha = a;   /* 不套 html 那种圆角框（10-29 用户），只用发光的字，亮出来时一弹 */
     ctx.translate(cx, y); ctx.scale(pop, pop); uiText(g2, 0, 0, 18, '#ff5a3c', 'center', FONT, { glow: 'rgba(255,90,50,.95)', glowR: 14, lw: 4 });   /* 10-29 用户：「新技能之类的换朱红色试试」 */ ctx.restore(); });
   if (ft > 3.2) { ctx.save(); ctx.globalAlpha = out * .6; uiText('点任意处继续', cx, 600, 11, '#f4e6c4', 'center', PLAIN, { stroke: false }); ctx.restore(); }
+}
+const SHIM = document.createElement('canvas'), SHX = SHIM.getContext('2d');
+function shimmerText(text, x, y, size, t) {                                         // 字上的流光：离屏画字，source-atop 叠一条斜着移动的亮带，再「变亮」贴回去
+  const w = Math.ceil(size * text.length * 1.2) + 20, h = Math.ceil(size * 1.6), k = RS; SHIM.width = w * k; SHIM.height = h * k;
+  SHX.setTransform(k, 0, 0, k, 0, 0); SHX.clearRect(0, 0, w, h); SHX.font = `${size}px ${FONT}`; SHX.textAlign = 'center'; SHX.textBaseline = 'middle'; SHX.fillStyle = '#fff'; SHX.fillText(text, w / 2, h / 2);
+  SHX.globalCompositeOperation = 'source-atop'; const p = ((t * .7) % 1.4) - .2, bx = p * w, g = SHX.createLinearGradient(bx - 40, 0, bx + 40, h); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  SHX.fillStyle = 'rgba(0,0,0,0)'; SHX.fillRect(0, 0, w, h); SHX.globalCompositeOperation = 'destination-in'; SHX.fillStyle = g; SHX.fillRect(0, 0, w, h); SHX.globalCompositeOperation = 'source-over';
+  const T = ctx.getTransform(); ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(SHIM, x - w / 2, y - h / 2, w, h); ctx.drawImage(SHIM, x - w / 2, y - h / 2, w, h); ctx.restore();
 }
 // 配招页（10-29）：出阵的每人一行——主动招选一个、被动按格数选；底下亮出已成的连携
 const prepLoads = P => { const L = {}; for (const id of new Set(P.order.filter(Boolean))) if (SKILLS[id]) L[id] = loadOf(id); return L; };
