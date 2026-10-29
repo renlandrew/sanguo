@@ -3488,12 +3488,21 @@ function drawFx(f) {
       const i = Math.min(M.frames.length - 1, Math.floor(u * M.frames.length)), r = M.frames[i], c = M.centers[i];
       const h = 430 * f.s, w = h * M.width / M.height, x = f.x - w / 2, y = f.y - h;
       const fade = Math.min(1, u / .12, (1 - u) / .25), fl = .75 + .25 * Math.sin(f.t * 31);
-      if (c) { const cx = x + c[0] / M.width * w, cy = y + c[1] / M.height * h, radius = w * .72;
-        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .60 * fade * fl;
-        const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius); glow.addColorStop(0, 'rgba(255,223,134,.7)'); glow.addColorStop(1, 'rgba(255,174,75,0)');
+      if (c) { const cx = x + c[0] / M.width * w, cy = y + c[1] / M.height * h, radius = w * 1.2;
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .95 * fade * fl;
+        const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius); glow.addColorStop(0, 'rgba(255,234,165,.95)'); glow.addColorStop(.42, 'rgba(255,182,70,.45)'); glow.addColorStop(1, 'rgba(255,156,50,0)');
         ctx.fillStyle = glow; ctx.fillRect(cx-radius, cy-radius, radius*2, radius*2); ctx.restore(); }
       ctx.save(); ctx.drawImage(im, r[0], r[1], r[2], r[3], x, y, w, h);
-      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .30 * fade * fl; ctx.drawImage(im, r[0], r[1], r[2], r[3], x, y, w, h); ctx.restore();
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .48 * fade * fl; ctx.drawImage(im, r[0], r[1], r[2], r[3], x, y, w, h); ctx.restore();
+      // 三个错时的金白闪芒贴着声浪边缘掠过，每次只亮一处，不做密集粒子。
+      if (c) for (const [when, dx, dy] of [[.17,-.28,-.075],[.39,.26,-.06],[.62,-.06,.025]]) {
+        const pulse = Math.exp(-Math.pow((u - when) / .065, 2)); if (pulse < .02) continue;
+        const px = x + c[0] / M.width * w + dx * w, py = y + c[1] / M.height * h + dy * h, size = w * (.14 + .06 * pulse);
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = pulse * fade;
+        const g = ctx.createRadialGradient(px, py, 0, px, py, size * 2.4); g.addColorStop(0, 'rgba(255,248,209,1)'); g.addColorStop(.22, 'rgba(255,212,103,.85)'); g.addColorStop(1, 'rgba(255,171,47,0)');
+        ctx.fillStyle = g; ctx.fillRect(px-size*2.4, py-size*2.4, size*4.8, size*4.8);
+        ctx.fillStyle = '#fff9de'; ctx.beginPath(); ctx.moveTo(px, py-size); ctx.quadraticCurveTo(px+size*.1,py-size*.1,px+size*.65,py); ctx.quadraticCurveTo(px+size*.1,py+size*.1,px,py+size); ctx.quadraticCurveTo(px-size*.1,py+size*.1,px-size*.65,py); ctx.quadraticCurveTo(px-size*.1,py-size*.1,px,py-size); ctx.fill(); ctx.restore();
+      }
     }
   }
   else if (f.k === 'shout') {                                                       // 张飞的声浪：往上冲、从小撑大、头尾淡
