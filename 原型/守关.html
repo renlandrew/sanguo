@@ -3743,32 +3743,40 @@ function comboTitle(t, out, text, cols) {
 // 连携「双剑破阵」（10-29 用户：「做双剑破阵」）：双股剑砍中被张飞喝晕的敌人——一青一金两把剑从两边斜劈下来在他身上交成一个叉，
 // 交点炸开，再从交点甩出一圈剑气打到身边每个被溅到的敌人；被劈的那个身上冒张飞的火（又晕一秒）。连携名一关里隔 6 秒才再砸一次，免得满屏是字
 function drawCShuang(f) {
-  // 10-29 用户：「不是很理解，就几个字就是效果吗？」——招本身要是主角：压暗，两把大剑（青、金）从左右两边飞进来，在被劈的人身上交成一个占半个屏幕的大叉，
-  // 留下两道斜的剑痕；交点炸开，八道小剑气往外飞（先飞向被溅到的人）；连携名等招打完才在上方出来，小一号
+  // 10-29 用户：「不是很理解，就几个字就是效果吗？」——招本身要是主角：压暗，两道剑气交错劈过被劈的人，交点炸开，小剑气往外迸（先飞向被溅到的人）；
+  // 连携名等招打完才在上方出来，小一号
   const t = f.t, out = t > f.dur - .3 ? Math.max(0, (f.dur - t) / .3) : 1, x = f.x, y = f.y, big = f.title, L = big ? 260 : 140, gold = 'sepia(1) saturate(3.5) hue-rotate(-8deg) brightness(1.25)';
   if (big) { const a = t < .06 ? t / .06 : Math.max(0, 1 - (t - .45) / .35); if (a > 0) { ctx.save(); ctx.globalAlpha = .45 * a; const dg = ctx.createLinearGradient(0, 0, 0, WALL_Y + 40); dg.addColorStop(0, '#05070c'); dg.addColorStop(.8, '#05070c'); dg.addColorStop(1, 'rgba(5,7,12,0)'); ctx.fillStyle = dg; ctx.fillRect(0, 0, W, WALL_Y + 40); ctx.restore(); } }   // 压暗：到城墙那里渐隐，不留直边
-  if (hasPaint2('sword')) {
-    const u = clamp(t / .12, 0, 1), e = 1 - Math.pow(1 - u, 3), fade = t < .3 ? 1 : Math.max(0, 1 - (t - .3) / .3), pulse = t > .12 && t < .22 ? 1 + .08 * Math.sin((t - .12) / .1 * Math.PI) : 1;
-    if (fade > 0) for (const sd of [-1, 1]) { const rot = sd * .72, d = (big ? 200 : 100) * (1 - e), cx = x - sd * d * Math.cos(.72 + Math.PI / 2) * -1, cy = y - d;   // 沿着剑身的方向从远处飞进来
-      ctx.save(); if (sd > 0) ctx.filter = gold; drawPaintLive('sword', cx + sd * d * .7, cy, L * pulse, rot, fade, 1.15, t, 1, .16, 34); ctx.restore(); }
-    if (t > .1 && t < .7) { const a = t < .14 ? (t - .1) / .04 : Math.max(0, 1 - (t - .14) / .56);                          // 两道斜的剑痕，交在被劈的人身上
-      ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      for (const [sd, col] of [[-1, '140,200,255'], [1, '255,214,120']]) { const ang = sd * .72 + Math.PI / 2, dx = Math.cos(ang), dy = Math.sin(ang), hl = L * .62;
-        for (const [w, al] of [[14, .25], [5, .6], [1.8, 1]]) { const gr = ctx.createLinearGradient(x - dx * hl, y - dy * hl, x + dx * hl, y + dy * hl);
-          gr.addColorStop(0, `rgba(${col},0)`); gr.addColorStop(.5, w < 2 ? `rgba(255,255,255,${a})` : `rgba(${col},${a * al})`); gr.addColorStop(1, `rgba(${col},0)`);
-          ctx.strokeStyle = gr; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x - dx * hl, y - dy * hl); ctx.lineTo(x + dx * hl, y + dy * hl); ctx.stroke(); } }
-      ctx.restore(); }
-    const N = big ? 8 : 5;                                                                                                   // 交点往外飞的小剑气：先对准被溅到的人
-    for (let k = 0; k < N; k++) { const u2 = (t - .13) / .32; if (u2 <= 0 || u2 >= 1) continue; const tgt = f.spl[k], ang = tgt ? Math.atan2(tgt[1] - y, tgt[0] - x) : k / N * 6.283 + .4, dist = tgt ? Math.hypot(tgt[0] - x, tgt[1] - y) : (big ? 120 : 70);
-      const e2 = 1 - Math.pow(1 - Math.min(1, u2 * 1.6), 2), px = x + Math.cos(ang) * dist * e2, py = y + Math.sin(ang) * dist * e2, al = u2 < .7 ? 1 : (1 - u2) / .3;
-      ctx.save(); if (k % 2) ctx.filter = gold; drawPaintLive('sword', px, py, big ? 52 : 38, ang + Math.PI / 2, al, 1, t, .8, .16, 34); ctx.restore(); }
-  }
+  // 10-29 用户：「两把大剑交叉最好是一左一右交错而过，因为是剑气，所以要锋利。目前这个好像不大锋利，好似波浪」——不用会波动的剑气画稿，
+  // 改成两道锋利的直剑气：青的从左上斜劈穿过被劈的人、一直劈出去，金的晚 0.05 秒从右上劈过来，两刀交错成叉；两头尖、刃口一线白
+  const H = big ? 210 : 110, dx = .78, dy = .62;
+  sharpSlash(x - H * dx, y - H * dy, x + H * dx, y + H * dy, (t - 0) / .11, t, big ? 13 : 8, '120,200,255');
+  sharpSlash(x + H * dx, y - H * dy, x - H * dx, y + H * dy, (t - .05) / .11, t - .05, big ? 13 : 8, '255,212,110');
+  const N = big ? 8 : 5;                                                                                                   // 交点往外迸的小剑气，也是尖的
+  for (let k = 0; k < N; k++) { const u2 = (t - .14) / .26; if (u2 <= 0 || u2 >= 1) continue; const tgt = f.spl[k], ang = tgt ? Math.atan2(tgt[1] - y, tgt[0] - x) : k / N * 6.283 + .4, dist = tgt ? Math.hypot(tgt[0] - x, tgt[1] - y) : (big ? 120 : 70);
+    const e2 = 1 - Math.pow(1 - u2, 2), hx = x + Math.cos(ang) * dist * e2, hy = y + Math.sin(ang) * dist * e2, tl = 26, tx = hx - Math.cos(ang) * tl, ty = hy - Math.sin(ang) * tl;
+    sharpSlash(tx, ty, hx, hy, 1, .2 + u2 * .2, 3.5, k % 2 ? '255,212,110' : '120,200,255'); }
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
   { const u = (t - .11) / .3; if (u > 0 && u < 1) { const r = (big ? 30 : 18) + (big ? 90 : 50) * u, a = 1 - u, g = ctx.createRadialGradient(x, y, 0, x, y, r);     // 交点一团白金光
       g.addColorStop(0, `rgba(255,250,230,${a})`); g.addColorStop(.4, `rgba(140,200,255,${a * .7})`); g.addColorStop(1, 'rgba(140,200,255,0)'); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); } }
   ctx.restore();
   if (big) { comboLink(t, f.zx, f.lx, 'rgba(255,110,50,1)', 'rgba(120,190,255,1)');
     comboTitle(t, out, '双剑破阵', [['rgba(90,170,255,.95)', '#dcefff'], ['rgba(255,200,80,.95)', '#fff0c8'], ['rgba(255,100,40,.95)', '#ffd9b0'], ['rgba(255,100,40,.95)', '#ffd9b0']]); }
+}
+// 一道锋利的直剑气：u 0→1 刀头从 (x0,y0) 劈到 (x1,y1)，后面拖着一条两头尖的光刃；劈完以后 age 越大越细、越淡，最后收成一线消失。
+// 剑身按人物色，刃口一线白，刀头一点亮光（陪衬，一闪而过）
+function sharpSlash(x0, y0, x1, y1, u, age, w, col) {
+  if (u <= 0) return; const e = 1 - Math.pow(1 - Math.min(1, u), 3), hold = u < 1 ? 1 : Math.max(0, 1 - (age - .11) / .4); if (hold <= 0) return;
+  const tailU = u < 1 ? Math.max(0, e - .55) : Math.min(1, (age - .11) / .4) * .5, hx = x0 + (x1 - x0) * e, hy = y0 + (y1 - y0) * e, tx = x0 + (x1 - x0) * tailU, ty = y0 + (y1 - y0) * tailU;
+  const len = Math.hypot(hx - tx, hy - ty); if (len < 2) return; const nx = -(hy - ty) / len, ny = (hx - tx) / len, ww = w * (u < 1 ? 1 : .35 + .65 * hold);
+  const lens = (k) => { ctx.beginPath(); ctx.moveTo(tx, ty); for (let i = 1; i <= 16; i++) { const s2 = i / 16, ww2 = ww * k * Math.pow(Math.sin(Math.PI * s2), .55) * (.4 + .6 * s2); ctx.lineTo(tx + (hx - tx) * s2 + nx * ww2, ty + (hy - ty) * s2 + ny * ww2); }
+    for (let i = 15; i >= 1; i--) { const s2 = i / 16, ww2 = ww * k * Math.pow(Math.sin(Math.PI * s2), .55) * (.4 + .6 * s2) * .35; ctx.lineTo(tx + (hx - tx) * s2 - nx * ww2, ty + (hy - ty) * s2 - ny * ww2); } ctx.closePath(); };   // 一边厚一边薄：像刀刃
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = .35 * hold; ctx.fillStyle = `rgb(${col})`; ctx.shadowColor = `rgba(${col},1)`; ctx.shadowBlur = 14; lens(1.9); ctx.fill(); ctx.shadowBlur = 0;   // 外面一层人物色的光
+  ctx.globalAlpha = .95 * hold; const g = ctx.createLinearGradient(tx, ty, hx, hy); g.addColorStop(0, `rgba(${col},0)`); g.addColorStop(.6, `rgba(${col},1)`); g.addColorStop(1, '#ffffff'); ctx.fillStyle = g; lens(1); ctx.fill();
+  ctx.globalAlpha = hold; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(tx + (hx - tx) * .25, ty + (hy - ty) * .25); ctx.lineTo(hx, hy); ctx.stroke();   // 刃口一线白
+  if (u < 1.15) { const r = w * 2.4, hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, r); hg.addColorStop(0, 'rgba(255,255,255,.95)'); hg.addColorStop(1, `rgba(${col},0)`); ctx.globalAlpha = 1; ctx.fillStyle = hg; ctx.fillRect(hx - r, hy - r, r * 2, r * 2); }
+  ctx.restore();
 }
 function drawFx(f) {
   if (f.k === 'skname') { drawSkName(f); return; }
