@@ -1803,7 +1803,12 @@ function resolveWenjiu(boost = 1, skip) {
   const al = alive(), e = wjAim(al, skip); if (!e) return; const he = G.combos && G.combos.includes('cHe') && (e.stun > 0 || G.t - (e.roaredT ?? -9) < WIN_ROAR);
   hurt(e, 260 * HPX * boost * (G.wjMul || 1) * (he ? 2 : 1), 'wenjiu'); if (!e.dead) e.knock += 30 * SPD_X;
   G.fx.push({ k: 'wenjiu', t: 0, dur: .8, x: e.x, y: e.y - 20 * FOES[e.kind].s * persp(e.y), he }); fbPlay('yanyue', e.x, e.y - 20, 220, null, { glow: .7 }); fbPlay('hit_jade', e.x, e.y - 20, 160, null, { delay: .08, glow: .6 });
-  if (he && !G.sim) G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 110, text: '喝而斩之', size: 22, color: '#ffd76e' });
+  if (he && !G.sim) { const ty = e.y - 20 * FOES[e.kind].s * persp(e.y), zi = G.order.indexOf('zhang');                  // 连携「喝而斩之」专属画面（只管画面；原来只飘一行字）
+    G.fx.push({ k: 'cHe', t: 0, dur: 1.9, x: e.x, y: ty, gy: e.y, zx: genX(zi >= 0 ? zi : 0), gx: genX(G.order.indexOf('guan')) });
+    fbPlay('hit_fire', e.x, ty, 240, null, { delay: .16, glow: .7 }); fbPlay('bao', e.x, e.y - 6, 280, null, { delay: .19, glow: .75 }); fbPlay('hit_gold', e.x, ty, 200, null, { delay: .23, glow: .6 });
+    if (ML) for (let q = 0; q < 10; q++) { const a = q / 10 * 6.283; ML.splat(e.x + Math.cos(a) * 34, e.y - 4 + Math.sin(a) * 12, Math.cos(a) * 60, VR(-260, -160), VR(8, 11), [0, VR(.8, 1.1), .3, 0]); }   // 张飞一喝：敌人脚下一圈火往上窜，钉住他
+    spxWash(e.x, ty, 'fire', .55); spxDim(.6); punch(e.x, ty, .12); G.freeze = Math.max(G.freeze || 0, .16); G.shake = Math.max(G.shake || 0, .55);
+    const sk = G.fx.filter(q => q.k === 'skname' && q.id === 'guan').pop(); if (sk) { sk.text = '喝而斩之'; sk.t = 0; } }
   if (G.cnt) { if (he) G.cnt.cHe++; const big = FOES[e.kind].boss || e.lead || e.duel; if (e.dead && big) { G.cnt.wjBig++; if (he) G.cnt.cHeKill++; } }
   if (G.wjTwo && !skip) resolveWenjiu(boost * .6, e);
   if (G.wjFear && !skip) for (const f of alive()) if (!FOES[f.kind].boss) f.stun = Math.max(f.stun || 0, 1.2);
@@ -3804,6 +3809,25 @@ function drawCHeng(f) {
   comboLink(t, f.zx, f.gx, 'rgba(255,110,50,1)', 'rgba(110,240,180,1)');
   comboTitle(t, out, '横竖斩', [['rgba(80,230,160,.95)', '#d8ffe8'], ['rgba(255,100,40,.95)', '#ffd9b0'], ['rgba(255,220,140,.95)', '#ffffff']]);
 }
+// 连携「喝而斩之」（10-29 用户：「做下一个」）：一刀定生死——张飞一喝，敌人脚下一圈火把他钉住；关羽一道金火巨刃从天上直劈下来，
+// 一线劈进地里，落地火柱冲天、三层爆、金光转开、碎刃四溅，重震屏、顿得最久。连携名打完才在上方出
+function drawCHe(f) {
+  const t = f.t, out = t > f.dur - .3 ? Math.max(0, (f.dur - t) / .3) : 1, x = f.x, y = f.y, gy = f.gy;
+  if (ML && t > .16 && t < .4 && !f.pillarDone) { for (let q = 0; q < 3; q++) ML.splat(x + VR(-10, 10), gy - 6, VR(-50, 50), VR(-640, -460), VR(13, 17), [0, VR(1, 1.3), .35, 0]); if (t > .38) f.pillarDone = true; }   // 落地火柱冲天
+  if (t > .14 && t < .9 && ready(IMG.ui_rays)) { const u = (t - .14) / .76, sz = 180 + 300 * (1 - Math.pow(1 - u, 2)), a = u < .12 ? u / .12 : 1 - (u - .12) / .88;   // 金光转开
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .85 * a; ctx.translate(x, y); ctx.rotate(-t * .8); ctx.drawImage(IMG.ui_rays, -sz / 2, -sz / 2, sz, sz); ctx.restore(); }
+  sharpSlash(x, TOP - 30, x, gy + 30, (t - .06) / .1, t - .06, 30, '255,200,90');                                       // 天上直劈到地里的一线巨刃
+  sharpSlash(x - 6, TOP - 10, x - 6, gy + 20, (t - .1) / .1, t - .1, 12, '255,110,50');                                  // 后面跟一道火刃（张飞）
+  for (let k = 0; k < 10; k++) { const u2 = (t - .18) / .35; if (u2 <= 0 || u2 >= 1) continue; const ang = -Math.PI * (.08 + .84 * k / 9), d = (90 + (k % 3) * 30) * (1 - Math.pow(1 - u2, 2)),   // 碎刃往上、往两边四溅
+    hx = x + Math.cos(ang) * d, hy = gy - 8 + Math.sin(ang) * d * .9; sharpSlash(hx - Math.cos(ang) * 26, hy - Math.sin(ang) * 22, hx, hy, 1, .2 + u2 * .25, 5, k % 2 ? '255,214,110' : '255,120,60'); }
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  { const u = (t - .15) / .4; if (u > 0 && u < 1) { const r = 50 + 150 * u, a = 1 - u, g = ctx.createRadialGradient(x, gy - 10, 0, x, gy - 10, r);     // 落地白光
+      g.addColorStop(0, `rgba(255,252,235,${a})`); g.addColorStop(.3, `rgba(255,190,90,${a * .8})`); g.addColorStop(.7, `rgba(255,110,50,${a * .35})`); g.addColorStop(1, 'rgba(255,110,50,0)');
+      ctx.save(); ctx.translate(x, gy - 10); ctx.scale(1, .6); ctx.translate(-x, -(gy - 10)); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, gy - 10, r, 0, 6.283); ctx.fill(); ctx.restore(); } }
+  ctx.restore();
+  comboLink(t, f.zx, f.gx, 'rgba(255,110,50,1)', 'rgba(110,240,180,1)');
+  comboTitle(t, out, '喝而斩之', [['rgba(255,100,40,.95)', '#ffd9b0'], ['rgba(255,100,40,.95)', '#ffd9b0'], ['rgba(255,200,80,.95)', '#fff0c8'], ['rgba(255,200,80,.95)', '#fff0c8']]);
+}
 function drawFx(f) {
   if (f.k === 'skname') { drawSkName(f); return; }
   if (f.k === 'qlfly') { if (f.t < f.dur) drawQlFly(f); return; }
@@ -3896,6 +3920,7 @@ function drawFx(f) {
   else if (f.k === 'cYun') drawCYun(f);
   else if (f.k === 'cShuang') drawCShuang(f);
   else if (f.k === 'cHeng') drawCHeng(f);
+  else if (f.k === 'cHe') drawCHe(f);
   else if (f.k === 'banner') {                                                    // 事件横幅（10-26 换成和换波横幅一样的漆黑描金带，大字砸进来，副标题一行金字）
     const u = f.t / 2.6, inU = Math.min(1, f.t / .18), out = u > .8 ? (u - .8) / .2 : 0, y = 250, bw = (W - 16) * ease(inU), x0 = (W - bw) / 2;
     const g = ctx.createLinearGradient(0, y - 40, 0, y + 40); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.2, 'rgba(22,16,12,.9)'); g.addColorStop(.8, 'rgba(22,16,12,.9)'); g.addColorStop(1, 'rgba(0,0,0,0)');
