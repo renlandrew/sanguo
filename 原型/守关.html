@@ -4971,21 +4971,22 @@ function drawRank() {
 const PROMO_B = Array.from({ length: 14 }, (_, k) => ({ k: ['hit_gold', 'bao', 'shuang_gold'][k % 3], a: k / 14 * 6.283, r: 70 + (k % 4) * 38, d: .85 + (k % 7) * .09, s: 110 + (k % 3) * 40 }));
 function drawPromote(ft) {
   const out = 1, r = rankNow(), cx = W / 2, cy = 250, WIPE0 = 1.2, WIPE1 = 1.75;   // 旧装停一会儿，再一道金光从下往上扫成新装（10-29 用户：「要展示从旧衣服新衣服的改变」）
-  ctx.save(); ctx.fillStyle = '#040201'; ctx.fillRect(0, 0, W, H); ctx.restore(); hit(0, 0, W, H, () => { if (ft > 2.4) RANKFX.on = false; });   /* 停在这一屏，流光一直走，点一下才关（10-29 用户：「流光2次就消失了」） */
-  const glow = clamp((ft - WIPE1) / .3, 0, 1), pulse = 1 + .08 * Math.sin(ft * 5);
+  ctx.save(); ctx.fillStyle = '#040201'; ctx.fillRect(0, 0, W, H); ctx.restore(); hit(0, 0, W, H, () => { if (ft > 2.8) RANKFX.on = false; });   /* 停在这一屏，流光一直走，点一下才关（10-29 用户：「流光2次就消失了」） */
+  const glow = clamp((ft - WIPE0 - .8) / .3, 0, 1), pulse = 1 + .08 * Math.sin(ft * 5);
   ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = out * (.25 + .75 * glow); const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, 330 * pulse); g.addColorStop(0, 'rgba(255,225,140,1)'); g.addColorStop(.3, 'rgba(255,170,60,.45)'); g.addColorStop(1, 'rgba(255,140,40,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore();
-  for (const b of PROMO_B) { const M = FBM[b.k], tt = ft - b.d - .9, dur = M ? M.dur * 1.6 : .7; if (tt < 0 || tt > dur || !hasFb(b.k)) continue; fbFrame(b.k, Math.min(M.n - 1, Math.floor(tt / dur * M.n)), cx + Math.cos(b.a) * b.r, cy + Math.sin(b.a) * b.r * .75, b.s, b.a, out, 1, .8); }
+  for (const b of PROMO_B) { const M = FBM[b.k], tt = ft - b.d - 1.15, dur = M ? M.dur * 1.6 : .7; if (tt < 0 || tt > dur || !hasFb(b.k)) continue; fbFrame(b.k, Math.min(M.n - 1, Math.floor(tt / dur * M.n)), cx + Math.cos(b.a) * b.r, cy + Math.sin(b.a) * b.r * .75, b.s, b.a, out, 1, .8); }
   ['guan', 'liu', 'zhang'].forEach((id, k) => { const sz = k === 1 ? 112 : 100, x = cx + (k - 1) * 112 - sz / 2, rise = Math.max(0, 1 - (ft - k * .12) / .35), y = cy - sz / 2 + rise * 50 + (k === 1 ? -8 : 0), a = clamp((ft - k * .12) / .3, 0, 1) * out;
-    const old = heroRankPortrait(id, r - 1), nu = heroRankPortrait(id, r), t0 = WIPE0 + k * .12, cover = clamp((ft - t0) / .28, 0, 1), clear = clamp((ft - t0 - .38) / .3, 0, 1), swapped = ft > t0 + .3;
-    const pop = swapped ? 1 + .18 * Math.max(0, 1 - (ft - t0 - .38) / .3) : 1, ps = sz * pop, px = x + sz / 2 - ps / 2, py2 = y + sz / 2 - ps / 2;   // 换装：金光先整张盖住旧装，散开时只剩新装，弹一下
+    const old = heroRankPortrait(id, r - 1), nu = heroRankPortrait(id, r), t0 = WIPE0, cover = clamp((ft - t0) / .25, 0, 1), clear = clamp((ft - t0 - .8) / .25, 0, 1), swapped = ft > t0 + .8;   /* 三人同时盖住，闪两下，同时蹦出新装（10-29 用户） */
+    const pop = swapped ? 1 + .22 * Math.max(0, 1 - (ft - t0 - .8) / .3) : 1, ps = sz * pop, px = x + sz / 2 - ps / 2, py2 = y + sz / 2 - ps / 2;   // 换装：金光先整张盖住旧装，散开时只剩新装，弹一下
     ctx.save(); ctx.globalAlpha = a; ctx.shadowColor = 'rgba(255,215,120,1)'; ctx.shadowBlur = clear >= 1 ? 30 : 0; rr(px, py2, ps, ps, 10); ctx.fillStyle = '#2a1a0a'; ctx.fill(); ctx.shadowBlur = 0; rr(px, py2, ps, ps, 10); ctx.clip();
     const im = swapped ? nu : old; if (ready(im)) ctx.drawImage(im, px, py2, ps, ps);
-    const veil = swapped ? 1 - clear : cover; if (veil > 0) { ctx.globalAlpha = a * veil; const lg = ctx.createRadialGradient(px + ps / 2, py2 + ps / 2, 4, px + ps / 2, py2 + ps / 2, ps * .75); lg.addColorStop(0, '#fffbe8'); lg.addColorStop(.6, '#ffe08a'); lg.addColorStop(1, '#f0b040'); ctx.fillStyle = lg; ctx.fillRect(px, py2, ps, ps); }
+    const veil = swapped ? 1 - clear : cover; if (veil > 0) { ctx.globalAlpha = a * veil; const lg = ctx.createRadialGradient(px + ps / 2, py2 + ps / 2, 4, px + ps / 2, py2 + ps / 2, ps * .75); lg.addColorStop(0, '#fffbe8'); lg.addColorStop(.6, '#ffe08a'); lg.addColorStop(1, '#f0b040'); ctx.fillStyle = lg; ctx.fillRect(px, py2, ps, ps);
+      const fl = Math.max(0, 1 - Math.abs(ft - t0 - .38) / .07) + Math.max(0, 1 - Math.abs(ft - t0 - .6) / .07); if (fl > 0 && !swapped) { ctx.globalAlpha = a * fl; ctx.fillStyle = '#ffffff'; ctx.fillRect(px, py2, ps, ps); } }   // 闪两下
     ctx.restore();
 
     if (ready(IMG.ui2_frame)) { ctx.save(); ctx.globalAlpha = a; draw9(IMG.ui2_frame, px - 3, py2 - 3, ps + 6, ps + 6, 60, 60, 60, 60, .1); ctx.restore(); } });
   const flash = 0; if (flash > 0) { ctx.save(); ctx.globalAlpha = flash * out; ctx.fillStyle = '#fff8e4'; ctx.fillRect(0, 0, W, H); ctx.restore(); }   // 换装那一下白光
-  const tu = clamp((ft - 1.9) / .3, 0, 1), ts = 1.8 - .8 * (1 - Math.pow(1 - tu, 3));
+  const tu = clamp((ft - 2.25) / .3, 0, 1), ts = 1.8 - .8 * (1 - Math.pow(1 - tu, 3));
   ctx.save(); ctx.globalAlpha = out * tu; uiText('— 晋 阶 —', cx, 132, 18, '#fff2c0', 'center', FONT, { lw: 4, glow: 'rgba(255,210,100,.9)', glowR: 12 }); ctx.restore();
   ctx.save(); ctx.globalAlpha = out * tu; ctx.translate(cx, 372); ctx.scale(ts, ts);
   if (ready(IMG.ui_banner)) { const im = IMG.ui_banner, bh = 66, k = bh / im.height, cap = im.width * .22, bw = 250, cw = cap * k;   // 横匾加高留边，中间截短（10-29 用户：「框还要高一些，留padding……截掉中间」）
@@ -4995,14 +4996,14 @@ function drawPromote(ft) {
   uiText(RANKFX.name, 0, 1, 26, '#e8b443', 'center', FONT, { glow: 'rgba(230,160,50,.6)', glowR: 8, lw: 3 });   /* 10-29 用户：「太亮了，要金色」 */   /* 字收在横匾里（10-29 用户：「字不要超出」） */
   shimmerText(RANKFX.name, 0, 1, 26, ft);   /* 一道白光不停地从左扫到右（10-29 用户：「这几个字要不断流光溢彩」） */ ctx.restore();
   const gs = RANKFX.gets || [], n = gs.length, tw = 84, gap = 10;                          // 解锁的东西做成奖励牌：金框里一张图，下面短名，一张张弹出来（10-29 用户：「太 html」）
-  gs.forEach((g2, i) => { const t1 = ft - 2.4 - i * .28, a = out * clamp(t1 / .2, 0, 1); if (a <= 0) return; const pop = 1 + .35 * Math.max(0, 1 - t1 / .25), x = cx + (i - (n - 1) / 2) * (tw + gap), y = 470;
+  gs.forEach((g2, i) => { const t1 = ft - 2.75 - i * .28, a = out * clamp(t1 / .2, 0, 1); if (a <= 0) return; const pop = 1 + .35 * Math.max(0, 1 - t1 / .25), x = cx + (i - (n - 1) / 2) * (tw + gap), y = 470;
     const ic = unlockIcon(g2, r); ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.scale(pop, pop);
     ctx.shadowColor = 'rgba(255,90,50,.9)'; ctx.shadowBlur = 18; rr(-tw / 2, -tw / 2, tw, tw, 10); ctx.fillStyle = '#2a1208'; ctx.fill(); ctx.shadowBlur = 0;
     ctx.save(); rr(-tw / 2, -tw / 2, tw, tw, 10); ctx.clip(); if (ic.im && ready(ic.im)) { const f = ic.fit ? Math.min(tw / ic.im.width, tw / ic.im.height) * .78 : tw / Math.min(ic.im.width, ic.im.height); ctx.drawImage(ic.im, -ic.im.width * f / 2, -ic.im.height * f / 2, ic.im.width * f, ic.im.height * f); } else uiSeal(0, 0, 40, ic.ch, UIC.red, true); ctx.restore();
     if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, -tw / 2 - 2, -tw / 2 - 2, tw + 4, tw + 4, 60, 60, 60, 60, .1);
     uiText(ic.label, 0, tw / 2 + 16, 13, '#b5301c', 'center', FONT, { glow: 'rgba(120,20,10,.6)', glowR: 4, lw: 3 });   /* 暗朱红 */ ctx.restore();
     if (t1 > 0 && t1 < .5 && hasFb('hit_gold')) { const M = FBM.hit_gold; fbFrame('hit_gold', Math.min(M.n - 1, Math.floor(t1 / .5 * M.n)), x, y, 150, i, out, 1, .7); } });
-  if (ft > 3.2) { ctx.save(); ctx.globalAlpha = out * .6; uiText('点任意处继续', cx, 600, 11, '#f4e6c4', 'center', PLAIN, { stroke: false }); ctx.restore(); }
+  if (ft > 3.6) { ctx.save(); ctx.globalAlpha = out * .6; uiText('点任意处继续', cx, 600, 11, '#f4e6c4', 'center', PLAIN, { stroke: false }); ctx.restore(); }
 }
 function unlockIcon(text, r) {                                                      // 解锁内容 → 奖励牌上的图和短名
   if (text.includes('新甲')) return { im: heroRankPortrait('liu', r), label: '新甲' };
