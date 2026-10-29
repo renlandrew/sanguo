@@ -4661,11 +4661,11 @@ function campGoal() {                                                           
 function drawCamp() {
   campBg('军帐'); dailyTick();
   { const n = achClaimable().length; plaque(W - 84, 14, 72, 26, '功绩簿', () => { screen = 'ach'; }, n > 0); if (n) uiSeal(W - 14, 16, 14, String(n), UIC.red, true); }
-  const gl = campGoal();
-  plate(14, 58, W - 28, 166, !!gl);
-  if (!gl) { const N = nextRank(); if (N) { uiText('下一阶 · ' + N.name, W / 2, 96, 20, UIC.gold2, 'center', FONT, { lw: 4 }); uiText(`资历 ${INV.prep || 0}/${PREP_NEED}`, 60, 136, 13, UIC.cream, 'left', PLAIN, { stroke: false });
-      uiBar('cprep', 140, 130, W - 200, 12, Math.min(1, (INV.prep || 0) / PREP_NEED), '#8a5a14', '#ffd76e'); uiText('下面的军务每做一项 +1', W / 2, 162, 11, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
-      pill(W / 2 - 55, 178, 110, 30, (INV.prep || 0) >= PREP_NEED ? '去晋阶' : '看官阶', () => { screen = 'rank'; }, (INV.prep || 0) >= PREP_NEED); }
+  const gl = campGoal(), TOPY = gl ? 0 : -66;   // 没东西要备时顶上只放一块矮的官阶卡（10-29 用户：「这4个框的大小应该如蓝框」）
+  plate(14, 58, W - 28, gl ? 166 : 100, !!gl);
+  if (!gl) { const N = nextRank(); if (N) { uiText('下一阶 · ' + N.name, W / 2, 84, 18, UIC.gold2, 'center', FONT, { lw: 4 }); uiText(`资历 ${INV.prep || 0}/${PREP_NEED}`, 30, 120, 13, UIC.cream, 'left', PLAIN, { stroke: false });
+      uiBar('cprep', 100, 114, W - 230, 12, Math.min(1, (INV.prep || 0) / PREP_NEED), '#8a5a14', '#ffd76e'); 
+      pill(W - 112, 104, 90, 28, (INV.prep || 0) >= PREP_NEED ? '去晋阶' : '看官阶', () => { screen = 'rank'; }, (INV.prep || 0) >= PREP_NEED); }
     else uiText('已是第一章最高官阶', W / 2, 140, 18, UIC.gold2, 'center', FONT); }   // 军帐顶上改放官阶资历（兵器不在这里：10-29 用户）
   else {
     const { ng, key, U, tot, d } = gl, lv = LEVELS.find(l => l.id === ng), lvl = INV.up[key] || 0;
@@ -4683,20 +4683,20 @@ function drawCamp() {
   }
   // 今天的军务十二道：打法军务一行一道（点「去打」直接进那一关）；出外探访、日常杂务各一行，一键做完
   const ts = DAILY.tasks.slice().sort((a, b) => a.done - b.done), shown = ts.slice(0, 3);
-  uiText('今日军务', 18, 250, 16, UIC.gold2, 'left', FONT, { stroke: false });
-  uiText(`${dailyDone()}/${dailyTotal()}`, W - 18, 250, 12, 'rgba(244,230,196,.6)', 'right', PLAIN, { stroke: false });
-  if (!ts.length) { const y = 264; plate(14, y, W - 28, 96, false);                 // 10-29 用户：「不要用描述性文字，直接告诉玩家出征后得到什么」
+  uiText('今日军务', 18, 250 + TOPY, 16, UIC.gold2, 'left', FONT, { stroke: false });
+  uiText(`${dailyDone()}/${dailyTotal()}`, W - 18, 250 + TOPY, 12, 'rgba(244,230,196,.6)', 'right', PLAIN, { stroke: false });
+  if (!ts.length) { const y = 264 + TOPY; plate(14, y, W - 28, 80, false);                 // 10-29 用户：「不要用描述性文字，直接告诉玩家出征后得到什么」
     uiSeal(40, y + 30, 28, '令', UIC.red); uiText('出征一次，得 3 道征战军令', 64, y + 22, 15, UIC.gold2, 'left', FONT, { lw: 3 });
     [['残页', TASK_PAY * 3], ['资历', 3]].forEach(([k, n], i) => { const x = 74 + i * 86; if (k === '资历') uiSeal(x, y + 52, 18, '资', '#6a4a14', true); else drawItemIcon(k, x, y + 52, 24); uiText(`${k} +${n}`, x + 16, y + 52, 13, UIC.cream, 'left', PLAIN, { stroke: false }); });
     pill(W - 110, y + 38, 90, 28, '去出征', () => { screen = 'menu'; }, true); }
-  shown.forEach((t, k) => { const y = 264 + k * 44, li = LEVELS.findIndex(lv => lv.id === t.lv);
+  shown.forEach((t, k) => { const y = 264 + TOPY + k * 44, li = LEVELS.findIndex(lv => lv.id === t.lv);
     ctx.save(); if (t.done) ctx.globalAlpha = .5; plate(14, y, W - 28, 40); ctx.restore();
     uiSeal(36, y + 20, 24, CNUM(t.lv), LEVELS[li].kind === 'duel' ? '#8a1c10' : UIC.red);
     uiText(TASKS[t.k].text(lvName(t.lv), t.lv), 56, y + 14, 13, t.done ? 'rgba(244,230,196,.55)' : UIC.cream, 'left', PLAIN, { stroke: false });
     uiText('残页 +' + TASK_PAY, 56, y + 30, 10, 'rgba(240,217,160,.6)', 'left', PLAIN, { stroke: false });
     if (t.done) uiSeal(W - 42, y + 20, 26, '毕', UIC.red, true); else pill(W - 92, y + 8, 64, 24, '去打', () => { screen = 'menu'; openLevel(li); });
   });
-  let y = 264 + (ts.length ? shown.length * 44 : 100); if (ts.length > 3) { uiText(`还有 ${ts.length - 3} 道征战军令（补领的）`, W / 2, y + 2, 10, 'rgba(244,230,196,.5)', 'center', PLAIN, { stroke: false }); y += 12; }
+  let y = 264 + TOPY + (ts.length ? shown.length * 44 : 92); if (ts.length > 3) { uiText(`还有 ${ts.length - 3} 道征战军令（补领的）`, W / 2, y + 2, 10, 'rgba(244,230,196,.5)', 'center', PLAIN, { stroke: false }); y += 12; }
   { const id = visitWho(), left = DAILY.visitN - DAILY.visits, vr0 = CAMP.visit && uiNow() - CAMP.visit.t0 < 2.6 ? CAMP.visit : null;   // 出外探访
     ctx.save(); if (!left) ctx.globalAlpha = .5; plate(14, y, W - 28, 44, !!(vr0 && vr0.god)); ctx.restore();
     ctx.save(); rr(22, y + 6, 32, 32, 6); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], 22, y + 6, 32, 32); ctx.restore();
@@ -4705,7 +4705,7 @@ function drawCamp() {
     if (vr0) uiText((vr0.god ? `带回陨铁！还有精铁 +${vr0.iron}` : `带回精铁 +${vr0.iron} · 机缘 +${vr0.luck}`) + (vr0.page ? ' · 路上捡到残页 +1' : ''), 62, y + 32, 11, vr0.god ? ITEM_C.陨铁 : UIC.gold2, 'left', PLAIN, { stroke: false });
     else { const s2 = `机缘 ${INV.luck || 0}/${LUCK_FULL} 满了得陨铁 · 宜派政治、魅力高的`; uiText(s2, 62, y + 32, fitSize(s2, 10, W - 104 - 62, 99, PLAIN), 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false }); }
     if (left) pill(W - 92, y + 10, 64, 24, `派出 ${left}`, () => { const r = doVisit(); if (r) { CAMP.visit = { ...r, t0: uiNow() }; showReward(r.god ? '带回陨铁！' : '探访归来', [], [r.id], true, [['精铁', r.iron], r.god ? ['陨铁', r.god] : ['机缘', r.luck], ...(r.page ? [['残页', r.page]] : [])]); REWARD.wait = 2; REWARD.waitText = GEN[r.id].name + '正在四处寻觅'; } }); else uiSeal(W - 42, y + 22, 26, '毕', UIC.red, true);
-    y += 48; }
+    y += 56; }
   { const left = choresLeft(), hh = 40 + 4 * 21, y0 = y; y += 5;   /* 上下各多 5（10-27 用户：「上下padding 略大一点点」） */                                    // 日常杂务七项一项一项列出来（10-25 用户：「不能这样，要7个都列出来」），两列；点一项做一项，「一键完成」全做
     plate(14, y0, W - 28, hh, false);
     const sta = staNow(), can = Math.min(left, Math.floor(sta / CHORE_STA));
