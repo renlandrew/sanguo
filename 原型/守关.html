@@ -4971,7 +4971,7 @@ function drawRank() {
 const PROMO_B = Array.from({ length: 14 }, (_, k) => ({ k: ['hit_gold', 'bao', 'shuang_gold'][k % 3], a: k / 14 * 6.283, r: 70 + (k % 4) * 38, d: .85 + (k % 7) * .09, s: 110 + (k % 3) * 40 }));
 function drawPromote(ft) {
   const out = ft > 4.8 ? (5.4 - ft) / .6 : 1, r = rankNow(), cx = W / 2, cy = 250, WIPE0 = 1.2, WIPE1 = 1.75;   // 旧装停一会儿，再一道金光从下往上扫成新装（10-29 用户：「要展示从旧衣服新衣服的改变」）
-  ctx.save(); ctx.globalAlpha = out; ctx.fillStyle = '#040201'; ctx.fillRect(0, 0, W, H); ctx.restore(); hit(0, 0, W, H, () => { if (ft > 2.4) RANKFX.t0 = uiNow() - 4.8; });
+  ctx.save(); ctx.fillStyle = '#040201'; ctx.fillRect(0, 0, W, H); ctx.restore(); hit(0, 0, W, H, () => { if (ft > 2.4) RANKFX.t0 = uiNow() - 4.8; });
   const glow = clamp((ft - WIPE1) / .3, 0, 1), pulse = 1 + .08 * Math.sin(ft * 5);
   ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = out * (.25 + .75 * glow); const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, 330 * pulse); g.addColorStop(0, 'rgba(255,225,140,1)'); g.addColorStop(.3, 'rgba(255,170,60,.45)'); g.addColorStop(1, 'rgba(255,140,40,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore();
   for (const b of PROMO_B) { const M = FBM[b.k], tt = ft - b.d - .9, dur = M ? M.dur * 1.6 : .7; if (tt < 0 || tt > dur || !hasFb(b.k)) continue; fbFrame(b.k, Math.min(M.n - 1, Math.floor(tt / dur * M.n)), cx + Math.cos(b.a) * b.r, cy + Math.sin(b.a) * b.r * .75, b.s, b.a, out, 1, .8); }
@@ -4992,9 +4992,23 @@ function drawPromote(ft) {
   ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = (.55 + .25 * Math.sin(ft * 6)) * out * tu; uiText(RANKFX.name, 0, 1, 26, '#ffd76e', 'center', FONT, { stroke: false, glow: 'rgba(255,230,140,1)', glowR: 26 }); ctx.restore();   /* 10-29 用户：「官阶的字太暗，要光亮的」——底下一层发光、上面亮金白字 */
   uiText(RANKFX.name, 0, 1, 26, '#fff6d6', 'center', FONT, { glow: 'rgba(255,220,120,1)', glowR: 14, lw: 3 });   /* 字收在横匾里（10-29 用户：「字不要超出」） */
   shimmerText(RANKFX.name, 0, 1, 26, ft);   /* 一道白光不停地从左扫到右（10-29 用户：「这几个字要不断流光溢彩」） */ ctx.restore();
-  (RANKFX.gets || []).forEach((g2, i) => { const a = out * clamp((ft - 2.4 - i * .25) / .25, 0, 1), y = 446 + i * 34, pop = 1 + .25 * Math.max(0, 1 - (ft - 2.4 - i * .25) / .2); ctx.save(); ctx.globalAlpha = a;   /* 不套 html 那种圆角框（10-29 用户），只用发光的字，亮出来时一弹 */
-    ctx.translate(cx, y); ctx.scale(pop, pop); uiText(g2, 0, 0, 18, '#ff5a3c', 'center', FONT, { glow: 'rgba(255,90,50,.95)', glowR: 14, lw: 4 });   /* 10-29 用户：「新技能之类的换朱红色试试」 */ ctx.restore(); });
+  const gs = RANKFX.gets || [], n = gs.length, tw = 84, gap = 10;                          // 解锁的东西做成奖励牌：金框里一张图，下面短名，一张张弹出来（10-29 用户：「太 html」）
+  gs.forEach((g2, i) => { const t1 = ft - 2.4 - i * .28, a = out * clamp(t1 / .2, 0, 1); if (a <= 0) return; const pop = 1 + .35 * Math.max(0, 1 - t1 / .25), x = cx + (i - (n - 1) / 2) * (tw + gap), y = 470;
+    const ic = unlockIcon(g2, r); ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.scale(pop, pop);
+    ctx.shadowColor = 'rgba(255,90,50,.9)'; ctx.shadowBlur = 18; rr(-tw / 2, -tw / 2, tw, tw, 10); ctx.fillStyle = '#2a1208'; ctx.fill(); ctx.shadowBlur = 0;
+    ctx.save(); rr(-tw / 2, -tw / 2, tw, tw, 10); ctx.clip(); if (ic.im && ready(ic.im)) { const f = ic.fit ? Math.min(tw / ic.im.width, tw / ic.im.height) * .78 : tw / Math.min(ic.im.width, ic.im.height); ctx.drawImage(ic.im, -ic.im.width * f / 2, -ic.im.height * f / 2, ic.im.width * f, ic.im.height * f); } else uiSeal(0, 0, 40, ic.ch, UIC.red, true); ctx.restore();
+    if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, -tw / 2 - 2, -tw / 2 - 2, tw + 4, tw + 4, 60, 60, 60, 60, .1);
+    uiText(ic.label, 0, tw / 2 + 16, 13, '#ff6a48', 'center', FONT, { glow: 'rgba(255,90,50,.9)', glowR: 10, lw: 3 }); ctx.restore();
+    if (t1 > 0 && t1 < .5 && hasFb('hit_gold')) { const M = FBM.hit_gold; fbFrame('hit_gold', Math.min(M.n - 1, Math.floor(t1 / .5 * M.n)), x, y, 150, i, out, 1, .7); } });
   if (ft > 3.2) { ctx.save(); ctx.globalAlpha = out * .6; uiText('点任意处继续', cx, 600, 11, '#f4e6c4', 'center', PLAIN, { stroke: false }); ctx.restore(); }
+}
+function unlockIcon(text, r) {                                                      // 解锁内容 → 奖励牌上的图和短名
+  if (text.includes('新甲')) return { im: heroRankPortrait('liu', r), label: '新甲' };
+  const m = text.match(/(关羽|张飞|刘备)新招「(.+)」/); if (m) return { im: heroRankPortrait({ 关羽: 'guan', 张飞: 'zhang', 刘备: 'liu' }[m[1]], r), label: m[2] };
+  if (text.includes('被动')) return { im: IMG.item_将印, fit: true, label: text.includes('第二') ? '被动二格' : '被动一格' };
+  if (text.includes('阶资格')) return { im: IMG.item_残页, fit: true, label: text.match(/[二三]阶/)[0] + '招式' };
+  if (text.includes('上限')) return { im: IMG.item_陨铁, fit: true, label: '成长上限' };
+  return { ch: text[0], label: text.slice(0, 4) };
 }
 const SHIM = document.createElement('canvas'), SHX = SHIM.getContext('2d');
 function shimmerText(text, x, y, size, t) {                                         // 字上的流光：离屏画字，source-atop 叠一条斜着移动的亮带，再「变亮」贴回去
