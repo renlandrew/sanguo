@@ -4663,7 +4663,10 @@ function drawCamp() {
   { const n = achClaimable().length; plaque(W - 84, 14, 72, 26, '功绩簿', () => { screen = 'ach'; }, n > 0); if (n) uiSeal(W - 14, 16, 14, String(n), UIC.red, true); }
   const gl = campGoal();
   plate(14, 58, W - 28, 166, !!gl);
-  if (!gl) uiText('该备的都备齐了', W / 2, 140, 18, UIC.gold2, 'center', FONT);
+  if (!gl) { const N = nextRank(); if (N) { uiText('下一阶 · ' + N.name, W / 2, 96, 20, UIC.gold2, 'center', FONT, { lw: 4 }); uiText(`整备 ${INV.prep || 0}/${PREP_NEED}`, 60, 136, 13, UIC.cream, 'left', PLAIN, { stroke: false });
+      uiBar('cprep', 140, 130, W - 200, 12, Math.min(1, (INV.prep || 0) / PREP_NEED), '#8a5a14', '#ffd76e'); uiText('下面的军务每做一项 +1', W / 2, 162, 11, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
+      pill(W / 2 - 55, 178, 110, 30, (INV.prep || 0) >= PREP_NEED ? '去晋阶' : '看官阶', () => { screen = 'rank'; }, (INV.prep || 0) >= PREP_NEED); }
+    else uiText('已是第一章最高官阶', W / 2, 140, 18, UIC.gold2, 'center', FONT); }   // 军帐顶上改放官阶整备（兵器不在这里：10-29 用户）
   else {
     const { ng, key, U, tot, d } = gl, lv = LEVELS.find(l => l.id === ng), lvl = INV.up[key] || 0;
     if (key === 'wpn') { drawWeapon('guan', wpnVis(lvl + 1), 44, 140, 150, .2, uiNow(), false); hit(14, 58, W - 28, 120, () => { screen = 'armory'; ARM.t0 = uiNow(); }); }   // 要打兵器时左边放下一级的青龙偃月刀，点卡片进神兵页
@@ -4682,10 +4685,12 @@ function drawCamp() {
   const ts = DAILY.tasks.slice().sort((a, b) => a.done - b.done), shown = ts.slice(0, 3);
   uiText('今日军务', 18, 250, 16, UIC.gold2, 'left', FONT, { stroke: false });
   uiText(`${dailyDone()}/${dailyTotal()}`, W - 18, 250, 12, 'rgba(244,230,196,.6)', 'right', PLAIN, { stroke: false });
-  if (!ts.length) for (let k = 0; k < 3; k++) { const y = 264 + k * 44;              // 还没出题（一关没打过）：三行灰着占位（10-26 用户：「去掉，如果没出，就灰度就好了」）
-    ctx.save(); ctx.globalAlpha = .35; ctx.filter = 'grayscale(1)'; plate(14, y, W - 28, 40); uiSeal(36, y + 20, 24, '令', UIC.red);
-    uiText('征战军令', 56, y + 14, 13, UIC.cream, 'left', PLAIN, { stroke: false }); uiText('残页 +' + TASK_PAY, 56, y + 30, 10, 'rgba(240,217,160,.6)', 'left', PLAIN, { stroke: false }); ctx.restore();
-    uiText(k === 0 ? '今天先出征一次，军令才会下达' : '', W - 24, y + 21, 11, UIC.gold2, 'right', PLAIN, { lw: 2.5 }); }   // 10-27 用户：「军务灰度却没有任何提示」
+  if (!ts.length) { const y = 264; plate(14, y, W - 28, 128, false);                // 10-29 用户：「这里还是看不懂」——不再三行灰框，一块说清楚
+    uiSeal(40, y + 30, 28, '令', UIC.red); uiText('征战军令 · 今天还没下达', 64, y + 24, 15, UIC.gold2, 'left', FONT, { lw: 3 });
+    uiText('今天打赢任意一关后，会下达 3 道军令：', 64, y + 48, 11, UIC.cream, 'left', PLAIN, { stroke: false });
+    uiText('指定某一关、用某种打法再打一次（如「刘备伤害第一」）', 64, y + 66, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });
+    uiText(`每道完成：残页 +${TASK_PAY}、整备 +1`, 64, y + 84, 11, '#9be0a0', 'left', PLAIN, { stroke: false });
+    pill(W / 2 - 50, y + 96, 100, 26, '去出征', () => { screen = 'menu'; }, true); }
   shown.forEach((t, k) => { const y = 264 + k * 44, li = LEVELS.findIndex(lv => lv.id === t.lv);
     ctx.save(); if (t.done) ctx.globalAlpha = .5; plate(14, y, W - 28, 40); ctx.restore();
     uiSeal(36, y + 20, 24, CNUM(t.lv), LEVELS[li].kind === 'duel' ? '#8a1c10' : UIC.red);
@@ -4693,7 +4698,7 @@ function drawCamp() {
     uiText('残页 +' + TASK_PAY, 56, y + 30, 10, 'rgba(240,217,160,.6)', 'left', PLAIN, { stroke: false });
     if (t.done) uiSeal(W - 42, y + 20, 26, '毕', UIC.red, true); else pill(W - 92, y + 8, 64, 24, '去打', () => { screen = 'menu'; openLevel(li); });
   });
-  let y = 264 + (ts.length ? shown.length : 3) * 44; if (ts.length > 3) { uiText(`还有 ${ts.length - 3} 道征战军令（补领的）`, W / 2, y + 2, 10, 'rgba(244,230,196,.5)', 'center', PLAIN, { stroke: false }); y += 12; }
+  let y = 264 + (ts.length ? shown.length * 44 : 132); if (ts.length > 3) { uiText(`还有 ${ts.length - 3} 道征战军令（补领的）`, W / 2, y + 2, 10, 'rgba(244,230,196,.5)', 'center', PLAIN, { stroke: false }); y += 12; }
   { const id = visitWho(), left = DAILY.visitN - DAILY.visits, vr0 = CAMP.visit && uiNow() - CAMP.visit.t0 < 2.6 ? CAMP.visit : null;   // 出外探访
     ctx.save(); if (!left) ctx.globalAlpha = .5; plate(14, y, W - 28, 44, !!(vr0 && vr0.god)); ctx.restore();
     ctx.save(); rr(22, y + 6, 32, 32, 6); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], 22, y + 6, 32, 32); ctx.restore();
