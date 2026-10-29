@@ -715,7 +715,7 @@ INV.rank = INV.rank || 0; INV.prep = INV.prep || 0;
 const rankNow = () => INV.rank || 0, nextRank = () => RANKS[rankNow() + 1] || null;
 const syncRankArt = () => { INV.officeRank = Math.min(6, rankNow() + 1); };   // 关羽官阶头像那套（另一会话做的）按 1–6 编号
 const addPrep = n => { if (nextRank()) { INV.prep = Math.min(PREP_NEED, (INV.prep || 0) + n); saveInv(); } };
-function promote() { const R = nextRank(); if (!R || INV.prep < PREP_NEED) return false; INV.rank++; INV.prep = 0; syncRankArt(); saveInv(); RANKFX.t0 = uiNow(); RANKFX.name = R.name; RANKFX.gets = R.gets; sfx('gong'); return true; }
+function promote() { const R = nextRank(); if (!R || INV.prep < PREP_NEED) return false; INV.rank++; INV.prep = 0; syncRankArt(); saveInv(); RANKFX.t0 = uiNow(); RANKFX.on = true; RANKFX.name = R.name; RANKFX.gets = R.gets; sfx('gong'); return true; }
 const RANKFX = { t0: -99 };
 const rankNeedFor = lvId => RANKS.findIndex(R => R.node === lvId);          // 打这关要几阶（不是节点关返回 -1）
 // 上阵顺序（10-26 用户：「这里应该有一个上阵武将选择，当然目前只有刘关张，军师也放这里，没必要放主页」）：武将页排的出手顺序，
@@ -4964,14 +4964,14 @@ function drawRank() {
   else uiText('已是第一章最高官阶', W / 2, 260, 16, UIC.gold2, 'center', FONT);
   if (t - RANKMSG.t0 < 3) { const a = Math.min(1, (3 - (t - RANKMSG.t0)) / .5); ctx.save(); ctx.globalAlpha = a; plate(30, 470, W - 60, 40, true); uiText(RANKMSG.text, W / 2, 490, fitSize(RANKMSG.text, 13, W - 80, 99, PLAIN), '#ffe39a', 'center', PLAIN, { lw: 3 }); ctx.restore(); }
   plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; }, false);
-  if (t - RANKFX.t0 < 5.4) drawPromote(t - RANKFX.t0);
+  if (RANKFX.on) drawPromote(t - RANKFX.t0);
 }
 // 晋阶整屏（10-29 用户：「字和背景重叠了，而且还不够炫」）：不叠在官阶页上；黑底上一大团金光、命中爆花帧一圈圈炸开，
 // 三兄弟旧装一闪换新装，官名压在金边横匾上，解锁的东西一条条亮出来；点一下提前收
 const PROMO_B = Array.from({ length: 14 }, (_, k) => ({ k: ['hit_gold', 'bao', 'shuang_gold'][k % 3], a: k / 14 * 6.283, r: 70 + (k % 4) * 38, d: .85 + (k % 7) * .09, s: 110 + (k % 3) * 40 }));
 function drawPromote(ft) {
-  const out = ft > 4.8 ? (5.4 - ft) / .6 : 1, r = rankNow(), cx = W / 2, cy = 250, WIPE0 = 1.2, WIPE1 = 1.75;   // 旧装停一会儿，再一道金光从下往上扫成新装（10-29 用户：「要展示从旧衣服新衣服的改变」）
-  ctx.save(); ctx.fillStyle = '#040201'; ctx.fillRect(0, 0, W, H); ctx.restore(); hit(0, 0, W, H, () => { if (ft > 2.4) RANKFX.t0 = uiNow() - 4.8; });
+  const out = 1, r = rankNow(), cx = W / 2, cy = 250, WIPE0 = 1.2, WIPE1 = 1.75;   // 旧装停一会儿，再一道金光从下往上扫成新装（10-29 用户：「要展示从旧衣服新衣服的改变」）
+  ctx.save(); ctx.fillStyle = '#040201'; ctx.fillRect(0, 0, W, H); ctx.restore(); hit(0, 0, W, H, () => { if (ft > 2.4) RANKFX.on = false; });   /* 停在这一屏，流光一直走，点一下才关（10-29 用户：「流光2次就消失了」） */
   const glow = clamp((ft - WIPE1) / .3, 0, 1), pulse = 1 + .08 * Math.sin(ft * 5);
   ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = out * (.25 + .75 * glow); const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, 330 * pulse); g.addColorStop(0, 'rgba(255,225,140,1)'); g.addColorStop(.3, 'rgba(255,170,60,.45)'); g.addColorStop(1, 'rgba(255,140,40,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore();
   for (const b of PROMO_B) { const M = FBM[b.k], tt = ft - b.d - .9, dur = M ? M.dur * 1.6 : .7; if (tt < 0 || tt > dur || !hasFb(b.k)) continue; fbFrame(b.k, Math.min(M.n - 1, Math.floor(tt / dur * M.n)), cx + Math.cos(b.a) * b.r, cy + Math.sin(b.a) * b.r * .75, b.s, b.a, out, 1, .8); }
@@ -4988,9 +4988,11 @@ function drawPromote(ft) {
   const tu = clamp((ft - 1.9) / .3, 0, 1), ts = 1.8 - .8 * (1 - Math.pow(1 - tu, 3));
   ctx.save(); ctx.globalAlpha = out * tu; uiText('— 晋 阶 —', cx, 132, 18, '#fff2c0', 'center', FONT, { lw: 4, glow: 'rgba(255,210,100,.9)', glowR: 12 }); ctx.restore();
   ctx.save(); ctx.globalAlpha = out * tu; ctx.translate(cx, 372); ctx.scale(ts, ts);
-  if (ready(IMG.ui_banner)) { const bw = 320, bh = bw * IMG.ui_banner.height / IMG.ui_banner.width; ctx.drawImage(IMG.ui_banner, -bw / 2, -bh / 2, bw, bh); } else { ctx.fillStyle = 'rgba(20,10,4,.92)'; rr(-130, -32, 260, 64, 12); ctx.fill(); ctx.strokeStyle = '#d9a640'; ctx.lineWidth = 2; ctx.stroke(); }
+  if (ready(IMG.ui_banner)) { const im = IMG.ui_banner, bh = 66, k = bh / im.height, cap = im.width * .22, bw = 250, cw = cap * k;   // 横匾加高留边，中间截短（10-29 用户：「框还要高一些，留padding……截掉中间」）
+    ctx.drawImage(im, 0, 0, cap, im.height, -bw / 2, -bh / 2, cw, bh); ctx.drawImage(im, im.width - cap, 0, cap, im.height, bw / 2 - cw, -bh / 2, cw, bh);
+    ctx.drawImage(im, cap, 0, im.width - cap * 2, im.height, -bw / 2 + cw - 1, -bh / 2, bw - cw * 2 + 2, bh); } else { ctx.fillStyle = 'rgba(20,10,4,.92)'; rr(-130, -32, 260, 64, 12); ctx.fill(); ctx.strokeStyle = '#d9a640'; ctx.lineWidth = 2; ctx.stroke(); }
   ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = (.25 + .12 * Math.sin(ft * 6)) * out * tu; uiText(RANKFX.name, 0, 1, 26, '#e0a83a', 'center', FONT, { stroke: false, glow: 'rgba(255,190,70,1)', glowR: 18 }); ctx.restore();   /* 10-29 用户：「官阶的字太暗，要光亮的」——底下一层发光、上面亮金白字 */
-  uiText(RANKFX.name, 0, 1, 26, goldGrad(-13, 26), 'center', FONT, { glow: 'rgba(255,190,70,.8)', glowR: 10, lw: 3 });   /* 10-29 用户：「太亮了，要金色」 */   /* 字收在横匾里（10-29 用户：「字不要超出」） */
+  uiText(RANKFX.name, 0, 1, 26, '#e8b443', 'center', FONT, { glow: 'rgba(230,160,50,.6)', glowR: 8, lw: 3 });   /* 10-29 用户：「太亮了，要金色」 */   /* 字收在横匾里（10-29 用户：「字不要超出」） */
   shimmerText(RANKFX.name, 0, 1, 26, ft);   /* 一道白光不停地从左扫到右（10-29 用户：「这几个字要不断流光溢彩」） */ ctx.restore();
   const gs = RANKFX.gets || [], n = gs.length, tw = 84, gap = 10;                          // 解锁的东西做成奖励牌：金框里一张图，下面短名，一张张弹出来（10-29 用户：「太 html」）
   gs.forEach((g2, i) => { const t1 = ft - 2.4 - i * .28, a = out * clamp(t1 / .2, 0, 1); if (a <= 0) return; const pop = 1 + .35 * Math.max(0, 1 - t1 / .25), x = cx + (i - (n - 1) / 2) * (tw + gap), y = 470;
@@ -4998,7 +5000,7 @@ function drawPromote(ft) {
     ctx.shadowColor = 'rgba(255,90,50,.9)'; ctx.shadowBlur = 18; rr(-tw / 2, -tw / 2, tw, tw, 10); ctx.fillStyle = '#2a1208'; ctx.fill(); ctx.shadowBlur = 0;
     ctx.save(); rr(-tw / 2, -tw / 2, tw, tw, 10); ctx.clip(); if (ic.im && ready(ic.im)) { const f = ic.fit ? Math.min(tw / ic.im.width, tw / ic.im.height) * .78 : tw / Math.min(ic.im.width, ic.im.height); ctx.drawImage(ic.im, -ic.im.width * f / 2, -ic.im.height * f / 2, ic.im.width * f, ic.im.height * f); } else uiSeal(0, 0, 40, ic.ch, UIC.red, true); ctx.restore();
     if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, -tw / 2 - 2, -tw / 2 - 2, tw + 4, tw + 4, 60, 60, 60, 60, .1);
-    uiText(ic.label, 0, tw / 2 + 16, 13, '#ff6a48', 'center', FONT, { glow: 'rgba(255,90,50,.9)', glowR: 10, lw: 3 }); ctx.restore();
+    uiText(ic.label, 0, tw / 2 + 16, 13, '#b5301c', 'center', FONT, { glow: 'rgba(120,20,10,.6)', glowR: 4, lw: 3 });   /* 暗朱红 */ ctx.restore();
     if (t1 > 0 && t1 < .5 && hasFb('hit_gold')) { const M = FBM.hit_gold; fbFrame('hit_gold', Math.min(M.n - 1, Math.floor(t1 / .5 * M.n)), x, y, 150, i, out, 1, .7); } });
   if (ft > 3.2) { ctx.save(); ctx.globalAlpha = out * .6; uiText('点任意处继续', cx, 600, 11, '#f4e6c4', 'center', PLAIN, { stroke: false }); ctx.restore(); }
 }
