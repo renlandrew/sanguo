@@ -4698,22 +4698,22 @@ function drawCamp() {
   });
   let y = 264 + TOPY + (ts.length ? shown.length * 44 : 92); if (ts.length > 3) { uiText(`还有 ${ts.length - 3} 道征战军令（补领的）`, W / 2, y + 2, 10, 'rgba(244,230,196,.5)', 'center', PLAIN, { stroke: false }); y += 12; }
   { const id = visitWho(), left = DAILY.visitN - DAILY.visits, vr0 = CAMP.visit && uiNow() - CAMP.visit.t0 < 2.6 ? CAMP.visit : null;   // 出外探访
-    ctx.save(); if (!left) ctx.globalAlpha = .5; plate(14, y, W - 28, 44, !!(vr0 && vr0.god)); ctx.restore();
+    ctx.save(); if (!left) ctx.globalAlpha = .5; plate(14, y, W - 28, 58, !!(vr0 && vr0.god)); ctx.restore();
     ctx.save(); rr(22, y + 6, 32, 32, 6); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], 22, y + 6, 32, 32); ctx.restore();
     uiText('换', 50, y + 35, 10, UIC.gold2, 'center', PLAIN, { lw: 2.5 }); hit(18, y + 2, 40, 40, () => { CAMP.pickVisit = true; sfx('tap'); });   // 点头像弹出武将列表挑人（10-27 用户：「点击换将应该弹出武将列表，将来武将多了」）
     uiText(`出外探访 · 派${GEN[id].name}`, 62, y + 15, 13, left ? UIC.cream : 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false });
     if (vr0) uiText((vr0.god ? `带回陨铁！还有精铁 +${vr0.iron}` : `带回精铁 +${vr0.iron} · 机缘 +${vr0.luck}`) + (vr0.page ? ' · 路上捡到残页 +1' : ''), 62, y + 32, 11, vr0.god ? ITEM_C.陨铁 : UIC.gold2, 'left', PLAIN, { stroke: false });
     else { const s2 = `机缘 ${INV.luck || 0}/${LUCK_FULL} 满了得陨铁 · 宜派政治、魅力高的`; uiText(s2, 62, y + 32, fitSize(s2, 10, W - 104 - 62, 99, PLAIN), 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false }); }
-    if (left) uiText(`今天还能派 ${left} 次`, W - 60, y + 40, 9, 'rgba(244,230,196,.55)', 'center', PLAIN, { stroke: false }); if (left) pill(W - 92, y + 8, 64, 24, '派出', () => { const r = doVisit(); if (r) { CAMP.visit = { ...r, t0: uiNow() }; showReward(r.god ? '带回陨铁！' : '探访归来', [], [r.id], true, [['精铁', r.iron], r.god ? ['陨铁', r.god] : ['机缘', r.luck], ...(r.page ? [['残页', r.page]] : [])]); REWARD.wait = 2; REWARD.waitText = GEN[r.id].name + '正在四处寻觅'; } }); else uiSeal(W - 42, y + 22, 26, '毕', UIC.red, true);
-    y += 56; }
-  { const left = choresLeft(), hh = 40 + 4 * 21 + 18, y0 = y; y += 14;   /* 列表往下挪、底下多留空（10-29 用户） */   /* 上下各多 5（10-27 用户：「上下padding 略大一点点」） */                                    // 日常杂务七项一项一项列出来（10-25 用户：「不能这样，要7个都列出来」），两列；点一项做一项，「一键完成」全做
+    if (left) uiText(`今天还能派 ${left} 次`, W - 60, y + 46, 10, 'rgba(244,230,196,.55)', 'center', PLAIN, { stroke: false }); if (left) pill(W - 92, y + 8, 64, 24, '派出', () => { const r = doVisit(); if (r) { CAMP.visit = { ...r, t0: uiNow() }; showReward(r.god ? '带回陨铁！' : '探访归来', [], [r.id], true, [['精铁', r.iron], r.god ? ['陨铁', r.god] : ['机缘', r.luck], ...(r.page ? [['残页', r.page]] : [])]); REWARD.wait = 2; REWARD.waitText = GEN[r.id].name + '正在四处寻觅'; } }); else uiSeal(W - 42, y + 22, 26, '毕', UIC.red, true);
+    y += 68; }
+  { const left = choresLeft(), hh = 46 + 4 * 27 + 12, y0 = y; y += 4;   /* 列表往下挪、底下多留空（10-29 用户） */   /* 上下各多 5（10-27 用户：「上下padding 略大一点点」） */                                    // 日常杂务七项一项一项列出来（10-25 用户：「不能这样，要7个都列出来」），两列；点一项做一项，「一键完成」全做
     plate(14, y0, W - 28, hh, false);
     const sta = staNow(), can = Math.min(left, Math.floor(sta / CHORE_STA));
     uiText(`日常杂务 ${CHORES.length - left}/${CHORES.length}`, 24, y + 15, 13, UIC.cream, 'left', PLAIN, { stroke: false });
     uiText(`体力 ${sta}/${STA_MAX}`, 112, y + 15, 11, sta >= CHORE_STA ? '#9be0a0' : UIC.red2, 'left', PLAIN, { stroke: false });
     if (left) { pill(W - 112, y + 5, 88, 22, can ? `一键完成` : '体力不够', () => { const b0 = itemSnap(), l0 = choresLeft(); doChores(); const done = l0 - choresLeft(); if (done) { campFw(W / 2, 640 * .62, 7); campGain(itemDiff(b0, itemSnap()), W / 2, 640 * .62); } else showReward('体力不够', ['明天再来'], ['zhang'], false); }, true, can > 0); if (can) uiText(`体力 -${can * CHORE_STA}`, W - 68, y + 34, 10, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false }); }
     else uiSeal(W - 40, y + 15, 22, '毕', UIC.red, true);
-    CHORES.forEach((c, k) => { const cx = 24 + (k % 2) * ((W - 48) / 2), cy = y + 40 + Math.floor(k / 2) * 21, on = choreOn(k);
+    CHORES.forEach((c, k) => { const cx = 24 + (k % 2) * ((W - 48) / 2), cy = y + 48 + Math.floor(k / 2) * 27, on = choreOn(k);
       uiText(c, cx, cy, 12, on ? 'rgba(244,230,196,.45)' : UIC.cream, 'left', PLAIN, { stroke: false });
       { const [ik, n] = CHORE_PAY[k]; uiText(`${ik}+${n}`, cx + 58, cy, 10, on ? 'rgba(246,210,122,.35)' : (ITEM_C[ik] || 'rgba(246,210,122,.8)'), 'left', PLAIN, { stroke: false }); }
       if (on) uiSeal(cx + 128, cy, 16, '毕', UIC.red, true); else hit(cx - 4, cy - 10, (W - 48) / 2, 20, () => { const b0 = itemSnap(); if (doChore(k)) { campFw(cx + 40, cy, 2); campGain(itemDiff(b0, itemSnap()), cx + 60, cy); } else showReward('体力不够', ['明天再来'], [BROS[k % 3]], false); }); });
