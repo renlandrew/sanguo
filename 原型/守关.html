@@ -705,7 +705,7 @@ if (!INV.wpnSplit) { for (const h of ['guan', 'zhang', 'liu']) INV.up['wpn_' + h
 if (INV.it.神兵 != null) { INV.it.陨铁 = (INV.it.陨铁 || 0) + INV.it.神兵; delete INV.it.神兵; }        // 旧档：神兵材料 → 陨铁
 for (const k of Object.keys(INV.it)) if (!(k in ITEMS)) delete INV.it[k];           // 砍掉的物品（甲片、马鬃、温酒、符水）从旧存档里清掉
 const saveInv = () => { try { localStorage.setItem(IKEY, JSON.stringify(INV)); } catch (e) {} };
-// 官阶（10-29 方案 设计/成长方案_Claude_20261029.md 第 1 节）：打节点关之前要晋阶；晋阶要整备 20 点（日常军令、探访、杂务各 +1），全队共享
+// 官阶（10-29 方案 设计/成长方案_Claude_20261029.md 第 1 节）：打节点关之前要晋阶；晋阶要资历 20 点（日常军令、探访、杂务各 +1），全队共享
 const RANKS = [
   { name: '乡勇', node: 0, gets: ['三人各一招'] },
   { name: '义勇头领', node: 5, gets: ['换上第一套新甲', '招式二阶资格'] },
@@ -722,7 +722,7 @@ const syncRankArt = () => { INV.officeRank = Math.min(6, rankNow() + 1); };   //
 const addPrep = n => { if (nextRank()) { INV.prep = Math.min(PREP_NEED, (INV.prep || 0) + n); saveInv(); } };
 function promote() { const R = nextRank(); if (!R || INV.prep < PREP_NEED) return false; INV.rank++; INV.prep = 0; syncRankArt(); saveInv(); RANKFX.t0 = uiNow(); RANKFX.on = true; RANKFX.name = R.name; RANKFX.gets = R.gets; sfx('gong'); return true; }
 const RANKFX = { t0: -99 };
-// 功绩簿（10-29 方案第 5 节，按星数能查的条件先做）：逐关首通、节点功绩（每次晋阶前两项，另给整备 4 点）、累计星绩；每项固定 ID 只领一次
+// 功绩簿（10-29 方案第 5 节，按星数能查的条件先做）：逐关首通、节点功绩（每次晋阶前两项，另给资历 4 点）、累计星绩；每项固定 ID 只领一次
 const ACH_NODE = { 5: [[3, 3, '第三关三星'], [4, 2, '第四关两星以上']], 10: [[7, 3, '第七关三星'], [9, 2, '第九关两星以上']], 15: [[12, 3, '第十二关三星'], [14, 2, '第十四关两星以上']],
   20: [[17, 3, '第十七关三星'], [19, 2, '第十九关两星以上']], 25: [[22, 3, '第廿二关三星'], [24, 2, '第廿四关两星以上']], 30: [[27, 3, '第廿七关三星'], [29, 2, '第廿九关两星以上']] };
 const ACH_STAR = [5, 15, 30, 50, 75];
@@ -4663,10 +4663,10 @@ function drawCamp() {
   { const n = achClaimable().length; plaque(W - 84, 14, 72, 26, '功绩簿', () => { screen = 'ach'; }, n > 0); if (n) uiSeal(W - 14, 16, 14, String(n), UIC.red, true); }
   const gl = campGoal();
   plate(14, 58, W - 28, 166, !!gl);
-  if (!gl) { const N = nextRank(); if (N) { uiText('下一阶 · ' + N.name, W / 2, 96, 20, UIC.gold2, 'center', FONT, { lw: 4 }); uiText(`整备 ${INV.prep || 0}/${PREP_NEED}`, 60, 136, 13, UIC.cream, 'left', PLAIN, { stroke: false });
+  if (!gl) { const N = nextRank(); if (N) { uiText('下一阶 · ' + N.name, W / 2, 96, 20, UIC.gold2, 'center', FONT, { lw: 4 }); uiText(`资历 ${INV.prep || 0}/${PREP_NEED}`, 60, 136, 13, UIC.cream, 'left', PLAIN, { stroke: false });
       uiBar('cprep', 140, 130, W - 200, 12, Math.min(1, (INV.prep || 0) / PREP_NEED), '#8a5a14', '#ffd76e'); uiText('下面的军务每做一项 +1', W / 2, 162, 11, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
       pill(W / 2 - 55, 178, 110, 30, (INV.prep || 0) >= PREP_NEED ? '去晋阶' : '看官阶', () => { screen = 'rank'; }, (INV.prep || 0) >= PREP_NEED); }
-    else uiText('已是第一章最高官阶', W / 2, 140, 18, UIC.gold2, 'center', FONT); }   // 军帐顶上改放官阶整备（兵器不在这里：10-29 用户）
+    else uiText('已是第一章最高官阶', W / 2, 140, 18, UIC.gold2, 'center', FONT); }   // 军帐顶上改放官阶资历（兵器不在这里：10-29 用户）
   else {
     const { ng, key, U, tot, d } = gl, lv = LEVELS.find(l => l.id === ng), lvl = INV.up[key] || 0;
     if (key === 'wpn') { drawWeapon('guan', wpnVis(lvl + 1), 44, 140, 150, .2, uiNow(), false); hit(14, 58, W - 28, 120, () => { screen = 'armory'; ARM.t0 = uiNow(); }); }   // 要打兵器时左边放下一级的青龙偃月刀，点卡片进神兵页
@@ -4689,7 +4689,7 @@ function drawCamp() {
     uiSeal(40, y + 30, 28, '令', UIC.red); uiText('征战军令 · 今天还没下达', 64, y + 24, 15, UIC.gold2, 'left', FONT, { lw: 3 });
     uiText('今天打赢任意一关后，会下达 3 道军令：', 64, y + 48, 11, UIC.cream, 'left', PLAIN, { stroke: false });
     uiText('指定某一关、用某种打法再打一次（如「刘备伤害第一」）', 64, y + 66, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });
-    uiText(`每道完成：残页 +${TASK_PAY}、整备 +1`, 64, y + 84, 11, '#9be0a0', 'left', PLAIN, { stroke: false });
+    uiText(`每道完成：残页 +${TASK_PAY}、资历 +1`, 64, y + 84, 11, '#9be0a0', 'left', PLAIN, { stroke: false });
     pill(W / 2 - 50, y + 96, 100, 26, '去出征', () => { screen = 'menu'; }, true); }
   shown.forEach((t, k) => { const y = 264 + k * 44, li = LEVELS.findIndex(lv => lv.id === t.lv);
     ctx.save(); if (t.done) ctx.globalAlpha = .5; plate(14, y, W - 28, 40); ctx.restore();
@@ -4970,7 +4970,7 @@ function drawPrep() {
     hit(0, 0, W, H, () => { P.goal = false; });
   }
 }
-// 官阶页（10-29）：现在、下一阶解锁什么、整备进度、晋阶按钮；晋阶时一大团金光
+// 官阶页（10-29）：现在、下一阶解锁什么、资历进度、晋阶按钮；晋阶时一大团金光
 const RANKMSG = { t0: -99, text: '' };
 function drawRank() {
   campBg('官阶'); const t = uiNow(), r = rankNow(), R = RANKS[r], N = nextRank();
@@ -4982,7 +4982,7 @@ function drawRank() {
     uiText(`打第${CNUM(N.node)}关之前晋阶`, W / 2, 272, 11, 'rgba(244,230,196,.65)', 'center', PLAIN, { stroke: false });
     N.gets.forEach((g, i) => uiText('· ' + g, 40, 300 + i * 20, 13, UIC.cream, 'left', PLAIN, { stroke: false }));
     const py = 300 + N.gets.length * 20 + 14, fr = Math.min(1, (INV.prep || 0) / PREP_NEED);
-    uiText(`整备 ${INV.prep || 0}/${PREP_NEED}`, 40, py, 13, UIC.gold2, 'left', PLAIN, { stroke: false });
+    uiText(`资历 ${INV.prep || 0}/${PREP_NEED}`, 40, py, 13, UIC.gold2, 'left', PLAIN, { stroke: false });
     uiBar('prep', 130, py - 6, W - 180, 12, fr, '#8a5a14', '#ffd76e');
     uiText('征战军令、出外探访、日常杂务每做一项 +1', W / 2, py + 22, 10, 'rgba(244,230,196,.55)', 'center', PLAIN, { stroke: false });
     if (fr >= 1) pill(W / 2 - 70, py + 38, 140, 34, '晋阶', () => promote(), true);
@@ -5054,14 +5054,14 @@ function drawAch() {                                                            
   TABS.forEach(([nm, f], k) => { const x = 16 + k * ((W - 32) / 3), w = (W - 32) / 3 - 6, on = ACHUI.tab === k, n = L.filter(a => f(a) && a.ok && !a.got).length;
     uiPanel(x, 58, w, 30, { r: 8, top: on ? '#6e1a10' : '#2b1f16', bot: on ? '#3a0c06' : UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.45)' });
     uiText(nm, x + w / 2, 73, 14, on ? '#fff2dc' : UIC.cream, 'center', FONT, { lw: 3 }); if (n) uiSeal(x + w - 8, 60, 11, String(n), UIC.red, true); hit(x, 58, w, 30, () => { ACHUI.tab = k; ACHUI.scroll = 0; }); });
-  const tip = ['完成后另给整备点，帮你更快晋阶', '各关最好成绩的星数加起来', '每关第一次打赢给一次'][ACHUI.tab]; uiText(tip, W / 2, 104, 11, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
+  const tip = ['完成后另给资历，帮你更快晋阶', '各关最好成绩的星数加起来', '每关第一次打赢给一次'][ACHUI.tab]; uiText(tip, W / 2, 104, 11, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
   const S = L.filter(TABS[ACHUI.tab][1]).sort((a, b) => (b.ok && !b.got) - (a.ok && !a.got) || a.got - b.got), rowH = 58, y0 = 116, maxN = 7, off = Math.max(0, Math.min(ACHUI.scroll, S.length - maxN));
   if (!S.length) uiText('这一阶没有功绩', W / 2, 200, 14, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
   S.slice(off, off + maxN).forEach((a, k) => { const y = y0 + k * rowH, can = a.ok && !a.got; plate(14, y, W - 28, rowH - 6, can);
     const nm = a.sec === '首通' ? `第${CNUM(a.lv)}关 · ${a.name}` : a.name; uiText(nm, 26, y + 16, 14, a.got ? 'rgba(244,230,196,.45)' : UIC.cream, 'left', FONT, { lw: 3 });
     const prog = a.prog || [a.ok ? 1 : 0, 1]; slotBar(26, y + 30, 130, 10, [[Math.min(1, prog[0] / prog[1]), '#8a5a14', '#ffd76e']]); uiText(a.prog ? `${prog[0]}/${prog[1]}` : a.ok ? '已达成' : '未达成', 162, y + 35, 10, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false });
     a.pay.forEach(([kk, n], i) => { drawItemIcon(kk, 214 + i * 34, y + 18, 20); uiText('×' + n, 214 + i * 34, y + 38, 10, UIC.cream, 'center', PLAIN, { stroke: false }); });
-    if (a.got) uiSeal(W - 40, y + 26, 22, '已领', UIC.red, true); else if (can) pill(W - 74, y + 13, 54, 26, '领取', () => { const g = claimAch([a]); showReward('领取功绩', a.prep ? [`整备 +${a.prep}`] : [], ['guan', 'zhang', 'liu'], true, g); }, true);
+    if (a.got) uiSeal(W - 40, y + 26, 22, '已领', UIC.red, true); else if (can) pill(W - 74, y + 13, 54, 26, '领取', () => { const g = claimAch([a]); showReward('领取功绩', a.prep ? [`资历 +${a.prep}`] : [], ['guan', 'zhang', 'liu'], true, g); }, true);
     else uiText('未完成', W - 46, y + 26, 11, 'rgba(244,230,196,.4)', 'center', PLAIN, { stroke: false }); });
   if (S.length > maxN) { uiText(`${off + 1}–${Math.min(S.length, off + maxN)} / ${S.length}`, W / 2, y0 + maxN * rowH + 6, 10, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
     pill(30, y0 + maxN * rowH - 6, 60, 24, '上页', () => { ACHUI.scroll = Math.max(0, off - maxN); }, false); pill(W - 90, y0 + maxN * rowH - 6, 60, 24, '下页', () => { ACHUI.scroll = off + maxN; }, false); }
