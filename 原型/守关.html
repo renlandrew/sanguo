@@ -4660,7 +4660,7 @@ function campGoal() {                                                           
 }
 function drawCamp() {
   campBg('军帐'); dailyTick();
-  { const n = achClaimable().length; plaque(W - 106, 12, 96, 34, '功绩簿', () => { screen = 'ach'; }, n > 0); if (n) uiSeal(W - 12, 14, 16, String(n), UIC.red, true); }
+  { const n = achClaimable().length; plaque(W - 106, 8, 96, 44, '功绩簿', () => { screen = 'ach'; }, n > 0); if (n) uiSeal(W - 12, 14, 16, String(n), UIC.red, true); }
   const gl = campGoal(), TOPY = gl ? 0 : -66;   // 没东西要备时顶上只放一块矮的官阶卡（10-29 用户：「这4个框的大小应该如蓝框」）
   plate(14, 58, W - 28, gl ? 166 : 100, !!gl);
   if (!gl) { const N = nextRank(); if (N) { uiText('下一阶 · ' + N.name, W / 2, 84, 18, UIC.gold2, 'center', FONT, { lw: 4 }); uiText(`资历 ${INV.prep || 0}/${PREP_NEED}`, 30, 120, 13, UIC.cream, 'left', PLAIN, { stroke: false });
