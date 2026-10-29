@@ -22,14 +22,15 @@ for act, key in pairs:
         if b: box = b if box is None else (min(box[0], b[0]), min(box[1], b[1]), max(box[2], b[2]), max(box[3], b[3]))
     box = (max(0, box[0] - PAD), max(0, box[1] - PAD), min(FRAME, box[2] + PAD), min(FRAME, box[3] + PAD))
     sheets.append((key, [im.crop(box) for im in ims], box))
-# 一段动作一行
-W = max(sum(c.width for c in cs) for _, cs, _ in sheets); H = sum(cs[0].height for _, cs, _ in sheets)
+# 一段动作一行；一行太宽（超过 4096，手机贴图边长上限）就折成两行（10-29 邓茂按 768 重渲后一行 5976 宽）
+MAXW = 4096; per = {key: max(1, min(len(cs), MAXW // cs[0].width)) for key, cs, _ in sheets}
+W = max(per[k] * cs[0].width for k, cs, _ in sheets); H = sum(cs[0].height * -(-len(cs) // per[k]) for k, cs, _ in sheets)
 atlas = Image.new('RGBA', (W, H), (0, 0, 0, 0)); y = 0
 for key, cs, box in sheets:
-    x = 0; rects = []
-    for c in cs: atlas.paste(c, (x, y)); rects.append([x, y, c.width, c.height]); x += c.width
+    rects = []
+    for j, c in enumerate(cs): x, yy = (j % per[key]) * c.width, y + (j // per[key]) * c.height; atlas.paste(c, (x, yy)); rects.append([x, yy, c.width, c.height])
     meta['anims'][key] = {'rects': rects, 'anchor': [ANCHOR[0] - box[0], ANCHOR[1] - box[1]]}
-    y += cs[0].height
+    y += cs[0].height * -(-len(cs) // per[key])
 atlas.save(outname + '.png', optimize=True)
 json.dump(meta, open(outname + '.json', 'w'), ensure_ascii=False)
 print('图集', atlas.size, os.path.getsize(outname + '.png') // 1024, 'KB', {k: len(v['rects']) for k, v in meta['anims'].items()})

@@ -20,7 +20,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / 'blender')); from ink_post import ink
 SRC = Path(sys.argv[1]); OUT = HERE.parents[1] / '原型' / 'img'
 COLS, ROWS, N, FPS, T0 = 8, 5, 40, 12, .2
-STAND = 260                                        # 人站直缩到 260 像素高（游戏里约 78 点高，三倍屏也够）
+import os
+STAND = int(os.environ.get('STAND', 260))           # 人站直缩到 260 像素高（游戏里约 78 点高，三倍屏也够）；斗将敌将画得大 2.2 倍，10-29 按 STAND=440 重切（用户嫌糊）
 # 每段取哪几帧（在 40 帧里的序号）：待机取前一秒多来回播；普攻、招式取整个动作；受击取前半段
 PICK = {'idle': list(range(12, 40, 2)),   # 10-27 站立待机（衣服随风）：前 12 帧 Veo 从首帧淡入带重影，从 12 起
         'idle_old': list(range(0, 16, 2)), 'atk': list(range(0, 36, 3)), 'skill': list(range(0, 40, 3))}
