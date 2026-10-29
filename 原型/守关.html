@@ -4949,7 +4949,7 @@ const RANKMSG = { t0: -99, text: '' };
 function drawRank() {
   campBg('官阶'); const t = uiNow(), r = rankNow(), R = RANKS[r], N = nextRank();
   plate(16, 66, W - 32, 80, true);
-  uiText('现在', 34, 90, 12, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false }); uiText(R.name, W / 2, 112, 30, goldGrad(112, 30), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 });
+  uiText(R.name, W / 2, 106, 30, goldGrad(112, 30), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 });
   /* 10-29 用户：「不需要告诉有多少阶」 */
   if (N) { plate(16, 160, W - 32, 290, false);
     uiText('下一阶', 34, 224, 12, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false }); uiText(N.name, W / 2, 248, 24, UIC.gold2, 'center', FONT, { lw: 4 });
