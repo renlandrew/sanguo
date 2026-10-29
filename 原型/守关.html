@@ -4989,7 +4989,6 @@ function drawPromote(ft) {
   ctx.save(); ctx.fillStyle = '#040201'; ctx.fillRect(0, 0, W, H); ctx.restore(); hit(0, 0, W, H, () => { if (ft > 2.8) RANKFX.on = false; });   /* 停在这一屏，流光一直走，点一下才关（10-29 用户：「流光2次就消失了」） */
   const glow = clamp((ft - WIPE0 - .8) / .3, 0, 1), pulse = 1 + .08 * Math.sin(ft * 5);
   /* 10-29 用户：「可以直接去掉这个圆的光晕」 */
-  for (const b of PROMO_B) { const M = FBM[b.k], tt = ft - b.d - 1.15, dur = M ? M.dur * 1.6 : .7; if (tt < 0 || tt > dur || !hasFb(b.k)) continue; fbFrame(b.k, Math.min(M.n - 1, Math.floor(tt / dur * M.n)), cx + Math.cos(b.a) * b.r, cy + Math.sin(b.a) * b.r * .75, b.s, b.a, out, 1, .8); }
   ['guan', 'liu', 'zhang'].forEach((id, k) => { const sz = k === 1 ? 112 : 100, x = cx + (k - 1) * 112 - sz / 2, rise = Math.max(0, 1 - (ft - k * .12) / .35), y = cy - sz / 2 + rise * 50 + (k === 1 ? -8 : 0), a = clamp((ft - k * .12) / .3, 0, 1) * out;
     const old = heroRankPortrait(id, r - 1), nu = heroRankPortrait(id, r), t0 = WIPE0, cover = clamp((ft - t0) / .25, 0, 1), clear = clamp((ft - t0 - .8) / .25, 0, 1), swapped = ft > t0 + .8;   /* 三人同时盖住，闪两下，同时蹦出新装（10-29 用户） */
     const pop = swapped ? 1 + .22 * Math.max(0, 1 - (ft - t0 - .8) / .3) : 1, ps = sz * pop, px = x + sz / 2 - ps / 2, py2 = y + sz / 2 - ps / 2;   // 换装：金光先整张盖住旧装，散开时只剩新装，弹一下
@@ -5000,6 +4999,8 @@ function drawPromote(ft) {
     ctx.restore();
 
     if (ready(IMG.ui2_frame)) { ctx.save(); ctx.globalAlpha = a; draw9(IMG.ui2_frame, px - 3, py2 - 3, ps + 6, ps + 6, 60, 60, 60, 60, .1); ctx.restore(); } });
+  /* 烟花画在头像上面、围着三人炸（10-29 用户：「这些烟花可以闪在人物头像上面」） */
+  for (const b of PROMO_B) { const M = FBM[b.k], tt = ft - b.d - 1.15, dur = M ? M.dur * 1.6 : .7; if (tt < 0 || tt > dur || !hasFb(b.k)) continue; fbFrame(b.k, Math.min(M.n - 1, Math.floor(tt / dur * M.n)), cx + Math.cos(b.a) * b.r * 1.1, cy + Math.sin(b.a) * b.r * .45, b.s, b.a, out, 1, .8); }
   const flash = 0; if (flash > 0) { ctx.save(); ctx.globalAlpha = flash * out; ctx.fillStyle = '#fff8e4'; ctx.fillRect(0, 0, W, H); ctx.restore(); }   // 换装那一下白光
   const tu = clamp((ft - 2.25) / .3, 0, 1), ts = 1.8 - .8 * (1 - Math.pow(1 - tu, 3));
   ctx.save(); ctx.globalAlpha = out * tu; uiText('— 晋 阶 —', cx, 132, 18, '#fff2c0', 'center', FONT, { lw: 4, glow: 'rgba(255,210,100,.9)', glowR: 12 }); ctx.restore();
