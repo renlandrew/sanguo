@@ -4988,9 +4988,9 @@ function drawPromote(ft) {
   const tu = clamp((ft - 1.9) / .3, 0, 1), ts = 1.8 - .8 * (1 - Math.pow(1 - tu, 3));
   ctx.save(); ctx.globalAlpha = out * tu; uiText('— 晋 阶 —', cx, 132, 18, '#fff2c0', 'center', FONT, { lw: 4, glow: 'rgba(255,210,100,.9)', glowR: 12 }); ctx.restore();
   ctx.save(); ctx.globalAlpha = out * tu; ctx.translate(cx, 372); ctx.scale(ts, ts);
-  if (ready(IMG.ui_banner)) { const bw = 300, bh = bw * IMG.ui_banner.height / IMG.ui_banner.width; ctx.drawImage(IMG.ui_banner, -bw / 2, -bh / 2, bw, bh); } else { ctx.fillStyle = 'rgba(20,10,4,.92)'; rr(-130, -32, 260, 64, 12); ctx.fill(); ctx.strokeStyle = '#d9a640'; ctx.lineWidth = 2; ctx.stroke(); }
-  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = (.55 + .25 * Math.sin(ft * 6)) * out * tu; uiText(RANKFX.name, 0, 2, 40, '#ffd76e', 'center', FONT, { stroke: false, glow: 'rgba(255,230,140,1)', glowR: 34 }); ctx.restore();   /* 10-29 用户：「官阶的字太暗，要光亮的」——底下一层发光、上面亮金白字 */
-  uiText(RANKFX.name, 0, 2, 40, '#fff6d6', 'center', FONT, { glow: 'rgba(255,220,120,1)', glowR: 18, lw: 4 }); ctx.restore();
+  if (ready(IMG.ui_banner)) { const bw = 320, bh = bw * IMG.ui_banner.height / IMG.ui_banner.width; ctx.drawImage(IMG.ui_banner, -bw / 2, -bh / 2, bw, bh); } else { ctx.fillStyle = 'rgba(20,10,4,.92)'; rr(-130, -32, 260, 64, 12); ctx.fill(); ctx.strokeStyle = '#d9a640'; ctx.lineWidth = 2; ctx.stroke(); }
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = (.55 + .25 * Math.sin(ft * 6)) * out * tu; uiText(RANKFX.name, 0, 1, 26, '#ffd76e', 'center', FONT, { stroke: false, glow: 'rgba(255,230,140,1)', glowR: 26 }); ctx.restore();   /* 10-29 用户：「官阶的字太暗，要光亮的」——底下一层发光、上面亮金白字 */
+  uiText(RANKFX.name, 0, 1, 26, '#fff6d6', 'center', FONT, { glow: 'rgba(255,220,120,1)', glowR: 14, lw: 3 });   /* 字收在横匾里（10-29 用户：「字不要超出」） */ ctx.restore();
   (RANKFX.gets || []).forEach((g2, i) => { const a = out * clamp((ft - 2.4 - i * .25) / .25, 0, 1), y = 446 + i * 34, pop = 1 + .25 * Math.max(0, 1 - (ft - 2.4 - i * .25) / .2); ctx.save(); ctx.globalAlpha = a;   /* 不套 html 那种圆角框（10-29 用户），只用发光的字，亮出来时一弹 */
     ctx.translate(cx, y); ctx.scale(pop, pop); uiText(g2, 0, 0, 18, '#ff5a3c', 'center', FONT, { glow: 'rgba(255,90,50,.95)', glowR: 14, lw: 4 });   /* 10-29 用户：「新技能之类的换朱红色试试」 */ ctx.restore(); });
   if (ft > 3.2) { ctx.save(); ctx.globalAlpha = out * .6; uiText('点任意处继续', cx, 600, 11, '#f4e6c4', 'center', PLAIN, { stroke: false }); ctx.restore(); }
