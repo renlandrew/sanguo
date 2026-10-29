@@ -14,7 +14,7 @@
 </head>
 <body>
 <canvas id="bgv" width="36" height="64" style="display:none"></canvas><canvas id="cv"></canvas>
-<script src="墨流.js?v=20261025"></script>
+<script src="墨流.js?v=20261029"></script>
 <script>
 // 群雄逐鹿 · 守关原型（10-24）：敌军从上面一波波冲下来，刘关张站在城头各自普攻（10-24 起不设主角），招式按出手顺序轮流放，
 // 杀敌攒军功、升级三选一战法，守住城门过关。规则、数值、关卡见 ../设计/方案初稿.md「守关」一节。
@@ -399,7 +399,7 @@ function shiCard(id) {
 const COMBO_WHO = { cHe: ['zhang', 'guan'], cRen: ['liu'], cYun: ['zhang', 'guan'], cHeng: ['zhang', 'guan'], cShuang: ['zhang', 'liu'], cTao: ['zhang', 'liu', 'guan'] };
 const comboLvOf = c => (COMBO_WHO[c] || []).every(id => (G.shi[id] || 0) >= 2) ? 2 : 1;   // 两人都到 2 级势，连携升一级
 // 势升级的画面（10-29 用户：「升级时要很炫……很光，很闪，旦不要做得一个样子」）：各人自己的颜色和画稿爆花，2、4 级更大、多一层法阵和绝技名
-const SHI_LOOK = { guan: { col: '#5fe3a8', glow: 'rgba(90,230,160,', fb: ['hit_jade', 'yanyue'] }, zhang: { col: '#ff8a4a', glow: 'rgba(255,120,50,', fb: ['hit_fire', 'bao'] }, liu: { col: '#9fd6ff', glow: 'rgba(120,190,255,', fb: ['shuang_gold', 'jianhen_gold'] } };
+const SHI_LOOK = { guan: { col: '#5fe3a8', glow: 'rgba(90,230,160,', fb: ['hit_jade', 'yanyue'] }, zhang: { col: '#ff8a4a', glow: 'rgba(255,120,50,', fb: ['hit_fire', 'bao'] }, liu: { col: '#9fd6ff', glow: 'rgba(120,190,255,', fb: ['hit_azure', 'hit_gold'] }   /* 10-29 用户：原来的扇形光条和十字「好丑，好像一个洗碗刷」，换成和张飞一样的炸花 */ };
 function shiFx(id, n) {                                                             // 10-29 用户：「升级为什么出现在战场内？」——战场停住、压暗，在上面演完再接着打
   const L = SHI_LOOK[id], big = !!SHI[G.act[id]][n], m = big ? 7 : 4;
   const bursts = Array.from({ length: m }, (_, k) => { const a = k / m * 6.283 + VR(-.3, .3), r = VR(60, big ? 150 : 110); return { k: L.fb[k % 2], x: W / 2 + Math.cos(a) * r, y: 250 + Math.sin(a) * r * .8, s: VR(90, big ? 170 : 120), d: k * .07, rot: VR(0, 6.283) }; });
@@ -414,8 +414,8 @@ function drawShiUp(f) {
   const r = (f.big ? 50 : 40) * (1.6 - .6 * e) * (1 + .04 * Math.sin(t * 12));
   /* 10-29 用户：「不要出现头像」——只留光、爆花、势名和星 */
   const tu = clamp((t - .12) / .25, 0, 1), ts = 1.8 - .8 * (1 - Math.pow(1 - tu, 3));
-  ctx.save(); ctx.globalAlpha = out * tu; ctx.translate(cx, cy + 4); ctx.scale(ts, ts); uiText(`${GEN[f.id].name} · ${SHI_NAME[f.id]} ${CNUM(f.n)}`, 0, 0, 30, '#fffdf6', 'center', FONT, { glow: 'rgba(255,255,255,.95)', glowR: 22, lw: 5 }); uiText(`${GEN[f.id].name} · ${SHI_NAME[f.id]} ${CNUM(f.n)}`, 0, 0, 30, '#ffffff', 'center', FONT, { glow: L.glow + '.9)', glowR: 34 });   // 10-29 用户：「用白光，太暗了」 ctx.restore();
-  ctx.save(); ctx.globalAlpha = out * tu; for (let k = 0; k < SHI_MAX; k++) { const on = k < f.n, pop = k === f.n - 1 ? 1 + .5 * Math.max(0, 1 - (t - .3) / .25) : 1; uiText('★', cx + (k - 1.5) * 30, cy + 48, 22 * pop, on ? '#ffd76e' : 'rgba(120,100,70,.7)', 'center', PLAIN, { lw: 3, glow: on ? 'rgba(255,210,90,.9)' : null, glowR: 10 }); } ctx.restore();
+  ctx.save(); ctx.globalAlpha = out * tu; ctx.translate(cx, cy + 4); ctx.scale(ts, ts); uiText(`${GEN[f.id].name} · ${SHI_NAME[f.id]} ${CNUM(f.n)}`, 0, 0, 30, '#fffdf6', 'center', FONT, { glow: 'rgba(255,255,255,.95)', glowR: 22, lw: 5 }); uiText(`${GEN[f.id].name} · ${SHI_NAME[f.id]} ${CNUM(f.n)}`, 0, 0, 30, '#ffffff', 'center', FONT, { glow: L.glow + '.9)', glowR: 34 }); ctx.restore();   // 10-29 用户：「用白光，太暗了」
+  ctx.save(); ctx.globalAlpha = out * tu; for (let k = 0; k < SHI_MAX; k++) { const on = k < f.n, pop = k === f.n - 1 ? 1 + .5 * Math.max(0, 1 - (t - .3) / .25) : 1; uiStar(cx + (k - 1.5) * 34, cy + 44, 12, on, pop); } ctx.restore();   // 星星图，排在白字正下方（10-29 用户：「星星可以放白色字的下面」）
   if (f.big && t > .45) { const a = clamp((t - .45) / .2, 0, 1) * out; ctx.save(); ctx.globalAlpha = a; uiText(f.name, cx, cy + 86, 22, '#ffffff', 'center', FONT, { glow: L.glow + '.95)', glowR: 18, lw: 4 }); ctx.restore(); }
 }
 const GEAR = ['fire', 'log', 'jum', 'pozhen', 'banma', 'jinshu', 'order', 'nu', 'mend'];
@@ -1751,7 +1751,13 @@ function resolveSkill(id, boost = 1) {
     if (yun.length) { const ys = yun.map(e => [e.x, e.y - 14, G.visDelay(e)]), zi = G.order.indexOf('zhang');
       G.fx.push({ k: 'cYun', t: 0, dur: 1.6, x: cx, y: cy, hits: ys.slice(0, 8), zx: genX(zi >= 0 ? zi : 0), gx: genX(G.order.indexOf('guan')) });
       for (const [hx, hy, d] of ys.slice(0, 6)) { burst(hx, hy, 'fire', 64, d, 3); burst(hx, hy, 'jade', 86, d + .04, 3); }
-      spxWash(cx, cy, 'fire', .5); punch(cx, cy, .08); G.freeze = Math.max(G.freeze || 0, .12); }
+      spxWash(cx, cy, 'fire', .5); punch(cx, cy, .08); G.freeze = Math.max(G.freeze || 0, .12);
+      // 10-29 用户：「这个不是青龙斩吗？晕而斩之只是几个字？」——青刀扫完，张飞的火化成一道朱红火刀从另一头反扫回来，两刀交成一个叉；
+      // 每个晕住的敌人脚下的地炸出一股火往上冲；头顶的竖排招名换成「晕而斩之」
+      if (ML) { ML.fx.qinglong(cx, cy + r * 1.4 * .5 - 8, r * 1.4 * 1.22, -dir, { ink: false, delay: .13, tint: ['#fff2c8', '#ffb04a', '#e0521c', '#7a1a08'] });
+        for (const [hx, hy, d] of ys.slice(0, 6)) for (let q = 0; q < 4; q++) ML.splat(hx + VR(-10, 10), hy + 14, VR(-40, 40), VR(-320, -200), VR(10, 14), [0, VR(.8, 1), .3, 0]); }
+      for (const [hx, hy, d] of ys.slice(0, 6)) burst(hx, hy - 6, 'fire', 96, d + .16, 4);
+      const sk = G.fx.filter(q => q.k === 'skname' && q.id === 'guan').pop(); if (sk) { sk.text = '晕而斩之'; sk.t = 0; } }
     const hits = inS.map(e => [e.x, e.y - 14, G.visDelay(e)]); G.visDelay = null;
     G.fx.push({ k: 'slash', t: 0, x: cx, y: cy, r, dir, rot: R(-.35, .35), n: hit, hits, sp: Array.from({ length: 22 }, () => ({ u: R(0, 1), d: R(2, 22), r: R(.8, 3) })) });
     G.freeze = .07; G.shake = .28;
@@ -2067,8 +2073,38 @@ function drawSheetFlash(name, anim, f, x, y, k, col, alpha) {
 }
 const TINT = { gong: 'hue-rotate(170deg) saturate(1.4)', xiliang: 'hue-rotate(-42deg) saturate(1.5) brightness(.72)', gongqi: 'hue-rotate(-28deg) saturate(1.2) brightness(.95)', langqi: 'grayscale(.9) brightness(1.18) contrast(1.1)',
   huaxiong: 'hue-rotate(-40deg) saturate(1.4) brightness(.8)', lvbu: 'hue-rotate(250deg) saturate(1.6) brightness(1.05)', huzhen: 'hue-rotate(-35deg) brightness(.75)', lijue: 'hue-rotate(160deg) saturate(.8) brightness(.8)' };
+// 只处理关羽待机帧里的浅灰横线；动画、锚点和原图集保持不变。
+function makeCleanGuanIdle(image, sheet) {
+  const a = sheet.anims.idle, ref = sheet.anims.atk, [rx, ry, rw, rh] = ref.rects[0];
+  const guard = document.createElement('canvas'); guard.width = a.rects[0][2]; guard.height = a.rects[0][3];
+  const g = guard.getContext('2d', { willReadFrequently: true });
+  // 普攻首帧没有横线，借它的刀刃轮廓保护金属高光。
+  g.drawImage(image, rx, ry, rw, rh, a.anchor[0] - ref.anchor[0], a.anchor[1] - ref.anchor[1], rw, rh);
+  const protect = g.getImageData(0, 0, guard.width, guard.height).data;
+  return a.rects.map(([sx, sy, w, h]) => {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const cx = c.getContext('2d', { willReadFrequently: true }); cx.drawImage(image, sx, sy, w, h, 0, 0, w, h);
+    const d = cx.getImageData(0, 0, w, h), pix = d.data;
+    for (let y = 0; y < Math.min(230, h); y++) for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4, r = pix[i], g = pix[i + 1], b = pix[i + 2];
+      if (!pix[i + 3] || Math.max(r,g,b) < 105 || Math.max(r,g,b) - Math.min(r,g,b) > 20) continue;
+      let sword = false;
+      if (x >= 185 && x <= 235 && y < 83) for (let yy = Math.max(0,y-0); yy <= Math.min(h-1,y+0) && !sword; yy++) for (let xx = Math.max(0,x-0); xx <= Math.min(w-1,x+0); xx++) if (protect[(yy*w+xx)*4+3] > 48) { sword = true; break; }
+      if (!sword) pix[i + 3] = 0;
+    }
+    cx.putImageData(d, 0, 0); return c;
+  });
+}
+
+let GUAN_IDLE_CLEAN;
 function drawSheet(name, anim, f, x, y, k, alpha = 1) {
   const S = SHEETS[name], A = S.anims[anim], r = A.rects[clamp(Math.floor(f), 0, A.rects.length - 1)];
+  // 原图待机的灰色横线是在透明图集里，先缓存清理后的每一帧，保留原动作。
+  if (name === 'g_guan' && anim === 'idle') {
+    if (GUAN_IDLE_CLEAN === undefined) { try { GUAN_IDLE_CLEAN = makeCleanGuanIdle(IMG[name], S); } catch (_) { GUAN_IDLE_CLEAN = null; } }
+    const clean = GUAN_IDLE_CLEAN && GUAN_IDLE_CLEAN[clamp(Math.floor(f), 0, A.rects.length - 1)];
+    if (clean) { ctx.globalAlpha = alpha; ctx.drawImage(clean, x - A.anchor[0] * k, y - A.anchor[1] * k, r[2] * k, r[3] * k); ctx.globalAlpha = 1; return; }
+  }
   ctx.globalAlpha = alpha; ctx.drawImage(IMG[name], r[0], r[1], r[2], r[3], x - A.anchor[0] * k, y - A.anchor[1] * k, r[2] * k, r[3] * k); ctx.globalAlpha = 1;
 }
 // 专属图集还没做的兵种先借一张（alt）：张角借术士（同是黄袍道士），骑兵借黄巾兵
@@ -3791,12 +3827,12 @@ function drawFx(f) {
 // 换波横幅：一笔横的墨色（最后一波朱红）色带从中间撑开，金边，大字砸进来，0.4 秒后往右滑走淡掉
 function drawWaveBanner(f) {
   const u = f.t / f.dur; if (u >= 1) return; const inU = Math.min(1, f.t / .18), out = u > .72 ? (u - .72) / .28 : 0, y = 236, bw = (W - 20) * ease(inU), x0 = (W - bw) / 2 + out * 90;
-  const band = f.last ? 'rgba(140,22,14,.92)' : 'rgba(22,18,14,.86)', g = ctx.createLinearGradient(0, y - 26, 0, y + 26);
+  const band = 'rgba(22,18,14,.86)', g = ctx.createLinearGradient(0, y - 26, 0, y + 26);
   g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.22, band); g.addColorStop(.78, band); g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.save(); ctx.globalAlpha = 1 - out;
-  if (ready(IMG.ui_banner)) {                                                     // 画出来的横幅（10-25）：同上从中间露出来；最后一波漆面透一层朱红
+  if (ready(IMG.ui_banner)) {                                                     // 画出来的横幅（10-25）：同上从中间露出来
     const bx = 10 + out * 90, k = 60 / 89; ctx.save(); ctx.beginPath(); ctx.rect(x0, y - 34, bw, 68); ctx.clip(); draw9(IMG.ui_banner, bx, y - 30, W - 20, 60, 90, 90, 0, 0, k);
-    if (f.last) { ctx.globalAlpha *= .55; ctx.fillStyle = '#9a180e'; ctx.fillRect(bx + 90 * k, y - 24, W - 20 - 180 * k, 48); }   // 上下对称铺满漆面（10-28 用户：「这个红色不到头」——原来高 42、下边短一截） ctx.restore();
+    ctx.restore();   // 10-29 用户：「最后一波不要红色了，直接黑色就可以」——不再透朱红（原来这句 restore 写进了注释里，裁剪一直没恢复）
   }
   else {
   ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + 26, y - 26); ctx.lineTo(x0 + bw - 26, y - 26); ctx.lineTo(x0 + bw, y); ctx.lineTo(x0 + bw - 26, y + 26); ctx.lineTo(x0 + 26, y + 26); ctx.closePath(); ctx.fill();

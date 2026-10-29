@@ -142,9 +142,12 @@ void main(){ vUv = aPos * .5 + .5; vL = vUv - vec2(uTexel.x, 0.); vR = vUv + vec
     if (OX.createConicGradient) { const cg = OX.createConicGradient(BL.a0, BL.mx, BL.my), stops = ft > 0 ? [[0, 0], [ft, 0], [ft + .07, 1], [fl - .012, 1], [fl + .01, 0], [1, 0]] : [[0, 1], [fl - .012, 1], [fl + .01, 0], [1, 0]];
       let last = 0; for (const [f, a] of stops) { const ff = Math.min(1, Math.max(last, f)); cg.addColorStop(ff, `rgba(0,0,0,${a})`); last = ff; }
       OX.globalCompositeOperation = 'destination-in'; OX.fillStyle = cg; OX.fillRect(0, 0, sw, sh); }
+    const hue = p.tint && 'filter' in g;                                                                                                   // 换色的刀（连携晕而斩之：张飞的火刀）：色相转到朱红，笔触不丢
+    if (p.tint && !hue) { OX.globalCompositeOperation = 'source-atop'; const tg = OX.createLinearGradient(0, 0, 0, sh); p.tint.forEach((c, i) => tg.addColorStop(i / (p.tint.length - 1), c)); OX.fillStyle = tg; OX.globalAlpha = .82; OX.fillRect(0, 0, sw, sh); OX.globalAlpha = 1; }
     const k = p.R / BL.r, al = 1 - fade * .4;
     g.save(); g.translate(p.cx, p.cy); g.scale(p.dir < 0 ? -k : k, k * .62);                                                            // 竖向压扁：贴着战场横扫，不立成拱门 g.globalAlpha = al; g.drawImage(OFF, -BL.ox, -BL.oy);
-    g.globalCompositeOperation = 'lighter'; g.globalAlpha = .4 * al; g.drawImage(OFF, -BL.ox, -BL.oy);                                    // 叠一遍光
+    if (p.tint) { if (hue) g.filter = 'sepia(1) saturate(5) hue-rotate(-18deg) brightness(1.08)'; g.globalAlpha = al; g.drawImage(OFF, -BL.ox, -BL.oy); }   // 火刀实打实画一遍（青龙斩原来只画下面那遍光，用户认可的样子，不动）
+    g.globalCompositeOperation = 'lighter'; g.globalAlpha = (p.tint ? .3 : .4) * al; g.drawImage(OFF, -BL.ox, -BL.oy); g.filter = 'none';                                    // 叠一遍光
     if (lead < 1 || p.t < SW + HOLD) { const A = BL.a0 + 6.2832 * fl, hx = BL.mx + Math.cos(A) * 190 - BL.ox, hy = BL.my + Math.sin(A) * 190 - BL.oy, rr = 70;   // 刀头一点金光
       const gr = g.createRadialGradient(hx, hy, 0, hx, hy, rr); gr.addColorStop(0, 'rgba(255,236,170,.9)'); gr.addColorStop(1, 'rgba(255,220,140,0)'); g.globalAlpha = 1; g.fillStyle = gr; g.fillRect(hx - rr, hy - rr, rr * 2, rr * 2); }
     g.restore();
@@ -194,7 +197,8 @@ void main(){ vUv = aPos * .5 + .5; vL = vUv - vec2(uTexel.x, 0.); vR = vUv + vec
     // 青龙斩：刀头沿一道上弧扫过去（0.18 秒），刀路上甩出墨丝，速度顺着刀走、往外翻；刀过之后墨浪往上卷，卷出飞片
     qinglong(cx, cy, R = 120, dir = 1, o = {}) {                                                // o.ink === false：只要刀，不翻墨（10-25 用户：「不要浓雾了，就中间那个就很好」）
       const a0 = Math.PI * (dir > 0 ? 1.12 : 1.88), a1 = Math.PI * (dir > 0 ? 1.88 : 1.12), N = 26;
-      parts.push({ k: 'blade', cx, cy, R: R * 1.04, a0, a1, dir, x: 0, y: 0, vx: 0, vy: 0, g: 0, rot: 0, spin: 0, t: 0, life: .5 });   // 刀走在墨浪外沿一点
+      const push = () => parts.push({ k: 'blade', cx, cy, R: R * 1.04, a0, a1, dir, x: 0, y: 0, vx: 0, vy: 0, g: 0, rot: 0, spin: 0, t: 0, life: .5, tint: o.tint });   // o.tint：刀换色；o.delay：晚一点出
+      if (o.delay) at(o.delay, push); else push();   // 刀走在墨浪外沿一点
       if (o.ink === false) return;
       for (let i = 0; i <= N; i++) at(.18 * i / N, () => { const u = i / N, a = a0 + (a1 - a0) * u, x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R * .8, tx = -Math.sin(a) * dir, ty = Math.cos(a) * .8 * dir, ox = Math.cos(a), oy = Math.sin(a);
         const amp = Math.sin(Math.PI * u) * .7 + .3, j = rnd(-1, 1);
