@@ -83,11 +83,14 @@ for (const k of ['jianyong', 'liru']) { IMG['p_' + k] = new Image(); IMG['p_' + 
 IMG.trio = new Image(); IMG.trio.src = 'img/trio.png?v=1027b';
 // 3D 建模渲出来的小兵图集（Meshy → Blender → 水墨着色，见 ../工具/）；没有时退回程序画的
 const BUST = '?t=' + Date.now();                     // 原型阶段图集常改，别吃浏览器缓存
+// Effekseer 用原声浪画稿渲染的透明逐帧图，缺失时回退原画。
+const ROAR_EFK = { image: new Image(), meta: null }; ROAR_EFK.image.src = 'img/fx_shout_efk.webp' + BUST;
+fetch('img/fx_shout_efk.json' + BUST).then(r => r.ok ? r.json() : null).then(m => { ROAR_EFK.meta = m; }).catch(() => {});
 // 城墙、战场背景（ChatGPT 画的，../工具/make_scene.py 处理）；没有时退回程序画的
 for (const [k, ext] of [['wall', 'png'], ['bg', 'jpg']]) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.' + ext + BUST; }
 // 各关地图自己的整张背景（10-25 用户：程序画的谷口山崖太假，「要让 gpt 画」「直接重新画就好了」）：有图就用它、不再叠程序画的那层，没有就用通用战场
 for (const m of ['canyon', 'peach', 'camp', 'yamen', 'grass', 'luoyang', 'suanzao', 'sishui', 'hulao', 'ruins']) { const k = 'bg_' + m; IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.jpg' + BUST; }
-const SHEETS = {}; for (const k of ['huangjin', 'lishi', 'gong', 'cyz', 'yayi', 'dengmao', 'shushi', 'qibing', ...Array.from({ length: 7 }, (_, i) => 'qibing_' + (i + 1)), 'zhangjiao', 'g_guan', 'g_zhang', 'g_liu', 'xiliang', 'feixiong', 'xianzhen', 'baixing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'gaoshun', 'lvbu', 'panfeng', 'wuanguo']) { const file = k === 'qibing' ? 'enemy_qibing_0' : k.startsWith('qibing_') ? 'enemy_' + k : k; IMG[k] = new Image(); IMG[k].src = 'img/' + file + '.png' + BUST; fetch('img/' + file + '.json' + BUST).then(r => r.json()).then(j => { SHEETS[k] = j; }).catch(() => {}); }
+const SHEETS = {}; for (const k of ['huangjin', 'lishi', 'gong', 'cyz', 'yayi', 'dengmao', 'shushi', 'qibing', ...Array.from({ length: 7 }, (_, i) => 'qibing_' + (i + 1)), ...['huangjin', 'yayi', 'lishi', 'gong', 'shushi', 'cyz', 'dengmao', 'xiliang', 'feixiong', 'xianzhen', 'baixing'].map(k => k + '_back'), 'zhangjiao', 'g_guan', 'g_zhang', 'g_liu', 'xiliang', 'feixiong', 'xianzhen', 'baixing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'gaoshun', 'lvbu', 'panfeng', 'wuanguo']) { const file = k === 'qibing' ? 'enemy_qibing_0' : k.startsWith('qibing_') ? 'enemy_' + k : k; IMG[k] = new Image(); IMG[k].src = 'img/' + file + '.png' + BUST; fetch('img/' + file + '.json' + BUST).then(r => r.json()).then(j => { SHEETS[k] = j; }).catch(() => {}); }
 let BG, WALL, MIST, GBODY = {}, SPR = {}, SPRHIT = {}, BLOTS = [];
 function bakeBg() {
   return layer(W, H, g => {
@@ -1951,7 +1954,15 @@ function drawFoe(e) {
     // 跑：8 帧循环；撞城：0.6 秒演完前 8 帧；喝晕、被打退：受击摇晃
     // 弓手停下来就拉弓，放箭那一下对上 shootT 归零；大将在城下来回连劈
     let anim = 'run', fr = 0;
-    const SK = cavalrySheet(e, T, sheetOf(T)), stopY = T.stopY ? T.stopY + e.jit : WALL_Y - 3, has = a => SHEETS[SK].anims[a], nOf = a => has(a).rects.length;
+    const base = sheetOf(T); let SK = cavalrySheet(e, T, base);
+    // 第六关起溃散时换真实背面跑步帧，不改变位移、速度、伤害或结算。
+    if (e.rout && G.lv.id >= 6) {
+      // 其他骑兵还没有背面模型，先借黄巾骑兵的背影并换回各兵种色调。
+      const mounted = ['qibing', 'tieqi', 'gongqi', 'langqi'].includes(base);
+      const back = mounted ? 'qibing_4' : base + '_back';
+      if (SHEETS[back] && ready(IMG[back])) { SK = back; if (mounted && base !== 'qibing' && T.tint) ctx.filter = TINT[T.tint] || 'none'; }
+    }
+    const stopY = T.stopY ? T.stopY + e.jit : WALL_Y - 3, has = a => SHEETS[SK].anims[a], nOf = a => has(a).rects.length;
     fr = e.f / 4 * nOf('run');                                                 // 每段帧数照图集里的算（Meshy 的 8 帧、Veo 切的不一定）
     if (e.duel) {
       // 斗将的敌将：平时待机（没有待机就慢慢跑步原地踏），出招时演施法／召兵／撞城那段
@@ -3192,6 +3203,11 @@ function spxRoar(f) {
   const ZX = clamp(f.ox ?? HX, 60, W - 60);
   // 声浪（10-25 夜用户：「张飞喝退太像火，修改下颜色和形状为声波？有点像街霸里面的波动拳」）：ChatGPT 画的一团声浪（img/fx_shout.png，白金芯、暗红墨边，不是火），
   // 从张飞身上往前冲出去、越冲越大再淡掉，后面跟一道小一点的回声；打到的人只扬尘、不着火。没有画稿时照旧用下面的地火
+  if (ROAR_EFK.meta && ready(ROAR_EFK.image)) {
+    G.fx.push({ k: 'shout_efk', t: 0, dur: .8, x: W / 2, y: WALL_Y - 24, s: kR });
+    for (const h of (f.hits || []).slice(0, 8)) spxHeart(h[0], h[1], 9, 'dust', 'smoke', .62, { delay: .1 + (WALL_Y - h[1]) / f.R * .22, bits: .3, count: 3 });
+    spxDim(.36); punch(ZX, WALL_Y - 80, .05); G.freeze = Math.max(G.freeze || 0, .06); return;
+  }
   if (ready(IMG.fx_shout)) { G.fx.push({ k: 'shout', t: 0, dur: .72, x: W / 2, y: WALL_Y - 30, s: kR }); G.fx.push({ k: 'shout', t: -.12, dur: .6, x: W / 2, y: WALL_Y - 30, s: kR * .7 });
     for (const h of (f.hits || []).slice(0, 8)) spxHeart(h[0], h[1], 9, 'dust', 'smoke', .62, { delay: .1 + (WALL_Y - h[1]) / f.R * .22, bits: .3, count: 3 });
     spxDim(.36); punch(ZX, WALL_Y - 80, .05); G.freeze = Math.max(G.freeze || 0, .06); return; }
@@ -3466,6 +3482,20 @@ function drawFx(f) {
     ctx.save(); ctx.globalAlpha = al; ctx.fillStyle = '#6b5236'; ctx.beginPath(); ctx.arc(cx, cy, S2 / 2, 0, 6.283); ctx.fill(); ctx.strokeStyle = UIC.gold; ctx.lineWidth = 6; ctx.stroke(); ctx.restore();
   } else if (f.k === 'txt') { const u = f.t / (f.dur || 1.1); txt(f.text, f.x, f.y - Math.min(1, f.t / 1.1) * 18, f.size, f.color, 'center', FONT, clamp(u < .7 ? 1 : (1 - u) / .3, 0, 1)); }
   else if (f.k === 'wave') drawWaveBanner(f);
+  else if (f.k === 'shout_efk') {   // 原画通过 Effekseer 做一次向前冲；光晕随主体走，不增加重复圆环或几何光板。
+    const M = ROAR_EFK.meta, im = ROAR_EFK.image, u = f.t / f.dur;
+    if (M && ready(im) && u >= 0 && u < 1) {
+      const i = Math.min(M.frames.length - 1, Math.floor(u * M.frames.length)), r = M.frames[i], c = M.centers[i];
+      const h = 430 * f.s, w = h * M.width / M.height, x = f.x - w / 2, y = f.y - h;
+      const fade = Math.min(1, u / .12, (1 - u) / .25), fl = .75 + .25 * Math.sin(f.t * 31);
+      if (c) { const cx = x + c[0] / M.width * w, cy = y + c[1] / M.height * h, radius = w * .72;
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .60 * fade * fl;
+        const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius); glow.addColorStop(0, 'rgba(255,223,134,.7)'); glow.addColorStop(1, 'rgba(255,174,75,0)');
+        ctx.fillStyle = glow; ctx.fillRect(cx-radius, cy-radius, radius*2, radius*2); ctx.restore(); }
+      ctx.save(); ctx.drawImage(im, r[0], r[1], r[2], r[3], x, y, w, h);
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .30 * fade * fl; ctx.drawImage(im, r[0], r[1], r[2], r[3], x, y, w, h); ctx.restore();
+    }
+  }
   else if (f.k === 'shout') {                                                       // 张飞的声浪：往上冲、从小撑大、头尾淡
     const im = IMG.fx_shout, u = f.t / f.dur; if (u > 0 && ready(im)) { const tr = ease(Math.min(1, u * 1.3)), y = f.y - 250 * tr, k = (.5 + .9 * tr) * f.s, h = 150 * k, w = h * im.width / im.height, a = u < .1 ? u / .1 : u > .65 ? (1 - u) / .35 : 1;
       // 10-28 用户：「移到中间，加上光芒闪烁，不要静态，而是流动的」——放屏幕正中；按横条切开、每条左右波动着画（像气流在扭），后面一团金光、上面再叠一遍提亮闪烁

@@ -1,0 +1,53 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Effekseer 声浪透明帧渲染</title>
+<!-- 渲染带透明通道的声浪逐帧图，使用项目自带 Effekseer 1.70 运行库。 -->
+<body style="margin:0;background:#111;color:#ccc;font:12px sans-serif">
+<canvas id="c"></canvas><div id="log"></div>
+<script src="effekseer.min.js"></script>
+<script>
+const P = new URLSearchParams(location.hash.slice(1));
+const LIST = (P.get('list') || '').split(',').filter(Boolean), OUT = P.get('out') || 'http://127.0.0.1:8800';
+const N = +(P.get('n') || 6), SZ = +(P.get('sz') || 384), COLS = +(P.get('cols') || N), FOV = 30 * Math.PI / 180, TAN = Math.tan(FOV / 2), ELEV = +(P.get('elev') || 22) * Math.PI / 180, YAW = +(P.get('yaw') || 0) * Math.PI / 180;
+const log = s => { document.getElementById('log').textContent += s + ' | '; };
+const c = document.getElementById('c'); c.width = c.height = SZ; const gl = c.getContext('webgl', { preserveDrawingBuffer: true, alpha: true, premultipliedAlpha: true, antialias: true });
+const sub = (p, q) => p.map((v, i) => v - q[i]), add = (p, q) => p.map((v, i) => v + q[i]), mul = (p, k) => p.map(v => v * k), nrm = v => { const l = Math.hypot(...v); return v.map(x => x / l); };
+const cross = (p, q) => [p[1] * q[2] - p[2] * q[1], p[2] * q[0] - p[0] * q[2], p[0] * q[1] - p[1] * q[0]], dot = (p, q) => p[0] * q[0] + p[1] * q[1] + p[2] * q[2];
+const proj = (() => { const n = .2, f = 2000, t = 1 / TAN; return new Float32Array([t, 0, 0, 0, 0, t, 0, 0, 0, 0, (f + n) / (n - f), -1, 0, 0, 2 * f * n / (n - f), 0]); })();
+const back = nrm([Math.sin(YAW) * Math.cos(ELEV), Math.sin(ELEV), Math.cos(YAW) * Math.cos(ELEV)]);   // 从目标指向镜头
+function view(target, dist) { const e = add(target, mul(back, dist)), z = back, x = nrm(cross([0, 1, 0], z)), y = cross(z, x);
+  return { m: new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -dot(x, e), -dot(y, e), -dot(z, e), 1]), x, y }; }
+const px = new Uint8Array(SZ * SZ * 4);
+function shoot(ctx, v) { gl.viewport(0, 0, SZ, SZ); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); ctx.setProjectionMatrix(proj); ctx.setCameraMatrix(v.m); ctx.draw(); gl.flush(); }
+function measure() { gl.readPixels(0, 0, SZ, SZ, gl.RGBA, gl.UNSIGNED_BYTE, px); let x0 = SZ, y0 = SZ, x1 = -1, y1 = -1, e = 0;
+  for (let y = 0; y < SZ; y += 2) for (let x = 0; x < SZ; x += 2) { const i = (y * SZ + x) * 4, m = Math.max(px[i], px[i + 1], px[i + 2]); if (m > 28) { e += m; if (x < x0) x0 = x; if (x > x1) x1 = x; const yy = SZ - 1 - y; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; } }
+  return { x0, y0, x1, y1, e }; }
+window.RESULT = [];
+effekseer.initRuntime('effekseer.wasm', async () => {
+  const ctx = effekseer.createContext(); ctx.init(gl, { instanceMaxCount: 4000, squareMaxCount: 20000 });
+  const strip = document.createElement('canvas'); strip.width = SZ * COLS; strip.height = SZ * Math.ceil(N / COLS); const sg = strip.getContext('2d');
+  for (const name of LIST) {
+    const ef = await new Promise(res => { const e = ctx.loadEffect(`_cand/${name}.efk`, 1, () => res(e), (m, u) => { log(name + ' 读不了 ' + m + ' ' + u); res(null); }); });
+    if (!ef) { window.RESULT.push(name + ':fail'); continue; }
+    // 第一遍：远景，每 3 帧量一次，最长 2.5 秒
+    const D0 = 60, T0 = [0, 0, 0], v0 = view(T0, D0); ctx.stopAll(); ctx.play(ef, 0, 0, 0); const meas = [];
+    for (let f = 0; f <= 150; f++) { ctx.update(1); if (f % 3 === 0) { shoot(ctx, v0); meas.push({ f, ...measure() }); } }
+    ctx.stopAll(); ctx.update(1);
+    const peak = Math.max(...meas.map(m => m.e)); if (!(peak > 0)) { window.RESULT.push(name + ':empty'); continue; }
+    const live = meas.filter(m => m.e > peak * .08), fa = live[0].f, fb = live[live.length - 1].f;
+    const bx0 = Math.min(...live.map(m => m.x0)), bx1 = Math.max(...live.map(m => m.x1)), by0 = Math.min(...live.map(m => m.y0)), by1 = Math.max(...live.map(m => m.y1));
+    const wpp = 2 * D0 * TAN / SZ, cx = (bx0 + bx1) / 2 - SZ / 2, cy = (by0 + by1) / 2 - SZ / 2, ext = Math.max(bx1 - bx0, by1 - by0) * wpp;
+    const target = add(T0, add(mul(v0.x, cx * wpp), mul(v0.y, -cy * wpp))), dist = Math.max(1, ext * (+(P.get('pad') || 1.12)) / 2 / TAN), v1 = view(target, dist);
+    // 第二遍：对准，在亮的时段里均匀抽 N 帧
+    ctx.play(ef, 0, 0, 0); let frame = 0; sg.clearRect(0, 0, strip.width, strip.height);
+    const at = Array.from({ length: N }, (_, i) => Math.round(fa + 1 + (fb - fa - 1) * (N === 1 ? 0 : i / (N - 1)) * (+(P.get('span') || .92))));
+    for (let i = 0; i < N; i++) { while (frame < at[i]) { ctx.update(1); frame++; } shoot(ctx, v1); sg.drawImage(c, (i % COLS) * SZ, Math.floor(i / COLS) * SZ); }
+    ctx.stopAll(); ctx.update(1);
+    const blob = await new Promise(r => strip.toBlob(r, 'image/png'));
+    const meta = `${name.replace('/', '__')}~${fa}-${fb}~${ext.toFixed(1)}${P.get('tag') ? '~' + P.get('tag') : ''}`;
+    try { await fetch(`${OUT}/save?name=${encodeURIComponent(meta + '.png')}`, { method: 'POST', body: blob }); window.RESULT.push(name + ':ok'); } catch (e) { window.RESULT.push(name + ':send ' + e.message); }
+    ctx.releaseEffect && ctx.releaseEffect(ef);
+  }
+  window.DONE = true; log('完成');
+}, () => { log('运行库加载失败'); window.DONE = true; });
+</script>
