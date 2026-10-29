@@ -4856,9 +4856,9 @@ function drawArmory2() {
   const fl = ARM.flash && t - ARM.flash < .5 ? 1 - (t - ARM.flash) / .5 : 0;
   drawWeapon(id, lvl, 150, 300 + Math.sin(t * 1.6) * 5, id === 'liu' ? 320 : 360, WPN_ROT[id], t, true);
   if (fl) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = fl; ctx.fillStyle = '#fff6dc'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
-  uiText(WPN[id], 22, 78, 22, UIC.gold2, 'left', FONT, { glow: `rgba(${WPN_GLOW[id]},.5)`, glowR: 10 });
-  uiText(`${WPN_TIER[lvl]}${wl ? ' · +' + wl : ''}`, 22, 104, 15, `rgb(${WPN_GLOW[id]})`, 'left', FONT);
-  uiText(wl ? UPS[AK].desc(wl) : '还没精炼', 22, 124, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });
+  uiText(WPN[id], 22, 92, 22, UIC.gold2, 'left', FONT, { glow: `rgba(${WPN_GLOW[id]},.5)`, glowR: 10 });
+  uiText(`${WPN_TIER[lvl]}${wl ? ' · +' + wl : ''}`, 22, 116, 15, `rgb(${WPN_GLOW[id]})`, 'left', FONT);
+  uiText(wl ? UPS[AK].desc(wl) : '还没精炼', 22, 136, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });
   ['guan', 'zhang', 'liu'].forEach((g, k) => { const x = W - 70, y = 70 + k * 92, on = g === id;                       // 右边三格：三人的兵器
     ctx.save(); if (!on) ctx.globalAlpha = .5; ctx.fillStyle = 'rgba(14,10,7,.8)'; rr(x, y, 58, 84, 7); ctx.fill();   /* 和底栏武将牌一样：暗底加细金框（关卡牌那张缩小了里面的金边像个方框） */
     const gl = INV.up['wpn_' + g] || 0; drawWeapon(g, wpnVis(gl), x + 29, y + 36, 66, WPN_ROT[g], t, false); if (canUp('wpn_' + g)) uiSeal(x + 52, y + 8, 12, '升', UIC.red, true); if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, x - 1, y - 1, 60, 86, 60, 60, 60, 60, .1); ctx.restore();
@@ -4876,7 +4876,7 @@ function drawArmory2() {
     if (canUp(AK)) pill(W - 98, y + 66, 76, 30, '打造', () => { doUp(AK); ARM.flash = uiNow(); ARM.forge = { t0: uiNow(), id, lv: INV.up[AK] }; sfx('gong'); });
     else uiText(etaText(e.d, e.lack), W - 24, y + 94, 12, etaColor(e.d), 'right', FONT, { stroke: false }); }
   /* 10-26 用户圈了「三人的兵器一起精炼」：「去掉这句」 */
-  { const its = ['精铁', '陨铁']; plate(14, 142, 128, 30, false); its.forEach((k, i) => { const x = 32 + i * 60; drawItemIcon(k, x, 157, 18); uiText(String(INV.it[k] || 0), x + 12, 157, 12, UIC.cream, 'left', PLAIN, { stroke: false }); }); }   // 手上有多少材料（10-29 用户）
+  { const its = ['精铁', '陨铁']; plate(14, 46, 120, 26, false); its.forEach((k, i) => { const x = 32 + i * 56; drawItemIcon(k, x, 59, 16); uiText(String(INV.it[k] || 0), x + 11, 59, 12, UIC.cream, 'left', PLAIN, { stroke: false }); }); }   // 手上有多少材料（10-29 用户）
   plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; }, false);
 }
 // 门槛页：第一次打一关、还没有对症的东西
