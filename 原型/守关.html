@@ -82,7 +82,8 @@ const IMG = {}; for (const k of ['guan', 'zhang', 'liu']) { IMG[k] = new Image()
 // 关羽的官阶头像：简洁肩甲是乡勇，原胸像是义勇头领；2–6 对应后续官阶。
 const GUAN_RANK_FILES = ['p_guan_rank_1_head.jpg', 'p_guan_rank_2_head_v2.jpg', 'p_guan_rank_3_head_v2.jpg', 'p_guan_rank_4_head_v2.jpg', 'p_guan_rank_5_head_v2.jpg', 'p_guan_rank_6_v2.jpg'];
 const GUAN_RANK_PORTRAITS = GUAN_RANK_FILES.map(file => { const im = new Image(); im.src = `img/${file}?v=20261029d`; return im; });
-const heroRankPortrait = id => { const rank = INV.officeRank; const im = id === 'guan' && Number.isInteger(rank) && rank >= 1 && rank <= 6 ? GUAN_RANK_PORTRAITS[rank - 1] : null; return ready(im) ? im : IMG[id]; };
+const RANK_IMG = {}; for (const id of ['guan', 'zhang', 'liu']) for (let r = 1; r <= 6; r++) { const im = new Image(); im.src = `img/rank_${id}_${r}.jpg?v=20261029`; RANK_IMG[id + r] = im; }   // 10-29 三兄弟六个官阶的新装头像（美术/<人>/官阶设计_20261029、关羽/官阶头像_简化雕刻）
+const heroRankPortrait = (id, r = INV.rank || 0) => { const im = r >= 1 ? RANK_IMG[id + Math.min(6, r)] : null; return ready(im) ? im : IMG[id]; };
 for (const k of ['jianyong', 'liru']) { IMG['p_' + k] = new Image(); IMG['p_' + k].src = 'img/p_' + k + '.jpg'; }   // 军师头像（10-25，ChatGPT 画，原图 美术/界面/军师头像_简雍李儒.jpg）
 IMG.trio = new Image(); IMG.trio.src = 'img/trio.png?v=1027b';
 // 3D 建模渲出来的小兵图集（Meshy → Blender → 水墨着色，见 ../工具/）；没有时退回程序画的
@@ -702,11 +703,11 @@ const saveInv = () => { try { localStorage.setItem(IKEY, JSON.stringify(INV)); }
 // 官阶（10-29 方案 设计/成长方案_Claude_20261029.md 第 1 节）：打节点关之前要晋阶；晋阶要整备 20 点（日常军令、探访、杂务各 +1），全队共享
 const RANKS = [
   { name: '乡勇', node: 0, gets: ['三人各一招'] },
-  { name: '义勇头领', node: 5, gets: ['第一套新甲', '招式二阶资格'] },
+  { name: '义勇头领', node: 5, gets: ['换上第一套新甲', '招式二阶资格'] },
   { name: '义军队正', node: 10, gets: ['张飞新招「丈八破阵」', '被动第一格'] },
-  { name: '讨贼队正', node: 15, gets: ['第二套新甲', '关羽新招「温酒斩将」'] },
+  { name: '讨贼队正', node: 15, gets: ['换上第二套新甲', '关羽新招「温酒斩将」'] },
   { name: '讨贼副尉', node: 20, gets: ['刘备新招「仁德护阵」'] },
-  { name: '讨贼正尉', node: 25, gets: ['第三套新甲', '被动第二格', '招式三阶资格'] },
+  { name: '讨贼正尉', node: 25, gets: ['换上第三套新甲', '被动第二格', '招式三阶资格'] },
   { name: '校尉', node: 30, gets: ['第一章成长上限'] },
 ];
 const PREP_NEED = 20;
@@ -4652,7 +4653,7 @@ function drawCamp() {
       uiText(`${it} ${Math.min(have, n)}/${n}`, 120, yy, 13, ITEM_C[it], 'right', PLAIN, { stroke: false });
       uiBar('goal_' + it, 130, yy - 4, 150, 8, have / n, '#8a5a14', '#ffd76e', { edge: 'rgba(217,166,64,.55)' }); });
     if (canUp(key)) pill(W / 2 - 60, 186, 120, 32, key === 'awake' ? '觉醒' : U.gen ? '研习' : '打造', () => { if (key === 'awake') CAMP.pickAwake = true; else { const ok = doUp(key); MENU.flash = { key, t0: uiNow() }; const U2 = UPS[key];
-      if (ok) showReward(U2.gen ? '研习成功' : '打造成功', [`${U2.name} ${U2.max > 1 ? '升到 ' + INV.up[key] + ' 级' : '已学会'}`, U2.desc(INV.up[key])], U2.gen ? [U2.gen] : ['guan', 'zhang', 'liu']); else showReward('材料不够', ['还差：' + lackText(Object.entries(upCost(key)).filter(([i, n]) => (INV.it[i] || 0) < n))], U2.gen ? [U2.gen] : ['zhang'], false); } });
+      if (ok) showReward(U2.gen ? '研习成功' : '打造成功', [`${U2.name} ${U2.max > 1 ? '+' + INV.up[key] : '已学会'}`, ...(key === 'wpn' ? ['三兄弟的兵器一起精炼'] : []), U2.desc(INV.up[key])], U2.gen ? [U2.gen] : ['guan', 'zhang', 'liu']); else showReward('材料不够', ['还差：' + lackText(Object.entries(upCost(key)).filter(([i, n]) => (INV.it[i] || 0) < n))], U2.gen ? [U2.gen] : ['zhang'], false); } });
     else uiText(etaText(d, gl.lack) + (gl.lack.some(([i]) => i === '将印') && !INV.seal20 ? '，再首通第廿关' : ''), W / 2, 204, 17, etaColor(d), 'center', FONT);
     if (MENU.flash && uiNow() - MENU.flash.t0 < 1.2) { const u = (uiNow() - MENU.flash.t0) / 1.2; ctx.save(); ctx.globalAlpha = 1 - u; uiSeal(W - 58, 108, 34 + 12 * u, UPS[MENU.flash.key].gen ? '悟' : '成', UIC.red); ctx.restore(); }
   }
@@ -4964,11 +4965,18 @@ function drawRank() {
   else uiText('已是第一章最高官阶', W / 2, 260, 16, UIC.gold2, 'center', FONT);
   if (t - RANKMSG.t0 < 3) { const a = Math.min(1, (3 - (t - RANKMSG.t0)) / .5); ctx.save(); ctx.globalAlpha = a; plate(30, 470, W - 60, 40, true); uiText(RANKMSG.text, W / 2, 490, fitSize(RANKMSG.text, 13, W - 80, 99, PLAIN), '#ffe39a', 'center', PLAIN, { lw: 3 }); ctx.restore(); }
   plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; }, false);
-  const ft = t - RANKFX.t0; if (ft < 3) {                                            // 晋阶：全屏金光、官名砸下来、解锁的东西一条条亮出来
-    const u = Math.min(1, ft / .3), out = ft > 2.4 ? (3 - ft) / .6 : 1; ctx.save(); ctx.globalAlpha = .85 * out; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-    ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(W / 2, 280, 10, W / 2, 280, 320); g.addColorStop(0, `rgba(255,220,120,${.9 * u})`); g.addColorStop(.35, 'rgba(255,170,60,.3)'); g.addColorStop(1, 'rgba(255,150,40,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore();
-    const ts = 2 - Math.min(1, ft / .35); ctx.save(); ctx.globalAlpha = out; ctx.translate(W / 2, 280); ctx.scale(ts, ts); uiText(RANKFX.name, 0, 0, 40, goldGrad(-20, 40), 'center', FONT, { glow: 'rgba(255,210,100,.95)', glowR: 24, lw: 7 }); ctx.restore();
-    ctx.save(); ctx.globalAlpha = out; uiText('晋 阶', W / 2, 222, 16, '#fff2c0', 'center', FONT, { lw: 4 }); (RANKFX.gets || []).forEach((g2, i) => { const a = clamp((ft - .5 - i * .2) / .25, 0, 1); ctx.globalAlpha = out * a; uiText(g2, W / 2, 330 + i * 24, 14, '#ffe39a', 'center', PLAIN, { lw: 3 }); }); ctx.restore();
+  const ft = t - RANKFX.t0; if (ft < 4.2) {                                          // 晋阶：三兄弟旧装一闪换上新装、金光、官名砸下来，再亮出解锁的东西（10-29 用户：「换衣服官阶那种升级」）
+    const out = ft > 3.6 ? (4.2 - ft) / .6 : 1, r = rankNow(); ctx.save(); ctx.globalAlpha = .96 * out; ctx.fillStyle = '#050302'; ctx.fillRect(0, 0, W, H); ctx.restore();
+    const flash = clamp(1 - Math.abs(ft - .9) / .25, 0, 1);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = out * (.35 + .65 * clamp((ft - .9) / .3, 0, 1)); const g = ctx.createRadialGradient(W / 2, 250, 10, W / 2, 250, 300); g.addColorStop(0, 'rgba(255,215,120,.9)'); g.addColorStop(.4, 'rgba(255,170,60,.28)'); g.addColorStop(1, 'rgba(255,150,40,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore();
+    ['guan', 'zhang', 'liu'].forEach((id, k) => { const sz = 96, x = W / 2 + (k - 1) * (sz + 12) - sz / 2, rise = Math.max(0, 1 - (ft - k * .12) / .35), y = 190 + rise * 40, a = clamp((ft - k * .12) / .3, 0, 1) * out;
+      const im = heroRankPortrait(id, ft < .9 ? r - 1 : r); ctx.save(); ctx.globalAlpha = a; ctx.shadowColor = 'rgba(255,210,110,.9)'; ctx.shadowBlur = ft > .9 ? 22 : 0; rr(x, y, sz, sz, 10); ctx.fillStyle = '#2a1a0a'; ctx.fill(); ctx.shadowBlur = 0; rr(x, y, sz, sz, 10); ctx.clip(); if (ready(im)) ctx.drawImage(im, x, y, sz, sz); ctx.restore();
+      if (ready(IMG.ui2_frame)) { ctx.save(); ctx.globalAlpha = a; draw9(IMG.ui2_frame, x - 2, y - 2, sz + 4, sz + 4, 60, 60, 60, 60, .1); ctx.restore(); } });
+    if (flash > 0) { ctx.save(); ctx.globalAlpha = flash * .9 * out; ctx.fillStyle = '#fff6dc'; ctx.fillRect(0, 0, W, H); ctx.restore(); }   // 换装那一下白光一闪
+    const tu = clamp((ft - 1.1) / .3, 0, 1), ts = 2 - (1 - Math.pow(1 - tu, 3)); ctx.save(); ctx.globalAlpha = out * tu; uiText('晋 阶', W / 2, 140, 16, '#fff2c0', 'center', FONT, { lw: 4 });
+    ctx.translate(W / 2, 340); ctx.scale(ts, ts); uiText(RANKFX.name, 0, 0, 40, goldGrad(-20, 40), 'center', FONT, { glow: 'rgba(255,210,100,.95)', glowR: 24, lw: 7 }); ctx.restore();
+    ctx.save(); (RANKFX.gets || []).forEach((g2, i) => { ctx.globalAlpha = out * clamp((ft - 1.6 - i * .25) / .25, 0, 1); uiText(g2, W / 2, 392 + i * 26, 15, '#ffe39a', 'center', PLAIN, { lw: 3 }); }); ctx.restore();
+    if (ft < 3.6) hit(0, 0, W, H, () => { if (ft > 1.6) RANKFX.t0 = uiNow() - 3.6; });   // 点一下提前收
   }
 }
 // 配招页（10-29）：出阵的每人一行——主动招选一个、被动按格数选；底下亮出已成的连携
