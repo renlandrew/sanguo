@@ -717,6 +717,19 @@ const syncRankArt = () => { INV.officeRank = Math.min(6, rankNow() + 1); };   //
 const addPrep = n => { if (nextRank()) { INV.prep = Math.min(PREP_NEED, (INV.prep || 0) + n); saveInv(); } };
 function promote() { const R = nextRank(); if (!R || INV.prep < PREP_NEED) return false; INV.rank++; INV.prep = 0; syncRankArt(); saveInv(); RANKFX.t0 = uiNow(); RANKFX.on = true; RANKFX.name = R.name; RANKFX.gets = R.gets; sfx('gong'); return true; }
 const RANKFX = { t0: -99 };
+// 功绩簿（10-29 方案第 5 节，按星数能查的条件先做）：逐关首通、节点功绩（每次晋阶前两项，另给整备 4 点）、累计星绩；每项固定 ID 只领一次
+const ACH_NODE = { 5: [[3, 3, '第三关三星'], [4, 2, '第四关两星以上']], 10: [[7, 3, '第七关三星'], [9, 2, '第九关两星以上']], 15: [[12, 3, '第十二关三星'], [14, 2, '第十四关两星以上']],
+  20: [[17, 3, '第十七关三星'], [19, 2, '第十九关两星以上']], 25: [[22, 3, '第廿二关三星'], [24, 2, '第廿四关两星以上']], 30: [[27, 3, '第廿七关三星'], [29, 2, '第廿九关两星以上']] };
+const ACH_STAR = [5, 15, 30, 50, 75];
+function achList() {
+  const L = [], st = Object.values(BEST).reduce((a, b) => a + (b || 0), 0), nr = nextRank();
+  if (nr && ACH_NODE[nr.node]) ACH_NODE[nr.node].forEach(([lv, n, t], k) => L.push({ id: `nd${nr.node}_${k}`, sec: '本阶功绩', name: t, ok: (BEST[lv] || 0) >= n, pay: [['精铁', 2], ['残页', 1]], prep: 4 }));
+  ACH_STAR.forEach(n => L.push({ id: 'st' + n, sec: '星绩', name: `累计 ${n} 颗星`, ok: st >= n, pay: [['残页', 5]], prog: [Math.min(st, n), n] }));
+  LEVELS.forEach(lv => L.push({ id: 'fc' + lv.id, sec: '首通', name: lv.name, ok: !!BEST[lv.id], pay: [['精铁', 2]], lv: lv.id }));
+  return L.map(a => ({ ...a, got: !!(INV.ach || {})[a.id] }));
+}
+const achClaimable = () => achList().filter(a => a.ok && !a.got);
+function claimAch(list) { INV.ach = INV.ach || {}; const got = {}; for (const a of list) { if (INV.ach[a.id] || !a.ok) continue; INV.ach[a.id] = 1; for (const [k, n] of a.pay) { INV.it[k] = (INV.it[k] || 0) + n; got[k] = (got[k] || 0) + n; } if (a.prep) addPrep(a.prep); } saveInv(); return Object.entries(got); }
 const rankNeedFor = lvId => RANKS.findIndex(R => R.node === lvId);          // 打这关要几阶（不是节点关返回 -1）
 // 上阵顺序（10-26 用户：「这里应该有一个上阵武将选择，当然目前只有刘关张，军师也放这里，没必要放主页」）：武将页排的出手顺序，
 // 进关时把这关上场的兄弟按它重排（单将关、半路才加入的关不动）；机器人试跑不看，推演数字不受影响
@@ -1917,6 +1930,7 @@ function renderScreen() {
   if (screen === 'roster') { drawRoster(); return; }
   if (screen === 'camp') { drawCamp(); return; }
   if (screen === 'rank') { drawRank(); return; }
+  if (screen === 'ach') { drawAch(); return; }
   if (screen === 'armory') { drawArmory2(); return; }
   if (screen === 'counsel') { drawCounsel(); return; }
   if (screen === 'gate') { drawGate(); return; }
@@ -4640,6 +4654,7 @@ function campGoal() {                                                           
 }
 function drawCamp() {
   campBg('军帐'); dailyTick();
+  { const n = achClaimable().length; plaque(W - 84, 14, 72, 26, '功绩簿', () => { screen = 'ach'; }, n > 0); if (n) uiSeal(W - 14, 16, 14, String(n), UIC.red, true); }
   const gl = campGoal();
   plate(14, 58, W - 28, 166, !!gl);
   if (!gl) uiText('该备的都备齐了', W / 2, 140, 18, UIC.gold2, 'center', FONT);
@@ -5020,6 +5035,22 @@ function shimmerText(text, x, y, size, t) {                                     
   SHX.globalCompositeOperation = 'source-atop'; const p = ((t * .7) % 1.4) - .2, bx = p * w, g = SHX.createLinearGradient(bx - 40, 0, bx + 40, h); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,236,170,1)'); g.addColorStop(1, 'rgba(255,255,255,0)');
   SHX.fillStyle = 'rgba(0,0,0,0)'; SHX.fillRect(0, 0, w, h); SHX.globalCompositeOperation = 'destination-in'; SHX.fillStyle = g; SHX.fillRect(0, 0, w, h); SHX.globalCompositeOperation = 'source-over';
   const T = ctx.getTransform(); ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= .55; ctx.drawImage(SHIM, x - w / 2, y - h / 2, w, h); ctx.restore();   /* 跟着外层透明度：官名还没出来时流光也不出（10-29 用户：「这个阶段不需要出现字」） */
+}
+function drawAch() {
+  campBg('功绩簿'); const L = achList(), can = L.filter(a => a.ok && !a.got);
+  let y = 66; const row = a => { const c = a.got ? 'rgba(244,230,196,.4)' : a.ok ? '#ffe39a' : UIC.cream; plate(14, y, W - 28, 40, a.ok && !a.got);
+    uiText(a.name, 26, y + 14, 13, c, 'left', PLAIN, { stroke: false }); if (a.prog) uiText(`${a.prog[0]}/${a.prog[1]}`, 26, y + 30, 10, 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false });
+    a.pay.forEach(([k, n], i) => { drawItemIcon(k, W - 140 + i * 40, y + 20, 18); uiText('+' + n, W - 128 + i * 40, y + 20, 11, c, 'left', PLAIN, { stroke: false }); }); if (a.prep) uiText('整备+' + a.prep, W - 140 + a.pay.length * 40, y + 20, 10, '#9be0a0', 'left', PLAIN, { stroke: false });
+    if (a.got) uiSeal(W - 34, y + 20, 22, '领', UIC.red, true); else if (a.ok) pill(W - 62, y + 9, 44, 22, '领取', () => { const g = claimAch([a]); showReward('领取功绩', [a.name], ['guan', 'zhang', 'liu'], true, g); }, true);
+    y += 44; };
+  for (const sec of ['本阶功绩', '星绩']) { const S = L.filter(a => a.sec === sec); if (!S.length) continue; uiText(sec, 18, y + 8, 14, UIC.gold2, 'left', FONT, { stroke: false }); y += 18; S.forEach(row); y += 4; }
+  const F = L.filter(a => a.sec === '首通'), fcOk = F.filter(a => a.ok).length; uiText(`首通 ${fcOk}/${F.length}`, 18, y + 8, 14, UIC.gold2, 'left', FONT, { stroke: false }); y += 18;
+  F.forEach((a, i) => { const cw = (W - 28 - 9 * 4) / 10, x = 14 + (i % 10) * (cw + 4), yy = y + Math.floor(i / 10) * (cw + 4);   // 30 关一格一关：领过金、可领闪、没过灰
+    ctx.save(); if (!a.ok) { ctx.globalAlpha = .35; ctx.filter = 'grayscale(1)'; } uiPanel(x, yy, cw, cw, { r: 5, single: true, top: a.got ? '#7a4a10' : '#2b1f16', bot: UIC.lac, edge: a.ok && !a.got ? UIC.gold2 : 'rgba(217,166,64,.4)', glow: a.ok && !a.got ? 'rgba(255,200,90,.8)' : null });
+    uiText(CNUM(a.lv), x + cw / 2, yy + cw / 2, 11, a.got ? '#fff2c0' : UIC.cream, 'center', FONT, { stroke: false }); ctx.restore(); });
+  if (can.length) pill(W / 2 - 70, 560, 140, 30, `一键领取（${can.length}）`, () => { const g = claimAch(can); showReward('领取功绩', [`领了 ${can.length} 项`], ['guan', 'zhang', 'liu'], true, g); }, true);
+  plaque(112, 600, 136, 32, '返回', () => { screen = 'camp'; }, false);
+  if (REWARD) drawReward();
 }
 // 配招页（10-29）：出阵的每人一行——主动招选一个、被动按格数选；底下亮出已成的连携
 const prepLoads = P => { const L = {}; for (const id of new Set(P.order.filter(Boolean))) if (SKILLS[id]) L[id] = loadOf(id); return L; };
