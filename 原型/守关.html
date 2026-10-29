@@ -1557,7 +1557,7 @@ function resolveMove(e, k) {
     const uns = e.mv && e.mv.uns;
     if (uns) { G.wall -= Math.max(UNS_HIT, L.heavy * 2.2) * (e.buffT > 0 ? 1.5 : 1); if (!G.sim) { G.fx.push({ k: 'bossult', t: 0, dur: 1.8, boss: e.kind, bx: e.x, by: e.y, blocked: false, fired: {} }); G.fx.push({ k: 'lunge', t: 0, x: clamp(e.x + R(-60, 60), 40, 320), bx: e.x, by: e.y }); } G.shake = .6; return; }
     if (!G.sim) G.fx.push({ k: 'bossult', t: 0, dur: 1.8, boss: e.kind, bx: e.x, by: e.y, blocked: G.shieldT > 0, fired: {} });   /* 敌将重招的大范围华彩（10-27 用户：「敌人的首领将领的法术还不够绚丽，要范围很大，绚丽」） */
-    if (G.shieldT > 0) { G.counterT = 3; G.blocks = (G.blocks || 0) + 1; G.fx.push({ k: 'blocked', t: 0 }); spPlay('dome', W / 2, WALL_Y + 20, 440, { fps: 22, alpha: .85 }); G.shieldT = 0; G.shieldCd = 0; }   /* 挡下了冷却清零：连斩第二下马上能再举 */
+    if (G.shieldT > 0) { G.counterT = 3; G.blocks = (G.blocks || 0) + 1; G.fx.push({ k: 'blocked', t: 0 }); spPlay('dome', W / 2, WALL_Y + 20, 440, { fps: 22, alpha: .85, fitW: W }); G.shieldT = 0; G.shieldCd = 0; }   /* 挡下了冷却清零：连斩第二下马上能再举 */
     else { G.wall -= L.heavy * (e.buffT > 0 ? 1.5 : 1); G.fx.push({ k: e.kind === 'zhangjiao' ? 'bolt' : 'lunge', t: 0, x: clamp(e.x + R(-60, 60), 40, 320), bx: e.x, by: e.y }); G.shake = .4; }
   } else if (k === 'summon') {
     for (const [kind, n] of L.adds) for (let i = 0; i < n * ENEMY_X; i++) { spawn({ kind, x: clamp(e.x + R(-130, 130), 30, 330), lane: false }, e.y + R(-6, 24)); G.total++; }
@@ -1827,7 +1827,7 @@ function drawWenjiu(f) {                                                        
 // 仁德护阵（10-29 新招）：给城防套一层护盾，挨的伤害先扣盾；8 秒或打光为止
 function resolveHujin(boost = 1) {
   G.wallShield = G.wallMax * .25 * boost * (G.hjMul || 1); G.wallShieldT = G.t + 8; G.wallShieldMax = G.wallShield;
-  spPlay('dome', W / 2, WALL_Y + 6, 380, { ground: false });
+  spPlay('dome', W / 2, WALL_Y + 6, 380, { ground: false, fitW: W });   // 10-29 用户：「你把那个罩拉到屏幕边不就可以了吗，不需要渐隐」
   if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: W / 2, y: WALL_Y - 120, text: '仁德护阵', size: 22, color: AZURE });
   if (!G.sim && G.combos && G.combos.includes('cRen')) {                                   // 连携「仁剑」专属画面（只管画面）：发动一下 + 护盾在时三人脚下的光
     const li = G.order.indexOf('liu'), xs = G.order.map((id, i) => id ? genX(i) : null).filter(x => x != null);
@@ -2504,14 +2504,14 @@ function fbFrame(k, i, x, y, size, rot, alpha = 1, flip = 1, glow = 0) {
 const SP_LOOK = { spears: { tint: '#ffc65a', blend: 'lighter', alpha: .85 }, dome: { blend: 'lighter', alpha: .32 }, sigil_purple: { blend: 'lighter', alpha: .9 }, sigil_gold: { blend: 'lighter', alpha: .9 }, arcs: { blend: 'lighter', alpha: .9 }, face: { alpha: .88 } };
 function spTint(im, col) { const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0); g.globalCompositeOperation = 'color'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); g.globalCompositeOperation = 'destination-in'; g.drawImage(im, 0, 0); return c; }
 const SPV = {}; for (const k of ['sigil_purple', 'arcs', 'face', 'dome', 'spears', 'sigil_gold']) { const im = new Image(); im.src = 'img/fx_sp_' + k + '.webp' + BUST; fetch('img/fx_sp_' + k + '.json' + BUST).then(r => r.ok ? r.json() : null).then(j => { if (!j) return; const L = SP_LOOK[k] || {}; const set = src => { SPV[k] = { im: src, m: j.anims.play, stand: j.stand, L }; }; if (L.tint) { const go = () => set(spTint(im, L.tint)); im.complete && im.naturalWidth ? go() : im.addEventListener('load', go); } else set(im); }).catch(() => {}); }
-function spPlay(k, x, y, size, o = {}) { if (!G || G.sim || !SPV[k]) return; (G.spfx = G.spfx || []).push({ k, x, y, size, born: (G.vt || 0) + (o.delay || 0), fps: o.fps || 16, sy: o.sy || 1, ground: !!o.ground, alpha: o.alpha ?? 1, follow: o.follow || null }); }
+function spPlay(k, x, y, size, o = {}) { if (!G || G.sim || !SPV[k]) return; (G.spfx = G.spfx || []).push({ k, x, y, size, born: (G.vt || 0) + (o.delay || 0), fps: o.fps || 16, sy: o.sy || 1, fitW: o.fitW || 0, ground: !!o.ground, alpha: o.alpha ?? 1, follow: o.follow || null }); }
 function drawSpfx(ground) {
   if (!G.spfx || !G.spfx.length) return; const vt = G.vt || 0;
   G.spfx = G.spfx.filter(f => vt - f.born < SPV[f.k].m.rects.length / f.fps);
   for (const f of G.spfx) { if (f.ground !== ground) continue; const t = vt - f.born; if (t < 0) continue; const V = SPV[f.k], R = V.m.rects, i = Math.min(R.length - 1, Math.floor(t * f.fps)), [sx, sy, sw, sh] = R[i], kk = f.size / V.stand, an = V.m.anchor;
     const x = f.follow ? f.follow.x : f.x, y = f.follow ? f.follow.y + (f.y || 0) : f.y, a = f.alpha * Math.min(1, (R.length - 1 - i) / 4 + .2);
     const L = V.L || {}, aa = a * (L.alpha ?? 1); if (!(V.im.width || V.im.naturalWidth)) continue;
-    ctx.save(); ctx.translate(x, y); ctx.scale(1, f.sy); if (L.blend) ctx.globalCompositeOperation = L.blend; ctx.globalAlpha = aa; ctx.drawImage(V.im, sx, sy, sw, sh, -an[0] * kk, -an[1] * kk, sw * kk, sh * kk);
+    ctx.save(); ctx.translate(x, y); ctx.scale(f.fitW ? f.fitW / (sw * kk) : 1, f.sy); if (L.blend)   /* fitW：横向拉到这么宽（护阵的罩拉过屏幕两边，帧边的直线落在屏幕外；10-29 用户） */ ctx.globalCompositeOperation = L.blend; ctx.globalAlpha = aa; ctx.drawImage(V.im, sx, sy, sw, sh, -an[0] * kk, -an[1] * kk, sw * kk, sh * kk);
     if (!L.blend) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = aa * .25; ctx.drawImage(V.im, sx, sy, sw, sh, -an[0] * kk, -an[1] * kk, sw * kk, sh * kk); } ctx.restore(); }
 }
 function drawFbs() {
