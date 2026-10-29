@@ -4706,7 +4706,7 @@ function drawCamp() {
   { const id = visitWho(), left = DAILY.visitN - DAILY.visits, vr0 = CAMP.visit && uiNow() - CAMP.visit.t0 < 2.6 ? CAMP.visit : null;   // 出外探访
     ctx.save(); if (!left) ctx.globalAlpha = .5; plate(14, y, W - 28, 58, !!(vr0 && vr0.god)); ctx.restore();
     ctx.save(); rr(22, y + 6, 32, 32, 6); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], 22, y + 6, 32, 32); ctx.restore();
-    uiText('换', 50, y + 35, 10, UIC.gold2, 'center', PLAIN, { lw: 2.5 }); hit(18, y + 2, 40, 40, () => { CAMP.pickVisit = true; sfx('tap'); });   // 点头像弹出武将列表挑人（10-27 用户：「点击换将应该弹出武将列表，将来武将多了」）
+    ctx.save(); ctx.beginPath(); ctx.arc(50, y + 35, 8, 0, 6.283); ctx.fillStyle = 'rgba(20,12,6,.9)'; ctx.fill(); ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 1.2; ctx.stroke(); ctx.restore(); uiText('换', 50, y + 35.5, 10, UIC.gold2, 'center', PLAIN, { stroke: false });   /* 换字套个圈（10-29 用户） */ hit(18, y + 2, 40, 40, () => { CAMP.pickVisit = true; sfx('tap'); });   // 点头像弹出武将列表挑人（10-27 用户：「点击换将应该弹出武将列表，将来武将多了」）
     uiText(`出外探访 · 派${GEN[id].name}`, 62, y + 15, 13, left ? UIC.cream : 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false });
     if (vr0) uiText((vr0.god ? `带回陨铁！还有精铁 +${vr0.iron}` : `带回精铁 +${vr0.iron} · 机缘 +${vr0.luck}`) + (vr0.page ? ' · 路上捡到残页 +1' : ''), 62, y + 32, 11, vr0.god ? ITEM_C.陨铁 : UIC.gold2, 'left', PLAIN, { stroke: false });
     else { const s2 = `机缘 ${INV.luck || 0}/${LUCK_FULL} 满了得陨铁 · 宜派政治、魅力高的`; uiText(s2, 62, y + 32, fitSize(s2, 10, W - 104 - 62, 99, PLAIN), 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false }); }
