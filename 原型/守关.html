@@ -4383,6 +4383,12 @@ function goldGrad(y, h, win = true) {
   else { g.addColorStop(0, '#ffd6c8'); g.addColorStop(.5, '#e2563a'); g.addColorStop(1, '#7a1c10'); }
   return g;
 }
+function plaque3(x, y, w, h, label, fn, red) {                                     // 牌匾三段画：两头云纹按原比例，中间拉短，高度不变、可以变窄（10-29 用户）
+  const im = IMG[red ? 'ui_plaque_red' : 'ui_plaque_dark']; if (!ready(im)) return plaque(x, y, w, h, label, fn, red);
+  const k = h / im.height, cap = im.width * .2, cw = cap * k;
+  ctx.drawImage(im, 0, 0, cap, im.height, x, y, cw, h); ctx.drawImage(im, im.width - cap, 0, cap, im.height, x + w - cw, y, cw, h); ctx.drawImage(im, cap, 0, im.width - cap * 2, im.height, x + cw - .5, y, w - cw * 2 + 1, h);
+  uiText(label, x + w / 2, y + h / 2, fitSize(label, h * .5, w - cw * 1.6, 99, FONT, 4), red ? '#fff4dc' : UIC.gold2, 'center', FONT, { lw: 4 }); hit(x, y, w, h, fn);
+}
 function plaque(x, y, w, h, label, fn, red, alpha = 1) {
   const im = IMG[red ? 'ui_plaque_red' : 'ui_plaque_dark'];
   ctx.save(); ctx.globalAlpha = alpha;
@@ -4660,7 +4666,7 @@ function campGoal() {                                                           
 }
 function drawCamp() {
   campBg('军帐'); dailyTick();
-  { const n = achClaimable().length; plaque(W - 134, 14, 128, 26, '功绩簿', () => { screen = 'ach'; }, n > 0); if (n) uiSeal(W - 10, 14, 16, String(n), UIC.red, true);   /* 牌匾按原图比例，宽 128 时正好 26 高，字在中间（10-29 用户：「字要居中」） */ }
+  { const n = achClaimable().length; plaque3(W - 104, 14, 94, 26, '功绩簿', () => { screen = 'ach'; }, n > 0); if (n) uiSeal(W - 10, 14, 16, String(n), UIC.red, true);   /* 牌匾按原图比例，宽 128 时正好 26 高，字在中间（10-29 用户：「字要居中」） */ }
   const gl = campGoal(), TOPY = gl ? 0 : -66;   // 没东西要备时顶上只放一块矮的官阶卡（10-29 用户：「这4个框的大小应该如蓝框」）
   plate(14, 58, W - 28, gl ? 166 : 100, !!gl);
   if (!gl) { const N = nextRank(); if (N) { uiText('下一阶 · ' + N.name, W / 2, 84, 18, UIC.gold2, 'center', FONT, { lw: 4 }); uiText(`资历 ${INV.prep || 0}/${PREP_NEED}`, 30, 120, 13, UIC.cream, 'left', PLAIN, { stroke: false });
