@@ -414,9 +414,9 @@ function drawShiUp(f) {
   const r = (f.big ? 50 : 40) * (1.6 - .6 * e) * (1 + .04 * Math.sin(t * 12));
   /* 10-29 用户：「不要出现头像」——只留光、爆花、势名和星 */
   const tu = clamp((t - .12) / .25, 0, 1), ts = 1.8 - .8 * (1 - Math.pow(1 - tu, 3));
-  ctx.save(); ctx.globalAlpha = out * tu; ctx.translate(cx, cy + 4); ctx.scale(ts, ts); uiText(`${GEN[f.id].name} · ${SHI_NAME[f.id]} ${CNUM(f.n)}`, 0, 0, 30, goldGrad(-14, 28), 'center', FONT, { glow: L.glow + '.95)', glowR: 20, lw: 6 }); ctx.restore();
+  ctx.save(); ctx.globalAlpha = out * tu; ctx.translate(cx, cy + 4); ctx.scale(ts, ts); uiText(`${GEN[f.id].name} · ${SHI_NAME[f.id]} ${CNUM(f.n)}`, 0, 0, 30, '#fffdf6', 'center', FONT, { glow: 'rgba(255,255,255,.95)', glowR: 22, lw: 5 }); uiText(`${GEN[f.id].name} · ${SHI_NAME[f.id]} ${CNUM(f.n)}`, 0, 0, 30, '#ffffff', 'center', FONT, { glow: L.glow + '.9)', glowR: 34 });   // 10-29 用户：「用白光，太暗了」 ctx.restore();
   ctx.save(); ctx.globalAlpha = out * tu; for (let k = 0; k < SHI_MAX; k++) { const on = k < f.n, pop = k === f.n - 1 ? 1 + .5 * Math.max(0, 1 - (t - .3) / .25) : 1; uiText('★', cx + (k - 1.5) * 30, cy + 48, 22 * pop, on ? '#ffd76e' : 'rgba(120,100,70,.7)', 'center', PLAIN, { lw: 3, glow: on ? 'rgba(255,210,90,.9)' : null, glowR: 10 }); } ctx.restore();
-  if (f.big && t > .45) { const a = clamp((t - .45) / .2, 0, 1) * out; ctx.save(); ctx.globalAlpha = a; uiText(f.name, cx, cy + 86, 22, L.col, 'center', FONT, { glow: L.glow + '.9)', glowR: 16, lw: 5 }); ctx.restore(); }
+  if (f.big && t > .45) { const a = clamp((t - .45) / .2, 0, 1) * out; ctx.save(); ctx.globalAlpha = a; uiText(f.name, cx, cy + 86, 22, '#ffffff', 'center', FONT, { glow: L.glow + '.95)', glowR: 18, lw: 4 }); ctx.restore(); }
 }
 const GEAR = ['fire', 'log', 'jum', 'pozhen', 'banma', 'jinshu', 'order', 'nu', 'mend'];
 // 敌方军师（10-25 样本）：李儒——第三波开始 4 秒后伏一队铁骑从左侧杀出；看破拒马（你带拒马，第二波起他放火箭烧掉）
@@ -1888,9 +1888,12 @@ function drawAmbushBtn() {
 function end(win, why) {
   G.state = 'over'; sfx(win ? 'win' : 'lose');
   const frac = Math.min(G.wall / G.wallMax, G.cart && !G.RU.cart.optional ? G.cart.hp / G.cart.max : 1);
-  let stars = win ? 1 + (frac >= .5) : 0;
-  if (stars === 2 && star3(G.lv, G.amb).check({ win, frac }, G)) stars = 3;   // 三星：这关自己的条件（star3）
-  G.result = { win, stars, frac, time: G.t, why, first: win && !BEST[G.lv.id] };
+  let stars = win ? 1 + (frac >= .5) : 0; const s3 = star3(G.lv, G.amb), ok3 = win && !!s3.check({ win, frac }, G);
+  if (stars === 2 && ok3) stars = 3;   // 三星：这关自己的条件（star3）
+  // 10-29 用户：「每次拿到3星或者没拿到要让玩家知道是哪个具体条件没达到」——三条各记下达成没有，结算页逐条写
+  const gl = goalLines(G.lv, G.amb), pc = v => Math.max(0, Math.round(v * 100)) + '%', s3v = G.cart && /保住/.test(s3.text) ? '（剩 ' + pc(G.cart.hp / G.cart.max) + '）' : /城防剩/.test(s3.text) ? '（剩 ' + pc(frac) + '）' : '';
+  const goals = [{ text: gl[0][1], ok: win }, { text: gl[1][1] + '（剩 ' + pc(frac) + '）', ok: win && frac >= .5 }, { text: s3.text + s3v, ok: ok3 }];
+  G.result = { win, stars, frac, time: G.t, why, first: win && !BEST[G.lv.id], goals };
   if (G.result.first && !G.sim && STORY['l' + G.lv.id] && !storySeen('l' + G.lv.id)) G.result.story = 'l' + G.lv.id;   // 首通每一关：结算完演一场（10-26 起三十关都有）
   if (win && !G.sim) { BEST[G.lv.id] = Math.max(BEST[G.lv.id] || 0, stars); saveBest(); }
   G.feats = win && G.cnt ? featCheck(stars) : []; if (!G.sim && G.feats.length) { INV.feat = INV.feat || {}; for (const f of G.feats) INV.feat[f] = 1; saveInv(); }
@@ -2036,12 +2039,12 @@ function drawUlt(k, t, dur, foe, hold, label = '觉醒', center = false) {   // 
   if (!ultReady(k)) return; const { im, meta: m } = ULT[k], [col, rgb] = ULT_COL[k];
   const a = hold != null ? (t < .14 ? t / .14 : 1) * (hold >= 0 ? Math.max(0, 1 - hold / .28) : 1) : t < .14 ? t / .14 : t > dur - .28 ? Math.max(0, (dur - t) / .28) : 1, enter = ease(Math.min(1, t / .2)), dir = k === 'zhang' || k === 'lvbu' ? 1 : -1;
   ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
-  ctx.globalAlpha = a * .8; ctx.fillStyle = foe ? '#1c0604' : '#06080a'; ctx.fillRect(0, 0, W, H);                         // 压暗
+  ctx.globalAlpha = a * (hold != null || center ? .97 : .8); ctx.fillStyle = foe ? '#1c0604' : '#06080a'; ctx.fillRect(0, 0, W, H);   // 压暗（武将页、剧情里看大招时背景全暗，10-29 用户）
   ctx.globalAlpha = a; ctx.globalCompositeOperation = 'lighter';
   const gx = W / 2 - dir * 20, gy = H * .5, gl = ctx.createRadialGradient(gx, gy, 10, gx, gy, 300); gl.addColorStop(0, rgb + '.42)'); gl.addColorStop(1, rgb + '0)');
   ctx.fillStyle = gl; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over';                           // 身后一大团人物色的光
   const f0 = Math.floor(Math.max(0, t - .06) * m.fps), hf = ULT_HOLD[k] ?? m.n - 1, fi = !center && hold != null && f0 >= m.n ? Math.max(hf, 2 * (m.n - 1) - f0) : Math.min(m.n - 1, f0) /* 预览演完倒放回定格那一帧停住（10-26 用户：「大招停止后不断闪最后一帧」「张飞最后停这里了」——张飞最后一帧是挥矛中途的拖影） */, sx = (fi % m.cols) * m.w, sy = Math.floor(fi / m.cols) * m.h;
-  const dh = H * .82 * (1.06 - .06 * enter), dw = dh * m.w / m.h, x = W / 2 - dw / 2 - (center ? 0 : dir * 18) + (1 - enter) * dir * -W * .7, y = H - dh - (hold != null ? 78 : 0);   /* 预览时整体往上，让出底下的退出钮（10-26 用户：「整体是不是可以往上？」） */
+  const dh = H * .82 * (1.06 - .06 * enter), dw = dh * m.w / m.h, x = W / 2 - dw / 2 - (center || hold != null ? 0 : dir * 18) + (1 - enter) * dir * -W * .7, y = H - dh - (hold != null ? 78 : 0);   /* 预览时整体往上，让出底下的退出钮（10-26 用户：「整体是不是可以往上？」） */
   ctx.drawImage(im, sx, sy, m.w, m.h, x, y, dw, dh);                                                                    // 人从一侧冲进来
   const name = ULT_NAME[k], tx = dir > 0 ? 44 : W - 44, tu = clamp((t - .18) / .22, 0, 1), ts = 1.5 - .5 * ease(tu);   // 竖排招名，大字砸下来
   ctx.globalAlpha = a * tu; [...name].forEach((c, j) => { ctx.save(); ctx.translate(tx, 150 + j * 64); ctx.scale(ts, ts); uiText(c, 0, 0, 56, col, 'center', FONT, { glow: rgb + '.9)', glowR: 18, lw: 7 }); ctx.restore(); });
@@ -2717,6 +2720,10 @@ function sealBake(t, s, c, round) {
   h.globalCompositeOperation = 'destination-out'; for (let k = 0; k < 7; k++) { h.beginPath(); h.arc(mg + rn() * (P - mg * 2), mg + rn() * (P - mg * 2), P * (.015 + .03 * rn()), 0, 6.283); h.fill(); }   // 字口崩掉几处
   if (!round) g.globalCompositeOperation = 'source-atop'; g.drawImage(cv3, 0, 0);
   return SEALC[key] = cv2;
+}
+function segText(segs, cx, y, size, font = PLAIN, o = { stroke: false }) {               // 一行里分段上色，整行居中（10-29 用户：「阶级那几个字标红」）
+  ctx.font = `${size}px ${font}`; const ws = segs.map(([t]) => ctx.measureText(t).width); let x = cx - ws.reduce((a, b) => a + b, 0) / 2;
+  segs.forEach(([t, c], i) => { uiText(t, x, y, size, c, 'left', font, o); x += ws[i]; });
 }
 function uiSeal(x, y, s, txtS, c = UIC.red, round = false) {                         // 关号、斗将、胜败、选、升、令
   const b = sealBake(txtS, s, c, round);
@@ -3603,7 +3610,7 @@ function drawNums() {
   for (const n of G.nums) {
     const t = now - n.born; if (t < 0) continue; const big = BIGSRC.has(n.src), [fill, edge] = n.crit ? ['#ffe27a', '#5a3a08'] : n.src === 'burn' ? ['#ff9a4a', '#3a1206'] : (DMG_STYLE[WHO[n.src]] || ['#ffffff', INK]);
     const pop = t < .1 ? 1.5 - .5 * (t / .1) : 1, sz = (n.crit ? 21 : big ? (n.named ? 16 : 13) : n.src === 'burn' ? 10 : 12) * pop, y = n.y - 24 * ease(t / .9), a = t < .62 ? 1 : 1 - (t - .62) / .28;
-    const label = (n.crit ? '破绽 ' : DMG_NAME[n.src] && n.named ? DMG_NAME[n.src] + ' ' : '') + '-' + Math.max(1, Math.round(n.v));
+    const label = (n.crit ? '破绽 ' : DMG_NAME[n.src] && n.named ? DMG_NAME[n.src] + ' ' : '') + '-' + Math.max(1, Math.round(n.v * SHOWX));
     ctx.globalAlpha = a; ctx.font = `italic 900 ${sz}px ${PLAIN}`; ctx.lineWidth = Math.max(2.5, sz * .24); ctx.strokeStyle = edge; ctx.strokeText(label, n.x, y); ctx.fillStyle = fill; ctx.fillText(label, n.x, y);
   }
   ctx.globalAlpha = 1;
@@ -3800,7 +3807,7 @@ function drawHud() {
   if (G.counterT > 0) st.push(['反击 ' + G.counterT.toFixed(1), UIC.red2]);
   if (G.tauntT > 0) st.push(['被叫阵：普攻慢一半', UIC.red2]);
   if (G.flags) st.push(['将旗 ' + G.flags.filter(f => f.up).length + '/' + G.flags.length, UIC.cream]);
-  if (G.cart && G.cart.hp > 0) st.push([(G.cart.label || (G.cart.kind === 'ram' ? '冲车' : '车驾')) + ' ' + Math.ceil(G.cart.hp) + ' · ' + Math.round((G.cart.y - G.RU.cart.y0) / (G.RU.cart.y1 - G.RU.cart.y0) * 100) + '%', G.cart.hp < G.cart.max * .35 ? UIC.red2 : UIC.cream]);
+  if (G.cart && G.cart.hp > 0) st.push([(G.cart.label || (G.cart.kind === 'ram' ? '冲车' : '车驾')) + ' ' + Math.ceil(G.cart.hp * SHOWX) + ' · ' + Math.round((G.cart.y - G.RU.cart.y0) / (G.RU.cart.y1 - G.RU.cart.y0) * 100) + '%', G.cart.hp < G.cart.max * .35 ? UIC.red2 : UIC.cream]);
   const by = G.boss && !G.boss.dead ? TOP + 30 : TOP - 4;
   G.hudChips = st.length;                                                       // 提示卷轴挪到这几块小牌下面，不压住
   st.forEach(([t, c], k) => { ctx.font = `12px ${PLAIN}`; const w = ctx.measureText(t).width + 22; uiPanel(W - w - 8, by + 4 + k * 22, w, 19, { r: 9.5, single: true, lw: 1, alpha: .86 }); uiText(t, W - 8 - w / 2, by + 14 + k * 22, 12, c, 'center', PLAIN, { stroke: false }); });
@@ -4069,6 +4076,7 @@ function sfx(k) {
   if (!SND.ac || (G && G.sim) || window.__sg.simming || !sndCfg().s) return; const t = SND.ac.currentTime + .01, o = SND.sfx;
   if (k === 'tap') { osc('sine', 1500, 950, t, .06, .35, o); osc('triangle', 760, 520, t, .09, .22, o); }            // 木梆子
   else if (k === 'swish') nz(t, .18, .3, o, 'bandpass', 700, 3200, 1.4);                                         // 竹简一扫
+  else if (k === 'anvil') { osc('triangle', 2100, 1900, t, .25, .3, o); osc('sine', 3300, 3100, t, .18, .15, o); nz(t, .08, .35, o, 'highpass', 3000); }   // 打铁：一声脆响
   else if (k === 'gong') { gong(t, 196, o, .9); nz(t, .1, .15, o, 'bandpass', 1500); }
   else if (k === 'horn') horn(t, 146.8, .9, o);
   else if (k === 'guan') { nz(t, .32, .55, o, 'bandpass', 2600, 320, 2); osc('sine', 90, 50, t + .08, .3, .4, o); }   // 青龙斩：刀风加一记闷响
@@ -4427,7 +4435,8 @@ function plaque(x, y, w, h, label, fn, red, alpha = 1) {
   ctx.restore();
   if (alpha >= 1) hit(x, y, w, h, fn);
 }
-const fmtDmg = d => d >= 1e4 ? (d / 1e4).toFixed(d >= 1e5 ? 0 : 1) + '万' : String(Math.round(d));
+const SHOWX = 10;   // 10-29 用户：「先10倍吧」——只放大显示出来的伤害和血量数字，计算、存档不动
+const fmtDmg = d => (d *= SHOWX) >= 1e4 ? (d / 1e4).toFixed(d >= 1e5 ? 0 : 1) + '万' : String(Math.round(d));
 // 画的细槽里的条（顶栏军功那种：乌漆槽、细金边），segs 是几段 [占比, 深色, 亮色]
 function slotBar(x, y, w, h, segs) {
   const k = h / 33, ix = x + 5 * k, iy = y + 6 * k, iw = w - 12 * k, ih = 20 * k;
@@ -4510,14 +4519,17 @@ function drawResult() {
   cells.forEach(([k, v], j) => { const cx = px0 + pw * (j + .5) / cells.length;
     uiText(k, cx, 275, 10, 'rgba(246,210,122,.8)', 'center', PLAIN, { stroke: false }); uiText(v, cx, 291, fitSize(v, 16, pw / cells.length - 10, 99, FONT, 3), UIC.cream, 'center', FONT, { lw: 3 }); });
   const sandSub = PREP && PREP.li === G.li && PREP.last ? `沙盘推演预计 ${PREP.last.stars.toFixed(1)} 星 · 实际 ${r.stars} 星` : null;
-  const sub = sandSub || (r.first && G.lv.reward ? G.lv.reward : G.cart && !G.RU.cart.optional ? '星数看城防和' + (G.cart.kind === 'ram' ? '冲车' : '车驾') + '里低的那个' : '');
+  const sub = sandSub || (r.first && G.lv.reward ? G.lv.reward : '');
+  { const gs = r.goals || [], miss = gs.findIndex(g => !g.ok), gy = sub ? 340 : 320;                  // 三星条件：全达成写金字；没达成写第一条没做到的，朱红
+    const line = miss < 0 ? '三星达成 · ' + gs[2].text : '★'.repeat(miss + 1) + ' 未达成：' + gs[miss].text, sz = fitSize(line, 12, W - 50, 99, FONT, 3);
+    if (gs.length) uiText(line, W / 2, gy, sz, miss < 0 ? '#ffe08a' : '#ff7a5a', 'center', FONT, { lw: 3, glow: miss < 0 ? 'rgba(255,200,90,.6)' : null, glowR: 8 }); }
   const lootR = !!(G.advLog || []).some(a => a.bad) && r.loot && r.loot.length;          // 军师认错占了下面那格时，战利品缩小放到这一行右边
   if (sub) { const mw = lootR ? W - 150 : W - 70, sz = fitSize(sub, 12, mw, 99, FONT, 3), cx = W / 2 - (lootR ? 36 : 0), first = r.first && !sandSub; ctx.font = `${sz}px ${FONT}`; const sw2 = ctx.measureText(sub).width;
     if (first) uiSeal(cx - sw2 / 2 - 4, 320, 18, '首', UIC.red);
     uiText(sub, cx + (first ? 8 : 0), 320, sz, sandSub || r.first ? UIC.gold2 : 'rgba(244,230,196,.6)', 'center', FONT, { lw: 3 }); }
   ctx.restore();
   // 出战武将一张张滑出来
-  const t1 = 1.05, gap = .22, ch = 46, y0 = 336, top = Math.max(0, ...gains.map(g => g.dmg));
+  const t1 = 1.05, gap = .22, ch = 46, y0 = 336 + (PREP && PREP.li === G.li && PREP.last || r.first && G.lv.reward ? 18 : 0), top = Math.max(0, ...gains.map(g => g.dmg));
   gains.forEach((g, k) => drawGainCard(g, 14, y0 + k * (ch + 4), W - 28, ch, t - (t1 + k * gap), win, top));
   // 下面一格：听了军师荐错的卡，军师自己认错（10-25 夜用户：「低智军师常常犯错……事后会以逗比方式告诉用户，这是军师的问题」）；没有就摆战利品
   const tb = t1 + gains.length * gap + (gains.length ? 1.4 : .2), ba = clamp((t - (tb - .4)) / .3, 0, 1), armed = t >= tb, al = ba * (armed ? 1 : .5);
@@ -4853,9 +4865,7 @@ function drawArmory2() {
     uiText('神兵', W / 2, 32, 28, goldGrad(32, 28), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 }); }
   else campBg('神兵');
   dailyTick(); const t = uiNow(), id = ARM.who, tier = Math.min(5, lvl + 1);
-  const fl = ARM.flash && t - ARM.flash < .5 ? 1 - (t - ARM.flash) / .5 : 0;
   drawWeapon(id, lvl, 150, 300 + Math.sin(t * 1.6) * 5, id === 'liu' ? 320 : 360, WPN_ROT[id], t, true);
-  if (fl) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = fl; ctx.fillStyle = '#fff6dc'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
   uiText(WPN[id], 22, 92, 22, UIC.gold2, 'left', FONT, { glow: `rgba(${WPN_GLOW[id]},.5)`, glowR: 10 });
   uiText(`${WPN_TIER[lvl]}${wl ? ' · +' + wl : ''}`, 22, 116, 15, `rgb(${WPN_GLOW[id]})`, 'left', FONT);
   uiText(wl ? UPS[AK].desc(wl) : '还没精炼', 22, 136, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });
@@ -4873,11 +4883,46 @@ function drawArmory2() {
     uiText(UPS[AK].desc(wl + 1), 100, y + 40, 11, UIC.cream, 'left', PLAIN, { stroke: false });
     Object.entries(cost).forEach(([it, n], j) => { const have = INV.it[it] || 0, yy = y + 60 + j * 16;
       uiText(`${it} ${Math.min(have, n)}/${n}`, 100, yy, 12, ITEM_C[it], 'left', PLAIN, { stroke: false }); uiBar('arm_' + it, 170, yy - 3, 90, 6, have / n, '#8a5a14', '#ffd76e', { edge: 'rgba(0,0,0,0)' }); });
-    if (canUp(AK)) pill(W - 98, y + 66, 76, 30, '打造', () => { doUp(AK); ARM.flash = uiNow(); ARM.forge = { t0: uiNow(), id, lv: INV.up[AK] }; sfx('gong'); });
+    if (canUp(AK)) pill(W - 98, y + 66, 76, 30, '打造', () => { doUp(AK); ARM.forge = { t0: uiNow(), id, lv: INV.up[AK], hit: 0 }; sfx('anvil'); });
     else uiText(etaText(e.d, e.lack), W - 24, y + 94, 12, etaColor(e.d), 'right', FONT, { stroke: false }); }
   /* 10-26 用户圈了「三人的兵器一起精炼」：「去掉这句」 */
   { const its = ['精铁', '陨铁']; plate(14, 46, 120, 26, false); its.forEach((k, i) => { const x = 32 + i * 56; drawItemIcon(k, x, 59, 16); uiText(String(INV.it[k] || 0), x + 11, 59, 12, UIC.cream, 'left', PLAIN, { stroke: false }); }); }   // 手上有多少材料（10-29 用户）
   plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; }, false);
+  if (ARM.forge) drawForge(ARM.forge);
+}
+// 打造（10-29 用户：「这个一闪就完成太快了，想办法再加强升级的感觉」）：压暗，旧兵器摆到正中烧红，锤三下（每下一震、火花、脆响），
+// 白光一闪换成新兵器弹出来、身后金光转起来，再出白光大字「精钢 +2」和加成；点一下才关（0.9 秒前点不掉）
+const FORGE_HIT = [.3, .65, 1.0], FORGE_POP = 1.35;
+function hotWeapon(im, w, h, a, col) {                                                // 兵器本身烧亮：离屏画兵器，source-atop 盖一层亮色，变亮贴回
+  const oc = ARM.hot || (ARM.hot = document.createElement('canvas')); oc.width = Math.ceil(w * RS); oc.height = Math.ceil(h * RS); const g = oc.getContext('2d');
+  g.drawImage(im, 0, 0, oc.width, oc.height); g.globalCompositeOperation = 'source-atop'; g.fillStyle = col; g.fillRect(0, 0, oc.width, oc.height);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= a; ctx.drawImage(oc, -w / 2, -h / 2, w, h); ctx.restore();
+}
+function drawForge(F) {
+  const t = uiNow() - F.t0, id = F.id, cx = W / 2, cy = 280, col = WPN_GLOW[id], newV = wpnVis(F.lv), oldV = wpnVis(F.lv - 1), h = id === 'liu' ? 300 : 340;
+  while (F.hit < FORGE_HIT.length && t >= FORGE_HIT[F.hit]) { const k = F.hit++; sfx('anvil'); CFW.push({ k: 'hit_gold', t0: uiNow(), x: cx + (k - 1) * 26, y: cy - 40 + k * 30, size: 120 + k * 30, rot: k * 1.3 }); }   // 锤在兵器上的火星（10-29 用户：「打在武器上的火星要保留」）
+  if (F.hit === FORGE_HIT.length && t >= FORGE_POP && !F.pop) { F.pop = 1; sfx('gong'); }   // 10-29 用户：「这些烟花可以去掉，后面的光保留即可」
+  ctx.save(); ctx.globalAlpha = Math.min(1, t / .2) * .88; ctx.fillStyle = '#050403'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  const pop = t >= FORGE_POP, pu = pop ? Math.min(1, (t - FORGE_POP) / .35) : 0;
+  if (pop) { const br = .5 + .5 * Math.sin(t * 2);                                               // 新兵器身后：人物色一大团光 + 两层慢转金光
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, 260); g.addColorStop(0, `rgba(${col},${.5 * pu})`); g.addColorStop(.45, `rgba(${col},${.15 * pu})`); g.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    if (ready(IMG.ui_rays)) for (const [sz, sp, al] of [[520, .07, .55], [380, -.11, .4]]) { ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * sp); const k = sz * (.6 + .4 * pu) * (.95 + .06 * br); ctx.globalAlpha = al * pu; ctx.drawImage(IMG.ui_rays, -k / 2, -k / 2, k, k); ctx.restore(); }
+    ctx.restore(); }
+  { const v = pop ? newV : oldV, im = wpnImg(id, v);                                              // 兵器：锤的时候一下一震、越烧越亮；换新时从大弹回
+    let sx = 0, sy = 0, heat = Math.min(1, t / FORGE_HIT[2]) * .45, sc = 1;
+    for (const ht of FORGE_HIT) { const d = t - ht; if (d >= 0 && d < .18) { const q = 1 - d / .18; sx += Math.sin(d * 90) * 7 * q; sy += 4 * q; heat += .5 * q; } }
+    if (pop) { const d = t - FORGE_POP; sc = d < .18 ? 1.35 - d / .18 * .45 : d < .4 ? .9 + (d - .18) / .22 * .1 : 1; heat = Math.max(0, 1 - d / .5); }
+    if (ready(im)) { const w = h * im.width / im.height; ctx.save(); ctx.translate(cx + sx, cy + sy + (pop ? Math.sin(t * 1.6) * 5 : 0)); ctx.rotate(WPN_ROT[id]); ctx.scale(sc, sc); ctx.drawImage(im, -w / 2, -h / 2, w, h);
+      if (heat > 0) hotWeapon(im, w, h, Math.min(1, heat), pop ? '#ffffff' : '#ff8a3a'); ctx.restore(); } }
+  for (const ht of FORGE_HIT) { const d = t - ht; if (d >= 0 && d < .12) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .35 * (1 - d / .12); ctx.fillStyle = '#ffd9a0'; ctx.fillRect(0, 0, W, H); ctx.restore(); } }   // 每锤一下屏幕一亮
+  { const d = t - FORGE_POP; if (d >= 0 && d < .5) { ctx.save(); ctx.globalAlpha = 1 - d / .5; ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H); ctx.restore(); } }          // 换新：整屏白一下
+  if (!pop) { const n = F.hit; ctx.save(); ctx.globalAlpha = Math.min(1, t / .2); for (let k = 0; k < FORGE_HIT.length; k++) uiText('锤', cx + (k - 1) * 40, 520, 22, k < n ? '#ffffff' : 'rgba(255,255,255,.25)', 'center', FONT, { glow: k < n ? `rgba(${col},.9)` : null, glowR: 14, lw: 4 }); ctx.restore(); }
+  else { const tu = Math.min(1, (t - FORGE_POP - .25) / .3); if (tu > 0) { const ts = 1.6 - .6 * (1 - Math.pow(1 - tu, 3)), name = `${WPN_TIER[newV]} +${F.lv}`;
+    ctx.save(); ctx.globalAlpha = tu; ctx.translate(cx, 500); ctx.scale(ts, ts); uiText(name, 0, 0, 34, '#ffffff', 'center', FONT, { glow: `rgba(${col},.95)`, glowR: 26, lw: 5 }); shimmerText(name, 0, 0, 34, t - FORGE_POP); ctx.restore();
+    ctx.save(); ctx.globalAlpha = tu; uiText(WPN[id], cx, 456, 16, '#fff6e0', 'center', FONT, { lw: 4 }); uiText(UPS['wpn_' + id].desc(F.lv), cx, 542, 14, '#fff6e0', 'center', PLAIN, { lw: 3 }); ctx.restore(); }
+    if (t > FORGE_POP + .9) uiText('点任意处继续', cx, 600, 11, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false }); }
+  drawCampFw();
+  hit(0, 0, W, H, () => { if (t > FORGE_POP + .9) ARM.forge = null; });
 }
 // 门槛页：第一次打一关、还没有对症的东西
 function drawGate() {
@@ -5108,7 +5153,8 @@ function drawLoadout(P) {
   const L = prepLoads(P), ids = Object.keys(L), slots = pasSlots(), rowH = 112, h = 62 + ids.length * rowH + 30 + Math.ceil(COMBOS.length / 2) * 30 + 74, y0 = Math.max(16, (H - h) / 2);
   ctx.fillStyle = 'rgba(6,4,3,.82)'; ctx.fillRect(0, 0, W, H); hit(0, 0, W, H, () => {});
   plate(10, y0, W - 20, h, true); uiText('配招', W / 2, y0 + 26, 20, UIC.gold2, 'center', FONT);
-  uiText(slots ? `每人带一个招式、${slots} 个被动` : '每人带一个招式（晋阶义军队正开被动格）', W / 2, y0 + 48, 10, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
+  if (slots) uiText(`每人带一个招式、${slots} 个被动`, W / 2, y0 + 48, 11, 'rgba(244,230,196,.75)', 'center', PLAIN, { stroke: false });
+  else segText([['每人带一个招式，晋阶', 'rgba(244,230,196,.75)'], [RANKS[1].name, '#ff6a4a'], ['开被动格', 'rgba(244,230,196,.75)']], W / 2, y0 + 48, 11, PLAIN, { lw: 3 });
   const set = (id, f) => { INV.load = INV.load || {}; const l = loadOf(id); f(l); INV.load[id] = l; saveInv(); sfx('tap'); };
   ids.forEach((id, r) => { const y = y0 + 62 + r * rowH, l = L[id], S = SKILLS[id];
     ctx.save(); rr(20, y, 40, 40, 6); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], 20, y, 40, 40); ctx.restore();
@@ -5116,7 +5162,8 @@ function drawLoadout(P) {
     let x = 68; for (const [k, a] of Object.entries(S.act)) { const open = actOpen(id, k), on = l.act === k, w = 128;
       uiPanel(x, y, w, 40, { r: 7, top: on ? '#6e1a10' : '#2b1f16', bot: on ? '#3a0c06' : UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.45)', glow: on ? 'rgba(255,170,90,.6)' : null });
       ctx.save(); if (!open) ctx.globalAlpha = .4; uiText(a.name, x + w / 2, y + 13, 13, on ? '#fff2dc' : UIC.cream, 'center', FONT, { lw: 3 });
-      uiText(open ? a.desc : `晋阶${RANKS[a.rank].name}学会`, x + w / 2, y + 30, fitSize(open ? a.desc : '', 9, w - 8, 10, PLAIN), 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false }); ctx.restore();
+      if (open) uiText(a.desc, x + w / 2, y + 30, fitSize(a.desc, 9, w - 8, 10, PLAIN), 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false }); ctx.restore();
+      if (!open) segText([['晋阶', 'rgba(244,230,196,.55)'], [RANKS[a.rank].name, '#ff6a4a'], ['学会', 'rgba(244,230,196,.55)']], x + w / 2, y + 30, 10, PLAIN, { lw: 3 });
       if (open) hit(x, y, w, 40, () => set(id, q => { q.act = k; })); x += w + 6; }
     let px = 68; for (const [k, a] of Object.entries(S.pas)) { const on = l.pas.includes(k), w = 84, py = y + 48;
       ctx.save(); if (!slots) ctx.globalAlpha = .35; uiPanel(px, py, w, 52, { r: 7, top: on ? '#24304a' : '#2b1f16', bot: UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.4)', glow: on ? 'rgba(140,190,255,.5)' : null });
@@ -5132,8 +5179,11 @@ function drawLoadout(P) {
     uiText(c.name, x + cw / 2, y + 13, 12, lit ? '#fff2c0' : UIC.cream, 'center', FONT, { lw: 3 }); ctx.restore();
     hit(x, y, cw, 26, () => { P.comboSel = sel ? null : c.id; }); });
   const C0 = COMBOS.find(c => c.id === P.comboSel) || COMBOS.find(c => on.has(c.id)), dy = cy + 14 + Math.ceil(COMBOS.length / 2) * 30;
-  if (C0) { const t1 = `${C0.name}：${C0.desc}`, t2 = on.has(C0.id) ? '已成：出征时自动生效' : '需要：' + C0.req;
-    uiText(t1, 22, dy + 6, fitSize(t1, 10, W - 50, 99, PLAIN), '#ffe39a', 'left', PLAIN, { stroke: false }); uiText(t2, 22, dy + 22, fitSize(t2, 10, W - 50, 99, PLAIN), on.has(C0.id) ? '#9be0a0' : 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false }); }
+  if (C0) { const lit = on.has(C0.id), t2 = lit ? C0.desc : '需要 ' + C0.req;                          // 10-29 用户：「已成太HTML了」——一块小牌：左边印章「成／缺」，招名大字，下面一行效果或缺什么
+    uiPanel(18, dy - 6, W - 36, 38, { r: 7, top: lit ? '#3a240c' : '#231a12', bot: UIC.lac, edge: lit ? UIC.gold2 : 'rgba(217,166,64,.4)', glow: lit ? 'rgba(255,200,90,.45)' : null });
+    uiSeal(38, dy + 13, 26, lit ? '成' : '缺', lit ? UIC.red : '#4a4038');
+    uiText(C0.name, 58, dy + 4, 13, lit ? '#ffe39a' : UIC.cream, 'left', FONT, { lw: 3 });
+    uiText(t2, 58, dy + 21, fitSize(t2, 10, W - 90, 99, PLAIN), lit ? '#fff2dc' : 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false }); }
   pill(W / 2 - 50, y0 + h - 34, 100, 26, '好了', () => { P.load = false; }, true);
 }
 const prepKey = () => PREP.order.join(',') + '|' + JSON.stringify(prepLoads(PREP)) + '|' + PREP.kits.join(',') + '|' + (PREP.adviser || '') + '|' + PREP.cond;
