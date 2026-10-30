@@ -24,8 +24,9 @@
 // 加载页（10-27 用户：「做一个加载页面，全部加载完才进入游戏界面」）：开头这段时间里 new 出来的图都记下来，全部好了（或坏了）才进主页；最多等 30 秒
 // 10-30 用户：「有时会自己重新刷新？」「也有突然断了链接不上」——服务器日志看是 iPhone 每分钟左右重开一次页面：所有图解码后合计约 2.1GB，Safari 内存不够把页面杀了。
 // 大图（大招录像、敌将华彩、剧情图、战场底图、各兵种和敌将图集、命中帧动画）改成用到才加载：设 src 时先记下，第一次 ready() 问到它才真去下载解码，也不算进加载页
-const REL_LIST = 'fx_boss_|story_|bg_|room|card_|enemy_|huangjin|lishi|gong|cyz|yayi|dengmao|shushi|qibing|xiliang|feixiong|xianzhen|baixing|zhangjiao|tieqi|langqi|huzhen|huaxiong|lijue|gaoshun|lvbu|panfeng|wuanguo|qishou|zhangbao|duyou|qushuai|zhangliang|xiaowei|yushe';
-const LAZY_RE = new RegExp('img/(ult_|fb/|' + REL_LIST + ')'), REL_RE = new RegExp('img/(' + REL_LIST + ')');   // 技能图（大招录像 ult_、命中帧动画 fb/）用到才加载但不释放；其余换关时放掉
+const REL_LIST = 'ult_|fx_boss_|story_|bg_|room|card_|enemy_|huangjin|lishi|gong|cyz|yayi|dengmao|shushi|qibing|xiliang|feixiong|xianzhen|baixing|zhangjiao|tieqi|langqi|huzhen|huaxiong|lijue|gaoshun|lvbu|panfeng|wuanguo|qishou|zhangbao|duyou|qushuai|zhangliang|xiaowei|yushe';
+const LAZY_RE = new RegExp('img/(fb/|' + REL_LIST + ')'), REL_RE = new RegExp('img/(' + REL_LIST + ')');   // 命中帧动画 fb/ 用到才加载但不释放；其余换关时放掉
+// 10-30 用户：「第五关又重启」——大招特写（ult_，每张约 60MB）原来学了就一直留着，前几关剧情学了三招就三张；改成也换关释放，开打前只叫起这关觉醒那人和敌将的，剧情学招前先叫起
 const SRC_SET = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src').set;
 const ALLCV = [], _ce = document.createElement.bind(document); document.createElement = function (t, ...a) { const el = _ce(t, ...a); if (String(t).toLowerCase() === 'canvas' && /[?&]memlog/.test(location.search)) { el._at = (new Error().stack.split('\n')[2] || '').replace(/.*守关.html[^:]*:/, '').trim(); ALLCV.push(new WeakRef(el)); } return el; };   // 调试 ?memlog：记下所有画布，看谁在涨
 const LOADQ = [], ALLIMG = new Set(), _Img = window.Image; window.Image = function (...a) { const im = new _Img(...a); ALLIMG.add(new WeakRef(im));   // 弱引用：只给 __sg.mem 数，不拦着回收（10-30 原来强引用，用完的图收不掉）
@@ -1050,6 +1051,7 @@ function startLevel(i) {
   const lv = LEVELS[i], RU = lv.rules || {};
   if (!window.__sg.simming) { CUR_LV = i; const js = JSON.stringify(lv); ready(IMG['bg_' + lv.map]); if (MAP_ALIAS[lv.map]) ready(IMG['bg_' + MAP_ALIAS[lv.map]]);   // 用到才加载的图：开打前先把这关的兵种图集、底图、敌将华彩叫起来，免得头几个兵看不见
     for (const [k, T] of Object.entries(FOES)) if (js.includes('"' + k + '"')) for (const n of [T.sheet || T.alt, T.sheet && T.sheet + '_back', ...(T.sheet === 'qibing' ? [1, 2, 3, 4, 5, 6, 7].map(d => 'qibing_' + d) : [])]) if (n) { ready(IMG[n]); if (BVFX[k]) ready(BVFX[k].im); }
+    { const aw = (INV.up || {}).awake ? INV.awake || 'guan' : null; if (aw && ULT[aw]) ready(ULT[aw].im); for (const k of ULT_FOE) if (js.includes('"' + k + '"')) ready(ULT[k].im); }   // 这关会演的大招特写
     releaseImgs(); }
   rnd = mulberry(lv.id * 7919 + (window.__sg.seed || 0));
   const queue = buildQueue(lv), chg = {}; for (const it of queue) if (it.ch != null) (chg[it.ch] ??= { total: 0, n: 0, last: 0, state: 'mark' }).total++;
@@ -5216,7 +5218,8 @@ const STORY_SFX = [['轰——', 'thunder'], ['马蹄声', 'hooves'], ['哇—�
 const STORY_KEYS = () => ['open', ...LEVELS.map(l => 'l' + l.id)].filter(k => STORY[k]);
 function storyEnter() { const ln = STORY[STP.key][STP.i]; STP.t0 = uiNow(); const lr = STORY_LEARN.find(([w]) => ln[2].includes(w)); STP.learn = lr && ultReady(lr[1]) ? { k: lr[1], t0: uiNow() } : null; if (STP.learn) { sfx(lr[1]); sfx('gong'); } const fx = STORY_SFX.find(([w]) => ln[2].includes(w)); STP.fx = fx ? { k: fx[1], t0: uiNow() } : null; if (fx) sfx(fx[1]); }
 // read：阅读模式（系统页「翻看剧情」或网址带 ?story）——点左边往回翻、右边往下翻，一场完了接下一场；不记成看过
-function playStory(key, then, read) { if (!read) { INV.story = { ...(INV.story || {}), [key]: true }; saveInv(); } const lv = LEVELS.find(l => 'l' + l.id === key);
+function playStory(key, then, read) { for (const ln of STORY[key] || []) for (const [w, k] of STORY_LEARN) if (String(ln[2]).includes(w) && ULT[k]) ready(ULT[k].im);   // 学招那句要演的大招特写先载
+   if (!read) { INV.story = { ...(INV.story || {}), [key]: true }; saveInv(); } const lv = LEVELS.find(l => 'l' + l.id === key);
   STP = { key, i: 0, t0: uiNow(), then, prev: null, bg: lv ? lv.map : null, read }; screen = 'story'; storyEnter(); }
 function storyJump(key, last) { if (storyBusy()) return; const lv = LEVELS.find(l => 'l' + l.id === key); STP.prev = STORY[STP.key][STP.i][0]; STP.fadeT = uiNow(); STP.key = key; STP.bg = lv ? lv.map : null; STP.i = last ? STORY[key].length - 1 : 0; storyEnter(); }
 function storyPrev() { if (storyBusy()) return; if (STP.i > 0) { STP.prev = STORY[STP.key][STP.i][0]; STP.i--; STP.fadeT = uiNow(); storyEnter(); STP.t0 = -99; return; }
