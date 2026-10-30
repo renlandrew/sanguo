@@ -1648,6 +1648,7 @@ function stepDuel(e, dt) {
     const uns = hv && (e.hvN = (e.hvN || 0) + 1) % UNS_EVERY === 0;   // 每第二记重招是「无双」：盾挡不住，只有一喝喝得断（见 UNS_EVERY）
     e.mv = { k, t: 0, dur, uns, bot: hv && !uns ? dur - .35 : -1 };   // 10-28 用户：「同时喝断和举盾我觉得比较难控制，举盾是自动如何？」——普通重招一律自动举盾挡下；无双挡不住，只能一喝喝断
     e.castT = dur; if (k === 'heavy' && ULT_FOE.has(e.kind)) playUlt(e.kind, true); if (uns) teach('uns');
+    if (uns || (k === 'summon' && e.kind === 'zhangjiao')) foeCutIn(e, uns ? (NM[k] || '无双') : NM[k]);
     G.fx.push({ k: hv ? 'warn' : 'txt', t: 0, x: e.x, y: e.y - 100, text: uns ? '无双·喝断它' : NM[k] || k, size: 24, color: hv ? CINNABAR : INK, dur, boss: e.kind });
     if (k === 'summon' && e.kind === 'zhangjiao' && !G.sim) { G.fx.push({ k: 'hdl', t: 0, dur: 3.4, x: e.x, y: e.y - 6, hx: e.x - 18, hy: e.y - 78, seed: VR(0, 1) }); G.shake = Math.max(G.shake || 0, .15); punch(e.x, e.y - 20, .04); }   // 黄天当立：天裂旋涡（10-29）
     if (hv && e.kind === 'zhangjiao') { spPlay('sigil_purple', e.x, e.y + 4, 230, { ground: true, sy: .42, fps: 20 }); spPlay('arcs', e.x, -40, 150, { follow: e, fps: 20 }); }   /* 张角蓄天雷：脚下紫色符文法阵、手上电弧（魔兽风，Veo） */
@@ -2334,6 +2335,7 @@ function drawWallProps() {
     if (it.on) { ctx.shadowColor = 'rgba(255,220,120,.95)'; ctx.shadowBlur = 14; }
     if (it.im) ctx.drawImage(it.im, x, y, sz, sz);
     else if (it.shield) { if (hasProp('shield')) drawProp('shield', x + sz / 2, y + sz, sz, it.on ? 1 : .85); else { ctx.fillStyle = '#6b5236'; ctx.beginPath(); ctx.arc(x + sz / 2, y + sz / 2, sz / 2, 0, 6.283); ctx.fill(); } }
+    else if (it.cloth && ready(IMG.chize_icon)) { const im = IMG.chize_icon, h = sz * im.height / im.width; ctx.drawImage(im, x, y + (sz - h) / 2, sz, h); }   // 10-30 赤帻小图标
     else if (it.cloth) { ctx.fillStyle = '#d0301f'; ctx.beginPath(); ctx.moveTo(x + 4, y + 4); ctx.quadraticCurveTo(x + sz, y + 6, x + sz / 2, y + sz - 2); ctx.closePath(); ctx.fill(); }
     ctx.restore();
     if (it.n > 1) uiText('×' + it.n, x + sz - 2, y + sz - 3, 9, UIC.cream, 'center', PLAIN, { lw: 2 });
@@ -2454,8 +2456,9 @@ function drawFoe(e) {
 // 场上道具（10-25 用户指着程序画的拒马：「这个也要gpt 重新画」）：ChatGPT 画的，工具/cut_props.py 抠成 img/props.png；没有就照旧程序画
 // 10-29 Codex 画的奇谋与大招素材（美术/奇谋与大招_1029）：深堑、墨笔横幅、刘关张眼部特写、奇谋卡框与 17 张卡面
 const QM_CARDS = ['qinglong', 'wenjiu', 'roar', 'pojian', 'shuang', 'hujin', 'ambush', 'ploy', 'ditch', 'jiji', 'foe_ambush', 'foe_fire', 'foe_lijian', 'foe_jijiang', 'foe_rush', 'foe_reinf', 'foe_yaoshu'];
-for (const n of ['ditch', 'brush_k', 'brush_r', 'card_frame']) { IMG[n] = new Image(); IMG[n].src = 'img/' + n + '.png' + BUST; }
-for (const n of ['eye_guan', 'eye_zhang', 'eye_liu', ...QM_CARDS.map(k => 'card_' + k)]) { IMG[n] = new Image(); IMG[n].src = 'img/' + n + '.jpg' + BUST; }
+for (const n of ['ditch', 'brush_k', 'brush_r', 'card_frame', 'flag_up', 'flag_down', 'chize', 'chize_icon']) { IMG[n] = new Image(); IMG[n].src = 'img/' + n + '.png' + BUST; }
+const EYE_FOE = ['lvbu', 'huaxiong', 'zhangjiao', 'lijue', 'huzhen', 'dengmao'];   // 10-30 敌将眼部特写（Codex 画）：放无双、黄天当立时用朱红笔刷横幅
+for (const n of ['eye_guan', 'eye_zhang', 'eye_liu', ...EYE_FOE.map(k => 'eye_' + k), ...QM_CARDS.map(k => 'card_' + k)]) { IMG[n] = new Image(); IMG[n].src = 'img/' + n + '.jpg' + BUST; }
 for (const n of ['well_0', 'well_1', 'well_2', 'seal']) { IMG[n] = new Image(); IMG[n].src = 'img/' + n + '.png' + BUST; }   // 井中玉玺（10-29 用户画）
 const PROPS = {}; IMG.props = new Image(); IMG.props.src = 'img/props.png' + BUST; fetch('img/props.json' + BUST).then(r => r.json()).then(j => Object.assign(PROPS, j)).catch(() => {});
 // Blender 车驾步行循环：马腿与车轮同一段序列，缺图时沿用原静态车驾。
@@ -2583,24 +2586,31 @@ function bossBursts(f, C, n, t0, gap, y = WALL_Y - 24) { for (let i = 0; i < n; 
 function drawBossUlt(f) {
   const C = BOSS_FX[f.boss]; if (!C) return; const t = f.t, A = f.blocked ? .55 : 1, cy = WALL_Y - 70;
   const fade = t > 1.1 ? Math.max(0, (1.5 - t) / .4) : 1;
-  const clip = !!BVFX[f.boss] && !BVFX_OFF[f.boss], veo = clip && !BVFX[f.boss].efk;   // veo：旧的 Veo 录像，画稿让位；Effekseer 的和画稿一起放
+  const clip = !!BVFX[f.boss] && !BVFX_OFF[f.boss] && !(f.boss === 'zhangjiao' && texOK()), veo = clip && !BVFX[f.boss].efk;   // veo：旧的 Veo 录像，画稿让位；Effekseer 的和画稿一起放
   if (clip) for (const [x, y, sz, rot, d, wx] of BVFX_AT[f.boss]) drawBossVfx(f.boss, t - d, x, y, sz, rot, A, wx);   // Veo 录的法术在最底下，画稿和墨流叠上面
   if (f.boss === 'dengmao') {                                                       // 一杆巨枪从邓茂身前直扎城头，城头一排炸开
     const p = Math.min(1, t / .18), x1 = f.bx + (W / 2 - f.bx) * p, y1 = f.by + (cy - f.by) * p, rot = Math.atan2(cy - f.by, W / 2 - f.bx) + Math.PI / 2;
     if (!veo) drawTint('spear', C.col, (f.bx + x1) / 2, (f.by + y1) / 2, 160 + 320 * p, rot, A * Math.max(0, 1 - Math.max(0, t - .3) / .3), .8);
+    { const rib = tintTex('ribbon', C.col), a = A * Math.max(0, 1 - Math.max(0, t - .25) / .4); if (rib && a > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; drawStrip(ctx, rib, [[f.bx, f.by], [(f.bx + x1) / 2, (f.by + y1) / 2], [x1, y1]], q => 20 + 40 * q, a * .8); ctx.restore(); } }   // 10-30 枪后一道土色劲风（纹理）
+    texBloom(W / 2, cy, t - .18, .7, 150, C.col, .6, 0);
     at1(f, 'jet', .02, () => ML && ML.fx.jet(f.bx, f.by, W / 2, cy)); bossBursts(f, C, 4, .18, .05);
     at1(f, 'gnd', .16, () => { gnd({ mode: 1, x: W / 2, y: WALL_Y - 70, rx: 210, sq: .34, dur: 1.2, open: .3, col: C.col, n: 8 }); gnd({ mode: 0, x: f.bx, y: f.by + 6, rx: 70, sq: .36, dur: .9, open: .12, col: C.col, n: 6 }); });   // 枪扎到城头：城前一圈碎环冲开；起手处脚下崩裂
   } else if (f.boss === 'zhangjiao') {                                              // 天上翻起乌云，五道天雷依次劈在城头
     at1(f, 'cloud', 0, () => { if (MLB) for (let k = 0; k < 10; k++) MLB.splat(VR(10, W - 10), TOP + VR(10, 60), VR(-200, 200), VR(-40, 60), VR(14, 22), [1.4, 0, .3, 0]); });
     if (!clip) for (let i = 0; i < 5; i++) { const t0 = .05 + i * .1, u = (t - t0) / .45; if (u < 0 || u > 1) continue; const x = 36 + i * 72 + Math.sin(i * 7.3) * 14, al = (u < .2 ? 1 : (1 - u) / .8) * A;
       const pts = [[x + 24, TOP - 10]]; let xx = x + 24; for (let y = TOP + 26; y < WALL_Y; y += 40) { xx += Math.sin(y * .37 + i * 5) * 20; pts.push([xx, y]); } pts.push([x, WALL_Y - 10]);
-      brush(ctx, pts, 26, C.col, .35 * al, () => 1, 0, vr); brush(ctx, pts, 10, C.glow, .9 * al, () => 1, 0, vr); brush(ctx, pts, 3.5, '#ffffff', al, () => 1, 0, vr);
+      const rib = tintTex('ribbon', C.col);
+      if (rib) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; drawStrip(ctx, rib, pts, q => 64 + 26 * Math.sin(q * 11 + i * 2 + t * 30), al);   // 10-30 天雷：紫色能量飘带沿雷路弯折（宽窄跟着闪），中间一线原色飘带当白芯
+        drawStrip(ctx, IMG.tex_ribbon, pts, () => 22, al); if (u < .4) starTex(ctx, pts[pts.length - 1][0], pts[pts.length - 1][1], 110 * (1 - u), i, al); ctx.restore();
+        texBloom(x, WALL_Y - 18, t - t0 - .03, .5, 80, C.col, .55, i); }
+      else { brush(ctx, pts, 26, C.col, .35 * al, () => 1, 0, vr); brush(ctx, pts, 10, C.glow, .9 * al, () => 1, 0, vr); brush(ctx, pts, 3.5, '#ffffff', al, () => 1, 0, vr); }
       bossGlow(x, WALL_Y - 20, 90, C.col, .6 * al); }
     bossBursts(f, C, 5, .05, .1);
     for (let i = 0; i < 5; i++) at1(f, 'g' + i, .1 + i * .1, () => gnd({ mode: 0, x: 36 + i * 72 + Math.sin(i * 7.3) * 14, y: WALL_Y - 64, rx: 86, sq: .38, dur: 1.1, open: .1, col: C.col, n: 7 }));   // 每道雷落地一片焦裂
   } else if (f.boss === 'huzhen') {                                                 // 两道赤红巨刀从两边交叉斩下
     if (!veo) for (const side of [-1, 1]) { const p = Math.min(1, t / .22), a0 = side < 0 ? -1.2 : 1.2, rot = a0 - side * 2.4 * p, x = W / 2 + side * (170 - 120 * p), y = cy - 70 + 40 * p;   // 画得够大，交叉时两头伸到屏幕边上
       drawTint('blade', C.col, x, y, 420, rot, A * fade * .85, .5, .45); }   // 压扁成细长的刀光，不要两大块红
+    texBloom(W / 2, cy - 30, t - .2, .8, 180, C.col, .8, 0); texBloom(W / 2, cy - 30, t - .24, .6, 110, C.glow, .8, .7);   // 10-30 两刀交叉处赤红光瓣
     bossBursts(f, C, 5, .2, .04);
     at1(f, 'gnd', .2, () => gnd({ mode: 2, x: W / 2, y: WALL_Y - 84, rx: 220, sq: .42, dur: 1.3, open: .18, col: C.col }));   // 交叉两道刀痕烙在城前地上
   } else if (f.boss === 'huaxiong') {                                               // 一刀从天劈下，城前地裂、整排着火
@@ -2612,6 +2622,8 @@ function drawBossUlt(f) {
   } else if (f.boss === 'lijue') {                                                  // 一把古铜横刀从左扫到右，刀后一路烟火
     const p = Math.min(1, t / .5), x = -120 + (W + 240) * (1 - Math.pow(1 - p, 2));
     drawTint('blade', C.col, x, cy - 10, 380, Math.PI / 2, A * fade, .8, .7); bossGlow(x, cy - 10, 130, C.glow, .45 * A * fade);
+    { const rib = tintTex('ribbon', C.col); if (rib && fade > 0) { const x0 = Math.max(-140, x - 300), pts = []; for (let i = 0; i <= 8; i++) { const q = i / 8; pts.push([x0 + (x - x0) * q, cy - 10 + Math.sin(q * Math.PI) * 26]); }   // 10-30 刀后一道铜灰劲风（纹理），略往下兜
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; drawStrip(ctx, rib, pts, q => 60 + 110 * q, A * fade); ctx.restore(); } }
     if (ML && p < 1 && vr() < .9) ML.splat(x - 40, cy, -500, VR(-160, 40), VR(8, 12), [0, .9, .7, 0]);
     bossBursts(f, C, 6, .08, .07);
     at1(f, 'gnd', .02, () => gnd({ mode: 3, x: W / 2, y: WALL_Y - 80, rx: 210, sq: .3, dur: 1.4, open: .5, col: C.col }));   // 横扫：刀痕跟着刀从左烙到右
@@ -2759,9 +2771,12 @@ function drawHuts() {
 // 场上的友方和东西（11–30）：友军将旗、井、赤帻、友军（潘凤、武安国）
 function drawFieldThings() {
   for (const f of G.flags || []) {                                               // 友军将旗：竖杆一面青旗写姓；倒了就斜躺
-    ctx.save(); ctx.translate(f.x, f.y); if (!f.up) ctx.rotate(1.25);
+    const fim = IMG[f.up ? 'flag_up' : 'flag_down'];
+    if (ready(fim)) { const h = f.up ? 60 : 38, w = h * fim.width / fim.height, x0 = f.x - w * (f.up ? .27 : .3), y0 = f.y + 5 - h;   // 10-30 Codex 画的将旗（立、倒），杆脚对在原来的位置；旗面空白，姓写在上面
+      ctx.drawImage(fim, x0, y0, w, h); if (f.up) txt(f.name[0], x0 + w * .56, y0 + h * .42, 14, '#f3ecdd', 'center'); }
+    else { ctx.save(); ctx.translate(f.x, f.y); if (!f.up) ctx.rotate(1.25);
     brush(ctx, [[0, 0], [0, -46]], 2, INK, .9, () => 1, 0, vr); ctx.fillStyle = f.up ? '#2f5f7a' : '#5b6670'; ctx.fillRect(1, -46, 18, 24);
-    txt(f.name[0], 10, -34, 13, '#f3ecdd', 'center'); ctx.restore();
+    txt(f.name[0], 10, -34, 13, '#f3ecdd', 'center'); ctx.restore(); }
     if (f.up) txt(f.name, f.x, f.y + 10, 10, INK2, 'center', PLAIN);
   }
   for (const w of G.wells || []) {                                               // 井：点三下；打捞过的发暗，玉玺那口发金光
@@ -2781,7 +2796,8 @@ function drawFieldThings() {
   }
   if (G.decoy) { const D = G.decoy, a = .25 + .15 * Math.sin(G.t * 8);               // 赤帻：挂在杆上的红头巾，周围一圈红晕
     const g = ctx.createRadialGradient(D.x, D.y, 0, D.x, D.y, D.r); g.addColorStop(0, `rgba(178,40,30,${a})`); g.addColorStop(1, 'rgba(178,40,30,0)'); ctx.fillStyle = g; ctx.fillRect(D.x - D.r, D.y - D.r, D.r * 2, D.r * 2);
-    brush(ctx, [[D.x, D.y], [D.x, D.y - 34]], 2, INK, .9, () => 1, 0, vr); ctx.fillStyle = '#c0281c'; ctx.beginPath(); ctx.moveTo(D.x, D.y - 34); ctx.quadraticCurveTo(D.x + 16, D.y - 30 + Math.sin(G.t * 6) * 3, D.x + 2, D.y - 18); ctx.closePath(); ctx.fill(); }
+    if (ready(IMG.chize)) { const im = IMG.chize, h = 46, w = h * im.width / im.height, sw = 1 + .04 * Math.sin(G.t * 6); ctx.save(); ctx.translate(D.x, D.y + 3); ctx.transform(sw, 0, 0, 1, 0, 0); ctx.drawImage(im, -w * .2, -h, w, h); ctx.restore(); }   // 10-30 Codex 画的赤帻（杆上），头巾随风微微一摆
+    else { brush(ctx, [[D.x, D.y], [D.x, D.y - 34]], 2, INK, .9, () => 1, 0, vr); ctx.fillStyle = '#c0281c'; ctx.beginPath(); ctx.moveTo(D.x, D.y - 34); ctx.quadraticCurveTo(D.x + 16, D.y - 30 + Math.sin(G.t * 6) * 3, D.x + 2, D.y - 18); ctx.closePath(); ctx.fill(); } }
   const A = G.ally; if (A && A.hp > 0) {                                        // 友军：借衙役的图集染成青色，头上写名字、血条
     const T = FOES.yayi, own = A.sheet && SHEETS[A.sheet] && ready(IMG[A.sheet]), SK = own ? A.sheet : sheetOf(T), ps = persp(A.y), moving = A.st === 'go' || A.st === 'back';
     if (own) {                                                                   // Veo 录的潘凤、武安国：只录了劈砍那条，走动时用开头扛着兵器的几帧上下颠
@@ -3282,18 +3298,22 @@ function roarInit(f) {
 // 大招眼部特写（10-29 用户看了《三国望神州》：「这个大招的设计好，人物只展露眼睛，并且很凌厉的样子，横幅不规则，里面写着招数的名字」）：
 // 一笔黑墨横幅从左刷进来，左边六成透出这员武将的眼睛（Codex 画），右边黑墨上写招名；停一下，往右收掉。不停战场
 const CUT_CV = document.createElement('canvas'); CUT_CV.width = 660; CUT_CV.height = 220;
+function foeCutIn(e, name) {
+  if (G.sim || !IMG['eye_' + e.kind]) return; const vt = G.vt || 0; G.cutLast = G.cutLast || {};
+  if (vt - (G.cutLast[e.kind] ?? -99) > 6 && vt - (G.cutAny ?? -99) > 2.5) { G.cutLast[e.kind] = G.cutAny = vt; G.fx.push({ k: 'cutin', t: 0, dur: 1.05, id: e.kind, name, foe: true }); }
+}
 function drawCutIn(f) {
-  const br = IMG.brush_k, eye = IMG['eye_' + f.id]; if (!ready(br) || !ready(eye)) return; const u = f.t / f.dur; if (u >= 1) return;
-  const bw = 330, bh = 110, cx = W / 2, cy = TOP + 128, g = CUT_CV.getContext('2d'), k = 2;
+  const br = f.foe ? IMG.brush_r : IMG.brush_k, eye = IMG['eye_' + f.id]; if (!ready(br) || !ready(eye)) return; const u = f.t / f.dur; if (u >= 1) return;
+  const bw = 285, bh = 92, cx = W / 2 + 14, cy = TOP + 173, g = CUT_CV.getContext('2d'), k = 2;
   g.clearRect(0, 0, CUT_CV.width, CUT_CV.height); g.globalCompositeOperation = 'source-over'; g.drawImage(br, 0, 0, bw * k, bh * k);
   g.globalCompositeOperation = 'source-atop'; const ew = bw * .64 * k, eh = ew * eye.height / eye.width; g.save(); g.beginPath(); g.rect(0, 0, ew, bh * k); g.clip(); g.drawImage(eye, 0, (bh * k - eh) / 2, ew, eh); g.restore();
-  const fade = g.createLinearGradient(ew - 60 * k, 0, ew, 0); fade.addColorStop(0, 'rgba(10,8,6,0)'); fade.addColorStop(1, 'rgba(10,8,6,1)'); g.fillStyle = fade; g.fillRect(ew - 60 * k, 0, 60 * k, bh * k);   // 眼睛往右融进黑墨
+  const fade = g.createLinearGradient(ew - 60 * k, 0, ew, 0); const fc = f.foe ? '96,20,14' : '10,8,6'; fade.addColorStop(0, `rgba(${fc},0)`); fade.addColorStop(1, `rgba(${fc},1)`); g.fillStyle = fade; g.fillRect(ew - 60 * k, 0, 60 * k, bh * k);   // 眼睛往右融进黑墨
   g.globalCompositeOperation = 'source-over';
   const rev = u < .16 ? ease(u / .16) : 1, out = u > .8 ? (u - .8) / .2 : 0, a = 1 - out, x0 = cx - bw / 2 + out * 40;
   ctx.save(); ctx.globalAlpha = a; ctx.beginPath(); ctx.rect(x0, cy - bh / 2 - 10, bw * rev, bh + 20); ctx.clip();
   ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 12; ctx.drawImage(CUT_CV, 0, 0, bw * k, bh * k, x0, cy - bh / 2, bw, bh); ctx.restore();
   if (u > .12) { const ta = Math.min(1, (u - .12) / .1) * a, sl = (1 - Math.min(1, (u - .12) / .12)) * 18;   // 招名：横排白字、深色描边加人物色淡光，压在右边墨最厚处，从右滑进来
-    ctx.save(); ctx.globalAlpha = ta; uiText(f.name, x0 + bw * .78 + sl, cy + 4, f.name.length > 3 ? 22 : 26, '#fff8ea', 'center', FONT, { glow: (HERO_COL[f.id] || '#ffffff') + 'dd', glowR: 12, lw: 6 }); ctx.restore(); }
+    ctx.save(); ctx.globalAlpha = ta; uiText(f.name, x0 + bw * .78 + sl, cy + 4, f.name.length > 3 ? 22 : 26, '#fff8ea', 'center', FONT, { glow: f.foe ? '#ff9a6add' : (HERO_COL[f.id] || '#ffffff') + 'dd', glowR: 12, lw: 6 }); ctx.restore(); }
 }
 function drawTrench() {
   if (G.trenchFire === false && ready(IMG.ditch)) { const im = IMG.ditch, w = 400, h = w * im.height / im.width, a = Math.min(1, (8 - G.trenchT) / .25, G.trenchT / 1);   // 卢植的深堑：用画的鹿角木桩深沟（10-29 Codex 画）
@@ -3686,6 +3706,20 @@ function drawStrip(g, im, pts, wfn, alpha = 1) {                               /
   for (let i = 1; i < pts.length; i++) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], l = seg[i - 1], u0 = acc / L, u1 = (acc + l) / L, w = wfn((u0 + u1) / 2); acc += l;
     g.save(); g.translate((x0 + x1) / 2, (y0 + y1) / 2); g.rotate(Math.atan2(y1 - y0, x1 - x0)); g.drawImage(im, u0 * im.width, 0, Math.max(1, (u1 - u0) * im.width), im.height, -l / 2 - .6, -w / 2, l + 1.2, w); g.restore(); }
   g.globalAlpha = 1;
+}
+// 10-30 纹理染色：飘带、光瓣按人物色重新上色（亮的地方留一点白芯），连携剑气、敌将大招共用；每种颜色只算一次
+const TEXTINT = {};
+function tintTex(n, col) {
+  const key = n + '|' + col; if (TEXTINT[key] !== undefined) return TEXTINT[key]; const im = IMG['tex_' + n]; if (!ready(im)) return null;
+  const rgb = col[0] === '#' ? [1, 3, 5].map(i => parseInt(col.slice(i, i + 2), 16)) : col.split(',').map(Number), c = document.createElement('canvas'), k = Math.min(1, 512 / Math.max(im.width, im.height));
+  c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); const g = c.getContext('2d'); g.drawImage(im, 0, 0, c.width, c.height);
+  try { const d = g.getImageData(0, 0, c.width, c.height), a = d.data; for (let i = 0; i < a.length; i += 4) { const l = Math.max(a[i], a[i + 1], a[i + 2]) / 255, w = l * l * l * .18;
+      for (let j = 0; j < 3; j++) a[i + j] = Math.min(255, rgb[j] * l * .9 + (255 - rgb[j]) * w); } g.putImageData(d, 0, 0); } catch (e) { return TEXTINT[key] = null; }
+  return TEXTINT[key] = c;
+}
+function texBloom(x, y, t, dur, R, col, sq = 1, rot = 0) {                       // 光瓣绽放：快速撑开、慢慢转着淡掉（交点、落点用，代替一团圆形光）
+  if (t < 0 || t > dur) return; const im = tintTex('petal', col); if (!im) return; const u = t / dur, sc = .3 + .7 * (1 - Math.pow(1 - Math.min(1, u * 1.8), 3)), a = .3 * (u < .12 ? u / .12 : Math.max(0, 1 - (u - .12) / .88)), r = R * sc * .6;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a; ctx.translate(x, y); ctx.scale(1, sq); ctx.rotate(rot + t * .8); ctx.drawImage(im, -r, -r, r * 2, r * 2); ctx.restore();
 }
 const starTex = (g, x, y, sz, i, a) => { const im = IMG.tex_stars; g.globalAlpha = a; g.drawImage(im, (i % 6) * 128, 0, 128, 128, x - sz / 2, y - sz / 2, sz, sz); g.globalAlpha = 1; };
 function hdlGroundTex(g, f) {                                                   // 黄天当立贴地：星图、地面光、星云旋涡盘（两层不同速度转）
@@ -4322,12 +4356,13 @@ function drawCShuang(f) {
   const H = big ? 210 : 110, dx = .78, dy = .62;
   sharpSlash(x - H * dx, y - H * dy, x + H * dx, y + H * dy, (t - 0) / .11, t, big ? 13 : 8, '120,200,255');
   sharpSlash(x + H * dx, y - H * dy, x - H * dx, y + H * dy, (t - .05) / .11, t - .05, big ? 13 : 8, '255,212,110');
+  texBloom(x, y, t - .1, big ? .75 : .5, big ? 150 : 80, '170,210,255', 1, .3); if (big) texBloom(x, y, t - .14, .7, 110, '255,212,110', 1, 1.1);   // 10-30 交点光瓣绽放（青、金两层错开）
   const N = big ? 8 : 5;                                                                                                   // 交点往外迸的小剑气，也是尖的
   for (let k = 0; k < N; k++) { const u2 = (t - .14) / .26; if (u2 <= 0 || u2 >= 1) continue; const tgt = f.spl[k], ang = tgt ? Math.atan2(tgt[1] - y, tgt[0] - x) : k / N * 6.283 + .4, dist = tgt ? Math.hypot(tgt[0] - x, tgt[1] - y) : (big ? 120 : 70);
     const e2 = 1 - Math.pow(1 - u2, 2), hx = x + Math.cos(ang) * dist * e2, hy = y + Math.sin(ang) * dist * e2, tl = 26, tx = hx - Math.cos(ang) * tl, ty = hy - Math.sin(ang) * tl;
     sharpSlash(tx, ty, hx, hy, 1, .2 + u2 * .2, 3.5, k % 2 ? '255,212,110' : '120,200,255'); }
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  { const u = (t - .11) / .3; if (u > 0 && u < 1) { const r = (big ? 30 : 18) + (big ? 90 : 50) * u, a = 1 - u, g = ctx.createRadialGradient(x, y, 0, x, y, r);     // 交点一团白金光
+  { const u = (t - .11) / .3; if (u > 0 && u < 1) { const r = (big ? 30 : 18) + (big ? 90 : 50) * u, a = (1 - u) * (texOK() ? .3 : 1), g = ctx.createRadialGradient(x, y, 0, x, y, r);     // 交点一团白金光
       g.addColorStop(0, `rgba(255,250,230,${a})`); g.addColorStop(.4, `rgba(140,200,255,${a * .7})`); g.addColorStop(1, 'rgba(140,200,255,0)'); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); } }
   ctx.restore();
   if (big) { comboLink(t, f.zx, f.lx, 'rgba(255,110,50,1)', 'rgba(120,190,255,1)');
@@ -4345,6 +4380,10 @@ function sharpSlash(x0, y0, x1, y1, u, age, w, col) {
   ctx.globalAlpha = .35 * hold; ctx.fillStyle = `rgb(${col})`; ctx.shadowColor = `rgba(${col},1)`; ctx.shadowBlur = 14; lens(1.9); ctx.fill(); ctx.shadowBlur = 0;   // 外面一层人物色的光
   ctx.globalAlpha = .95 * hold; const g = ctx.createLinearGradient(tx, ty, hx, hy); g.addColorStop(0, `rgba(${col},0)`); g.addColorStop(.6, `rgba(${col},1)`); g.addColorStop(1, '#ffffff'); ctx.fillStyle = g; lens(1); ctx.fill();
   ctx.globalAlpha = hold; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(tx + (hx - tx) * .25, ty + (hy - ty) * .25); ctx.lineTo(hx, hy); ctx.stroke();   // 刃口一线白
+  const rib = w >= 8 ? tintTex('ribbon', col) : null;                                   // 10-30 刃后拖一道染色的能量飘带（纹理），略弯、比刃宽，刃收的时候飘带慢一点散；细的小剑气不拖，免得密
+  if (rib) { const pts = []; for (let i = 0; i <= 10; i++) { const s2 = i / 10, bow = Math.sin(Math.PI * s2) * w * .9; pts.push([tx + (hx - tx) * s2 + nx * bow, ty + (hy - ty) * s2 + ny * bow]); }
+    drawStrip(ctx, rib, pts, q => w * (1.4 + 2.2 * q), .5 * Math.sqrt(hold)); }
+  if (u < 1.15 && w >= 8 && ready(IMG.tex_stars)) starTex(ctx, hx, hy, w * 5, Math.round(w) % 6, .6);   // 刀头一颗星芒
   if (u < 1.15) { const r = w * 2.4, hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, r); hg.addColorStop(0, 'rgba(255,255,255,.95)'); hg.addColorStop(1, `rgba(${col},0)`); ctx.globalAlpha = 1; ctx.fillStyle = hg; ctx.fillRect(hx - r, hy - r, r * 2, r * 2); }
   ctx.restore();
 }
@@ -4357,12 +4396,13 @@ function drawCHeng(f) {
     for (const o of [-1, 0, 1]) ML.splat(px + o * 7 + VR(-3, 3), hy, o * 60 + VR(-30, 30), VR(-520, -380), VR(11, 15), [0, VR(.9, 1.2), .3, 0]); if (t > .2) f.jetDone = true; }
   if (t > .1 && t < .8 && ready(IMG.ui_rays)) { const u = (t - .1) / .7, sz = 160 + 260 * (1 - Math.pow(1 - u, 2)), a = u < .15 ? u / .15 : 1 - (u - .15) / .85;   // 交点一圈金光转开（画的体积光）
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .8 * a; ctx.translate(px, cy); ctx.rotate(t * .9); ctx.drawImage(IMG.ui_rays, -sz / 2, -sz / 2, sz, sz); ctx.restore(); }
+  texBloom(px, cy, t - .1, .8, 170, '255,150,70', .85, 0); texBloom(px, cy, t - .14, .7, 120, '90,235,170', .85, .8);   // 10-30 十字交点：火、青两层光瓣
   sharpSlash(px, WALL_Y - 10, px, TOP + 4, t / .1, t, 22, '255,120,50');                                                  // 竖：张飞的火，从城头往远处
   const sx = f.x - f.dir * hw; sharpSlash(sx, cy, f.x + f.dir * hw, cy, (t - .06) / .1, t - .06, 22, '90,235,170');       // 横：关羽的青，顺着青龙斩扫的方向
   for (let k = 0; k < 8; k++) { const u2 = (t - .14) / .3; if (u2 <= 0 || u2 >= 1) continue; const ang = k / 8 * 6.283 + .39, d = 150 * (1 - Math.pow(1 - u2, 2)), hx = px + Math.cos(ang) * d, hy = cy + Math.sin(ang) * d * .8;   // 八道剑气迸出
     sharpSlash(hx - Math.cos(ang) * 30, hy - Math.sin(ang) * 24, hx, hy, 1, .2 + u2 * .25, 5, k % 2 ? '90,235,170' : '255,140,60'); }
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  { const u = (t - .1) / .35; if (u > 0 && u < 1) { const r = 40 + 130 * u, a = 1 - u, g = ctx.createRadialGradient(px, cy, 0, px, cy, r);     // 交点白光
+  { const u = (t - .1) / .35; if (u > 0 && u < 1) { const r = 40 + 130 * u, a = (1 - u) * (texOK() ? .3 : 1), g = ctx.createRadialGradient(px, cy, 0, px, cy, r);     // 交点白光
       g.addColorStop(0, `rgba(255,252,235,${a})`); g.addColorStop(.3, `rgba(255,170,80,${a * .8})`); g.addColorStop(.65, `rgba(90,230,170,${a * .4})`); g.addColorStop(1, 'rgba(90,230,170,0)'); ctx.fillStyle = g; ctx.fillRect(px - r, cy - r, r * 2, r * 2); } }
   ctx.restore();
   comboLink(t, f.zx, f.gx, 'rgba(255,110,50,1)', 'rgba(110,240,180,1)');
@@ -4379,8 +4419,9 @@ function drawCHe(f) {
   sharpSlash(x - 6, TOP - 10, x - 6, gy + 20, (t - .1) / .1, t - .1, 12, '255,110,50');                                  // 后面跟一道火刃（张飞）
   for (let k = 0; k < 10; k++) { const u2 = (t - .18) / .35; if (u2 <= 0 || u2 >= 1) continue; const ang = -Math.PI * (.08 + .84 * k / 9), d = (90 + (k % 3) * 30) * (1 - Math.pow(1 - u2, 2)),   // 碎刃往上、往两边四溅
     hx = x + Math.cos(ang) * d, hy = gy - 8 + Math.sin(ang) * d * .9; sharpSlash(hx - Math.cos(ang) * 26, hy - Math.sin(ang) * 22, hx, hy, 1, .2 + u2 * .25, 5, k % 2 ? '255,214,110' : '255,120,60'); }
+  texBloom(x, gy - 10, t - .15, .8, 160, '255,200,90', .7, 0); texBloom(x, gy - 10, t - .2, .6, 100, '255,120,60', .7, .9);   // 10-30 落地金、火两层光瓣（压扁贴地）
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  { const u = (t - .15) / .4; if (u > 0 && u < 1) { const r = 50 + 150 * u, a = 1 - u, g = ctx.createRadialGradient(x, gy - 10, 0, x, gy - 10, r);     // 落地白光
+  { const u = (t - .15) / .4; if (u > 0 && u < 1) { const r = 50 + 150 * u, a = (1 - u) * (texOK() ? .3 : 1), g = ctx.createRadialGradient(x, gy - 10, 0, x, gy - 10, r);     // 落地白光
       g.addColorStop(0, `rgba(255,252,235,${a})`); g.addColorStop(.3, `rgba(255,190,90,${a * .8})`); g.addColorStop(.7, `rgba(255,110,50,${a * .35})`); g.addColorStop(1, 'rgba(255,110,50,0)');
       ctx.save(); ctx.translate(x, gy - 10); ctx.scale(1, .6); ctx.translate(-x, -(gy - 10)); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, gy - 10, r, 0, 6.283); ctx.fill(); ctx.restore(); } }
   ctx.restore();
@@ -4425,8 +4466,9 @@ function drawCTao(f) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .85 * a; ctx.translate(px, py); ctx.rotate(t * .7); ctx.drawImage(IMG.ui_rays, -sz / 2, -sz / 2, sz, sz); ctx.restore(); }
   f.xs.forEach(([, col], k) => { const ang = -Math.PI / 2 + k * Math.PI / 3, hl = 150, dx = Math.cos(ang) * hl, dy = Math.sin(ang) * hl * .8;            // 三道剑气交成六角星
     sharpSlash(px - dx, py - dy, px + dx, py + dy, (t - .24 - k * .05) / .1, t - .24 - k * .05, 16, col); });
+  texBloom(px, py, t - .2, 1, 210, '255,180,205', 1, 0); texBloom(px, py, t - .26, .85, 140, '255,214,120', 1, .5);   // 10-30 汇合处桃红、金两层光瓣
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  { const u = (t - .2) / .45; if (u > 0 && u < 1) { const r = 40 + 150 * u, a = 1 - u, g = ctx.createRadialGradient(px, py, 0, px, py, r);     // 汇合处一团桃红金光
+  { const u = (t - .2) / .45; if (u > 0 && u < 1) { const r = 40 + 150 * u, a = (1 - u) * (texOK() ? .3 : 1), g = ctx.createRadialGradient(px, py, 0, px, py, r);     // 汇合处一团桃红金光
       g.addColorStop(0, `rgba(255,252,240,${a})`); g.addColorStop(.3, `rgba(255,200,215,${a * .8})`); g.addColorStop(.7, `rgba(255,210,120,${a * .35})`); g.addColorStop(1, 'rgba(255,210,120,0)'); ctx.fillStyle = g; ctx.fillRect(px - r, py - r, r * 2, r * 2); } }
   ctx.restore();
   const xs = f.xs.map(q => q[0]).sort((a, b) => a - b); comboLink(t, xs[0], xs[1], 'rgba(255,190,210,1)', 'rgba(255,214,110,1)'); comboLink(t, xs[1], xs[2], 'rgba(255,214,110,1)', 'rgba(255,190,210,1)');
