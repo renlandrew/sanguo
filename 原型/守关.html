@@ -5064,11 +5064,17 @@ function drawSystem() {
     slotBar(78, y + 48, W - 32 - 78 - 46, 18, [[k[vol], '#a8701a', '#ffe08a']]);
     pill(W - 64, y + 46, 40, 24, '', () => { k[vol] = Math.min(1, Math.round((k[vol] + .1) * 10) / 10); sndApply(); saveInv(); sfx('tap'); }, false);
     uiText('−', 50, y + 58, 20, UIC.gold2, 'center', PLAIN, { stroke: false }); uiText('+', W - 44, y + 58, 20, UIC.gold2, 'center', PLAIN, { stroke: false }); });   // 书法字体里没有加减号，用普通字体画
-  const y3 = 74 + 2 * 92; plate(16, y3, W - 32, 78); uiText('回看剧情', 34, y3 + 24, 18, UIC.gold2, 'left', FONT, { stroke: false });
+  const y3 = 74 + 2 * 92; plate(16, y3, W - 32, 48); uiText('回看剧情', 34, y3 + 24, 18, UIC.gold2, 'left', FONT, { stroke: false });
   const nSeen = Object.keys(STORY).filter(storySeen).length;                       // 三十多场放不下一排：点进去另开一页
-  if (!nSeen) uiText('还没有看过的剧情', 34, y3 + 54, 12, 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false });
-  else pill(30, y3 + 42, 120, 26, '翻看剧情', () => { screen = 'storylist'; }, false);
-  { const y4 = y3 + 92, two = SAVE_NS === 'proto2', url = new URLSearchParams(location.search).has('save'); plate(16, y4, W - 32, 92);   // 测试用（10-27 用户：「给一个按键，可以重置进度，换另一个则旧进度，左右拉动的btn」）
+  if (!nSeen) uiText('还没有看过的剧情', W - 34, y3 + 24, 12, 'rgba(244,230,196,.55)', 'right', PLAIN, { stroke: false });
+  else pill(W - 150, y3 + 11, 118, 26, '翻看剧情', () => { screen = 'storylist'; }, false);
+  { const yq = y3 + 62, cur = rsCap(), sw = 168, sx = W - 32 - sw, sy = yq + 10; plate(16, yq, W - 32, 48);   // 画面清晰度（10-30 用户：默认 1.5，可选 2、3）
+    uiText('画面清晰度', 34, yq + 17, 16, UIC.gold2, 'left', FONT, { stroke: false }); uiText('越高越清楚、越吃内存', 34, yq + 37, 10, 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false });
+    ctx.save(); ctx.fillStyle = '#1a0c06'; rr(sx, sy, sw, 28, 14); ctx.fill(); ctx.strokeStyle = '#9a7432'; ctx.lineWidth = 1; ctx.stroke();
+    const j0 = RS_OPT.indexOf(cur), cw = sw / RS_OPT.length; ctx.fillStyle = '#b0201a'; rr(sx + j0 * cw + 2, sy + 2, cw - 4, 24, 12); ctx.fill(); ctx.restore();
+    RS_OPT.forEach((v, j) => { uiText(v + ' 倍', sx + cw * (j + .5), sy + 14, 12, j === j0 ? '#fff' : 'rgba(244,230,196,.5)', 'center', PLAIN, { stroke: false });
+      hit(sx + j * cw, sy, cw, 28, () => { if (v === cur) return; try { localStorage.setItem('sgz.rs', String(v)); } catch (e) {} fit(); sfx('tap'); }); }); }
+  { const y4 = y3 + 124, two = SAVE_NS === 'proto2', url = new URLSearchParams(location.search).has('save'); plate(16, y4, W - 32, 92);   // 测试用（10-27 用户：「给一个按键，可以重置进度，换另一个则旧进度，左右拉动的btn」）
     uiText('测试存档', 34, y4 + 24, 18, UIC.gold2, 'left', FONT, { stroke: false });
     const sx = W - 158, sw = 126, sy = y4 + 10; ctx.save(); ctx.fillStyle = '#1a0c06'; rr(sx, sy, sw, 28, 14); ctx.fill(); ctx.strokeStyle = '#9a7432'; ctx.lineWidth = 1; ctx.stroke();
     ctx.fillStyle = '#b0201a'; rr(sx + (two ? sw / 2 : 0) + 2, sy + 2, sw / 2 - 4, 24, 12); ctx.fill(); ctx.restore();
@@ -5077,7 +5083,7 @@ function drawSystem() {
     pill(30, y4 + 50, 140, 28, SYS.reset ? '再点一次确认' : '重置当前存档', () => { if (!SYS.reset) { SYS.reset = uiNow(); return; } Object.keys(localStorage).filter(k => k.startsWith(`sgz.${SAVE_NS}.`)).forEach(k => localStorage.removeItem(k)); location.reload(); }, !!SYS.reset);
     if (SYS.reset && uiNow() - SYS.reset > 3) SYS.reset = 0;
     uiText(url ? '网址指定了存档，不能切换' : '两格各自独立，切换不会丢', W - 34, y4 + 64, 10, 'rgba(244,230,196,.55)', 'right', PLAIN, { stroke: false }); }
-  { const y5 = 74 + 4 * 92 + 10; plate(16, y5, W - 32, 92); uiText('云存档', 34, y5 + 24, 18, UIC.gold2, 'left', FONT, { stroke: false });   // 10-30 云存档：存档码、换手机认领
+  { const y5 = 74 + 4 * 92 + 42; plate(16, y5, W - 32, 92); uiText('云存档', 34, y5 + 24, 18, UIC.gold2, 'left', FONT, { stroke: false });   // 10-30 云存档：存档码、换手机认领
     if (!CLOUD_ON) uiText(/[?&](save|all)\b/.test(location.search) ? '测试网址不上云' : '本机调试不上云', 34, y5 + 56, 12, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false });
     else { const me = CLOUD.me; uiText(me && me.code ? '存档码  ' + me.code : (CLOUD.st === 'offline' ? '连不上服务器，联网后自动同步' : '正在连接…'), W - 34, y5 + 24, 14, UIC.cream, 'right', PLAIN, { stroke: false });
       uiText(CLOUD.st === 'reject' ? '存档数值不合理，已换回云上的' : me && me.dirty ? '有改动，稍后自动上传' : CLOUD.st === 'ok' ? '已同步' : '', 34, y5 + 46, 11, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false });
@@ -6424,8 +6430,10 @@ const BGV = document.getElementById('bgv'), BGX = BGV.getContext('2d'); let bgTi
 function bgMirror() { const wide = innerWidth > W * S + 2; if (BGV.style.display !== (wide ? '' : 'none')) BGV.style.display = wide ? '' : 'none'; if (!wide || (bgTick++ & 3)) return;   /* 10-27 手机上变糊：全屏加模糊滤镜的底层画布让手机浏览器把整页降了清晰度，窄屏直接不显示 */ BGX.drawImage(cv, 0, 0, 36, 64); }   // 宽屏才画，每 4 帧缩成 36×64 一次，放大加模糊就够当底
 function boot() { fit(); addEventListener('resize', fit); if (new URLSearchParams(location.search).has('story')) playStory('open', () => { screen = 'menu'; }, true);   /* 网址带 ?story：直接从序章开始翻看第一章全部剧情（10-26 用户：「你专门开个故事我看看，可以来回翻动的」） */
   requestAnimationFrame(frame); }
+const RS_OPT = [1.5, 2, 3];   // 画面清晰度（画布按屏幕几倍像素画）：越高越清楚、越吃内存；每台手机各自记
+const rsCap = () => { try { const v = +localStorage.getItem('sgz.rs'); return RS_OPT.includes(v) ? v : 1.5; } catch (e) { return 1.5; } };
 function fit() {
-  S = Math.min(innerWidth / W, innerHeight / H) || 1; if (S <= 0) S = 1; const dpr = Math.min(2, devicePixelRatio || 1); RS = S * dpr;   // 10-30 上限 3 → 2：三倍屏手机像素少一半多，看不出差别
+  S = Math.min(innerWidth / W, innerHeight / H) || 1; if (S <= 0) S = 1; const dpr = Math.min(rsCap(), devicePixelRatio || 1); RS = S * dpr; NIGHTC = null;   // 10-30 上限 3 → 2；同日用户：「默认1.5 让用户可以选2 和3」——系统页「画面清晰度」，记在本机
   cv.width = Math.round(W * RS); cv.height = Math.round(H * RS); cv.style.width = W * S + 'px'; cv.style.height = H * S + 'px';
   cv.style.marginTop = Math.max(0, (innerHeight - H * S) / 2) + 'px'; bakeAll(); spxInit();
   if (ML === null && window.Moliu) ML = Moliu.create({ W, H, pw: cv.width, ph: cv.height, paintImg: IMG.paint }) || false;
