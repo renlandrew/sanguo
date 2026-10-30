@@ -1005,7 +1005,7 @@ function startLevel(i) {
   // 出阵布置（10-25 沙盘推演样本）：出手顺序、开局带的锦囊（一条战法），推演和正式出战都用同一份
   if (!window.__sg.simming && !G.sim) G.order = applyLineup(G.order, lv);
   if (PREP && PREP.li === i) { G.order = PREP.order.slice(); for (const id of PREP.kits) { const p = PERKS.find(p => p.id === id); if (p) { p.fn(G.st); G.perks[id] = (G.perks[id] || 0) + 1; } } }
-  { const L = {}; G.act = {}; G.pas = {}; for (const id of team) if (SKILLS[id]) { const l = window.__sg.simming || G.sim ? (window.__sg.load || {})[id] || { act: ACT0[id], pas: [] } : loadOf(id); L[id] = { act: l.act || ACT0[id], pas: l.pas || [] }; G.act[id] = L[id].act; G.pas[id] = L[id].pas; }
+  { const L = {}; G.act = {}; G.pas = {}; for (const id of team) if (SKILLS[id]) { const l = window.__sg.simming || G.sim || window.__sg.forceLoad ? (window.__sg.load || {})[id] || { act: ACT0[id], pas: [] } : loadOf(id);   /* forceLoad：录连携画面用（不存档） */ L[id] = { act: l.act || ACT0[id], pas: l.pas || [] }; G.act[id] = L[id].act; G.pas[id] = L[id].pas; }
     if (hasPas('guan', 'tuodao')) G.st.n.guan++; if (hasPas('zhang', 'weizhen')) G.st.daze += .3; if (hasPas('liu', 'rende')) G.st.ren++; if (hasPas('liu', 'jijiang')) { G.st.ji = true; G.jiMul = 1.4; }
     if (hasPas('liu', 'jieyi') && ['guan', 'zhang', 'liu'].every(x => team.includes(x))) G.st.cdMul *= .9;
     const B = INV.bonus || {}; G.bonusAtk = (B.同心 && ['guan', 'zhang', 'liu'].every(x => team.includes(x)) ? 1.1 : 1) * (B.孤胆 && team.length < 3 ? 1.15 : 1); if (B.军心) G.st.cdMul *= .95;   // 战功换来的永久加成
@@ -1599,7 +1599,7 @@ function stepDuel(e, dt) {
     e.mv = { k, t: 0, dur, uns, bot: hv && !uns ? dur - .35 : -1 };   // 10-28 用户：「同时喝断和举盾我觉得比较难控制，举盾是自动如何？」——普通重招一律自动举盾挡下；无双挡不住，只能一喝喝断
     e.castT = dur; if (k === 'heavy' && ULT_FOE.has(e.kind)) playUlt(e.kind, true); if (uns) teach('uns');
     G.fx.push({ k: hv ? 'warn' : 'txt', t: 0, x: e.x, y: e.y - 100, text: uns ? '无双·喝断它' : NM[k] || k, size: 24, color: hv ? CINNABAR : INK, dur, boss: e.kind });
-    if (k === 'summon' && e.kind === 'zhangjiao' && !G.sim) { G.fx.push({ k: 'hdl', t: 0, dur: 2.6, x: e.x, y: e.y - 6, seed: VR(0, 1) }); G.shake = Math.max(G.shake || 0, .15); punch(e.x, e.y - 20, .04); }   // 黄天当立：天裂旋涡（10-29）
+    if (k === 'summon' && e.kind === 'zhangjiao' && !G.sim) { G.fx.push({ k: 'hdl', t: 0, dur: 3.4, x: e.x, y: e.y - 6, hx: e.x - 18, hy: e.y - 78, seed: VR(0, 1) }); G.shake = Math.max(G.shake || 0, .15); punch(e.x, e.y - 20, .04); }   // 黄天当立：天裂旋涡（10-29）
     if (hv && e.kind === 'zhangjiao') { spPlay('sigil_purple', e.x, e.y + 4, 230, { ground: true, sy: .42, fps: 20 }); spPlay('arcs', e.x, -40, 150, { follow: e, fps: 20 }); }   /* 张角蓄天雷：脚下紫色符文法阵、手上电弧（魔兽风，Veo） */
   }
 }
@@ -2110,6 +2110,7 @@ function renderScreen() {
   drawHuts();
   drawDim();
   drawGroundFx(); drawSpfx(true);
+  for (const f of G.fx) if (f.k === 'hdl') drawHdlGround(f);                 // 黄天当立：预兆的星图、地面光（在旋涡下）
   spxPass('ground');
   for (const f of G.fx) if (f.k === 'hdl') { if (!SPX.ok || !SPX.vortexP) drawHdlFallback(f); drawHdlBits(f); }
   for (const f of G.fx) if (f.k === 'corpse') drawCorpse(f);
@@ -2125,7 +2126,7 @@ function renderScreen() {
   for (const s of G.shots) drawShot(s);
   if (SPX.ok) spxParts(); else drawParts();
   spxPass('top');
-  drawFbs(); drawSpfx(false);
+  drawFbs(); drawSpfx(false); for (const f of G.fx) if (f.k === 'hdl') drawHdlTop(f);   // 黄天当立：光带、光瓣、飘带
   drawShards();
   if (ML) { const dt = clamp((G.vt || 0) - (ML.vt0 ?? (G.vt || 0)), 0, 1 / 20); ML.vt0 = G.vt || 0; ML.step(dt); if (ML.render(cv.width, cv.height)) ctx.drawImage(ML.canvas, 0, 0, W, H); ML.drawParts(ctx); }
   drawWash();
@@ -3358,6 +3359,31 @@ void main(){
   c = mix(c, dark, core); al = max(al, core * .9);
   al *= uFade; gl_FragColor = vec4(c * al, al);
 }`;
+// 张飞声浪（10-29 用户圈着当阳一喝：「这些就比较死板，因为不会动，但当然，某些剑气确实就是一下子打过来的」）：原来是一张录好的拱形火焰图只放大不动。
+// 改成实时生成：三道错时的波前往外推，前沿最亮、被噪声打出缺口（不是工整圆弧）；波里的纹理一路往外流，后沿一层暗红压着；越推越宽越淡，两头贴地处收掉。
+// vUv 直接是像素坐标；uO 声浪起点（张飞脚下城头），uRm 最远半径
+const FS_SHOUT = `precision mediump float; varying vec2 vUv;
+uniform sampler2D uNoise; uniform vec2 uO; uniform float uRm, uT, uSeed; uniform vec3 uHot, uBody, uDark;
+void main(){
+  vec2 d = vUv - uO; d.y /= .9; float r = length(d), a = atan(-d.y, d.x);
+  float side = smoothstep(0., .4, a) * smoothstep(3.1416, 2.74, a);
+  float hot = 0., body = 0., dark = 0.;
+  for (int i = 0; i < 3; i++) { float fi = float(i), ti = uT - fi * .11; if (ti < 0.) continue;
+    float u = clamp(ti / .6, 0., 1.), R = mix(36., uRm, 1. - pow(1. - u, 2.2)), w = mix(26., 74., u) * (1. - .28 * fi), x = (r - R) / w;
+    float band = smoothstep(-1.25, -.25, x) * (1. - smoothstep(-.04, .14, x));
+    float n = texture2D(uNoise, vec2(a * 1.3 + uSeed + fi * .31, r / 120. - uT * 1.9)).r;
+    float n2 = texture2D(uNoise, vec2(a * 4.1 - uT * .6, r / 58. - uT * 2.7)).g;
+    float gap = smoothstep(.22, .46, texture2D(uNoise, vec2(a * .8 + uSeed * 2. + fi * .5, .37 + fi * .21)).b);
+    float fd = (1. - u * u) * (1. - .33 * fi);
+    hot += band * smoothstep(-.32, -.04, x) * gap * fd * (.7 + .5 * n2);
+    body += band * smoothstep(.3, .78, n) * (.6 + .6 * n2) * gap * fd;
+    dark += smoothstep(-1.5, -.7, x) * (1. - smoothstep(-.7, -.25, x)) * .55 * gap * fd; }
+  hot = clamp(hot, 0., 1.); body = clamp(body, 0., 1.); dark = clamp(dark, 0., 1.);
+  vec3 c = uBody * body * 1.25 + uHot * hot;
+  float al = clamp(body * .8 + hot * .95, 0., 1.);
+  c = mix(c, uDark, dark * (1. - hot)); al = max(al, dark * .45); al *= side * step(d.y, 6.);
+  gl_FragColor = vec4(c * al, al);
+}`;
 // 贴地法阵（10-29 用户：「其它法术可以据此统一优化一次吗」「做」）：照黄天当立的五条——暗（焦黑）、亮边（发白、被噪声打碎）、本色主体、外散；
 // 一招一个主色；压扁贴地；裂开 → 一闪 → 停 → 按噪声溶解收掉（不直接淡没）。一套代码四种形：0 放射裂纹、1 冲击（碎环＋放射纹）、2 交叉刀痕、3 横扫刀痕
 const FS_GROUND = `precision mediump float; varying vec2 vUv;
@@ -3414,6 +3440,7 @@ function spxInit() {
   SPX.fa = loc(SPX.flareP, ['aPos', 'aUv', 'aCol', 'aExt'], 'a');
   SPX.fu = loc(SPX.flareP, ['uView', 'uAtlas']);
   SPX.pa = loc(SPX.paintP, ['aPos', 'aUv', 'aCol', 'aExt'], 'a'); SPX.pu = loc(SPX.paintP, ['uView', 'uAtlas']);
+  try { SPX.shoutP = prog(VS_SWEEP, FS_SHOUT); SPX.shu = loc(SPX.shoutP, ['uView', 'uNoise', 'uO', 'uRm', 'uT', 'uSeed', 'uHot', 'uBody', 'uDark']); SPX.sha = loc(SPX.shoutP, ['aPos', 'aUv'], 'a'); } catch (e) { console.error('声浪着色器', e); SPX.shoutP = null; }
   try { SPX.groundP = prog(VS_SWEEP, FS_GROUND); SPX.gu = loc(SPX.groundP, ['uView', 'uNoise', 'uMode', 'uProg', 'uFlash', 'uDis', 'uSeed', 'uN', 'uDark', 'uBody', 'uHot']); SPX.ga = loc(SPX.groundP, ['aPos', 'aUv'], 'a'); } catch (e) { console.error('贴地法阵着色器', e); SPX.groundP = null; }
   try { SPX.vortexP = prog(VS_SWEEP, FS_VORTEX); SPX.vu = loc(SPX.vortexP, ['uView', 'uNoise', 'uC', 'uR', 'uT', 'uOpen', 'uFade', 'uFlash', 'uSeed']); SPX.va = loc(SPX.vortexP, ['aPos', 'aUv'], 'a'); } catch (e) { console.error('旋涡着色器', e); SPX.vortexP = null; }   // 旋涡坏了只少这一个，别的照常
   { const im = new Image(); im.onload = () => { SPX.tex.paint = spxTex(im, false); }; im.src = 'img/fx_paint.png' + BUST; }
@@ -3523,8 +3550,55 @@ function spxDraw(b, t) {
 }
 // 黄天当立的节奏（f.dur 2.6 秒）：0–0.5 裂开（带回弹）、转着往里卷、0.8 张角施法落成那一下亮环一闪（召来的黄巾落地）、2.0–2.6 合拢消失
 const HDL_RX = 200, HDL_SQ = .36;   // 平躺在张角身后的地上（像参考图悬在地面上），召来的黄巾从里面涌出
-function hdlState(f) { const t = f.t, open = t < .5 ? 1 - Math.pow(1 - t / .5, 3) * Math.cos(t / .5 * 2.2) : t > 2 ? Math.max(0, 1 - (t - 2) / .6) : 1;
-  return { open: Math.max(.02, open), fade: t > 2.3 ? Math.max(0, 1 - (t - 2.3) / .3) : 1, flash: Math.exp(-Math.pow((t - .8) / .08, 2)) + .6 * Math.exp(-Math.pow((t - 1.5) / .07, 2)) }; }
+// 10-29 用户：「偏离了我给你发的图的聚焦法术本身的动态和变化」——照参考图做成一招五段演变（3.4 秒）：
+// 蓄 0–0.5（张角手里甩出一道光带扎进地面）→ 预兆 0.15–0.85（北斗七星一颗颗亮起连线、星轨转、地面泛蓝紫）→ 爆 0.8（召来的黄巾落地那刻炸开一朵光瓣）
+// → 成形 0.85–2.9（光瓣里裂出旋涡，三条飘带斜着绕转，符纸卷入）→ 收 2.9–3.4（合拢一闪）。召唤落地时间不动，只改画面
+const HDL_T0 = .85, HDL_T1 = 2.9;
+function hdlState(f) { const t = f.t - HDL_T0, open = t < 0 ? .02 : t < .45 ? 1 - Math.pow(1 - t / .45, 3) * Math.cos(t / .45 * 2.2) : f.t > HDL_T1 ? Math.max(0, 1 - (f.t - HDL_T1) / .45) : 1;
+  return { open: Math.max(.02, open), fade: t < 0 ? 0 : f.t > HDL_T1 + .2 ? Math.max(0, 1 - (f.t - HDL_T1 - .2) / .3) : 1, flash: Math.exp(-Math.pow((f.t - .9) / .07, 2)) + .7 * Math.exp(-Math.pow((f.t - HDL_T1 - .4) / .06, 2)) }; }
+const DIPPER = [[.42, -.28], [.46, .2], [.12, .3], [.04, -.12], [-.28, -.2], [-.56, -.08], [-.86, .14]];   // 北斗七星（天枢…摇光），地面坐标（乘半径、纵向压扁）
+const hdlP = (f, X, Y) => [f.x + X * HDL_RX * .85, f.y + Y * HDL_RX * .85 * HDL_SQ];
+function drawHdlGround(f) {                                                     // 预兆：地面蓝紫光、北斗七星、点状星轨（贴地，在敌人身后）
+  const t = f.t, wash = t < .2 ? t / .2 : t < HDL_T1 ? 1 : Math.max(0, 1 - (t - HDL_T1) / .5); if (wash <= 0) return;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(f.x, f.y); ctx.scale(1, HDL_SQ);
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, HDL_RX * 1.15); g.addColorStop(0, `rgba(150,140,255,${.32 * wash})`); g.addColorStop(.6, `rgba(90,90,220,${.16 * wash})`); g.addColorStop(1, 'rgba(60,60,180,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, HDL_RX * 1.15, 0, 6.283); ctx.fill(); ctx.restore();
+  const sa = t < HDL_T0 ? 1 : Math.max(0, 1 - (t - HDL_T0) / .5);              // 旋涡成形后星图隐去
+  if (sa > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+    for (let k = 0; k < 40; k++) { const a = k / 40 * 6.283 + t * .9, vis = (Math.sin(a * 1.5 - t * 3) + 1) / 2; if (vis < .25) continue;   // 星轨：一圈断续的点，转着走，只亮一部分
+      const [x, y] = hdlP(f, Math.cos(a) * 1.05, Math.sin(a) * 1.05); ctx.globalAlpha = sa * wash * vis * .8; ctx.fillStyle = '#dfe6ff'; ctx.beginPath(); ctx.arc(x, y, 1.3, 0, 6.283); ctx.fill(); }
+    for (let k = 0; k < 7; k++) { const tk = .15 + k * .08; if (t < tk) break; const u = Math.min(1, (t - tk) / .1), [x, y] = hdlP(f, ...DIPPER[k]);
+      if (k > 0) { const [x0, y0] = hdlP(f, ...DIPPER[k - 1]); ctx.globalAlpha = sa * .7; ctx.strokeStyle = '#b8c4ff'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + (x - x0) * u, y0 + (y - y0) * u); ctx.stroke(); }
+      const pop = 1 + 1.4 * Math.exp(-(t - tk) / .06), r = 9 * pop, gg = ctx.createRadialGradient(x, y, 0, x, y, r); gg.addColorStop(0, 'rgba(255,255,255,1)'); gg.addColorStop(.3, 'rgba(190,200,255,.8)'); gg.addColorStop(1, 'rgba(120,120,255,0)');
+      ctx.globalAlpha = sa * u; ctx.fillStyle = gg; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      ctx.strokeStyle = 'rgba(235,240,255,.9)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x - r * 1.3, y); ctx.lineTo(x + r * 1.3, y); ctx.moveTo(x, y - r * .9); ctx.lineTo(x, y + r * .9); ctx.stroke(); }   // 星：亮点加十字闪
+    ctx.restore(); }
+}
+function drawHdlTop(f) {                                                        // 蓄的光带、爆的光瓣、成形时的飘带（在敌人前面）
+  const t = f.t; ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+  if (t < .62) {                                                                // 蓄：张角手里甩出一道光带，弧线扎进身前地面（头亮尾细，带几点小金星）
+    const P = u => { const a = [f.hx, f.hy], b = [f.x + 90, f.y - 190], c = [f.x, f.y]; return [(1 - u) * (1 - u) * a[0] + 2 * u * (1 - u) * b[0] + u * u * c[0], (1 - u) * (1 - u) * a[1] + 2 * u * (1 - u) * b[1] + u * u * c[1]]; };
+    const head = Math.min(1, t / .5), fade = t > .5 ? 1 - (t - .5) / .12 : 1;
+    for (let k = 0; k < 16; k++) { const u1 = head - k * .035, u0 = u1 - .035; if (u0 < 0) break; const [x0, y0] = P(u0), [x1, y1] = P(u1), w = 7 * (1 - k / 16);
+      ctx.globalAlpha = fade * (1 - k / 16); ctx.strokeStyle = k < 2 ? '#ffffff' : '#9fb4ff'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); }
+    if (vr() < .5 && head < 1) { const [x, y] = P(head); (G.shards = G.shards || []).push({ k: 'glint', x: x + VR(-6, 6), y: y + VR(-6, 6), vx: VR(-30, 30), vy: VR(-30, 10), born: G.vt || 0, life: VR(.3, .5), s: VR(2.5, 4), c: '#ffd9a0' }); } }
+  if (t > .78 && t < 1.35) {                                                     // 爆：一朵半透明光瓣从中心绽开，带几道放射光
+    const u = (t - .78) / .57, L = 40 + 150 * (1 - Math.pow(1 - Math.min(1, u * 1.6), 3)), a = u < .25 ? u / .25 : 1 - (u - .25) / .75, cy = f.y - 30;
+    for (let k = 0; k < 8; k++) { const ang = -Math.PI / 2 + (k - 3.5) * .42 + Math.sin(k * 3.1) * .08, len = L * (.75 + .25 * Math.sin(k * 2.3 + 1)), wd = len * .32;
+      ctx.save(); ctx.translate(f.x, cy); ctx.rotate(ang + Math.PI / 2); ctx.scale(1, .85);
+      const g = ctx.createLinearGradient(0, 0, 0, -len); g.addColorStop(0, `rgba(255,255,255,${.55 * a})`); g.addColorStop(.5, `rgba(170,170,255,${.32 * a})`); g.addColorStop(1, 'rgba(120,110,255,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(wd, -len * .3, wd * .8, -len * .8, 0, -len); ctx.bezierCurveTo(-wd * .8, -len * .8, -wd, -len * .3, 0, 0); ctx.fill(); ctx.restore(); }
+    for (let k = 0; k < 6; k++) { const ang = k / 6 * 6.283 + .3, r1 = L * 1.25; ctx.globalAlpha = a * .7; ctx.strokeStyle = '#e8ecff'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(f.x + Math.cos(ang) * L * .3, cy + Math.sin(ang) * L * .3 * .7); ctx.lineTo(f.x + Math.cos(ang) * r1, cy + Math.sin(ang) * r1 * .7); ctx.stroke(); } }
+  const S = hdlState(f);
+  if (t > HDL_T0 && S.fade > 0) {                                                // 成形：三条飘带斜着绕旋涡飞转（头粗尾细、一段弧），前半在敌人前面
+    for (let r = 0; r < 3; r++) { const rx = HDL_RX * (.62 + .18 * r) * S.open, ry = rx * (.28 + .1 * r), tilt = (-.35 + .3 * r), sp = 3.2 - .6 * r, th0 = (t - HDL_T0) * sp + r * 2.1, span = 1.6, cx = f.x, cy = f.y - 22 - 10 * r;
+      for (let k = 0; k < 22; k++) { const a0 = th0 - k * span / 22, a1 = a0 + span / 22, w = 5.5 * (1 - k / 22) + .5;
+        const p = a => { const x = Math.cos(a) * rx, y = Math.sin(a) * ry; return [cx + x * Math.cos(tilt) - y * Math.sin(tilt), cy + x * Math.sin(tilt) + y * Math.cos(tilt)]; };
+        const [x0, y0] = p(a0), [x1, y1] = p(a1), fall = 1 - k / 22, head = k < 2 ? .6 + .2 * k : 1;   // 头部收圆、尾巴渐细渐淡
+        ctx.globalAlpha = S.fade * fall * .22; ctx.strokeStyle = '#8f8cff'; ctx.lineWidth = w * 3.2 * head; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();   // 外层：宽而淡的蓝紫光
+        ctx.globalAlpha = S.fade * fall * .75; ctx.strokeStyle = k < 4 ? '#ffffff' : '#cdd6ff'; ctx.lineWidth = w * .55 * head; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); } } }   // 芯：细白
+  ctx.restore();
+}
 function spxVortex(f) {
   const gl = SPX.gl, S = hdlState(f), rx = HDL_RX, ry = HDL_RX * HDL_SQ, x0 = f.x - rx, x1 = f.x + rx, y0 = f.y - ry, y1 = f.y + ry;
   gl.useProgram(SPX.vortexP); gl.uniform2f(SPX.vu.uView, W, H);
@@ -3540,8 +3614,8 @@ function drawHdlFallback(f) {                                                  /
   const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx); g.addColorStop(0, 'rgba(26,14,4,.9)'); g.addColorStop(.28, 'rgba(26,14,4,.85)'); g.addColorStop(.36, `rgba(255,240,200,${.8 + .2 * S.flash})`); g.addColorStop(.6, 'rgba(220,160,60,.5)'); g.addColorStop(1, 'rgba(120,80,20,0)');
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx, 0, 6.283); ctx.fill(); ctx.restore(); }
 function drawHdlBits(f) {                                                      // 被卷进去的黄符纸：少而大，转着往中心缩
-  const S = hdlState(f); if (f.t > 2.2) return; f.bits = f.bits || Array.from({ length: 7 }, (_, k) => ({ a: k / 7 * 6.283 + VR(-.3, .3), r0: VR(1.05, 1.5), sp: VR(.8, 1.3), d: VR(0, .5), rot: VR(0, 6.28) }));
-  for (const b of f.bits) { const u = clamp((f.t - b.d) / 1.6, 0, 1); if (u <= 0 || u >= 1) continue; const r = b.r0 * (1 - u * u) * HDL_RX * S.open, a = b.a + u * 4 * b.sp;
+  const S = hdlState(f); if (f.t < HDL_T0 || f.t > HDL_T1 + .2) return; f.bits = f.bits || Array.from({ length: 7 }, (_, k) => ({ a: k / 7 * 6.283 + VR(-.3, .3), r0: VR(1.05, 1.5), sp: VR(.8, 1.3), d: VR(0, .5), rot: VR(0, 6.28) }));
+  for (const b of f.bits) { const u = clamp((f.t - HDL_T0 - b.d) / 1.6, 0, 1); if (u <= 0 || u >= 1) continue; const r = b.r0 * (1 - u * u) * HDL_RX * S.open, a = b.a + u * 4 * b.sp;
     const x = f.x + Math.cos(a) * r, y = f.y + Math.sin(a) * r * HDL_SQ, sz = 9 * (1 - u * .6);
     ctx.save(); ctx.globalAlpha = S.fade * (u < .15 ? u / .15 : 1); ctx.translate(x, y); ctx.rotate(b.rot + u * 9); ctx.fillStyle = '#e9c860'; ctx.fillRect(-sz * .35, -sz, sz * .7, sz * 2); ctx.fillStyle = '#a8301f'; ctx.fillRect(-sz * .12, -sz * .7, sz * .24, sz * 1.2); ctx.restore(); }
 }
@@ -3560,6 +3634,16 @@ function spxGround(f) {
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   gl.useProgram(SPX.sweep); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, SPX.tex.matter);
 }
+function spxShout(f) {
+  const gl = SPX.gl, U = SPX.shu, ox = clamp(f.ox ?? W / 2, 50, W - 50), oy = WALL_Y + 8, y0 = WALL_Y - 330 * f.s - 20, y1 = WALL_Y + 20;
+  gl.useProgram(SPX.shoutP); gl.uniform2f(U.uView, W, H); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, SPX.tex.noise); gl.uniform1i(U.uNoise, 1);
+  gl.uniform2f(U.uO, ox, oy); gl.uniform1f(U.uRm, 300 * f.s); gl.uniform1f(U.uT, f.t); gl.uniform1f(U.uSeed, f.seed || .3);
+  gl.uniform3fv(U.uHot, [1, .95, .86]); gl.uniform3fv(U.uBody, softCol('#e8754a')); gl.uniform3fv(U.uDark, [.32, .08, .05]);
+  gl.bindBuffer(gl.ARRAY_BUFFER, SPX.buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, y0, 0, y0, W, y0, W, y0, 0, y1, 0, y1, W, y1, W, y1]), gl.DYNAMIC_DRAW);   // aUv 直接给像素坐标
+  gl.enableVertexAttribArray(SPX.sha.aPos); gl.vertexAttribPointer(SPX.sha.aPos, 2, gl.FLOAT, false, 16, 0); gl.enableVertexAttribArray(SPX.sha.aUv); gl.vertexAttribPointer(SPX.sha.aUv, 2, gl.FLOAT, false, 16, 8);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.useProgram(SPX.sweep); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, SPX.tex.matter);
+}
 const gnd = (o) => { if (!G.sim) G.fx.push({ k: 'gnd', t: -(o.delay || 0), seed: VR(0, 1), ...o }); };   // delay：晚几秒才裂开（跟着刀到）
 const HCOL = { guan: '#4fc898', zhang: '#e8754a', liu: '#6aa8e8' };   // 我方贴地法阵的人物色（再经 softCol 调柔偏蓝）
 function spxPass(layer) {
@@ -3572,7 +3656,8 @@ function spxPass(layer) {
   let drew = 0;
   for (const b of SPX.bodies) { if (b.burst || b.paint || b.layer !== layer) continue; const t = vt - b.born; if (t < 0) continue; spxDraw(b, t); drew++; }
   if (layer === 'ground' && SPX.vortexP) for (const f of G.fx) if (f.k === 'hdl') { spxVortex(f); drew++; }
-  if (layer === 'ground' && SPX.groundP) for (const f of G.fx) if (f.k === 'gnd' && f.t >= 0) { spxGround(f); drew++; }   // 贴地法阵   // 黄天当立的天裂旋涡（在敌将身后）
+  if (layer === 'ground' && SPX.groundP) for (const f of G.fx) if (f.k === 'gnd' && f.t >= 0) { spxGround(f); drew++; }   // 贴地法阵
+  if (layer === 'top' && SPX.shoutP) for (const f of G.fx) if (f.k === 'shout_efk' && f.t >= 0 && f.t < f.dur) { spxShout(f); drew++; }   // 张飞声浪（实时生成）   // 黄天当立的天裂旋涡（在敌将身后）
   for (const b of SPX.bodies) {                                                  // 有生命的画稿：撑开（带回弹）、从后面掠到前面、淡掉
     if (!b.paint || b.layer !== layer) continue; const t = vt - b.born; if (t < 0) continue; const u = t / b.life, e = 1 - Math.pow(1 - Math.min(1, u * 2.5), 3);
     const sc = b.pop + (1.06 - b.pop) * e - .06 * clamp((u - .4) / .6, 0, 1), a = u < .5 ? 1 : 1 - (u - .5) / .5;
@@ -3770,7 +3855,7 @@ function spxRoar(f) {
   // 声浪（10-25 夜用户：「张飞喝退太像火，修改下颜色和形状为声波？有点像街霸里面的波动拳」）：ChatGPT 画的一团声浪（img/fx_shout.png，白金芯、暗红墨边，不是火），
   // 从张飞身上往前冲出去、越冲越大再淡掉，后面跟一道小一点的回声；打到的人只扬尘、不着火。没有画稿时照旧用下面的地火
   if (ROAR_EFK.meta && ready(ROAR_EFK.image)) {
-    G.fx.push({ k: 'shout_efk', t: 0, dur: .8, x: W / 2, y: WALL_Y - 24, s: kR });
+    G.fx.push({ k: 'shout_efk', t: 0, dur: .8, x: W / 2, y: WALL_Y - 24, s: kR, ox: ZX, seed: VR(0, 1) });
     for (const h of (f.hits || []).slice(0, 8)) spxHeart(h[0], h[1], 9, 'dust', 'smoke', .62, { delay: .1 + (WALL_Y - h[1]) / f.R * .22, bits: .3, count: 3 });
     spxDim(.36); punch(ZX, WALL_Y - 80, .05); G.freeze = Math.max(G.freeze || 0, .06); return;
   }
@@ -4215,7 +4300,7 @@ function drawFx(f) {
   else if (f.k === 'wave') drawWaveBanner(f);
   else if (f.k === 'shout_efk') {   // 原画通过 Effekseer 做一次向前冲；光晕随主体走，不增加重复圆环或几何光板。
     const M = ROAR_EFK.meta, im = ROAR_EFK.image, u = f.t / f.dur;
-    if (M && ready(im) && u >= 0 && u < 1) {
+    if (M && ready(im) && u >= 0 && u < 1 && !(SPX.ok && SPX.shoutP)) {   // 有声浪着色器就不画这张录好的图（10-29）
       const i = Math.min(M.frames.length - 1, Math.floor(u * M.frames.length)), r = M.frames[i], c = M.centers[i];
       const h = 430 * f.s, w = h * M.width / M.height, x = f.x - w / 2, y = f.y - h;
       const fade = Math.min(1, u / .12, (1 - u) / .25), fl = .75 + .25 * Math.sin(f.t * 31);
