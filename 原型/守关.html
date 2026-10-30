@@ -24,7 +24,7 @@
 // 加载页（10-27 用户：「做一个加载页面，全部加载完才进入游戏界面」）：开头这段时间里 new 出来的图都记下来，全部好了（或坏了）才进主页；最多等 30 秒
 // 10-30 用户：「有时会自己重新刷新？」「也有突然断了链接不上」——服务器日志看是 iPhone 每分钟左右重开一次页面：所有图解码后合计约 2.1GB，Safari 内存不够把页面杀了。
 // 大图（大招录像、敌将华彩、剧情图、战场底图、各兵种和敌将图集、命中帧动画）改成用到才加载：设 src 时先记下，第一次 ready() 问到它才真去下载解码，也不算进加载页
-const REL_LIST = 'ult_|fx_boss_|story_|bg_|room|card_|enemy_|huangjin|lishi|gong|cyz|yayi|dengmao|shushi|qibing|xiliang|feixiong|xianzhen|baixing|zhangjiao|tieqi|langqi|huzhen|huaxiong|lijue|gaoshun|lvbu|panfeng|wuanguo|qishou|zhangbao|duyou|qushuai|zhangliang|xiaowei|yushe';
+const REL_LIST = 'ult_|fx_boss_|fx_sp_|story_|bg_|room|card_|enemy_|huangjin|lishi|gong|cyz|yayi|dengmao|shushi|qibing|xiliang|feixiong|xianzhen|baixing|zhangjiao|tieqi|langqi|huzhen|huaxiong|lijue|gaoshun|lvbu|panfeng|wuanguo|qishou|zhangbao|duyou|qushuai|zhangliang|xiaowei|yushe';
 const LAZY_RE = new RegExp('img/(fb/|' + REL_LIST + ')'), REL_RE = new RegExp('img/(' + REL_LIST + ')');   // 命中帧动画 fb/ 用到才加载但不释放；其余换关时放掉
 // 10-30 用户：「第五关又重启」——大招特写（ult_，每张约 60MB）原来学了就一直留着，前几关剧情学了三招就三张；改成也换关释放，开打前只叫起这关觉醒那人和敌将的，剧情学招前先叫起
 const SRC_SET = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src').set;
@@ -246,22 +246,24 @@ function soldier(g, ox, oy, f, T) {
   brush(g, quad(P(3.6, -30), P(7.4, -30.6 + sw), P(10.5, -28.4 + sw * 1.6)), 1.9 * s, OCHRE, .9, u => 1 - u * .9);
   brush(g, quad(P(3.6, -29.6), P(6.6, -28.8 - sw), P(9, -26.2 - sw)), 1.4 * s, OCHRE, .75, u => 1 - u * .9);
 }
-function bakeFoes() {
-  for (const [k, T] of Object.entries(FOES)) {
+function bakeFoe(k) {   // 程序画的兵：图集没载好时垫一下，用到哪种才画哪种、换关放掉（10-30 原来开机全画，两百多张小画布常驻）
+  { const T = FOES[k];
     SPR[k] = []; SPRHIT[k] = [];
     for (let f = 0; f < 4; f++) {
       const c = layer(T.box[0], T.box[1], g => soldier(g, T.box[0] / 2, T.box[1] - 5, f, T)); SPR[k].push(c);
       SPRHIT[k].push(layer(T.box[0], T.box[1], g => { g.drawImage(c, 0, 0, T.box[0], T.box[1]); g.globalCompositeOperation = 'source-atop'; g.fillStyle = CINNABAR; g.globalAlpha = .55; g.fillRect(0, 0, T.box[0], T.box[1]); }));
     }
   }
+}
+function bakeFoes() {
   // 10-25 用户：「消失的墨点变成血红色」——倒下时溅的点、地上留的印子都用血红
   BLOTS = []; for (let i = 0; i < 8; i++) BLOTS.push(layer(40, 40, g => { blot(g, 20, 20, 9 + br() * 4, BLOOD, .9, br, 14); for (let k = 0; k < 3; k++) { const a = br() * 6.28, d = 10 + br() * 8; blot(g, 20 + Math.cos(a) * d, 20 + Math.sin(a) * d * .7, 1.6 + br() * 2.4, BLOOD_DK, .8); } }));   // 周围的小点从 7 个减到 3 个（不要密集）
 }
 function bakeMist() { return layer(W, 90, g => { const gr = g.createLinearGradient(0, 0, 0, 90); gr.addColorStop(0, 'rgba(236,228,210,1)'); gr.addColorStop(.35, 'rgba(236,228,210,.85)'); gr.addColorStop(1, 'rgba(236,228,210,0)'); g.fillStyle = gr; g.fillRect(0, 0, W, 90); for (let i = 0; i < 14; i++) blot(g, br() * W, 30 + br() * 30, 18 + br() * 26, '#f3ecdd', .5); }); }
 // 各关地形（10-24）：谷口两侧山崖、桃林、黄巾大营、驿馆；夜战的黑幕每帧画
-let MAPL = {}, NIGHTC = null;
+let MAPL = {}, NIGHTC = null; const MAPF = {};   // 10-30 第四关重启：程序画的地形只在底图没载好时垫一下，用到才画、换关放掉（原来开机五张整屏画布常驻）
 function bakeMaps() {
-  MAPL.canyon = layer(W, H, g => {
+  MAPF.canyon = () => layer(W, H, g => {
     for (const side of [-1, 1]) for (let k = 0; k < 3; k++) {
       const pts = []; for (let y = HZ - 30; y <= WALL_Y + 10; y += 18) { const w = 40 + 18 * Math.sin(y / 47 + k) + br() * 10 + (y - HZ) * .12 - k * 14; pts.push([side < 0 ? w : W - w, y]); }
       const gr = g.createLinearGradient(side < 0 ? 0 : W, 0, side < 0 ? 90 : W - 90, 0); gr.addColorStop(0, k ? '#857a68' : '#6f6556'); gr.addColorStop(1, 'rgba(160,148,128,.2)');
@@ -271,26 +273,25 @@ function bakeMaps() {
     }
     g.globalAlpha = 1; for (let i = 0; i < 30; i++) { const sd = br() < .5, x = sd ? br() * 50 : W - br() * 50, y = HZ + br() * (WALL_Y - HZ); brush(g, [[x, y], [x + (sd ? 7 : -7), y + 9]], 1.2, INK2, .18); }
   });
-  MAPL.peach = layer(W, H, g => {
+  MAPF.peach = () => layer(W, H, g => {
     for (const side of [-1, 1]) for (let t = 0; t < 4; t++) {
       const x0 = side < 0 ? 18 + t * 6 : W - 18 - t * 6, y0 = TOP + 80 + t * 95;
       brush(g, quad([x0, y0 + 60], [x0 + side * -6, y0 + 20], [x0 + side * -2, y0 - 10]), 4, INK2, .8, u => 1 - u * .6);
       for (let k = 0; k < 14; k++) blot(g, x0 + side * -(br() * 34 - 8), y0 + br() * 40 - 20, 3 + br() * 6, br() < .7 ? '#e7a7a4' : '#f3d0cc', .75);
     }
   });
-  MAPL.camp = layer(W, H, g => {
+  MAPF.camp = () => layer(W, H, g => {
     for (let k = 0; k < 9; k++) { const x = 22 + k * 40 + br() * 10, y = HZ + 2 + br() * 8; g.fillStyle = '#8a7e6c'; g.globalAlpha = .35; g.beginPath(); g.moveTo(x - 9, y); g.lineTo(x, y - 9); g.lineTo(x + 9, y); g.closePath(); g.fill();
       brush(g, [[x + 7, y], [x + 7, y - 20]], 1, INK2, .5, () => 1, 0); brush(g, quad([x + 7, y - 20], [x + 13, y - 18], [x + 17, y - 15]), 3.5, OCHRE, .6, u => 1 - u * .5); }
     g.globalAlpha = 1;
   });
-  MAPL.yamen = layer(W, H, g => {
+  MAPF.yamen = () => layer(W, H, g => {
     for (const x of [0, W - 26]) { g.fillStyle = '#8f877a'; g.globalAlpha = .55; g.fillRect(x, TOP + 30, 26, WALL_Y - TOP - 40); g.globalAlpha = 1; for (let y = TOP + 40; y < WALL_Y - 10; y += 22) brush(g, [[x, y], [x + 26, y]], 1, INK, .35, () => 1, .4); }
     g.fillStyle = INK2; g.globalAlpha = .6; g.beginPath(); g.moveTo(HX - 70, TOP + 70); g.quadraticCurveTo(HX, TOP + 40, HX + 70, TOP + 70); g.lineTo(HX + 60, TOP + 78); g.lineTo(HX - 60, TOP + 78); g.closePath(); g.fill(); g.globalAlpha = 1;
   });
-  MAPL.grass = layer(W, H, g => { for (let i = 0; i < 160; i++) { const x = br() * W, y = TOP + 30 + br() * (WALL_Y - TOP - 40); for (let k = -1; k <= 1; k++) brush(g, quad([x + k * 2, y], [x + k * 3, y - 4], [x + k * 5 + 1, y - 8 - br() * 4]), 1.2, br() < .5 ? '#a08a52' : '#7d6b3e', .45, u => 1 - u, .2); } });
-  NIGHTC = document.createElement('canvas'); NIGHTC.width = Math.ceil(W * RS); NIGHTC.height = Math.ceil(H * RS);
+  MAPF.grass = () => layer(W, H, g => { for (let i = 0; i < 160; i++) { const x = br() * W, y = TOP + 30 + br() * (WALL_Y - TOP - 40); for (let k = -1; k <= 1; k++) brush(g, quad([x + k * 2, y], [x + k * 3, y - 4], [x + k * 5 + 1, y - 8 - br() * 4]), 1.2, br() < .5 ? '#a08a52' : '#7d6b3e', .45, u => 1 - u, .2); } });
 }
-function bakeAll() { bakeMaps(); MIST = bakeMist(); BG = bakeBg(); WALL = bakeWall(); for (const id of Object.keys(GLOOK)) GBODY[id] = bakeGeneral(id); bakeFoes(); }
+function bakeAll() { bakeMaps(); MIST = bakeMist(); WALL = bakeWall(); for (const id of Object.keys(GLOOK)) GBODY[id] = bakeGeneral(id); bakeFoes(); }
 
 // ---------- 武将和战法 ----------
 const GEN = {
@@ -1047,7 +1048,7 @@ let ML = null;
 // 换成第二层墨流（黑墨调色，和青龙斩的青金墨分开）画在敌人后面：从他身上往外、往上冒一缕缕墨烟，约一秒淡掉
 let MLB = null;
 function startLevel(i) {
-  sheetPrune(i); if (ML) ML.clear(); if (MLB) MLB.clear();
+  sheetPrune(i); if (!window.__sg.simming) { MAPL = {}; SPR = {}; SPRHIT = {}; for (const k in SPDV) delete SPDV[k]; for (const im of INKBG.keys()) if (im !== IMG.bg) INKBG.delete(im); G && (G.spW = null); }   // 上一关的垫底画布、染色副本放掉 if (ML) ML.clear(); if (MLB) MLB.clear();
   const lv = LEVELS[i], RU = lv.rules || {};
   if (!window.__sg.simming) { CUR_LV = i; const js = JSON.stringify(lv); ready(IMG['bg_' + lv.map]); if (MAP_ALIAS[lv.map]) ready(IMG['bg_' + MAP_ALIAS[lv.map]]);   // 用到才加载的图：开打前先把这关的兵种图集、底图、敌将华彩叫起来，免得头几个兵看不见
     for (const [k, T] of Object.entries(FOES)) if (js.includes('"' + k + '"')) for (const n of [T.sheet || T.alt, T.sheet && T.sheet + '_back', ...(T.sheet === 'qibing' ? [1, 2, 3, 4, 5, 6, 7].map(d => 'qibing_' + d) : [])]) if (n) { ready(IMG[n]); if (BVFX[k]) ready(BVFX[k].im); }
@@ -2184,7 +2185,7 @@ function renderScreen() {
   const pu = G.punch, pt = pu ? (G.vt || 0) - pu.t0 : 9;                                          // 镜头往打中的地方推一下
   if (pt < .35) { const k = 1 + pu.k * (pt < .06 ? pt / .06 : Math.pow(1 - (pt - .06) / .29, 2)); ctx.translate(pu.x, pu.y); ctx.scale(k, k); ctx.translate(-pu.x, -pu.y); }
   drawBg();
-  { const mk = mapKey(G.lv.map); if (MAPL[mk] && !ready(IMG['bg_' + mk])) ctx.drawImage(MAPL[mk], 0, 0, W, H); }
+  { const mk = mapKey(G.lv.map); if (!ready(IMG['bg_' + mk]) && MAPF[mk]) ctx.drawImage(MAPL[mk] || (MAPL[mk] = MAPF[mk]()), 0, 0, W, H); }
   drawScorch();
   for (const d of G.decals) { const a = .22 * clamp(1 - d.t / 14, 0, 1); if (a <= 0) continue;   /* 10-30 手机卡：血迹 30 → 14 秒淡完，满场时每帧从约 140 张降到几十张 */ ctx.globalAlpha = a; const sz = 40 * d.s; ctx.drawImage(BLOTS[d.i], d.x - sz / 2, d.y - sz * .35, sz, sz * .7); }
   ctx.globalAlpha = 1;
@@ -2194,7 +2195,7 @@ function renderScreen() {
   drawHuts();
   drawDim();
   { const k = stageDark(); if (k > 0) { ctx.fillStyle = `rgba(6,8,26,${.55 * k})`; ctx.fillRect(0, 0, W, H); } }   // 10-30 放大招时地面压暗偏冷（人物不压），光才亮得起来
-  drawGroundFx(); drawSpfx(true);
+  drawGroundFx(); spWant(); drawSpfx(true);
   if (texOK()) { for (const f of G.fx) if (f.k === 'hdl' && f.t > HDL_T0) { const S = hdlState(f), R = HDL_RX * .3 * S.open; if (S.fade > 0) { ctx.save(); ctx.translate(f.x, f.y); ctx.scale(1, HDL_SQ); const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, R); gr.addColorStop(0, `rgba(4,3,14,${.95 * S.fade})`); gr.addColorStop(.7, `rgba(10,8,30,${.85 * S.fade})`); gr.addColorStop(1, 'rgba(10,8,30,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.283); ctx.fill(); ctx.restore(); } }   // 旋涡暗核
     if (G.fx.some(f => f.k === 'hdl')) glowPass(g => { for (const f of G.fx) if (f.k === 'hdl') hdlGroundTex(g, f); }); }
   else for (const f of G.fx) if (f.k === 'hdl') drawHdlGround(f);                 // 黄天当立：预兆的星图、地面光（在旋涡下）
@@ -2459,7 +2460,7 @@ function drawFoe(e) {
       drawSheetFlash(SK, anim, fr, jx, y, sk, ro ? GOLD_HI : JADE_HI, (.22 + .1 * Math.sin(G.t * 7 + e.ph)) * Math.min(1, left / .5) * al); }
   } else {
   if (e.atk) y -= Math.abs(Math.sin(e.f * Math.PI / 2)) * 3 * ps;
-  const img = e.hitT > 0 ? SPRHIT[e.kind][f] : SPR[e.kind][f];
+  if (!SPR[e.kind]) bakeFoe(e.kind); const img = e.hitT > 0 ? SPRHIT[e.kind][f] : SPR[e.kind][f];
   ctx.globalAlpha = clamp((y - HZ) / 16, .1, 1); ctx.drawImage(img, x - w / 2, y - h + 5 * ps, w, h); ctx.globalAlpha = 1;
   }
   if (e.burnT > 0) for (let k = 0; k < 3; k++) { const fx = x + (k - 1) * 4 * ps, fl = (Math.sin(G.t * 18 + k * 2) + 1.4) * 3 * ps; brush(ctx, [[fx, y - 6 * ps], [fx + 1, y - 6 * ps - fl * 2.4]], 3.2 * ps, k === 1 ? CINNABAR : OCHRE, .75, u => 1 - u, 0, vr); }
@@ -2737,20 +2738,25 @@ function fbFrame(k, i, x, y, size, rot, alpha = 1, flip = 1, glow = 0) {
 // 10-27 用户问「和场景搭吗？要不要修改下颜色，透明度」：冷蓝实心块和黄沙暖色场景撞色、挡人——光矛换暖金色；除妖脸外都用「变亮」叠加（像光，看得见底下），妖脸只降一点透明
 const SP_LOOK = { spears: { tint: '#ffc65a', blend: 'lighter', alpha: .85 }, dome: { blend: 'lighter', alpha: .32 }, sigil_purple: { blend: 'lighter', alpha: .9 }, sigil_gold: { blend: 'lighter', alpha: .9 }, arcs: { blend: 'lighter', alpha: .9 }, face: { alpha: .88 } };
 function spTint(im, col) { const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0); g.globalCompositeOperation = 'color'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); g.globalCompositeOperation = 'destination-in'; g.drawImage(im, 0, 0); return c; }
-const SPV = {}; for (const k of ['sigil_purple', 'arcs', 'face', 'dome', 'spears', 'sigil_gold']) { const im = new Image(); im.src = 'img/fx_sp_' + k + '.webp' + BUST; fetch('img/fx_sp_' + k + '.json' + BUST).then(r => r.ok ? r.json() : null).then(j => { if (!j) return; const L = SP_LOOK[k] || {}; const set = src => { SPV[k] = { im: src, m: j.anims.play, stand: j.stand, L }; }; if (SP_SOFT[k]) { const go = () => set(spSoft(k, im, SP_SOFT[k])); im.complete && im.naturalWidth ? go() : im.addEventListener('load', go); } else if (L.tint) { const go = () => set(spTint(im, L.tint)); im.complete && im.naturalWidth ? go() : im.addEventListener('load', go); } else set(im); }).catch(() => {}); }
+const SPV = {}, SPIM = {}, SPDV = {}; for (const k of ['sigil_purple', 'arcs', 'face', 'dome', 'spears', 'sigil_gold']) { const im = SPIM[k] = new Image(); im.src = 'img/fx_sp_' + k + '.webp' + BUST; fetch('img/fx_sp_' + k + '.json' + BUST).then(r => r.ok ? r.json() : null).then(j => { if (j) SPV[k] = { m: j.anims.play, stand: j.stand, L: SP_LOOK[k] || {} }; }).catch(() => {}); }
+// 10-30 第四关重启：六套逐帧图连同染色副本原来开机就常驻约 74MB——改成这关用得到才加载（spWant 开打就叫），要染色的算好副本就把原图放掉
+function spImg(k) { if (SPDV[k]) return SPDV[k]; const im = SPIM[k], L = SP_LOOK[k] || {}; if (!ready(im)) return null; if (!SP_SOFT[k] && !L.tint) return im;
+  const c = SP_SOFT[k] ? spSoft(im, SP_SOFT[k]) : spTint(im, L.tint); if (c !== im) { SPDV[k] = c; im._lazy = im._url; im._rel = 0; im.removeAttribute('src'); WOKEN.delete(im); } return c; }
+function spWant() { if (G.sim) return; if (!G.spW) { const js = JSON.stringify(G.lv), A = G.act || {}; G.spW = [...(js.includes('"zhangjiao"') ? ['sigil_purple', 'arcs'] : []), ...(js.includes('"seal"') ? ['face'] : []), ...(G.order && G.order.includes('liu') ? ['sigil_gold'] : []), ...(A.liu === 'hujin' || /"(boss|moves|duel)"/.test(js) ? ['dome'] : [])]; }
+  for (const k of G.spW) spImg(k); if (G.st.nu > 0) spImg('spears'); }
 function spPlay(k, x, y, size, o = {}) { if (!G || G.sim || !SPV[k]) return; (G.spfx = G.spfx || []).push({ k, x, y, size, born: (G.vt || 0) + (o.delay || 0), fps: o.fps || 16, sy: o.sy || 1, fitW: o.fitW || 0, ground: !!o.ground, alpha: o.alpha ?? 1, follow: o.follow || null }); }
 // 10-29 用户：「不要用太多金色……那种色就相对柔和」：护盾罩原是金橙火，敌将每记重招都先冒一片金——整张图集算一遍：饱和留三成、往淡青白偏
-const SP_SOFT = { dome: [.3, [.86, .93, 1]] }, SPSOFT = {};
-function spSoft(k, im, [sat, tint]) {
-  if (SPSOFT[k]) return SPSOFT[k]; const c = document.createElement('canvas'); c.width = im.naturalWidth || im.width; c.height = im.naturalHeight || im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+const SP_SOFT = { dome: [.3, [.86, .93, 1]] };
+function spSoft(im, [sat, tint]) {
+  const c = document.createElement('canvas'); c.width = im.naturalWidth || im.width; c.height = im.naturalHeight || im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
   try { const d = g.getImageData(0, 0, c.width, c.height), p = d.data; for (let q = 0; q < p.length; q += 4) { const l = .3 * p[q] + .59 * p[q + 1] + .11 * p[q + 2]; for (let j = 0; j < 3; j++) p[q + j] = (l + (p[q + j] - l) * sat) * tint[j]; } g.putImageData(d, 0, 0); } catch (e) { return im; }
-  return SPSOFT[k] = c; }
+  return c; }
 function drawSpfx(ground) {
   if (!G.spfx || !G.spfx.length) return; const vt = G.vt || 0;
   G.spfx = G.spfx.filter(f => vt - f.born < SPV[f.k].m.rects.length / f.fps);
   for (const f of G.spfx) { if (f.ground !== ground) continue; const t = vt - f.born; if (t < 0) continue; const V = SPV[f.k], R = V.m.rects, i = Math.min(R.length - 1, Math.floor(t * f.fps)), [sx, sy, sw, sh] = R[i], kk = f.size / V.stand, an = V.m.anchor;
     const x = f.follow ? f.follow.x : f.x, y = f.follow ? f.follow.y + (f.y || 0) : f.y, a = f.alpha * Math.min(1, (R.length - 1 - i) / 4 + .2);
-    const L = V.L || {}, aa = a * (L.alpha ?? 1); if (!(V.im.width || V.im.naturalWidth)) continue; const IMS = SP_SOFT[f.k] ? spSoft(f.k, V.im, SP_SOFT[f.k]) : V.im;
+    const L = V.L || {}, aa = a * (L.alpha ?? 1), IMS = spImg(f.k); if (!IMS) continue;
     ctx.save(); ctx.translate(x, y); ctx.scale(f.fitW ? f.fitW / (sw * kk) : 1, f.sy); if (L.blend)   /* fitW：横向拉到这么宽（护阵的罩拉过屏幕两边，帧边的直线落在屏幕外；10-29 用户） */ ctx.globalCompositeOperation = L.blend; ctx.globalAlpha = aa; ctx.drawImage(IMS, sx, sy, sw, sh, -an[0] * kk, -an[1] * kk, sw * kk, sh * kk);
     if (!L.blend) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = aa * .25; ctx.drawImage(IMS, sx, sy, sw, sh, -an[0] * kk, -an[1] * kk, sw * kk, sh * kk); } ctx.restore(); }
 }
@@ -2776,7 +2782,7 @@ function inkBg(im) {
 }
 function drawBg() {
   const mb = G && IMG['bg_' + mapKey(G.lv.map)], bg = ready(mb) ? mb : IMG.bg;
-  if (!ready(bg)) { ctx.drawImage(BG, 0, 0, W, H); return; }
+  if (!ready(bg)) { ctx.drawImage(BG || (BG = bakeBg()), 0, 0, W, H); return; }
   ctx.drawImage(inkBg(bg), 0, 0, W, H);
   const wg = ctx.createLinearGradient(0, TOP + 10, 0, TOP + 120); wg.addColorStop(0, 'rgba(236,228,210,0)'); wg.addColorStop(1, 'rgba(236,228,210,.32)');   // 战场中间再淡一层，小兵看得清；上沿渐变，不留横缝
   ctx.fillStyle = wg; ctx.fillRect(0, TOP + 10, W, WALL_Y - TOP - 10);
@@ -2792,6 +2798,7 @@ function placeLight(x, y) { if (!(G.lightN > 0)) return; G.lightN--; G.lightArm 
 function botLight(al) { const dark = al.filter(e => !seen(e) && e.y > HZ + 30 && !FOES[e.kind].civ); if (dark.length < 6) return; placeLight(dark.reduce((a, e) => a + e.x, 0) / dark.length, Math.max(...dark.map(e => e.y)) + 20); }
 function drawNight() {
   const N = night(); if (!N) return;
+  if (!NIGHTC) { NIGHTC = document.createElement('canvas'); NIGHTC.width = Math.ceil(W * RS); NIGHTC.height = Math.ceil(H * RS); }   // 夜战才建
   const g = NIGHTC.getContext('2d'); g.setTransform(RS, 0, 0, RS, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, W, H);
   g.fillStyle = 'rgba(10,12,22,.84)'; g.fillRect(0, 0, W, WALL_Y + 20);
   g.globalCompositeOperation = 'destination-out';
