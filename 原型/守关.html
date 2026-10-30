@@ -677,7 +677,7 @@ const ITEM_TIP = {                                                              
   体力: '体力\n日常杂务每项消耗十点\n每五分钟恢复一点，上限一百二十' };
 const ITEM_C = { 精铁: '#c9cdd2', 残页: '#f0d9a0', 将印: '#e2563a', 陨铁: '#8fe8ff', 体力: '#9be0a0' };
 const WPN_IRON = [4, 4, 10, 10, 15, 15, 20, 20, 25, 25];
-const WPN_ONE = k => { const c = { 精铁: Math.ceil(WPN_IRON[k - 1] / 3) }; if (k >= 4 && k % 2 === 0) c.陨铁 = 1; return c; };   // 一人一把：精铁三分之一；陨铁还是一块（三人共三块，陨铁每次探访多给，见 doVisit）   /* 10-27 用户：「要增加武器的升级频率」——5 级拆成 10 级，每级 +8%，精铁对半拆，陨铁在 4、6、8、10 级各一块；斗将关要 2/4/6/8/10 级，到关的天数不变 */
+const WPN_ONE = k => { const c = { 精铁: Math.ceil(WPN_IRON[k - 1] / 3) }; if (k >= 4 && k % 2 === 0 && !['guan', 'zhang', 'liu'].some(h => (INV.up['wpn_' + h] || 0) >= k)) c.陨铁 = 1; return c; };   // 10-29 逐日推演：每人各要一块，三人到 +10 共 12 块，一天只产约 0.3 块，要 34–40 天才打到吕布；用户：「只改陨铁」——照「资源不变」，这一级谁先打造谁出那一块，三人合计 +4／+6／+8／+10 各一块   // 一人一把：精铁三分之一   /* 10-27 用户：「要增加武器的升级频率」——5 级拆成 10 级，每级 +8%，精铁对半拆，陨铁在 4、6、8、10 级各一块；斗将关要 2/4/6/8/10 级，到关的天数不变 */
 const WPN_MAX = 10, wpnVis = w => Math.min(5, Math.floor((w || 0) / 2));   // 画面档位：两级换一次样子（兵器图、刀气光效仍是 0–5 档）                                                // 兵器 +1…+5 各要多少精铁：天天玩的约第 1、4、7、10、14 天攒够，正好赶上第 5、15、20、25、30 关的斗将
 const UPS = {                                                                        // 能打造、开封的东西：每级要什么、做什么
   wpn_guan: { name: '青龙偃月刀', hero: 'guan', max: WPN_MAX, cost: k => WPN_ONE(k), desc: k => `关羽普攻、招式 +${8 * k}%` },   // 10-29 用户：「单独打造，但是资源不变」——每人一把单独升，每次花原来的三分之一
@@ -5737,7 +5737,7 @@ cv.addEventListener('pointerdown', ev => {
 window.__sg = {
   auto: false, turbo: 1, all: new URLSearchParams(location.search).has('all'), seed: 0,   // 网址带 ?all 就十关全开（试玩用）
   tune: TUNE, PERKS, GEN, LEVELS, WAVE, TIMEX, MER, RANK_AT, setSpd(v) { SPD.v = SPD_X = v; ACT_X = 1 / v; }, get G() { return G; }, draw: () => render(),            // draw：面板藏着时浏览器不跑动画帧，截图前手动画一帧 get screen() { return screen; },
-  start: i => startLevel(i), open: i => openLevel(i), get prep() { return PREP; }, set prep(v) { PREP = v; }, get screen() { return screen; }, get ml() { return [ML, MLB]; }, get snd() { return { SND, MP }; }, spPlay: (...a) => spPlay(...a), get feats() { return G && G.feats; }, get cnt() { return G && G.cnt; },
+  start: i => startLevel(i), up: (k, who) => doUp(k, who), open: i => openLevel(i), get prep() { return PREP; }, set prep(v) { PREP = v; }, get screen() { return screen; }, get ml() { return [ML, MLB]; }, get snd() { return { SND, MP }; }, spPlay: (...a) => spPlay(...a), get feats() { return G && G.feats; }, get cnt() { return G && G.cnt; },
   // 军师荐得对不对：机器人照真值打，每次晋升让三位军师各荐一次，数荐中真值最高那张的次数（10-25）
   advTest(levels, seeds = 2) { const out = {};
     for (const i of levels) for (let k = 0; k < seeds; k++) { this.seed = k * 101; this.auto = true; this.simming = true; startLevel(i); this.simming = false; G.sim = true; let n = 0;
