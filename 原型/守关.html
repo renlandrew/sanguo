@@ -1696,7 +1696,7 @@ function stepShot(s, dt) {
         if (!G.sim) { const title = (G.vt || 0) - (G.shuangTitle ?? -9) > 6, zi = G.order.indexOf('zhang'); if (title) G.shuangTitle = G.vt || 0;   // 连携「双剑破阵」专属画面（只管画面）
           if (title) gnd({ mode: 2, x: e.x, y: e.y - 2, rx: 110, sq: .4, dur: 1.2, open: .15, col: HCOL.liu, delay: .1 });   // 双剑破阵：两剑交叉烙地
           G.fx.push({ k: 'cShuang', t: 0, dur: title ? 1.7 : .7, x: e.x, y: ty, spl: spl.slice(0, 6), title, zx: genX(zi >= 0 ? zi : 0), lx: genX(G.order.indexOf('liu')) });
-          burst(e.x, ty, 'azure', 90, .12, 4); burst(e.x, ty, 'gold', 70, .16, 3); for (const [sx, sy] of spl.slice(0, 6)) burst(sx, sy, 'gold', 46, .3, 2);
+          hitBurst(e.x, ty, 'azure', 90, .12, 4); hitBurst(e.x, ty, 'gold', 70, .16, 3); for (const [sx, sy] of spl.slice(0, 6)) hitBurst(sx, sy, 'gold', 46, .3, 2);
           if (ML) for (let q = 0; q < 3; q++) ML.splat(e.x + VR(-8, 8), ty + 10, VR(-30, 30), VR(-200, -120), VR(7, 10), [0, VR(.7, 1), .25, 0]);   // 被劈的人身上冒张飞的火（又晕住）
           if (title) { punch(e.x, ty, .06); spxWash(e.x, ty, 'azure', .4); spxDim(.5); const sk = G.fx.filter(q => q.k === 'skname' && q.id === 'liu').pop(); if (sk) { sk.text = '双剑破阵'; sk.t = 0; } } } }
       G.fx.push({ k: 'cross', t: 0, x: e.x, y: ty, crit, rot: VR(-.3, .3), ang: s.ang }); s.done = true;
@@ -1794,7 +1794,7 @@ function taoyuan() { if (G.cnt) G.cnt.cTao++; for (let i = 0; i < NS; i++) if (G
   const sl = G.fx.filter(q => q.k === 'slash').pop(), px = clamp(sl ? sl.x : W / 2, 70, W - 70), py = clamp(sl ? sl.y : 280, 230, 380),   /* 汇合点放在战场中间，别躲到顶上令旗后面 */ X = id => genX(G.order.indexOf(id));
   gnd({ mode: 1, x: px, y: py + 20, rx: 180, sq: .36, dur: 1.6, open: .3, col: HCOL.liu, n: 6, delay: .5 });   // 桃园同心：三人合力处一大圈
   G.fx.push({ k: 'cTao', t: 0, dur: 2, px, py, xs: [[X('zhang'), '255,110,50'], [X('liu'), '120,190,255'], [X('guan'), '90,235,170']] });
-  for (const [prof, d, sz] of [['fire', .2, 110], ['azure', .23, 100], ['jade', .26, 120], ['gold', .3, 150]]) burst(px, py, prof, sz, d, 3); fbPlay('bao', px, py, 230, null, { delay: .24, glow: .7 });
+  for (const [prof, d, sz] of [['fire', .2, 110], ['azure', .23, 100], ['jade', .26, 120], ['gold', .3, 150]]) hitBurst(px, py, prof, sz, d, 3); fbPlay('bao', px, py, 230, null, { delay: .24, glow: .7 });
   spxWash(px, py, 'gold', .5); spxDim(.5); punch(px, py, .1); G.freeze = Math.max(G.freeze || 0, .14); G.shake = Math.max(G.shake || 0, .45);
   const sk = G.fx.filter(q => q.k === 'skname' && q.id === 'guan').pop(); if (sk) { sk.text = '桃园同心'; sk.t = 0; } }
 function resolveSkill(id, boost = 1) {
@@ -1826,18 +1826,19 @@ function resolveSkill(id, boost = 1) {
     if (yun.length) { const ys = yun.map(e => [e.x, e.y - 14, G.visDelay(e)]), zi = G.order.indexOf('zhang');
       gnd({ mode: 2, x: cx, y: cy + 8, rx: r * 1.2, sq: .38, dur: 1.4, open: .2, col: '#e8754a', delay: .35 });   // 晕而斩之：火刃十字烙地
       G.fx.push({ k: 'cYun', t: 0, dur: 1.8, x: cx, y: cy, hits: ys.slice(0, 8), zx: genX(zi >= 0 ? zi : 0), gx: genX(G.order.indexOf('guan')) });
-      for (const [hx, hy, d] of ys.slice(0, 6)) { burst(hx, hy, 'fire', 64, d, 3); burst(hx, hy, 'jade', 86, d + .04, 3); }
+      for (const [hx, hy, d] of ys.slice(0, 6)) { hitBurst(hx, hy, 'fire', 64, d, 3); hitBurst(hx, hy, 'jade', 86, d + .04, 3); }
       spxWash(cx, cy, 'fire', .5); punch(cx, cy, .08); G.freeze = Math.max(G.freeze || 0, .12);
       // 10-29 用户：「这个不是青龙斩吗？晕而斩之只是几个字？」——青刀扫完，张飞的火化成一道朱红火刀从另一头反扫回来，两刀交成一个叉；
       // 每个晕住的敌人脚下的地炸出一股火往上冲；头顶的竖排招名换成「晕而斩之」
-      if (ML) { ML.fx.qinglong(cx, cy + r * 1.4 * .5 - 8, r * 1.4 * 1.22, -dir, { ink: false, delay: .13, tint: ['#fff2c8', '#ffb04a', '#e0521c', '#7a1a08'] });
+      if (texOK()) G.fx.push({ k: 'firearc', t: -.13, dur: 1.05, x: cx, y: cy + r * 1.4 * .5 - 8, R: r * 1.4 * 1.22, dir: -dir });   // 10-30 用户圈着这道火刃：「这个还可以优化吗」——改成火焰纹理沿弧一路扫过去（原来墨流整块撑开再散，像死图）
+      if (ML) { if (!texOK()) ML.fx.qinglong(cx, cy + r * 1.4 * .5 - 8, r * 1.4 * 1.22, -dir, { ink: false, delay: .13, tint: ['#fff2c8', '#ffb04a', '#e0521c', '#7a1a08'] });
         for (const [hx, hy, d] of ys.slice(0, 6)) for (let q = 0; q < 4; q++) ML.splat(hx + VR(-10, 10), hy + 14, VR(-40, 40), VR(-320, -200), VR(10, 14), [0, VR(.8, 1), .3, 0]); }
-      for (const [hx, hy, d] of ys.slice(0, 6)) burst(hx, hy - 6, 'fire', 96, d + .16, 4);
+      for (const [hx, hy, d] of ys.slice(0, 6)) hitBurst(hx, hy - 6, 'fire', 96, d + .16, 4);
       const sk = G.fx.filter(q => q.k === 'skname' && q.id === 'guan').pop(); if (sk) { sk.text = '晕而斩之'; sk.t = 0; } }
     if (!G.sim && G.combos && G.combos.includes('cHeng') && G.t - (G.pojT ?? -9) < WIN_POJ && G.pojX != null) {   // 连携「横竖斩」专属画面（只管画面）
       gnd({ mode: 3, x: cx, y: cy + 8, rx: r * 1.3, sq: .3, dur: 1.4, open: .25, col: HCOL.guan, delay: .3 }); gnd({ mode: 0, x: cx, y: cy + 8, rx: r * .9, sq: .36, dur: 1.2, open: .15, col: '#e8754a', n: 8, delay: .55 });   // 横竖斩：一横刀痕、再一竖炸裂
       const zi = G.order.indexOf('zhang'); G.fx.push({ k: 'cHeng', t: 0, dur: 1.8, px: G.pojX, x: cx, y: cy, r, dir, zx: genX(zi >= 0 ? zi : 0), gx: genX(G.order.indexOf('guan')) });
-      burst(G.pojX, cy, 'fire', 110, .12, 5); burst(G.pojX, cy, 'jade', 90, .16, 4); spxWash(G.pojX, cy, 'jade', .45); spxDim(.55); punch(G.pojX, cy, .1);   /* 压暗走引擎那层（画在特效底下），不盖住真火和爆炸 */ G.freeze = Math.max(G.freeze || 0, .12); G.shake = Math.max(G.shake || 0, .45);
+      hitBurst(G.pojX, cy, 'fire', 110, .12, 5); hitBurst(G.pojX, cy, 'jade', 90, .16, 4); spxWash(G.pojX, cy, 'jade', .45); spxDim(.55); punch(G.pojX, cy, .1);   /* 压暗走引擎那层（画在特效底下），不盖住真火和爆炸 */ G.freeze = Math.max(G.freeze || 0, .12); G.shake = Math.max(G.shake || 0, .45);
       fbPlay('hit_fire', G.pojX, cy, 220, null, { delay: .1, glow: .7 }); fbPlay('bao', G.pojX, cy, 250, null, { delay: .13, glow: .7 }); fbPlay('hit_jade', G.pojX, cy, 200, null, { delay: .17, glow: .6 });   // 交点三层爆
       if (ML) ML.fx.qinglong(cx, cy + r * .7 - 6, r * 1.4 * 1.32, dir, { ink: false, delay: .07, tint: ['#fff4c8', '#ffd060', '#c88a1a', '#5a3a08'] });   // 青刀后面再追一道金刀
       if (ML) for (let q = 0; q < 6; q++) { const yy = TOP + (WALL_Y - 30 - TOP) * q / 5; ML.splat(G.pojX + VR(-6, 6), yy, VR(-20, 20), VR(-160, -90), VR(8, 11), [0, VR(.7, 1), .25, 0]); }   // 张飞那一路重新烧起来
@@ -1900,10 +1901,10 @@ function resolveHujin(boost = 1) {
     const li = G.order.indexOf('liu'), xs = G.order.map((id, i) => id ? genX(i) : null).filter(x => x != null);
     gnd({ mode: 1, x: W / 2, y: WALL_Y - 30, rx: 200, sq: .3, dur: 1.4, open: .35, col: HCOL.liu, n: 7 });   // 仁剑：城前一圈柔光
     G.fx.push({ k: 'cRen', t: 0, dur: 1.8, lx: genX(li), xs }); G.fx.push({ k: 'cRenAura', t: 0, dur: 8.2, xs });
-    for (const x of xs) { burst(x, GY - 50, 'azure', 80, .1 + Math.abs(x - genX(li)) / 600, 3); burst(x, GY - 50, 'gold', 60, .16 + Math.abs(x - genX(li)) / 600, 2); }
+    for (const x of xs) { hitBurst(x, GY - 50, 'azure', 80, .1 + Math.abs(x - genX(li)) / 600, 3); hitBurst(x, GY - 50, 'gold', 60, .16 + Math.abs(x - genX(li)) / 600, 2); }
     for (let k = 0; k < 26; k++) part('petal', genX(li) + VR(-20, 20), GY - 40, { vx: VR(-260, 260), vy: VR(-260, -90), life: VR(1.2, 1.8), s: VR(3, 4.4), g: 60, drag: 1.4 });   // 桃花从刘备那里撒开
     spxWash(genX(li), GY - 60, 'azure', .4); punch(genX(li), GY - 60, .05); spxDim(.4);
-    REN_SW.forEach((S, k) => burst(S.x, WALL_Y - 26, k % 2 ? 'gold' : 'azure', 54, .12 + Math.abs(S.x - genX(li)) / 900 + .09, 2));   // 剑插进地里那一下炸开
+    REN_SW.forEach((S, k) => hitBurst(S.x, WALL_Y - 26, k % 2 ? 'gold' : 'azure', 54, .12 + Math.abs(S.x - genX(li)) / 900 + .09, 2));   // 剑插进地里那一下炸开
     const sk = G.fx.filter(q => q.k === 'skname' && q.id === 'liu').pop(); if (sk) { sk.text = '仁剑'; sk.t = 0; } }
 }
 function stepHujin(dt) {                                                            // 每帧：城防掉了就先从护盾里补回来
@@ -2130,7 +2131,7 @@ function renderScreen() {
   if (SPX.ok) spxParts(); else drawParts();
   spxPass('top');
   drawFbs(); drawSpfx(false);
-  if (texOK()) { if (G.fx.some(f => f.k === 'hdl' || f.k === 'dragon' || f.k === 'fireline')) glowPass(g => { for (const f of G.fx) { if (f.t < 0) continue; if (f.k === 'hdl') hdlTopTex(g, f); else if (f.k === 'dragon') dragonTex(g, f); else if (f.k === 'fireline') fireTex(g, f); } }); }   // 10-30 纹理版＋泛光
+  if (texOK()) { if (G.fx.some(f => f.k === 'hdl' || f.k === 'dragon' || f.k === 'fireline' || f.k === 'firearc')) glowPass(g => { for (const f of G.fx) { if (f.t < 0) continue; if (f.k === 'hdl') hdlTopTex(g, f); else if (f.k === 'dragon') dragonTex(g, f); else if (f.k === 'fireline') fireTex(g, f); else if (f.k === 'firearc') fireArcTex(g, f); } }); }   // 10-30 纹理版＋泛光
   else for (const f of G.fx) { if (f.k === 'hdl') drawHdlTop(f); else if (f.k === 'dragon') drawDragon(f); }
   for (const f of G.fx) if (f.k === 'cutin') drawCutIn(f);   // 黄天当立：光带、光瓣、飘带
   drawShards();
@@ -2446,9 +2447,10 @@ function drawPaint2(nm, x, y, w, rot, alpha = 1, glow = .35, sy = 1) {
   if (glow) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = alpha * glow; ctx.drawImage(IMG.paint, sx0, sy0, sw, sh, -sw * k / 2, -sh * k / 2, sw * k, sh * k); } ctx.restore();
 }
 // 打中炸开（10-25 用户：「再加点打到后炸裂开的效果」）：一闪亮光、爆13 放射的光、几片碎片往外迸（少而大，不带烟）
-const BURST = { jade: ['#bff7de', '#3fae9e', '#f2c14e'], fire: ['#ffe2a8', '#e0521c', '#ffb04a'], azure: ['#e3f3ff', '#3a98e2', '#f2c14e'], gold: ['#fff4cc', '#d39a2a', '#ffffff'] };
-function burst(x, y, prof, size, delay = 0, n = 4) {
-  if (!G || G.sim) return; const born = (G.vt || 0) + delay, C = BURST[prof]; (G.shards = G.shards || []).push({ k: 'flash', x, y, size: size * .9, born, life: .14, c: C[0] });
+const BURST = { jade: ['#bff7de', '#3fae9e', '#f2c14e'], fire: ['#ffe2a8', '#e0521c', '#ffb04a'], azure: ['#e3f3ff', '#3a98e2', '#f2c14e'], gold: ['#fff4cc', '#d39a2a', '#ffffff'] , violet: ['#efe4ff', '#8a5ad8', '#c9a2ff'], sand: ['#fbf4e6', '#a8967c', '#d8ccb6'] };
+function hitBurst(x, y, prof, size, delay = 0, n = 4) {   // 10-30 改名：原来和下面粒子版的 burst 同名，被它盖掉，命中炸开从没生效过
+  if (!G || G.sim) return; const born = (G.vt || 0) + delay, C = BURST[prof] || BURST.gold; (G.shards = G.shards || []).push({ k: 'flash', x, y, size: size * .9, born, life: .14, c: C[0] });
+  G.hbLog = (G.hbLog || []).filter(v => born - v < .15); if (G.hbLog.length >= 4) return; G.hbLog.push(born);   // 10-30 限流：0.15 秒内最多 4 个完整爆点，多的只闪一下（修好后关羽刀气一扫同屏爆十几个）
   fbPlay('hit_' + prof, x, y, size, null, { delay, glow: .45 });
   for (let i = 0; i < n; i++) { const a = VR(0, 6.283), sp = VR(140, 260) * size / 50; G.shards.push({ k: 'shard', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60, rot: a, spin: VR(-14, 14), s: VR(3.5, 6) * size / 50, born, life: VR(.32, .5), c: C[1 + (i % 2)] }); }
   if (G.shards.length > 90) G.shards.splice(0, G.shards.length - 90);
@@ -2525,7 +2527,7 @@ function bossCharge(f) {
   if (ML && vr() < .5) ML.splat(e.x + VR(-26, 26), e.y - VR(0, 20), VR(-30, 30), VR(-260, -140), VR(5, 8), [0, .5 + u, .25, 0]);
 }
 const at1 = (f, key, t, fn) => { if (f.t >= t && !f.fired[key]) { f.fired[key] = 1; fn(); } };   // 到点只触发一次
-function bossBursts(f, C, n, t0, gap, y = WALL_Y - 24) { for (let i = 0; i < n; i++) at1(f, 'b' + i, t0 + i * gap, () => { const x = 30 + (W - 60) * (n > 1 ? i / (n - 1) : .5); burst(x, y + VR(-10, 10), C.prof, 74, 0, 5); fbPlay('bao', x, y - 10, 150, null, { glow: .6 }); if (ML) ML.splat(x, y, VR(-60, 60), VR(-420, -260), VR(9, 13), [0, 1.3, .6, 0]); }); }
+function bossBursts(f, C, n, t0, gap, y = WALL_Y - 24) { for (let i = 0; i < n; i++) at1(f, 'b' + i, t0 + i * gap, () => { const x = 30 + (W - 60) * (n > 1 ? i / (n - 1) : .5); hitBurst(x, y + VR(-10, 10), C.prof, 74, 0, 5); fbPlay('bao', x, y - 10, 150, null, { glow: .6 }); if (ML) ML.splat(x, y, VR(-60, 60), VR(-420, -260), VR(9, 13), [0, 1.3, .6, 0]); }); }
 function drawBossUlt(f) {
   const C = BOSS_FX[f.boss]; if (!C) return; const t = f.t, A = f.blocked ? .55 : 1, cy = WALL_Y - 70;
   const fade = t > 1.1 ? Math.max(0, (1.5 - t) / .4) : 1;
@@ -2563,7 +2565,7 @@ function drawBossUlt(f) {
     at1(f, 'gnd', .02, () => gnd({ mode: 3, x: W / 2, y: WALL_Y - 80, rx: 210, sq: .3, dur: 1.4, open: .5, col: C.col }));   // 横扫：刀痕跟着刀从左烙到右
   } else if (f.boss === 'lvbu') {                                                   // 吕布：火龙盘起，巨戟直刺，再一记横扫全场
     at1(f, 'dragon', 0, () => { if (NEW_FIRE) G.fx.push({ k: 'dragon', t: 0, dur: 1.2, bx: f.bx, by: f.by }); else if (ML) { ML.fx.fireWhip(f.bx, f.by + 10); ML.fx.fireWhip(f.bx, f.by + 10); } });   // 10-29 火龙：盘旋上升再扎向城头（原来两条墨流火丝）
-    if (NEW_FIRE) at1(f, 'dhit', .78, () => { burst(W / 2, WALL_Y - 60, C.prof, 90, 0, 6); if (ML) ML.fx.roar(W / 2, WALL_Y - 20); punch(W / 2, WALL_Y - 60, .06); });   // 龙扎到城头炸开
+    if (NEW_FIRE) at1(f, 'dhit', .78, () => { hitBurst(W / 2, WALL_Y - 60, C.prof, 90, 0, 6); if (ML) ML.fx.roar(W / 2, WALL_Y - 20); punch(W / 2, WALL_Y - 60, .06); });   // 龙扎到城头炸开
     const p = Math.min(1, t / .2); drawTint('spear', C.col, (f.bx + W / 2) / 2, (f.by + cy) / 2, 240 + 380 * p, Math.atan2(cy - f.by, W / 2 - f.bx) + Math.PI / 2, A * Math.max(0, 1 - Math.max(0, t - .4) / .3), .8);
     if (t > .35) { const q = Math.min(1, (t - .35) / .3); drawTint('blade', C.col, W / 2, cy - 20, 440, -1.3 + 2.6 * q, A * fade * (veo ? .45 : 1), .9, .8); bossGlow(W / 2, cy, 170, C.glow, .4 * A * fade); }
     bossBursts(f, C, 6, .2, .05); at1(f, 'sweep', .5, () => { if (ML) for (let k = 0; k < 2; k++) ML.fx.roar(100 + k * 160, WALL_Y - 14); });
@@ -3667,6 +3669,14 @@ function fireTex(g, f) {                                                        
     g.globalAlpha = al * Math.min(1, env * 1.3); g.drawImage(im, sx, 0, sw / W * im.width, im.height, x - 1, f.y - h, sw + 2, h + 6); }
   g.globalAlpha = 1;
 }
+function fireArcTex(g, f) {                                                     // 晕而斩之的火刃：火焰条沿上半弧从一头扫到另一头，火苗在弧上窜，扫完碎散淡掉
+  const t = f.t; if (t < 0) return; const im = IMG.tex_flame, head = Math.min(1, t / .22), fade = t < .45 ? 1 : Math.max(0, 1 - (t - .45) / .55), tail = Math.max(0, head - .75 - Math.max(0, t - .22) * 1.2);
+  if (fade <= 0 || head <= tail) return; const N = 26, pts = [];
+  for (let i = 0; i <= N; i++) { const u = tail + (head - tail) * i / N, a = f.dir > 0 ? Math.PI + u * Math.PI : 2 * Math.PI - u * Math.PI; pts.push([f.x + Math.cos(a) * f.R, f.y + Math.sin(a) * f.R * .82]); }
+  if (f.dir < 0) pts.reverse();
+  const fl = .85 + .15 * Math.sin(t * 40); drawStrip(g, im, pts, u => (30 + 52 * Math.sin(Math.PI * u)) * fl * (1 + .25 * (1 - fade)), fade);   // 头尾细、中段粗，散的时候略胀
+  const hp = f.dir < 0 ? pts[0] : pts[pts.length - 1]; if (head < 1) starTex(g, hp[0], hp[1], 46, 2, 1);   // 刀头一点亮星
+}
 function dragonTex(g, f) {                                                      // 吕布火龙：龙身纹理沿扭动的路径弯折，龙头在前头转向
   const t = f.t, head = Math.min(1, t / .78) ** .85, fade = t < .78 ? 1 : Math.max(0, 1 - (t - .78) / .35); if (fade <= 0) return;
   const N = 30, pts = []; for (let i = 0; i < N; i++) { const sv = head - i * .022; if (sv < 0) break; pts.push(dragonAt(f, sv)); } if (pts.length < 3) return;
@@ -3945,7 +3955,7 @@ function spxWave(s) {
 const inkSplash = (x, y, size, delay = 0) => spxBurst(x, y, size, 'splash' + Math.floor(VR(0, 4)), '#1d1a17', .5, { delay, opac: 1, core: 0 });
 function spxWaveHit(x, y, ang) {
   const d = [Math.cos(ang), Math.sin(ang)], a = ang + Math.PI / 2 + VR(-.4, .4), q = [Math.cos(a), Math.sin(a)], L = 15;
-  if (hasFb('hit_jade')) { const T = WT(); burst(x, y, 'jade', 44 * (1 + .1 * T) * RKX(), .06, 3); rankFlare(x, y, .06); if (T >= 4) burst(x, y, 'gold', 26 + 6 * (T - 4), .1, 2); return; }   // 横斩过去再炸开；四级起再炸一朵金的
+  if (hasFb('hit_jade')) { const T = WT(); hitBurst(x, y, 'jade', 44 * (1 + .1 * T) * RKX(), .06, 3); rankFlare(x, y, .06); if (T >= 4) hitBurst(x, y, 'gold', 26 + 6 * (T - 4), .1, 2); return; }   // 横斩过去再炸开；四级起再炸一朵金的
   spxHeart(x, y, 10, 'jade', 'crystal', .62, { bits: .35, count: 5 });
   if (hasPaint('blade')) { spxPaintBody('blade', x, y, 52, ang + Math.PI / 2 + VR(-.5, .5), .3, { offset: [-d[0] * 18, -d[1] * 18], drift: [d[0] * 80, d[1] * 80], pop: .5, boost: .35 }); inkSplash(x, y, 30); return; }
   spxBody(spxPath(18, t => [x + q[0] * L * (t - .5) * 2, y + q[1] * L * (t - .5) * 2], t => 3 * Math.pow(swell(t, 1), 1.2)), 'jade', 'crystal', { style: 'light', rigid: true, revealEase: 1, coreAmt: 1.5, drift: [d[0] * 60, d[1] * 60], tile: 1 });
@@ -3962,7 +3972,7 @@ function spxSlash(f) {
   if (fb) {}
   else if (hasPaint('blade')) { const apex = W2(0, cy0 - r * .8); spxPaintBody('blade', apex[0], apex[1], r * 2.4, f.rot, .62, { pop: .5, boost: .25 }); }
   else spxBody(spxPath(56, t => arcPt(a0 + span * t, r), t => r * .3 * swell(t, .45)), 'jade', 'crystal', { style: 'heavy', pivot: centre, revealEase: 1, revealScale: 1.6, coreAmt: 1.1, tile: 3.2 });
-  if (ML) { for (const h of (f.hits || []).slice(0, 10)) burst(h[0], h[1], 'jade', 58, (h[2] || 0) + .02, 5);                            // 刀扫到谁，谁身上炸开
+  if (ML) { for (const h of (f.hits || []).slice(0, 10)) hitBurst(h[0], h[1], 'jade', 58, (h[2] || 0) + .02, 5);                            // 刀扫到谁，谁身上炸开
     spxDim(.3); punch(f.x, f.y, .06); return; }                                   // 墨流层：只留墨浪、压暗、推镜头（不再叠光带龙身、墨点、星爆）
   const ph = VR(0, 6);
   const body = t => arcPt(a0 + span * t, r * (1.08 + .1 * Math.sin(t * 9.4 + ph)));
@@ -3984,7 +3994,7 @@ function spxSlash(f) {
 // 张飞「矛气」：三道直刺的尖光，从城头扎向敌人、穿过去再往前飞一点；火材质，红黑，芯里一笔墨
 function spxStab(x0, y0, x, y) {
   const dx = x - x0, dy = y - y0, L = Math.hypot(dx, dy) || 1, d = [dx / L, dy / L], q = [-d[1], d[0]];
-  if (hasPaint2('spear')) { const T = WT(); burst(x, y, 'fire', 42 * (1 + .1 * T) * RKX(), SPEAR_T.pull + SPEAR_T.thrust, 3); rankFlare(x, y, SPEAR_T.pull + SPEAR_T.thrust); if (T >= 4) burst(x, y, 'gold', 26 + 6 * (T - 4), SPEAR_T.pull + SPEAR_T.thrust + .04, 2); return; }   // 扎到那一刻炸开                                              // 火矛在 drawSpear 里每帧画，这里只管打中炸开   // 帧动画：枪2 一道突刺光柱扎到敌人，剑26 小火爆
+  if (hasPaint2('spear')) { const T = WT(); hitBurst(x, y, 'fire', 42 * (1 + .1 * T) * RKX(), SPEAR_T.pull + SPEAR_T.thrust, 3); rankFlare(x, y, SPEAR_T.pull + SPEAR_T.thrust); if (T >= 4) hitBurst(x, y, 'gold', 26 + 6 * (T - 4), SPEAR_T.pull + SPEAR_T.thrust + .04, 2); return; }   // 扎到那一刻炸开                                              // 火矛在 drawSpear 里每帧画，这里只管打中炸开   // 帧动画：枪2 一道突刺光柱扎到敌人，剑26 小火爆
   if (hasPaint('spear')) {                                                                // 画稿：两道矛气，尖对着敌人扎过去，再往前冲一点
     for (let k = 0; k < 2; k++) { const ang = Math.atan2(d[1], d[0]) + (k ? VR(.06, .1) * (vr() < .5 ? 1 : -1) : 0), dd = [Math.cos(ang), Math.sin(ang)], len = Math.min(L * .7, 78) * (k ? .72 : 1), tip = [x + dd[0] * 10, y + dd[1] * 10];
       spxPaintBody('spear', tip[0] - dd[0] * len / 2, tip[1] - dd[1] * len / 2, len, ang + Math.PI / 2, .24, { offset: [-dd[0] * 30, -dd[1] * 30], drift: [dd[0] * 40, dd[1] * 40], pop: .85, delay: k * .05 }); }
@@ -4049,7 +4059,7 @@ function spxQi(s) {
 }
 function spxQiHit(x, y, ang, side) {
   const d = [Math.cos(ang), Math.sin(ang)], q = [-d[1], d[0]];
-  if (hasFb('hit_azure')) { burst(x, y, side ? 'gold' : 'azure', 42 * RKX(), 0, 3); rankFlare(x, y); return; }                                // 打中炸开
+  if (hasFb('hit_azure')) { hitBurst(x, y, side ? 'gold' : 'azure', 42 * RKX(), 0, 3); rankFlare(x, y); return; }                                // 打中炸开
   spxHeart(x, y, 9, side ? 'gold' : 'azure', 'silk', .62, { bits: .3, count: 5 });
   if (hasPaint('sword')) { [0, 1].forEach(k => { const tl = (k ? 1 : -1) * VR(.25, .45), dd = [d[0] * Math.cos(tl) - d[1] * Math.sin(tl), d[0] * Math.sin(tl) + d[1] * Math.cos(tl)]; spxPaintBody('sword', x, y, 46, ang + tl + Math.PI / 2, .32, { offset: [-dd[0] * 24, -dd[1] * 24], drift: [dd[0] * 70, dd[1] * 70], delay: k * .05, pop: .55 }); }); return; }
   [0, 1].forEach(k => {                                                                       // 雾港剑气：浅弧、刚性、从后面掠过目标往前飞
@@ -4071,7 +4081,7 @@ function spxCross(f) {
   if (hasPaint('sword')) {                                                                       // 10-25 用户指着剑16 的金色扇形光：「这个太丑了」——换成两道 GPT 剑气交叉斩下，再炸开
     [-1, 1].forEach((k, j) => { const a = k * .78 + rot, tx = Math.sin(a), ty = -Math.cos(a);
       spxPaintBody('sword', f.x, f.y, 74 * sc, a, .36, { pop: .55, delay: j * .05, boost: .45, offset: [-tx * 34, -ty * 34], drift: [tx * 70, ty * 70] }); });
-    burst(f.x, f.y, f.crit ? 'gold' : 'azure', 50 * sc, .07, f.crit ? 6 : 4);
+    hitBurst(f.x, f.y, f.crit ? 'gold' : 'azure', 50 * sc, .07, f.crit ? 6 : 4);
     if (f.crit) { spxDim(.22); spxWash(f.x, f.y, 'gold', .2); punch(f.x, f.y, .03); G.freeze = Math.max(G.freeze || 0, .04); } return; }
   spxHeart(f.x, f.y, 15 * sc, f.crit ? 'gold' : 'azure', 'silk', f.crit ? 1.2 : 1, { delay: .05, bits: .5, count: f.crit ? 16 : 10 }); spxRing(f.x, f.y, 26 * sc, f.crit ? 'gold' : 'azure', { delay: .05, w: 2.4 });
   if (f.crit) { spxDim(.22); spxWash(f.x, f.y, 'gold', .2); }
@@ -4108,7 +4118,7 @@ const SPEAR_T = { pull: .06, thrust: .07, hold: .06, back: .15 };               
 // 官阶越高普攻越大越亮（10-29 用户：「当军阶升级后，他们的普攻全部要加大范围，增加一些光」）：只管画面，判定不变。
 // 每升一阶画稿、拖尾、炸开都大 8%（校尉 ×1.48），光多一层；义军队正起命中多一团金光，讨贼副尉起再多两片金屑
 const RKX = () => 1 + .08 * rankNow(), RKG = () => .06 * rankNow();
-function rankFlare(x, y, d = 0) { const r = rankNow(); if (r >= 2) burst(x, y, 'gold', 18 + 7 * r, d + .05, r >= 4 ? 2 : 0); }
+function rankFlare(x, y, d = 0) { const r = rankNow(); if (r >= 2) hitBurst(x, y, 'gold', 18 + 7 * r, d + .05, r >= 4 ? 2 : 0); }
 function drawSpearLive(x, y, len, rot, alpha, stretch, t, glow) { drawPaintLive('spear', x, y, len, rot, alpha, stretch, t, glow, .22); }
 // 画稿活起来：切成 24 条横条，每条按一个往尾巴（画的下方）走的波浪一张一缩，中线不动；再叠一层「变亮」的光（刀风、剑气、火矛共用）
 function drawPaintLive(nm, x, y, len, rot, alpha, stretch, t, glow, amp = .22, speed = 32) {
