@@ -2310,10 +2310,11 @@ function drawFoe(e) {
 const PROPS = {}; IMG.props = new Image(); IMG.props.src = 'img/props.png' + BUST; fetch('img/props.json' + BUST).then(r => r.json()).then(j => Object.assign(PROPS, j)).catch(() => {});
 // Blender 车驾步行循环：马腿与车轮同一段序列，缺图时沿用原静态车驾。
 const CART_WALK = Array.from({ length: 8 }, (_, i) => { const im = new Image(); im.src = 'img/cart_blender_frames/' + String(i).padStart(2, '0') + '.png' + BUST; return im; });
-// Blender 冲车（10-29 Codex 做，第 26 关）：推着走 8 帧、到关门前撞门 8 帧、被毁 1 张；车尾朝镜头、往远处推
-const RAM = { push: [], hit: [], dead: new Image() };
-for (let i = 0; i < 8; i++) for (const k of ['push', 'hit']) { const im = new Image(); im.src = 'img/ram_blender_frames/' + k + '_' + String(i).padStart(2, '0') + '.png' + BUST; RAM[k].push(im); }
-RAM.dead.src = 'img/ram_blender_frames/destroyed.png' + BUST;
+// 冲车（第 26 关）：10-29 用户嫌 Blender 版「太三D模型了」，换成 ChatGPT 画的 2D 冲车（Codex 用网格形变做成 8 帧推车）+ 一张被毁；车尾朝镜头、往远处推。
+// 撞门没有单独的帧：快到关门那段，整辆车隔一会儿往前一冲再退回（代码做）
+const RAM = { push: [], dead: new Image() };
+for (let i = 0; i < 8; i++) { const im = new Image(); im.src = 'img/ram_2d/walk_' + String(i).padStart(2, '0') + '.png' + BUST; RAM.push.push(im); }
+RAM.dead.src = 'img/ram_2d/broken.png' + BUST;
 const hasProp = k => !!(PROPS[k] && ready(IMG.props));
 // 锚点在底边中点；w 是画多宽
 function drawProp(k, x, y, w, alpha = 1, rot = 0) {
@@ -2606,11 +2607,14 @@ function drawCart() {
   const C = G.cart; if (!C) return;
   const x = C.x, y = C.y;
   if (C.kind === 'ram' && RAM.push.every(ready)) {                               // Blender 冲车：越往远处越小；快到关门那一段换撞门动作，被毁换残骸
-    const R0 = G.RU.cart, near = Math.abs(y - R0.y1) < 26, dead = C.hp <= 0, ps = persp(y) / .6, S = 132 * ps;
-    const im = dead ? RAM.dead : (near ? RAM.hit : RAM.push)[Math.floor((near ? G.t * 7 : (C.walk || 0) * 1.2)) % 8];
-    ctx.fillStyle = 'rgba(29,26,23,.22)'; ctx.beginPath(); ctx.ellipse(x, y + 2, 34 * ps, 7 * ps, 0, 0, 6.283); ctx.fill();
-    if (ready(im)) ctx.drawImage(im, x - S / 2, y + 4 - S * 347 / 384, S, S);                        // 帧里车轮落地在第 347 行
-    if (!dead) bar(x - 22 * ps, y - S * .66, 44 * ps, 4, C.hp / C.max, CINNABAR); return;
+    const R0 = G.RU.cart, near = Math.abs(y - R0.y1) < 26, dead = C.hp <= 0, ps = persp(y) / .6, S = 96 * ps;
+    const im = dead ? RAM.dead : RAM.push[Math.floor((C.walk || 0) * 1.2) % 8];
+    const ph = near && !dead ? (G.t % .9) / .9 : 1, lunge = ph < .18 ? Math.sin(ph / .18 * Math.PI / 2) : ph < .5 ? 1 - (ph - .18) / .32 : 0;   // 撞门：猛冲 0.16 秒、慢慢退回
+    const yy = y - lunge * 7 * ps;
+    ctx.fillStyle = 'rgba(29,26,23,.22)'; ctx.beginPath(); ctx.ellipse(x, y + 2, 38 * ps, 8 * ps, 0, 0, 6.283); ctx.fill();
+    if (ready(im)) ctx.drawImage(im, x - S / 2, yy + 4 - S * (dead ? 334 : 367) / 384, S, S);       // 帧里脚底（被毁那张是车轮）落在第 367／334 行
+    if (near && !dead && ph < .05 && !G.sim) fbPlay('hit_gold', x, yy - S * .7, 60 * ps, null, { glow: .5 });   // 撞到门那一下火星
+    if (!dead) bar(x - 24 * ps, yy - S * .98, 48 * ps, 4, C.hp / C.max, CINNABAR); return;   // 血条在车顶上方
   }
   if (C.kind === 'ram') {                                                        // 冲车：一个带顶棚的木架子，里面吊一根撞木，往关门推（Blender 帧没到时的备用）
     ctx.fillStyle = 'rgba(29,26,23,.18)'; ctx.beginPath(); ctx.ellipse(x, y + 4, 30, 6, 0, 0, 6.283); ctx.fill();
