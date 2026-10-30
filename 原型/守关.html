@@ -696,14 +696,66 @@ function buildQueue(lv) {
 // ---------- 存档（只记每关最好星数） ----------
 // 网址带 ?save=名字 时存进另一套档（测试用，不碰玩家真存档 sgz.proto.*）
 const SAVE_NS = new URLSearchParams(location.search).get('save') || (() => { try { return localStorage.getItem('sgz.slot') || 'proto'; } catch (e) { return 'proto'; } })();   // 测试期两格存档（系统页左右拨动切换）：proto / proto2
+// ===== 云存档（10-30 用户：「不是接了ec2吗，你做一个数据库啊，如同劫云」）=====
+// 照劫云：不注册，第一次打开服务器发一个凭证（存在 sgz.cloud）和 9 位存档码；改了等 5 秒合并上传，切后台、关页面立刻补传；断网照玩、联网补传；
+// 换手机在「系统」里输存档码接着玩。服务器（三国志/server/sanguo_save.py，EC2 上 /sanguo/api/）多两件事：
+// 回服务器时间（「第几天」、体力按它算，改手机时间没用）；按建档天数查数值是否合理，改出来的存档拒收（409），这边就换回云上那份。
+// 只同步正式存档（网址带 ?save= 的测试档、?all 试玩都不上云）；没有服务的地方（本机调试）照常玩
+const CLOUD_ON = ['proto', 'proto2'].includes(SAVE_NS) && !/[?&](save|all)\b/.test(location.search) && /^https?:$/.test(location.protocol);
+const CLOUD_API = location.pathname.replace(/[^/]*$/, '') + 'api', CLOUD_KEYS = ['proto', 'proto2'].flatMap(ns => ['stars', 'roster', 'inv', 'daily'].map(k => `sgz.${ns}.${k}`));
+const CLOUD = { off: 0, st: 'off', msg: '', timer: 0, me: null };
+const nowMs = () => Date.now() + CLOUD.off;                                     // 游戏里的「现在」：联上服务器后按服务器时间
+try { CLOUD.me = JSON.parse(localStorage.getItem('sgz.cloud') || 'null'); } catch (e) {}
+const cloudSaveMe = () => { try { localStorage.setItem('sgz.cloud', JSON.stringify(CLOUD.me)); } catch (e) {} };
+const cloudData = () => { const d = {}; for (const k of CLOUD_KEYS) { const v = localStorage.getItem(k); if (v != null) d[k] = v; } return d; };
+async function cloudCall(method, path, body, token) {
+  const h = { 'Content-Type': 'application/json' }; if (token) h.Authorization = 'Bearer ' + token;
+  const r = await fetch(CLOUD_API + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' });
+  const j = await r.json().catch(() => ({})); if (j.now) CLOUD.off = j.now - Date.now(); return [r.status, j];
+}
+function cloudApply(data, rev) {                                                 // 用云上那份覆盖本机，再重新进游戏
+  for (const k of CLOUD_KEYS) { if (data[k] != null) localStorage.setItem(k, data[k]); else localStorage.removeItem(k); }
+  CLOUD.me.rev = rev; CLOUD.me.dirty = false; cloudSaveMe(); location.reload();
+}
+function cloudMark() { if (!CLOUD_ON || !CLOUD.me) return; if (!CLOUD.me.dirty) { CLOUD.me.dirty = true; cloudSaveMe(); } clearTimeout(CLOUD.timer); CLOUD.timer = setTimeout(cloudPush, 5000); }
+async function cloudPush() {
+  if (!CLOUD_ON || !CLOUD.me || !CLOUD.me.dirty) return;
+  try { const [st, j] = await cloudCall('PUT', '/save', { data: cloudData(), at: Date.now() }, CLOUD.me.token);
+    if (st === 200) { CLOUD.me.rev = j.rev; CLOUD.me.dirty = false; cloudSaveMe(); CLOUD.st = 'ok'; }
+    else if (st === 409) { CLOUD.st = 'reject'; const [s2, g] = await cloudCall('GET', '/save', null, CLOUD.me.token); if (s2 === 200) { alert((j.error || '存档不合理') + '\n已换回云上的存档。'); cloudApply(g.data || {}, g.rev); } }
+    else CLOUD.st = 'err'; } catch (e) { CLOUD.st = 'offline'; }
+}
+async function cloudStart() {
+  if (!CLOUD_ON) return;
+  try {
+    if (!CLOUD.me || !CLOUD.me.token) { const [st, j] = await cloudCall('POST', '/hello', {}); if (st !== 200) { CLOUD.st = 'err'; return; }
+      CLOUD.me = { token: j.token, code: j.code, rev: 0, dirty: true }; cloudSaveMe(); CLOUD.st = 'ok'; cloudPush(); return; }   // 第一次：把本机进度传上去（服务器当迁移）
+    const [st, g] = await cloudCall('GET', '/save', null, CLOUD.me.token);
+    if (st === 401) { CLOUD.me = null; cloudSaveMe(); return cloudStart(); }   // 凭证作废（比如换了码）：重新领一个
+    if (st !== 200) { CLOUD.st = 'err'; return; }
+    CLOUD.st = 'ok'; CLOUD.day = g.day;
+    if (g.rev > (CLOUD.me.rev || 0) && !CLOUD.me.dirty && Object.keys(g.data || {}).length) return cloudApply(g.data, g.rev);   // 别的设备存过更新的
+    if (CLOUD.me.dirty) cloudPush();
+  } catch (e) { CLOUD.st = 'offline'; }
+}
+async function cloudClaim() {                                                     // 换手机：输存档码接着玩
+  const code = prompt('输入存档码（9 位，例如 ABC-DEF-GHJ）'); if (!code) return;
+  try { const [st, j] = await cloudCall('POST', '/claim', { code });
+    if (st !== 200) { alert(j.error || '没有这个存档码'); return; }
+    CLOUD.me = { token: j.token, code: j.code, rev: j.rev, dirty: false }; cloudSaveMe(); cloudApply(j.data || {}, j.rev);
+  } catch (e) { alert('连不上服务器，稍后再试'); }
+}
+async function cloudRotate() { try { const [st, j] = await cloudCall('POST', '/rotate', {}, CLOUD.me.token); if (st === 200) { CLOUD.me.code = j.code; cloudSaveMe(); } } catch (e) {} }
+if (CLOUD_ON) { addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && CLOUD.me && CLOUD.me.dirty && navigator.sendBeacon) navigator.sendBeacon(CLOUD_API + '/save', new Blob([JSON.stringify({ token: CLOUD.me.token, data: cloudData(), at: Date.now() })], { type: 'application/json' })); });
+  setTimeout(cloudStart, 300); }
 const SKEY = `sgz.${SAVE_NS}.stars`;
 let BEST = {}; try { BEST = JSON.parse(localStorage.getItem(SKEY) || '{}'); } catch (e) {}
-const saveBest = () => { try { localStorage.setItem(SKEY, JSON.stringify(BEST)); } catch (e) {} };
+const saveBest = () => { try { localStorage.setItem(SKEY, JSON.stringify(BEST)); } catch (e) {} cloudMark(); };
 // 武将等级存档（10-25）：{ guan: { lv, exp }, ... }；机器人试跑（G.sim）不读也不写
 const RKEY = `sgz.${SAVE_NS}.roster`;
 let ROSTER = { guan: { lv: 1, exp: 0 }, zhang: { lv: 1, exp: 0 }, liu: { lv: 1, exp: 0 } };
 try { ROSTER = { ...ROSTER, ...JSON.parse(localStorage.getItem(RKEY) || '{}') }; } catch (e) {}
-const saveRoster = () => { try { localStorage.setItem(RKEY, JSON.stringify(ROSTER)); } catch (e) {} };
+const saveRoster = () => { try { localStorage.setItem(RKEY, JSON.stringify(ROSTER)); } catch (e) {} cloudMark(); };
 // 推荐等级：每关首通两星、一关不重打，打到第 i 关时三人各几级（平衡按这个调；多打、重打的人会更强）
 const EXPECT = (() => { const r = { guan: { lv: 1, exp: 0 }, zhang: { lv: 1, exp: 0 }, liu: { lv: 1, exp: 0 } }, out = [];
   for (const lv of LEVELS) { out.push({ guan: r.guan.lv, zhang: r.zhang.lv, liu: r.liu.lv }); for (const id of fighters(lv)) addExp(r[id], expGain(lv, true, 2, true)); }
@@ -757,7 +809,7 @@ if (INV.up.wpn && !INV.wpn10) INV.up.wpn = Math.min(10, INV.up.wpn * 2); INV.wpn
 if (!INV.wpnSplit) { for (const h of ['guan', 'zhang', 'liu']) INV.up['wpn_' + h] = Math.max(INV.up['wpn_' + h] || 0, INV.up.wpn || 0); INV.wpnSplit = true; }   // 10-29 三人分开打造：旧档三人都按原来的等级
 if (INV.it.神兵 != null) { INV.it.陨铁 = (INV.it.陨铁 || 0) + INV.it.神兵; delete INV.it.神兵; }        // 旧档：神兵材料 → 陨铁
 for (const k of Object.keys(INV.it)) if (!(k in ITEMS)) delete INV.it[k];           // 砍掉的物品（甲片、马鬃、温酒、符水）从旧存档里清掉
-const saveInv = () => { try { localStorage.setItem(IKEY, JSON.stringify(INV)); } catch (e) {} };
+const saveInv = () => { try { localStorage.setItem(IKEY, JSON.stringify(INV)); } catch (e) {} cloudMark(); };
 // 官阶（10-29 方案 设计/成长方案_Claude_20261029.md 第 1 节）：打节点关之前要晋阶；晋阶要资历（20、20、36、48、52、56 点，日常军令、探访、杂务各 +1），全队共享
 const RANKS = [
   { name: '乡勇', node: 0, gets: ['三人各一招'] },
@@ -822,9 +874,9 @@ function applyLineup(order, lv) {
 let DAILY = { day: null, tasks: [], taskN: 0, caps: { 精铁: 0 }, week: null, weekN: 0, weekSeal: false, visits: 0, visitN: 0, chores: false };
 try { DAILY = { ...DAILY, ...JSON.parse(localStorage.getItem(DKEY) || '{}') }; } catch (e) {}
 if (!DAILY.visitN && !DAILY.visits) DAILY.visitN = 2;                               // 加探访以前存的档
-const saveDaily = () => { try { localStorage.setItem(DKEY, JSON.stringify(DAILY)); } catch (e) {} };
+const saveDaily = () => { try { localStorage.setItem(DKEY, JSON.stringify(DAILY)); } catch (e) {} cloudMark(); };
 const DROP_CAP = 2, TASK_PAY = 2, WEEK_N = 10;
-const dayStr = off => { const d = new Date(Date.now() + ((window.__sg && window.__sg.dayOff) || 0) * 864e5 + (off || 0) * 864e5); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const dayStr = off => { const d = new Date(nowMs() + ((window.__sg && window.__sg.dayOff) || 0) * 864e5 + (off || 0) * 864e5); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const dayNum = s => Math.round(Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 864e5);
 const weekKey = s => { const n = dayNum(s); return n - ((n + 3) % 7); };                // 这一周的星期一（1970-01-01 是星期四）
 // 军务题库：挑你打过的关，加一个打法条件；条件只用你手里有的
@@ -881,7 +933,7 @@ const CHORES = ['操练兵马', '巡视城防', '犒赏三军', '整理军械', 
 const CHORE_PAY = [['精铁', 1], ['精铁', 1], ['残页', 1], ['精铁', 1], ['残页', 1], ['机缘', 6], ['残页', 1]], CHORE_STA = 10;
 // 体力：上限 120，每 5 分钟回 1 点（一天回满还有富余）；现在只有杂务花体力
 const STA_MAX = 120, STA_MS = 5 * 60 * 1000;
-function staNow() { const now = Date.now(), S0 = INV.sta || (INV.sta = { v: STA_MAX, t: now }); if (S0.v >= STA_MAX) { S0.t = now; return STA_MAX; }
+function staNow() { const now = nowMs(), S0 = INV.sta || (INV.sta = { v: STA_MAX, t: now }); if (S0.v >= STA_MAX) { S0.t = now; return STA_MAX; }
   const n = Math.floor((now - S0.t) / STA_MS); if (n > 0) { S0.v = Math.min(STA_MAX, S0.v + n); S0.t += n * STA_MS; } return S0.v; }
 const bestPol = () => ['guan', 'zhang', 'liu'].map(id => [id, Math.floor(statOf(id, ROSTER[id].lv)[3])]).sort((a, b) => b[1] - a[1])[0];
 // 出外探访派谁（10-26 用户：「这里可以选武将，政治越高，机缘增长越快，魅力越高，运气越好，武力越高……但不要告诉用户，只是推荐魅力/政治」）：
@@ -4906,7 +4958,12 @@ function drawSystem() {
     pill(30, y4 + 50, 140, 28, SYS.reset ? '再点一次确认' : '重置当前存档', () => { if (!SYS.reset) { SYS.reset = uiNow(); return; } Object.keys(localStorage).filter(k => k.startsWith(`sgz.${SAVE_NS}.`)).forEach(k => localStorage.removeItem(k)); location.reload(); }, !!SYS.reset);
     if (SYS.reset && uiNow() - SYS.reset > 3) SYS.reset = 0;
     uiText(url ? '网址指定了存档，不能切换' : '两格各自独立，切换不会丢', W - 34, y4 + 64, 10, 'rgba(244,230,196,.55)', 'right', PLAIN, { stroke: false }); }
-  plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; }, false);
+  { const y5 = 74 + 4 * 92 + 10; plate(16, y5, W - 32, 92); uiText('云存档', 34, y5 + 24, 18, UIC.gold2, 'left', FONT, { stroke: false });   // 10-30 云存档：存档码、换手机认领
+    if (!CLOUD_ON) uiText(/[?&](save|all)\b/.test(location.search) ? '测试网址不上云' : '本机调试不上云', 34, y5 + 56, 12, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false });
+    else { const me = CLOUD.me; uiText(me && me.code ? '存档码  ' + me.code : (CLOUD.st === 'offline' ? '连不上服务器，联网后自动同步' : '正在连接…'), W - 34, y5 + 24, 14, UIC.cream, 'right', PLAIN, { stroke: false });
+      uiText(CLOUD.st === 'reject' ? '存档数值不合理，已换回云上的' : me && me.dirty ? '有改动，稍后自动上传' : CLOUD.st === 'ok' ? '已同步' : '', 34, y5 + 46, 11, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false });
+      pill(30, y5 + 58, 112, 26, '输入存档码', cloudClaim, false); if (me && me.code) { pill(150, y5 + 58, 70, 26, '复制', () => { try { navigator.clipboard.writeText(me.code); } catch (e) {} }, false); pill(228, y5 + 58, 98, 26, '换一个码', cloudRotate, false); } } }
+  plaque(112, 606, 136, 32, '返回', () => { screen = 'menu'; }, false);
 }
 const SYS = { reset: 0 };
 // ---------- 月卡（10-25 夜用户：「月卡等」）：照 5.0b「不卖强度，只卖省时间和外观」——每天的日常杂务自动做完、漏掉的点卯补领七天（平时两天）、主页资料卡和头像换金边 ----------

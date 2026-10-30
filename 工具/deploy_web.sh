@@ -1,7 +1,7 @@
 #!/bin/zsh
 # 三国志守关原型上网（10-26 用户：「做到jieyunqiudao.com/sanguo」）：把 原型/ 同步到 EC2 BridgeEDU 的 /var/www/sanguo/，链接 https://jieyunqiudao.com/sanguo/。
 # 单独一个目录：劫云的 修仙/网页/deploy.sh 对 /var/www/jieyun/ 带 --delete，放进去会被它删掉。nginx 在 jieyunqiudao.com 那个 server 里加了 location /sanguo/（alias），同机法语站、pixta 不动。
-# 存档在玩家浏览器 localStorage（sgz.proto.*），和劫云的 jywd-web: 不冲突；没有云存档。
+# 存档在玩家浏览器 localStorage（sgz.proto.*），和劫云的 jywd-web: 不冲突；10-30 起另有云存档（server/deploy_save.sh，接口 /sanguo/api/）。
 # 用法：zsh 三国志/工具/deploy_web.sh
 set -e
 cd "${0:A:h}/../原型"
