@@ -22,7 +22,16 @@
 (() => {
 // 10-28 用户：加载完进主页底栏图标还没出来——浏览器拿到图后还要解码，第一次画会空着；所以等每张图 decode() 完才算好
 // 加载页（10-27 用户：「做一个加载页面，全部加载完才进入游戏界面」）：开头这段时间里 new 出来的图都记下来，全部好了（或坏了）才进主页；最多等 30 秒
-const LOADQ = [], _Img = window.Image; window.Image = function (...a) { const im = new _Img(...a); if (!LOADED) { LOADQ.push(im); im.addEventListener('load', () => (im.decode ? im.decode() : Promise.resolve()).catch(() => {}).then(() => { im._ok = 1; })); im.addEventListener('error', () => { im._ok = 1; }); } return im; };
+// 10-30 用户：「有时会自己重新刷新？」「也有突然断了链接不上」——服务器日志看是 iPhone 每分钟左右重开一次页面：所有图解码后合计约 2.1GB，Safari 内存不够把页面杀了。
+// 大图（大招录像、敌将华彩、剧情图、战场底图、各兵种和敌将图集、命中帧动画）改成用到才加载：设 src 时先记下，第一次 ready() 问到它才真去下载解码，也不算进加载页
+const LAZY_RE = /img\/(ult_|fx_boss_|story_|bg_|room|fb\/|card_|enemy_|huangjin|lishi|gong|cyz|yayi|dengmao|shushi|qibing|xiliang|feixiong|xianzhen|baixing|zhangjiao|tieqi|langqi|huzhen|huaxiong|lijue|gaoshun|lvbu|panfeng|wuanguo|qishou|zhangbao|duyou|qushuai|zhangliang|xiaowei|yushe)/;
+const SRC_SET = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src').set;
+const LOADQ = [], _Img = window.Image; window.Image = function (...a) { const im = new _Img(...a);
+  Object.defineProperty(im, 'src', { configurable: true, get() { return im._url || ''; }, set(u) { im._url = u; if (LAZY_RE.test(u)) { im._lazy = u; return; }
+    if (!LOADED) { LOADQ.push(im); im.addEventListener('load', () => (im.decode ? im.decode() : Promise.resolve()).catch(() => {}).then(() => { im._ok = 1; })); im.addEventListener('error', () => { im._ok = 1; }); }
+    SRC_SET.call(im, u); } });
+  return im; };
+const wake = im => { if (im && im._lazy) { const u = im._lazy; im._lazy = null; SRC_SET.call(im, u); } };
 let LOADED = false; const LOAD_T0 = performance.now(); let loadShown = 0;
 const loadFrac = () => LOADQ.length ? LOADQ.filter(im => im._ok).length / LOADQ.length : 0;
 'use strict';
@@ -1029,6 +1038,8 @@ let MLB = null;
 function startLevel(i) {
   sheetPrune(i); if (ML) ML.clear(); if (MLB) MLB.clear();
   const lv = LEVELS[i], RU = lv.rules || {};
+  if (!window.__sg.simming) { const js = JSON.stringify(lv); ready(IMG['bg_' + lv.map]);   // 用到才加载的图：开打前先把这关的兵种图集、底图、敌将华彩叫起来，免得头几个兵看不见
+    for (const [k, T] of Object.entries(FOES)) if (js.includes('"' + k + '"')) for (const n of [T.sheet, T.alt, T.sheet && T.sheet + '_back', ...(T.sheet === 'qibing' ? [1, 2, 3, 4, 5, 6, 7].map(d => 'qibing_' + d) : [])]) if (n) { ready(IMG[n]); if (BVFX[k]) ready(BVFX[k].im); } }
   rnd = mulberry(lv.id * 7919 + (window.__sg.seed || 0));
   const queue = buildQueue(lv), chg = {}; for (const it of queue) if (it.ch != null) (chg[it.ch] ??= { total: 0, n: 0, last: 0, state: 'mark' }).total++;
   G = { li: i, lv, RU, t: 0, foes: [], shots: [], fx: [], decals: [], logs: [], st: freshStats(), wall: 100, wallMax: 100, exp: 0, rank: 0, perks: {},
@@ -2503,7 +2514,7 @@ function drawLog(L) {                                                           
   ctx.save(); ctx.translate(L.x, L.y); ctx.globalAlpha = .9 * al; ctx.fillStyle = '#6b5236'; ctx.beginPath(); ctx.ellipse(0, 0, w / 2, 7, 0, 0, 6.283); ctx.fill(); ctx.restore(); ctx.globalAlpha = 1;
 }
 for (const n of [2, 3]) { IMG['fx_log' + n] = new Image(); IMG['fx_log' + n].src = 'img/fx_log' + n + '.png' + BUST; }
-const ready = im => im && im.complete && im.naturalWidth > 0;
+const ready = im => { wake(im); return !!(im && im.complete && im.naturalWidth > 0); };   // 用到才加载的图：第一次问到就开始下载
 // 帧动画（10-25 用户：「电脑有effeser，有用吗」→ 挑了关羽剑17/剑22、张飞枪2/剑26、刘备剑16/剑20、命中爆13，「编辑一下，符合主题」）：
 // Effekseer 官方 CC0 样例在黑底上渲染成 16 帧，工具/effekseer/theme.py 换成人物色阶、垫墨底、改形（剑17 挖成月牙，剑22 弯成偃月），img/fb/*.webp。
 // fb.json 每样：帧数 n、列数、帧边长、锚点（帧里的比例）、画里「朝前」的方向 fwd、默认时长 dur
