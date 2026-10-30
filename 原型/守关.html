@@ -4098,7 +4098,13 @@ function drawHud() {
   if (G.civs) st.push(['救下 ' + G.saved + '/' + G.civTotal + (G.misfire ? ' · 误伤 ' + G.misfire : ''), '#9be0c0']);
   if (G.wells) st.push(['井 ' + G.wells.filter(w => w.n >= 3).length + '/3' + (G.sealFound ? ' · 得玉玺' : ''), UIC.cream]);
   if (G.RU.rage) st.push(['怒 ' + (G.rageT > 0 ? '暴怒中' : G.stabs + '/' + G.RU.rage), G.rageT > 0 ? UIC.red2 : UIC.cream]);
-  if (G.counterT > 0) st.push(['反击 ' + G.counterT.toFixed(1), UIC.red2]);
+  // 10-29 用户：「反击出现在蓝框这里，如果有ready 的大招就提示一下」——反击倒计时挪到场中（城头上方那块空地），招式好了就点名催放
+  if (G.counterT > 0 && G.state === 'play' && !G.fx.some(f => (f.k === 'blocked' && f.t < 1.1) || (f.k === 'shieldup' && f.t < 1.3))) { const cy = WALL_Y - 192, pul = .5 + .5 * Math.sin(uiNow() * 10);
+    const rd = []; for (let i = 0; i < NS; i++) { const id = G.order[i]; if (id && knows(id) && G.t >= G.ready[i] && !(G.seal[i] > 0) && (!G.RU.casts || G.casts > 0) && rd.indexOf(id) < 0) rd.push(id); }
+    const tag = (t, y, sz, fill) => { ctx.save(); ctx.font = `${sz}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(40,14,6,.8)'; ctx.strokeText(t, W / 2, y);
+      ctx.lineWidth = 2; ctx.strokeStyle = UIC.gold2; ctx.strokeText(t, W / 2, y); ctx.fillStyle = fill; ctx.fillText(t, W / 2, y); ctx.restore(); };
+    tag('反击 ' + G.counterT.toFixed(1) + ' 秒 · 招式伤害 +50%', cy, 17, '#e42a1c');
+    if (rd.length) { ctx.globalAlpha = .75 + .25 * pul; tag(rd.map(id => SKILLS[id].act[G.act[id]].name).join('、') + ' 好了，快放！', cy + 26, 15, '#fff3d0'); ctx.globalAlpha = 1; } }
   if (G.tauntT > 0) st.push(['被叫阵：普攻慢一半', UIC.red2]);
   if (G.flags) st.push(['将旗 ' + G.flags.filter(f => f.up).length + '/' + G.flags.length, UIC.cream]);
   if (G.cart && G.cart.hp > 0) st.push([(G.cart.label || (G.cart.kind === 'ram' ? '冲车' : '车驾')) + ' ' + Math.ceil(G.cart.hp * SHOWX) + ' · ' + Math.round((G.cart.y - G.RU.cart.y0) / (G.RU.cart.y1 - G.RU.cart.y0) * 100) + '%', G.cart.hp < G.cart.max * .35 ? UIC.red2 : UIC.cream]);
