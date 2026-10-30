@@ -93,8 +93,8 @@ const BUST = '?t=' + Date.now();                     // 原型阶段图集常改
 for (const [k, ext] of [['wall', 'png'], ['bg', 'jpg']]) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.' + ext + BUST; }
 // 各关地图自己的整张背景（10-25 用户：程序画的谷口山崖太假，「要让 gpt 画」「直接重新画就好了」）：有图就用它、不再叠程序画的那层，没有就用通用战场
 for (const m of ['canyon', 'peach', 'camp', 'yamen', 'grass', 'luoyang', 'suanzao', 'sishui', 'hulao', 'ruins']) { const k = 'bg_' + m; IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.jpg' + BUST; }
-const SHEET_WEBP = new Set(['lvbu', 'zhangjiao', 'huaxiong', 'lijue', 'huzhen', 'dengmao', 'qishou', 'zhangbao', 'duyou']);   // 10-29 邓茂、旗手、张宝、督邮 Veo 首录   // 10-29 斗将敌将按高清重切（用户嫌糊），图集大，改用 webp
-const SHEETS = {}; for (const k of ['huangjin', 'lishi', 'gong', 'cyz', 'yayi', 'dengmao', 'shushi', 'qibing', ...Array.from({ length: 7 }, (_, i) => 'qibing_' + (i + 1)), ...['huangjin', 'yayi', 'lishi', 'gong', 'shushi', 'cyz', 'dengmao', 'xiliang', 'feixiong', 'xianzhen', 'baixing'].map(k => k + '_back'), 'zhangjiao', 'g_guan', 'g_zhang', 'g_liu', 'xiliang', 'feixiong', 'xianzhen', 'baixing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'gaoshun', 'lvbu', 'panfeng', 'wuanguo', 'qishou', 'zhangbao', 'duyou']) { const file = k === 'qibing' ? 'enemy_qibing_0' : k.startsWith('qibing_') ? 'enemy_' + k : k; IMG[k] = new Image(); IMG[k].src = 'img/' + file + (SHEET_WEBP.has(k) ? '.webp' : '.png') + BUST; fetch('img/' + file + '.json' + BUST).then(r => r.json()).then(j => { SHEETS[k] = j; }).catch(() => {}); }
+const SHEET_WEBP = new Set(['lvbu', 'zhangjiao', 'huaxiong', 'lijue', 'huzhen', 'dengmao', 'qishou', 'zhangbao', 'duyou', 'qushuai', 'zhangliang', 'xiaowei', 'yushe']);   // 10-30 渠帅、张梁、西凉校尉、俞涉 Veo 首录   // 10-29 邓茂、旗手、张宝、督邮 Veo 首录   // 10-29 斗将敌将按高清重切（用户嫌糊），图集大，改用 webp
+const SHEETS = {}; for (const k of ['huangjin', 'lishi', 'gong', 'cyz', 'yayi', 'dengmao', 'shushi', 'qibing', ...Array.from({ length: 7 }, (_, i) => 'qibing_' + (i + 1)), ...['huangjin', 'yayi', 'lishi', 'gong', 'shushi', 'cyz', 'dengmao', 'xiliang', 'feixiong', 'xianzhen', 'baixing'].map(k => k + '_back'), 'zhangjiao', 'g_guan', 'g_zhang', 'g_liu', 'xiliang', 'feixiong', 'xianzhen', 'baixing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'gaoshun', 'lvbu', 'panfeng', 'wuanguo', 'qishou', 'zhangbao', 'duyou', 'qushuai', 'zhangliang', 'xiaowei', 'yushe']) { const file = k === 'qibing' ? 'enemy_qibing_0' : k.startsWith('qibing_') ? 'enemy_' + k : k; IMG[k] = new Image(); IMG[k].src = 'img/' + file + (SHEET_WEBP.has(k) ? '.webp' : '.png') + BUST; fetch('img/' + file + '.json' + BUST).then(r => r.json()).then(j => { SHEETS[k] = j; }).catch(() => {}); }
 let BG, WALL, MIST, GBODY = {}, SPR = {}, SPRHIT = {}, BLOTS = [];
 function bakeBg() {
   return layer(W, H, g => {
@@ -174,13 +174,13 @@ const FOES = {
   qishou: { name: '黄巾旗手', hp: 80, spd: 26, leak: 3, exp: 3, r: 10, box: [34, 52], s: 1, wpn: 'spear', sheet: 'qishou', alt: 'huangjin', sh: 40, flag: 100 },           // 旗下撞城 ×1.5；砍倒旗手，旗下的兵溃散
   yayi:   { name: '衙役', hp: 22, spd: 40, leak: 1, exp: 1, r: 9, box: [34, 52], s: 1, wpn: 'club', sheet: 'yayi', sh: 40, zig: true },
   duyou:  { name: '督邮', hp: 520, spd: 12, dps: 6, exp: 10, r: 16, box: [48, 66], s: 1.3, wpn: 'club', bulk: 13, boss: true, sheet: 'duyou', alt: 'yayi', sh: 56, title: '安喜县督邮' },
-  qushuai: { name: '黄巾渠帅', hp: 300, spd: 22, leak: 14, exp: 8, r: 13, box: [48, 66], s: 1.32, wpn: 'club', bulk: 12, sheet: 'lishi', sh: 62 },
+  qushuai: { name: '黄巾渠帅', hp: 300, spd: 22, leak: 14, exp: 8, r: 13, box: [48, 66], s: 1.32, wpn: 'club', bulk: 12, sheet: 'qushuai', alt: 'lishi', sh: 62 },
   zhangbao: { name: '张宝', hp: 760, spd: 14, dps: 10, exp: 15, r: 14, box: [48, 66], s: 1.3, wpn: 'bow', boss: true, sheet: 'zhangbao', alt: 'shushi', sh: 60, title: '地公将军', wind: 15 },   // 每 15 秒妖风：武将普攻 3 秒减半
-  zhangliang: { name: '张梁', hp: 900, spd: 12, dps: 12, exp: 15, r: 18, box: [76, 96], s: 1.9, wpn: 'blade', bulk: 11, boss: true, sheet: 'cyz', sh: 66, title: '人公将军', guard: 8 },   // 每 8 秒给身边的兵挡一下
+  zhangliang: { name: '张梁', hp: 900, spd: 12, dps: 12, exp: 15, r: 18, box: [76, 96], s: 1.9, wpn: 'blade', bulk: 11, boss: true, sheet: 'zhangliang', alt: 'cyz', sh: 66, title: '人公将军', guard: 8 },   // 每 8 秒给身边的兵挡一下
   // 第二、三段（11–30，10-25，见 ../设计/第一章设定.md 3.1）：西凉兵、飞熊军、陷阵营、百姓是 Meshy 建模渲的；骑兵和敌将等 Veo（用户：「如果需要敌人的战斗动作等我起床再用Veo 3.1制作」），
   // 先借黄巾骑兵、程远志、邓茂的图集换个颜色（tint）顶着
   xiliang:  { name: '西凉兵', hp: 64, spd: 33, leak: 4, exp: 2, r: 10, box: [34, 52], s: 1, wpn: 'spear', sheet: 'xiliang', alt: 'huangjin', sh: 42, front: .5 },     // 举盾：正面来的剑气、刀气减半，矛刺照常
-  xiaowei:  { name: '西凉校尉', hp: 320, spd: 22, leak: 14, exp: 8, r: 13, box: [48, 66], s: 1.32, wpn: 'club', bulk: 12, sheet: 'xiliang', alt: 'huangjin', sh: 58, front: .5 },
+  xiaowei:  { name: '西凉校尉', hp: 320, spd: 22, leak: 14, exp: 8, r: 13, box: [48, 66], s: 1.32, wpn: 'club', bulk: 12, sheet: 'xiaowei', alt: 'xiliang', sh: 58, front: .5 },
   tieqi:    { name: '西凉铁骑', hp: 100, spd: 62, leak: 6, exp: 3, r: 12, box: [34, 52], s: 1.15, wpn: 'spear', sheet: 'tieqi', alt: 'qibing', sh: 64, mount: 'xiliang', tint: 'xiliang' },
   gongqi:   { name: '西凉弓骑', hp: 48, spd: 48, leak: 3, exp: 3, r: 11, box: [34, 52], s: 1.1, wpn: 'bow', sheet: 'gongqi', alt: 'qibing', sh: 60, tint: 'gongqi', runShoot: { every: 3.5, dmg: .6 } },   // 边跑边射，不停；跑到城下转身回去再来
   feixiong: { name: '飞熊军', hp: 240, spd: 22, leak: 12, exp: 6, r: 14, box: [48, 66], s: 1.35, wpn: 'club', bulk: 13, sheet: 'feixiong', alt: 'lishi', sh: 62, armor: .3, stunRes: .5 },   // 重甲：伤害 -30%，晕的时间减半
@@ -2851,8 +2851,9 @@ function drawCart() {
     bar(x - 22, y - 68, 44, 4, C.hp / C.max, CINNABAR); return;
   }
   if (C.kind === 'man') {                                                        // 被追的友军将领（俞涉）：借衙役的图集染蓝，往城下跑
-    if (C.hp <= 0) return; const T = FOES.yayi, SK = sheetOf(T), ps = persp(y);
-    if (SK) { ctx.filter = 'hue-rotate(190deg) saturate(1.4)'; drawSheet(SK, 'run', (G.t * 10) % 8, x, y, 50 / SHEETS[SK].stand * ps * 1.3); ctx.filter = 'none'; }
+    if (C.hp <= 0) return; const ps = persp(y);
+    if (SHEETS.yushe && ready(IMG.yushe)) { const n = SHEETS.yushe.anims.run.rects.length; drawSheet('yushe', 'run', (G.t * 10) % n, x, y, 58 / SHEETS.yushe.stand * ps * 1.3); }   // 10-30 俞涉自己的 Veo 图集
+    else { const T = FOES.yayi, SK = sheetOf(T); if (SK) { ctx.filter = 'hue-rotate(190deg) saturate(1.4)'; drawSheet(SK, 'run', (G.t * 10) % 8, x, y, 50 / SHEETS[SK].stand * ps * 1.3); ctx.filter = 'none'; } }
     txt(C.label || '友军', x, y - 78 * ps, 14, '#1f4f6e', 'center'); bar(x - 18, y - 68 * ps, 36, 4, C.hp / C.max, '#2f7a5a'); return;
   }
   if (CART_WALK.every(ready)) { const im = CART_WALK[Math.floor(C.walk || 0) % CART_WALK.length], size = 108; ctx.drawImage(im, x - size / 2, y + 6 - size * .85, size, size); bar(x - 22, y - 62, 44, 3, C.hp / C.max, CINNABAR); return; }

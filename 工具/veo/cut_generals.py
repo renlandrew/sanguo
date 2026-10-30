@@ -57,6 +57,12 @@ PLAN = {
     'qishou': {'run': ('run', range(16, 32)), 'ram': ('ram', range(4, 34, 2)), 'die': ('die', range(4, 34, 2))},
     'zhangbao': {'run': ('run', range(8, 32, 2)), 'ram': ('cast', range(0, 40, 3)), 'die': ('die', range(4, 40, 3))},
     'duyou': {'run': ('run', range(8, 32, 2)), 'ram': ('ram', range(0, 40, 3)), 'die': ('die', range(0, 34, 2))},
+    # 10-30 渠帅、张梁、西凉校尉、俞涉首录（make_foe_pack5.py）
+    'qushuai': {'run': ('run', range(8, 32, 2)), 'ram': ('ram', range(0, 40, 3)), 'die': ('die', range(4, 40, 3))},
+    # 张梁出手 12–27 帧 Veo 自己加了一大道黄刀弧，只取举刀和收刀；张梁、校尉倒下第 6、7 帧各一下白闪，从第 8 帧取
+    'zhangliang': {'run': ('run', range(8, 32, 2)), 'ram': ('ram', [*range(0, 12, 2), *range(28, 40, 2)]), 'die': ('die', range(8, 40, 3))},
+    'xiaowei': {'run': ('run', range(8, 32, 2)), 'ram': ('ram', range(0, 40, 3)), 'die': ('die', range(8, 40, 3))},
+    'yushe': {'run': ('run', range(8, 32, 2)), 'die': ('die', range(12, 40, 3))},
     'panfeng': {'idle': ('ram', range(0, 4)), 'ram': ('ram', range(0, 40, 3))},
     'wuanguo': {'idle': ('ram', range(0, 4)), 'ram': ('ram', range(0, 40, 3))},
 }
@@ -80,7 +86,8 @@ ALIAS = {'zhangjiao': {'run': 'idle', 'ram': 'cast', 'fly': 'die'}, 'qibing': {'
          'lvbu': {'run': 'rush', 'ram': 'heavy', 'cast': 'heavy', 'fly': 'die'}, 'gaoshun': {'fly': 'die'},
          'panfeng': {'run': 'idle'}, 'wuanguo': {'run': 'idle'},
          'dengmao': {'run': 'idle', 'ram': 'heavy', 'cast': 'heavy', 'fly': 'die'}, 'qishou': {'hit': 'run', 'fly': 'die'},
-         'zhangbao': {'hit': 'run', 'fly': 'die', 'cast': 'ram'}, 'duyou': {'hit': 'run', 'fly': 'die'}}
+         'zhangbao': {'hit': 'run', 'fly': 'die', 'cast': 'ram'}, 'duyou': {'hit': 'run', 'fly': 'die'},
+         'qushuai': {'hit': 'run', 'fly': 'die'}, 'zhangliang': {'hit': 'run', 'fly': 'die', 'cast': 'ram'}, 'xiaowei': {'hit': 'run', 'fly': 'die'}, 'yushe': {'hit': 'run', 'fly': 'die', 'ram': 'run'}}
 
 def gray_of(rgb):
     a = rgb.astype(np.float32)
@@ -118,7 +125,7 @@ def cells(path):
     sheet = np.asarray(Image.open(path).convert('RGB')); ch, cw = sheet.shape[0] // ROWS, sheet.shape[1] // COLS
     return [sheet[(i // COLS) * ch:(i // COLS + 1) * ch, (i % COLS) * cw:(i % COLS + 1) * cw] for i in range(N)]
 
-FOE = {'dengmao', 'qishou', 'zhangbao', 'duyou', 'zhangjiao', 'qibing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'lvbu', 'gaoshun', 'panfeng', 'wuanguo'}   # 敌人和友军：图集不带 g_ 前缀
+FOE = {'dengmao', 'qishou', 'zhangbao', 'duyou', 'zhangjiao', 'qibing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'lvbu', 'gaoshun', 'panfeng', 'wuanguo', 'qushuai', 'zhangliang', 'xiaowei', 'yushe'}   # 敌人和友军：图集不带 g_ 前缀
 for g in (sys.argv[2:] or ['guan', 'zhang', 'liu']):
     takes = {p.stem.split('_', 1)[1]: p for p in SRC.glob(f'{g}[0-9]_*.jpg')}
     base = 'idle' if 'idle' in takes else next(iter(PLAN.get(g, {}).values()), (None,))[0]   # 脚底和缩放按这条的首帧定
