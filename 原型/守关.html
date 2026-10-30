@@ -46,7 +46,8 @@ const DUEL_Y = 250;                                    // 斗将时敌将站的�
 // 远处小、近处大，沿着从灭点（VPX, VY）放出来的射线走，到城下正好铺满一屏宽；屏幕上走的速度也按远近缩放
 const HZ = 170, VPX = 180, VY = 2 * HZ - 488;
 const NS = 5;                                          // 出手顺序五格（10-25 用户：「下面最终要放5个武将，军师放红框」）；改五格后站位挪了，30 关 8 种子复核大多在误差内，只有第 18 关潘凤常阵亡，血 7.53→7
-const genX = i => 39 + i * 70;                         // 城头五个位置，正对下面五张牌：牌在哪格，人就站在哪格上方
+// 10-30 用户：「默认3个人是居中」「3个人可能要略缩小一点点，因为将来还要放2个武将」——只排有人的格，居中，格距 70 → 62（五人也放得下）；空格不再画
+const SLOT_STEP = 62, genX = i => { const O = G && G.order; if (!O || window.__sg.oldX) return 39 + i * 70;   /* oldX：对比旧站位（调试） */ let n = 0, r = -1; for (let k = 0; k < NS; k++) if (O[k]) { if (k === i) r = n; n++; } if (r < 0) r = n++; return W / 2 + (r - (n - 1) / 2) * SLOT_STEP; };                         // 城头五个位置，正对下面五张牌：牌在哪格，人就站在哪格上方
 const atkAnim = id => Math.min(.85, GEN[id].atk.cd * .75);   // 城头武将普攻动作演多久（Veo 录像的普攻 12 帧；第三版动作大，最长 0.85 秒）
 const BLOOD = '#9a1410', BLOOD_DK = '#5e0a08';
 const INK = '#1d1a17', INK2 = '#3b352e', PAPER = '#ece4d2', CINNABAR = '#b23f2a', AZURE = '#3e6e86', JADE = '#2d6a56', OCHRE = '#c8952c';
@@ -380,6 +381,10 @@ const SKILLS = {
 const ACT0 = { guan: 'qinglong', zhang: 'roar', liu: 'shuang' };
 const actOpen = (id, k) => { const u = SKILLS[id].act[k].rank; return !u || window.__sg.all || rankNow() >= u; };
 const pasSlots = () => window.__sg.all ? 2 : rankNow() >= 5 ? 2 : rankNow() >= 2 ? 1 : 0;
+// 10-30 用户：「配招也要提醒可以了」——开了新被动格、学会新招式，没进过配招页就亮红点
+const loadSig = () => pasSlots() + '|' + ['guan', 'zhang', 'liu'].flatMap(id => Object.keys(SKILLS[id].act).filter(k => actOpen(id, k))).join(',');
+const loadNew = () => loadSig() !== (INV.seenLoad || '0|qinglong,roar,shuang');
+const loadSeen = () => { INV.seenLoad = loadSig(); saveInv(); };
 const loadOf = id => { const L = (INV.load || {})[id] || {}; return { act: L.act && SKILLS[id].act[L.act] && actOpen(id, L.act) ? L.act : ACT0[id], pas: (L.pas || []).filter(k => SKILLS[id].pas[k]).slice(0, pasSlots()) }; };
 const skName = id => { const a = G && G.act ? G.act[id] : loadOf(id).act; return (SKILLS[id] && SKILLS[id].act[a] || {}).name || GEN[id].skill; };
 const hasPas = (id, k) => !!(G && G.pas && G.pas[id] && G.pas[id].includes(k));
@@ -532,7 +537,7 @@ const LEVELS = [
     waves: [[2, 'bing', 26, 8, 'rand'], [8, 'gong', 8, 3, 'rand'], [14, 'bing', 21, 0, 'wedge'], [20, 'lishi', 8, 4, 'rand'],   // 10-26：程远志提前到第 26 秒、后面的兵砍掉一半、走快 1.4 倍
       [26, 'cyz', 1, 0, 'rand', { g: 'c', lead: true }], [27, 'bing', 26, 0, 'wedge', { g: 'c' }], [31, 'lishi', 10, 4, 'rand', { g: 'c' }], [34, 'bing', 30, 10, 'rand', { g: 'c' }], [38, 'gong', 8, 4, 'line', { g: 'c' }]],
     tips: [[1, '残局：开局黄巾兵已经冲到半路了'], [4, '关羽学会了青龙斩：一刀扫倒一片'], [7, '弓手停在远处朝城上放箭，点他让刘备、关羽先打他'], [15, '程远志来了！他头顶有将旗——斩了他，他带的兵全都溃散']] },
-  { id: 4, name: '青州解围', sub: '黄巾围青州，刘备两侧设伏', hpMul: 5.784,   /* 10-26 去掉限手后 1.318 变 3 星，用户：「第四关不难，可以增加点血量」→ 2.17 星 5/6 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'plain', reward: '熟铁',
+  { id: 4, name: '青州解围', sub: '黄巾围青州，刘备两侧设伏', hpMul: 5.668,   /* 10-30 站位居中后 12 种子 12/12 → 9/12，×0.98 回到 2.17 星 12/12 */   /* 10-26 去掉限手后 1.318 变 3 星，用户：「第四关不难，可以增加点血量」→ 2.17 星 5/6 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'plain', reward: '熟铁',
     rules: {},                                                                         // 10-28 伏兵挪成简雍的计（第五关起带简雍才有），这关不再自带                                  // 10-26 去掉「限手 36 次」：第四关起本来就默认自己点牌（用户：「好」）
     waves: [[2, 'bing', 20, 8, 'rand'], [8, 'qibing', 4, 4, 'rand'], [14, 'bing', 18, 0, 'wedge', { g: 'a' }], [15, 'qushuai', 1, 0, 'rand', { g: 'a', lead: true }], [22, 'qibing', 6, 5, 'rand'], [26, 'bing', 30, 6, 'rand'],
       [36, 'lishi', 6, 4, 'rand'], [40, 'bing', 26, 0, 'line', { g: 'b' }], [41, 'qushuai', 1, 0, 'rand', { g: 'b', lead: true }], [48, 'qibing', 6, 6, 'rand'], [55, 'bing', 24, 12, 'rand'], [62, 'lishi', 4, 4, 'rand'], [66, 'qibing', 6, 6, 'rand', { g: 'c' }], [67, 'qushuai', 1, 0, 'rand', { g: 'c', lead: true }]],
@@ -583,7 +588,7 @@ const LEVELS = [
     waves: [[2, 'tieqi', 8, 6, 'rand'], [10, 'xiliang', 20, 8, 'rand'], [16, 'tieqi', 10, 6, 'rand'], [24, 'xiliang', 24, 0, 'wedge'], [30, 'tieqi', 12, 8, 'rand'],
       [40, 'xiaowei', 1, 0, 'rand', { g: 'a', lead: true }], [40, 'tieqi', 12, 0, 'line', { g: 'a' }], [48, 'xiliang', 30, 10, 'rand'], [58, 'tieqi', 14, 8, 'rand']],
     tips: [[1, '夜袭：铁骑摸黑冲营，黑处的打不到；火把会自己照亮敌人多的地方'], [4, '赤帻：城前压了一片时会自己扔下去，附近的敌人 5 秒都冲它去（每关一次）']] },
-  { id: 15, name: '胡轸', sub: '拦路将 · 董卓都督胡轸挡在汜水关前', kind: 'duel', boss: 'huzhen', hpMul: 10.733, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '熟铁 · 兵书残卷',
+  { id: 15, name: '胡轸', sub: '拦路将 · 董卓都督胡轸挡在汜水关前', kind: 'duel', boss: 'huzhen', hpMul: 9.767,   /* 10-30 站位居中后 2.33 → 1.33 星、10/12，×0.91 回到 2.5 星 12/12 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '熟铁 · 兵书残卷',
     moves: ['heavy', 'summon', 'combo', 'heavy', 'buff', 'summon', 'combo'], gap: 3.2, heavy: 6, adds: [['xiliang', 5]],
     tips: [[1, '斗将：胡轸双刀连斩，砍两下，盾要举两次'], [12, '张飞的一喝能喝晕他，打断蓄势']] },
   { id: 16, name: '汜水关强攻', sub: '关隘 · 城头装上连弩，西凉弓骑来回骚扰', hpMul: 3.1, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '牛筋',
@@ -653,7 +658,7 @@ const LEVELS = [
       [48, 'gaoshun', 1, 0, 'rand', { g: 'a', lead: true, lane: 'M' }], [48, 'xianzhen', 16, 8, 'rand', { g: 'a', lane: 'M' }], [50, 'feixiong', 5, 5, 'rand', { lane: 'L' }], [52, 'langqi', 10, 6, 'rand', { lane: 'R' }],
       [62, 'xiliang', 30, 10, 'rand']],
     tips: [[1, '三路同时来：左路狼骑、中路西凉兵、右路陷阵营'], [46, '高顺带陷阵营走中路，斩他溃散']] },
-  { id: 30, name: '吕布', sub: '大战 · 三英战吕布', kind: 'duel', boss: 'lvbu', hpMul: 10.866,   /* 10-26 一喝能喝断、举盾举到落地以后：2.094 时兵器差一级也 6/6 赢，调到 3.0：够级 2.33 星 6/6，差一级 3/6 */ sanying: true, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '战鼓（法宝）· 第一章突破',
+  { id: 30, name: '吕布', sub: '大战 · 三英战吕布', kind: 'duel', boss: 'lvbu', hpMul: 9.236,   /* 10-30 站位居中后 2.83 → 1.83 星，×0.85 回到 2.5 星 */   /* 10-26 一喝能喝断、举盾举到落地以后：2.094 时兵器差一级也 6/6 赢，调到 3.0：够级 2.33 星 6/6，差一级 3/6 */ sanying: true, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'hulao', reward: '战鼓（法宝）· 第一章突破',
     moves: ['heavy', 'combo', 'guard', 'rush', 'buff', 'combo', 'heavy', 'rush'], gap: 3, heavy: 11, adds: [['langqi', 3]],
     tips: [[1, '三英战吕布：三人都在出手顺序里时，每第三次出招多一记合击'], [8, '画戟横扫砍两下，盾要举两次；无双是护罩，喝晕才破']] },
 ];
@@ -1315,6 +1320,8 @@ const COUNSEL = {
 };
 for (const k of Object.keys(COUNSEL)) if (!IMG['p_' + k]) { IMG['p_' + k] = new Image(); IMG['p_' + k].src = 'img/p_' + k + '.jpg' + BUST; }
 const counselOK = k => !COUNSEL[k].unlock || BEST[COUNSEL[k].unlock];
+// 10-30 用户：「到第四关应该提示换军师了，如果没能打到2-3星就提示（当然如果已经换了就不提示了）」——还带着邹靖、已有别的军师可换、最近一局（第四关起）不到两星
+const cHint = () => !!INV.lowStar && counselNow()[0] === 'zoujing' && Object.keys(COUNSEL).some(k => k !== 'zoujing' && counselOK(k));
 const counselNow = () => { const k = window.__sg.forceC || (INV.counsel && counselOK(INV.counsel) ? INV.counsel : 'zoujing'); return [k, COUNSEL[k]]; };   // forceC：推演时换着试
 // 这位军师对这张卡看得准不准：专长里很准，盲点里差得远
 function counselSees(C, p) {
@@ -2088,6 +2095,7 @@ function end(win, why) {
   G.result = { win, stars, frac, time: G.t, why, first: win && !BEST[G.lv.id], goals };
   if (G.result.first && !G.sim && STORY['l' + G.lv.id] && !storySeen('l' + G.lv.id)) G.result.story = 'l' + G.lv.id;   // 首通每一关：结算完演一场（10-26 起三十关都有）
   if (win && !G.sim) { BEST[G.lv.id] = Math.max(BEST[G.lv.id] || 0, stars); saveBest(); }
+  if (!G.sim && G.lv.id >= 4) { INV.lowStar = !win || stars < 2; saveInv(); }   // 10-30 换军师提醒：第四关起这一局没打到两星
   if (!G.sim && G.cnt) { INV.comboSeen = INV.comboSeen || {}; for (const k of ['cYun', 'cHeng', 'cHe', 'cShuang', 'cRen', 'cTao']) if (G.cnt[k]) INV.comboSeen[k] = 1; saveInv(); }   // 10-29：六个连携跨局累计，输了的那局打出来的也算，当场存盘
   G.feats = win && G.cnt ? featCheck(stars) : []; if (!G.sim && G.feats.length) { INV.feat = INV.feat || {}; for (const f of G.feats) INV.feat[f] = 1; saveInv(); }
   if (!G.sim) G.result.ach = achList().filter(a => a.ok && !a.got && !achOk0.has(a.id)).map(a => a.sec === '首通' ? '首通 · ' + a.name : a.name);   // 10-30 用户：「结算时如果完成任何功绩，都在结算页提示」
@@ -4687,7 +4695,8 @@ function drawSlots() {
   { const free = []; for (let i = NS - 1; i >= 0; i--) if (!G.order[i] && !(i === NS - 1 && (G.RU.decoy || G.duel))) free.push(i); acts.forEach((a, k) => { if (free[k] != null) actAt[free[k]] = a; else a.over = k; }); }
   for (const a of acts) if (a.over != null) drawActBtn(a, W - 50 - a.over * 48, SLOT_Y - 52, 44, 44);
   for (let i = 0; i < NS; i++) {
-    const x = genX(i) - 29, y = SLOT_Y + 6, w = 58, h = 70, id = G.order[i];   // 牌缩小一圈、对齐城头站位
+    const id = G.order[i]; if (!id) continue;                                       // 空格不画（10-30 居中后）
+    const x = genX(i) - 26, y = SLOT_Y + 8, w = 52, h = 64, drag = G.drag && G.drag.i === i;   // 牌缩小一圈、对齐城头站位
     const casting = G.cast && G.cast.slot === i, lift = 0;                          // 不抬（10-27 用户：「也不需要突出了，加个闪光流动边框，显示技能字眼？平时不显示字眼」）
     if (false) {                                                                  // 赤帻：10-28 起自动放，挪到城墙外显示（drawWallProps），底栏五格只放武将
       const on = G.decoyArm, left = G.decoyN || 0;
@@ -4733,9 +4742,14 @@ function drawSlots() {
       cg.addColorStop(0, 'rgba(255,240,180,0)'); cg.addColorStop(.08, 'rgba(255,236,160,1)'); cg.addColorStop(.18, 'rgba(255,200,90,0)'); cg.addColorStop(.5, 'rgba(255,240,180,0)'); cg.addColorStop(.58, 'rgba(255,236,160,1)'); cg.addColorStop(.68, 'rgba(255,200,90,0)'); cg.addColorStop(1, 'rgba(255,240,180,0)');
       ctx.save(); ctx.strokeStyle = cg; ctx.lineWidth = 5; ctx.shadowColor = 'rgba(255,220,120,1)'; ctx.shadowBlur = 16; rr(x - 1, y + lift - 1, w + 2, h + 2, 8); ctx.stroke(); ctx.shadowBlur = 0; ctx.lineWidth = 2; ctx.globalCompositeOperation = 'lighter'; ctx.stroke(); ctx.restore(); }
     if (i === nextCaster() && !casting && !G.RU.casts && !manualOn()) { ctx.save(); ctx.fillStyle = UIC.gold2; ctx.shadowColor = 'rgba(255,210,110,.9)'; ctx.shadowBlur = 8; ctx.beginPath(); ctx.moveTo(x + w / 2 - 7, y - 6); ctx.lineTo(x + w / 2 + 7, y - 6); ctx.lineTo(x + w / 2, y + 1); ctx.closePath(); ctx.fill(); ctx.restore(); }   // 下一个出招的：头上一个金色小三角
-    hit(x, y, w, h, () => tapSlot(i), () => { if (G.state === 'play' && G.order[i]) G.sel = G.sel === i ? -1 : i; });
+    if (drag) { ctx.save(); ctx.fillStyle = 'rgba(8,5,3,.6)'; rr(x, y, w, h, 7); ctx.fill(); ctx.restore(); }
+    if (G.drag && !drag && slotAt(G.drag.x, G.drag.y) === i) { ctx.save(); ctx.strokeStyle = '#8fd0ff'; ctx.lineWidth = 3; ctx.shadowColor = 'rgba(140,200,255,.9)'; ctx.shadowBlur = 12; rr(x - 2, y - 2, w + 4, h + 4, 8); ctx.stroke(); ctx.restore(); }
+    hit(x, y, w, h, () => tapSlot(i), () => { if (G.state === 'play' && G.order[i]) G.drag = { i, x: x + w / 2, y: y + h / 2 }; });
   }
-  if (G.sel >= 0) uiText('再点一张，和它换位置', W / 2, SLOT_Y - 30, 13, UIC.cream, 'center', PLAIN);
+  if (G.drag) { const D = G.drag, id = G.order[D.i], fc = FACE[id], w = 52, h = 64;   // 10-30 用户：「换人物的位置，应该是长按后拽动，但不会影响技能」——长按拿起这张牌跟着手指走，松在另一张上就换
+    if (id) { ctx.save(); ctx.globalAlpha = .9; ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 14; rr(D.x - w / 2, D.y - h / 2 - 10, w, h, 7); ctx.clip(); if (ready(IMG[id]) && fc) ctx.drawImage(IMG[id], fc[0], fc[1], fc[2], fc[2], D.x - w / 2, D.y - h / 2 - 10, w, w); ctx.fillStyle = GEN_BLOCK[id] || '#2a1f16'; ctx.fillRect(D.x - w / 2, D.y + h / 2 - 31, w, 21); ctx.restore();
+      ctx.save(); ctx.strokeStyle = '#8fd0ff'; ctx.lineWidth = 2; rr(D.x - w / 2, D.y - h / 2 - 10, w, h, 7); ctx.stroke(); ctx.restore(); }
+    uiText('拖到另一张上，换位置', W / 2, SLOT_Y - 30, 13, UIC.cream, 'center', PLAIN); }
 }
 // 主动战法钮：画的军械图标，名字和层数写在下面；冷却时扇形转回来，好了金框一呼一吸
 function drawActBtn(a, x, y, w, h) {
@@ -4756,7 +4770,12 @@ function tapSlot(i) {
   if (G.RU.casts) { castSlot(i); return; }
   if (G.sel < 0) { if (manualOn() && G.order[i] && knows(G.order[i]) && G.t >= G.ready[i] && G.seal[i] <= 0 && !G.cast) startCast(i); return; }   // 点：手动时牌好了就出招；换位置要先长按拿起这张（长按见 hit 的 long）
   if (G.sel === i) { G.sel = -1; return; }
-  const a = G.sel; [G.order[a], G.order[i]] = [G.order[i], G.order[a]]; [G.atkT[a], G.atkT[i]] = [G.atkT[i], G.atkT[a]]; G.anim[a] = G.anim[i] = null;
+  swapSlots(G.sel, i);
+}
+const slotAt = (x, y) => { if (y < SLOT_Y - 30) return -1; for (let k = 0; k < NS; k++) if (G.order[k] && Math.abs(x - genX(k)) <= SLOT_STEP / 2) return k; return -1; };
+function swapSlots(a, i) {
+  if (a === i || a < 0 || i < 0) { G.sel = -1; return; }
+  [G.order[a], G.order[i]] = [G.order[i], G.order[a]]; [G.atkT[a], G.atkT[i]] = [G.atkT[i], G.atkT[a]]; G.anim[a] = G.anim[i] = null;
   for (const k of [a, i]) if (G.order[k]) G.ready[k] = G.t + cdOf(G.order[k]);      // 换了位置的牌冷却重新算满
   if (G.cast && (G.cast.slot === a || G.cast.slot === i)) G.cast.slot = G.cast.slot === a ? i : a;
   G.sel = -1;
@@ -5448,8 +5467,8 @@ function drawLineup(t) {
   uiText('军师', cx, y0 + 2, 12, UIC.gold2, 'left', FONT, { stroke: false });
   ctx.save(); ctx.beginPath(); ctx.roundRect(cx, cy, cw, cw, 7); ctx.clip(); if (ready(im)) ctx.drawImage(im, cx, cy, cw, cw); ctx.restore();
   ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.roundRect(cx, cy, cw, cw, 7); ctx.stroke();
-  uiText(C.name, cx + cw + 4, cy + 16, 13, UIC.cream, 'left', FONT, { stroke: false }); uiText('换', cx + cw + 4, cy + 34, 11, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false });
-  if (newC) uiSeal(cx + cw - 2, cy + 2, 15, '!', UIC.red);
+  uiText(C.name, cx + cw + 4, cy + 16, 13, UIC.cream, 'left', FONT, { stroke: false }); const ch = cHint(); uiText(ch ? '该换' : '换', cx + cw + 4, cy + 34, 11, ch ? '#ff7a5a' : 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: !!ch, lw: 3 });
+  if (newC || ch) uiSeal(cx + cw - 2, cy + 2, 15, '!', UIC.red);
   hit(cx, cy, 62, cw, () => { screen = 'counsel'; });
 }
 function drawRoster() {
@@ -5485,7 +5504,8 @@ function drawRoster() {
   if (R0.lv > 1) { uiText(`普攻 +${Math.round(d[1] * 1.5)}% · 招式 +${Math.round(d[0] * 1.5)}% · 冷却 -${Math.round((1 - 1 / (1 + .008 * d[2])) * 100)}% · 城防 +${Math.round(d[3] * .8)}%`, W / 2, py + 176, 11, '#ffd76e', 'center', PLAIN, { stroke: false }); }
   { const lg = '武力 - 攻击 · 统率 - 招式伤害 · 智力 - 冷却 · 政治 - 城防 · 魅力 - 晋升'; uiText(lg, W / 2, py + 198, fitSize(lg, 10, W - 44, 99, PLAIN), 'rgba(244,230,196,.5)', 'center', PLAIN, { stroke: false }); }
   if (ultReady(id)) pill(W / 2 - 110, py + 210, 100, 28, '看大招', () => { MENU.ultPrev = { k: id, t0: uiNow() }; }, false);   // 觉醒大招特写
-  pill(W / 2 + 10, py + 210, 100, 28, '配招', () => { MENU.load = { order: ['guan', 'zhang', 'liu'], load: true }; }, true);   // 10-29 配招：大多数关不进布阵页，在武将页配
+  pill(W / 2 + 10, py + 210, 100, 28, '配招', () => { MENU.load = { order: ['guan', 'zhang', 'liu'], load: true }; loadSeen(); }, true);
+  if (loadNew()) uiSeal(W / 2 + 106, py + 212, 15, '!', UIC.red);   // 10-29 配招：大多数关不进布阵页，在武将页配
   plaque(112, 606, 136, 32, '返回', () => { screen = 'menu'; }, false);
   if (MENU.load) { if (MENU.load.load) drawLoadout(MENU.load); else MENU.load = null; }
   const up = MENU.ultPrev; if (up) { const t = uiNow() - up.t0, hold = up.close ? uiNow() - up.close : -1;   // 10-26 用户：「大招不要自动消失，等用户自己退出」
@@ -5884,7 +5904,7 @@ function drawPrep() {
   const P = PREP, lv = LEVELS[P.li], t = uiNow() - (P.t0 || 0); prepBg(lv); prepHead(lv);
   plaque(278, 14, 72, 26, '返回', () => { screen = 'menu'; }, false);
   plaque(196, 14, 76, 26, '本关目标', () => { P.goal = true; }, false);
-  plaque(114, 14, 76, 26, '配招', () => { P.load = true; }, !!combosOf(prepLoads(P)).length);
+  plaque(114, 14, 76, 26, '配招', () => { P.load = true; loadSeen(); }, !!combosOf(prepLoads(P)).length); if (loadNew()) uiSeal(186, 16, 13, '!', UIC.red);
   // 敌情
   const fc = foeCounts(lv), nW = buildQueue(lv).nWaves; secTitle(`敌情 · ${nW} 波 · 约 ${fc.reduce((a, b) => a + b[1], 0)} 人`, 74);
   fc.slice(0, 4).forEach(([k, n], j) => { const y = 88 + j * 36, note = FOE_NOTE[k] || ['', ''];
@@ -6230,7 +6250,7 @@ function drawMenu() {
   else { ctx.fillStyle = 'rgba(14,10,7,.92)'; ctx.fillRect(0, H - 88, W, 88); }
   const [ck] = counselNow();
   const newC = Object.keys(COUNSEL).some(k => counselOK(k) && !(INV.seenC || []).includes(k) && k !== 'zoujing');   // 军师挪进武将页（10-26），有新军师时武将钮上亮
-  navBtn(36, '武将', navFace('liu', FACE.liu), () => { screen = 'roster'; MENU.rosterT = uiNow(); }, newC);
+  navBtn(36, '武将', navFace('liu', FACE.liu), () => { screen = 'roster'; MENU.rosterT = uiNow(); }, newC || cHint() || loadNew());
   navBtn(108, '神兵', navIco('ui_nav_armory'), () => { screen = 'armory'; ARM.t0 = uiNow(); }, canUp('wpn'));
   navBtn(180, '战役', navIco('ui_nav_map'), () => { screen = 'levels'; MENU.seg = Math.floor(frontier() / 10); }, false, true);
   navBtn(252, '军帐', navIco('ui_nav_camp'), () => { screen = 'camp'; CAMP.t0 = uiNow(); }, dailyTotal() > dailyDone());
@@ -6297,7 +6317,10 @@ function drawLevels() {
 // ---------- 输入 ----------
 cv.addEventListener('pointermove', ev => { if (ev.pointerType !== 'mouse') return; const r = cv.getBoundingClientRect(); MOUSE = { x: (ev.clientX - r.left) / S, y: (ev.clientY - r.top) / S }; });   // 悬停说明只给鼠标
 cv.addEventListener('pointerleave', () => { MOUSE = null; });
-for (const ev of ['pointerup', 'pointercancel']) cv.addEventListener(ev, e => { const P = PRESS; if (!P) return; PRESS = null; clearTimeout(P.tm); if (e.type === 'pointerup') { sfx('tap'); P.h.fn(); } });
+const cvPt = ev => { const r = cv.getBoundingClientRect(); return [(ev.clientX - r.left) / S, (ev.clientY - r.top) / S]; };
+cv.addEventListener('pointermove', ev => { if (G && G.drag) { [G.drag.x, G.drag.y] = cvPt(ev); } });   // 拖着底栏的牌
+for (const ev of ['pointerup', 'pointercancel']) cv.addEventListener(ev, e => { if (G && G.drag) { const D = G.drag; G.drag = null; if (e.type === 'pointerup' && G.state === 'play') { const [x, y] = cvPt(e), j = slotAt(x, y); if (j >= 0 && j !== D.i) { swapSlots(D.i, j); sfx('tap'); } } return; }   // 松手：落在另一张上就换，落别处不动，都不出招
+  const P = PRESS; if (!P) return; PRESS = null; clearTimeout(P.tm); if (e.type === 'pointerup') { sfx('tap'); P.h.fn(); } });
 cv.addEventListener('pointermove', ev => {   // 电脑上鼠标停在城墙军械图标上：显示说明
   if (ev.pointerType !== 'mouse' || !G || !G.propRects) return; const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) / S, y = (ev.clientY - r.top) / S;
   const h = G.propRects.find(([px, py, w, hh]) => x >= px && x <= px + w && y >= py && y <= py + hh);
