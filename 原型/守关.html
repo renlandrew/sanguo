@@ -24,14 +24,18 @@
 // 加载页（10-27 用户：「做一个加载页面，全部加载完才进入游戏界面」）：开头这段时间里 new 出来的图都记下来，全部好了（或坏了）才进主页；最多等 30 秒
 // 10-30 用户：「有时会自己重新刷新？」「也有突然断了链接不上」——服务器日志看是 iPhone 每分钟左右重开一次页面：所有图解码后合计约 2.1GB，Safari 内存不够把页面杀了。
 // 大图（大招录像、敌将华彩、剧情图、战场底图、各兵种和敌将图集、命中帧动画）改成用到才加载：设 src 时先记下，第一次 ready() 问到它才真去下载解码，也不算进加载页
-const LAZY_RE = /img\/(ult_|fx_boss_|story_|bg_|room|fb\/|card_|enemy_|huangjin|lishi|gong|cyz|yayi|dengmao|shushi|qibing|xiliang|feixiong|xianzhen|baixing|zhangjiao|tieqi|langqi|huzhen|huaxiong|lijue|gaoshun|lvbu|panfeng|wuanguo|qishou|zhangbao|duyou|qushuai|zhangliang|xiaowei|yushe)/;
+const REL_LIST = 'fx_boss_|story_|bg_|room|card_|enemy_|huangjin|lishi|gong|cyz|yayi|dengmao|shushi|qibing|xiliang|feixiong|xianzhen|baixing|zhangjiao|tieqi|langqi|huzhen|huaxiong|lijue|gaoshun|lvbu|panfeng|wuanguo|qishou|zhangbao|duyou|qushuai|zhangliang|xiaowei|yushe';
+const LAZY_RE = new RegExp('img/(ult_|fb/|' + REL_LIST + ')'), REL_RE = new RegExp('img/(' + REL_LIST + ')');   // 技能图（大招录像 ult_、命中帧动画 fb/）用到才加载但不释放；其余换关时放掉
 const SRC_SET = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src').set;
 const LOADQ = [], _Img = window.Image; window.Image = function (...a) { const im = new _Img(...a);
   Object.defineProperty(im, 'src', { configurable: true, get() { return im._url || ''; }, set(u) { im._url = u; if (LAZY_RE.test(u)) { im._lazy = u; return; }
     if (!LOADED) { LOADQ.push(im); im.addEventListener('load', () => (im.decode ? im.decode() : Promise.resolve()).catch(() => {}).then(() => { im._ok = 1; })); im.addEventListener('error', () => { im._ok = 1; }); }
     SRC_SET.call(im, u); } });
   return im; };
-const wake = im => { if (im && im._lazy) { const u = im._lazy; im._lazy = null; SRC_SET.call(im, u); } };
+const WOKEN = new Set(); let CUR_LV = -1;
+const wake = im => { if (!im) return; if (im._lazy) { const u = im._lazy; im._lazy = null; if (REL_RE.test(u)) { im._rel = 1; WOKEN.add(im); } SRC_SET.call(im, u); } if (im._rel) im._lv = CUR_LV; };
+// 10-30 用户：「换关时把上一关的图释放掉，但技能图不释放」——开打前先把这关要的图叫起来（记上这关），再把别的放掉；放掉的下次用到会再加载
+function releaseImgs() { for (const im of WOKEN) if (im._lv !== CUR_LV) { im._lazy = im._url; im._rel = 0; im.removeAttribute('src'); WOKEN.delete(im); } }
 let LOADED = false; const LOAD_T0 = performance.now(); let loadShown = 0;
 const loadFrac = () => LOADQ.length ? LOADQ.filter(im => im._ok).length / LOADQ.length : 0;
 'use strict';
@@ -1038,8 +1042,9 @@ let MLB = null;
 function startLevel(i) {
   sheetPrune(i); if (ML) ML.clear(); if (MLB) MLB.clear();
   const lv = LEVELS[i], RU = lv.rules || {};
-  if (!window.__sg.simming) { const js = JSON.stringify(lv); ready(IMG['bg_' + lv.map]);   // 用到才加载的图：开打前先把这关的兵种图集、底图、敌将华彩叫起来，免得头几个兵看不见
-    for (const [k, T] of Object.entries(FOES)) if (js.includes('"' + k + '"')) for (const n of [T.sheet, T.alt, T.sheet && T.sheet + '_back', ...(T.sheet === 'qibing' ? [1, 2, 3, 4, 5, 6, 7].map(d => 'qibing_' + d) : [])]) if (n) { ready(IMG[n]); if (BVFX[k]) ready(BVFX[k].im); } }
+  if (!window.__sg.simming) { CUR_LV = i; const js = JSON.stringify(lv); ready(IMG['bg_' + lv.map]); if (MAP_ALIAS[lv.map]) ready(IMG['bg_' + MAP_ALIAS[lv.map]]);   // 用到才加载的图：开打前先把这关的兵种图集、底图、敌将华彩叫起来，免得头几个兵看不见
+    for (const [k, T] of Object.entries(FOES)) if (js.includes('"' + k + '"')) for (const n of [T.sheet || T.alt, T.sheet && T.sheet + '_back', ...(T.sheet === 'qibing' ? [1, 2, 3, 4, 5, 6, 7].map(d => 'qibing_' + d) : [])]) if (n) { ready(IMG[n]); if (BVFX[k]) ready(BVFX[k].im); }
+    releaseImgs(); }
   rnd = mulberry(lv.id * 7919 + (window.__sg.seed || 0));
   const queue = buildQueue(lv), chg = {}; for (const it of queue) if (it.ch != null) (chg[it.ch] ??= { total: 0, n: 0, last: 0, state: 'mark' }).total++;
   G = { li: i, lv, RU, t: 0, foes: [], shots: [], fx: [], decals: [], logs: [], st: freshStats(), wall: 100, wallMax: 100, exp: 0, rank: 0, perks: {},
@@ -2308,7 +2313,8 @@ function drawSheet(name, anim, f, x, y, k, alpha = 1) {
   ctx.globalAlpha = alpha; ctx.drawImage(im, r[0] * q, r[1] * q, r[2] * q, r[3] * q, x - A.anchor[0] * k, y - A.anchor[1] * k, r[2] * k, r[3] * k); ctx.globalAlpha = 1; ctx.filter = f0;
 }
 // 专属图集还没做的兵种先借一张（alt）：张角借术士（同是黄袍道士），骑兵借黄巾兵
-const sheetOf = T => [T.sheet, T.alt].find(k => k && SHEETS[k] && ready(IMG[k]));
+const sheetOf = T => { const im = T.sheet && SHEETS[T.sheet] && IMG[T.sheet]; if (im) { if (ready(im)) return T.sheet; if (!im.complete) return undefined; }   // 10-30：自己的图集还在加载就等它，不去叫备用的（免得两张都载进内存）；加载失败才用备用
+  return T.alt && SHEETS[T.alt] && ready(IMG[T.alt]) ? T.alt : undefined; };
 // 换色（tint）和立绘（pt）只在还借着别人的图集时用；Veo 录的专属图集到了就用原色（10-25）
 const tintOf = T => T.tint && (T.tintOwn || sheetOf(T) !== T.sheet) ? TINT[T.tint] : 'none',   // tintOwn：用自己的贴图也调色（弓手调成青蓝，和黄巾兵分得开）
   ownSheet = T => sheetOf(T) === T.sheet;
@@ -6343,7 +6349,8 @@ window.__sg = {
     this.seed = 0; return JSON.stringify(out); },
   pick: i => takePerk(i), step: n => { for (let k = 0; k < n; k++) { if (G.state === 'pick' && window.__sg.auto) takePerk(autoPick()); step(DT); } },
   // 一直跑到某种特效刚出来 at 秒（截图用）
-  until(kind, at = .1, maxN = 20000) { const old = new Set(G.fx); for (let k = 0; k < maxN; k++) { if (G.state === 'pick') takePerk(autoPick()); step(DT); const f = G.fx.find(f => f.k === kind && !old.has(f)); if (f && f.t >= at) return true; } return false; }, tap: (x, y) => cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: cv.getBoundingClientRect().left + x * S, clientY: cv.getBoundingClientRect().top + y * S })),
+  until(kind, at = .1, maxN = 20000) { const old = new Set(G.fx); for (let k = 0; k < maxN; k++) { if (G.state === 'pick') takePerk(autoPick()); step(DT); const f = G.fx.find(f => f.k === kind && !old.has(f)); if (f && f.t >= at) return true; } return false; }, get woken() { return [...WOKEN].map(im => (im._url || '').split('/').pop().split('?')[0]); },   // 调试：换关后留在内存里的大图
+  tap: (x, y) => cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: cv.getBoundingClientRect().left + x * S, clientY: cv.getBoundingClientRect().top + y * S })),
 };
 
 // ---------- 主循环 ----------
