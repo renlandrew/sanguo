@@ -2111,8 +2111,11 @@ function renderScreen() {
   for (const L of G.logs) drawLog(L);
   drawHuts();
   drawDim();
+  { const k = stageDark(); if (k > 0) { ctx.fillStyle = `rgba(6,8,26,${.55 * k})`; ctx.fillRect(0, 0, W, H); } }   // 10-30 放大招时地面压暗偏冷（人物不压），光才亮得起来
   drawGroundFx(); drawSpfx(true);
-  for (const f of G.fx) if (f.k === 'hdl') drawHdlGround(f);                 // 黄天当立：预兆的星图、地面光（在旋涡下）
+  if (texOK()) { for (const f of G.fx) if (f.k === 'hdl' && f.t > HDL_T0) { const S = hdlState(f), R = HDL_RX * .3 * S.open; if (S.fade > 0) { ctx.save(); ctx.translate(f.x, f.y); ctx.scale(1, HDL_SQ); const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, R); gr.addColorStop(0, `rgba(4,3,14,${.95 * S.fade})`); gr.addColorStop(.7, `rgba(10,8,30,${.85 * S.fade})`); gr.addColorStop(1, 'rgba(10,8,30,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.283); ctx.fill(); ctx.restore(); } }   // 旋涡暗核
+    if (G.fx.some(f => f.k === 'hdl')) glowPass(g => { for (const f of G.fx) if (f.k === 'hdl') hdlGroundTex(g, f); }); }
+  else for (const f of G.fx) if (f.k === 'hdl') drawHdlGround(f);                 // 黄天当立：预兆的星图、地面光（在旋涡下）
   spxPass('ground');
   for (const f of G.fx) if (f.k === 'hdl') { if (!SPX.ok || !SPX.vortexP) drawHdlFallback(f); drawHdlBits(f); }
   for (const f of G.fx) if (f.k === 'corpse') drawCorpse(f);
@@ -2128,7 +2131,9 @@ function renderScreen() {
   for (const s of G.shots) drawShot(s);
   if (SPX.ok) spxParts(); else drawParts();
   spxPass('top');
-  drawFbs(); drawSpfx(false); for (const f of G.fx) { if (f.k === 'hdl') drawHdlTop(f); else if (f.k === 'dragon') drawDragon(f); }
+  drawFbs(); drawSpfx(false);
+  if (texOK()) { if (G.fx.some(f => f.k === 'hdl' || f.k === 'dragon' || f.k === 'fireline')) glowPass(g => { for (const f of G.fx) { if (f.t < 0) continue; if (f.k === 'hdl') hdlTopTex(g, f); else if (f.k === 'dragon') dragonTex(g, f); else if (f.k === 'fireline') fireTex(g, f); } }); }   // 10-30 纹理版＋泛光
+  else for (const f of G.fx) { if (f.k === 'hdl') drawHdlTop(f); else if (f.k === 'dragon') drawDragon(f); }
   for (const f of G.fx) if (f.k === 'cutin') drawCutIn(f);   // 黄天当立：光带、光瓣、飘带
   drawShards();
   if (ML) { const dt = clamp((G.vt || 0) - (ML.vt0 ?? (G.vt || 0)), 0, 1 / 20); ML.vt0 = G.vt || 0; ML.step(dt); if (ML.render(cv.width, cv.height)) ctx.drawImage(ML.canvas, 0, 0, W, H); ML.drawParts(ctx); }
@@ -2471,7 +2476,7 @@ function drawBossVfx(k, t, x, y, size, rot = 0, alpha = 1, wx = 1) {
   if (V.efk) { ctx.globalAlpha = alpha * .9; ctx.drawImage(C, 0, 0, sw, sh, -dw / 2, -dh / 2, dw, dh); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = alpha * .35; ctx.drawImage(C, 0, 0, sw, sh, -dw / 2, -dh / 2, dw, dh); }   /* Effekseer 的透明是干净的：正常叠上去保住颜色，再「变亮」叠一层发光 */
   else { ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = alpha * .62; ctx.drawImage(C, 0, 0, sw, sh, -dw / 2, -dh / 2, dw, dh); } ctx.restore();   /* 10-27 用户：「我觉得都要优化一下」——「滤色」叠上去像光，不再是平涂实心块盖住场景；胡轸加亮那层用户说「保持之前的淡更好看」，去掉了 */
 }
-const NEW_FIRE = false;   // 10-29 华雄地火、吕布火龙的实时版草稿：离用户要的级别差得远，等纹理到了重做，先关着（线上用原来的）
+const NEW_FIRE = true;    // 10-30 用户画好纹理（「地火那些都画好了」）：华雄地火、吕布火龙改用纹理版，打开
 const BVFX_OFF = NEW_FIRE ? { huzhen: 1, huaxiong: 1, lvbu: 1 } : { huzhen: 1 };   /* 10-29 华雄、吕布：录好的火图不动、显死板，改成实时的地火和火龙 */   /* 10-27 用户：「不行，有明显的正方形。你还是自己画如何？」——胡轸不用 Veo 录像，回到两把画稿巨刀 */
 let BVFX_C = null, BVFX_T = null;
 function bvfxTint(C, sw, sh, col) {                                               // 保留明暗和羽化后的透明，只换色相：先存一份，铺颜色（color 混合），再按原透明裁回
@@ -2549,7 +2554,7 @@ function drawBossUlt(f) {
   } else if (f.boss === 'huaxiong') {                                               // 一刀从天劈下，城前地裂、整排着火
     const p = Math.min(1, t / .16), y = TOP - 80 + (cy - 40 - TOP + 80) * (p * p);
     drawTint('dao2', C.col, W / 2, y, 560, Math.PI, A * fade, .9); bossGlow(W / 2, y + 120, 130, C.glow, .35 * A * fade);
-    at1(f, 'slam', .16, () => { if (NEW_FIRE && SPX.ok && SPX.fireP) G.fx.push({ k: 'fireline', t: 0, dur: 1.75, x: W / 2, y: WALL_Y - 58, seed: VR(0, 1) }); else if (ML) for (let k = 0; k < 3; k++) setTimeout(() => ML && ML.fx.roar(70 + k * 110, WALL_Y - 14), k * 40); });   // 10-29 地火改实时生成（原来录好的火图加三团烟）
+    at1(f, 'slam', .16, () => { if (NEW_FIRE && (texOK() || (SPX.ok && SPX.fireP))) G.fx.push({ k: 'fireline', t: 0, dur: 1.75, x: W / 2, y: WALL_Y - 58, seed: VR(0, 1) }); else if (ML) for (let k = 0; k < 3; k++) setTimeout(() => ML && ML.fx.roar(70 + k * 110, WALL_Y - 14), k * 40); });   // 10-29 地火改实时生成（原来录好的火图加三团烟）
     bossBursts(f, C, 3, .16, .06);
     at1(f, 'gnd', .16, () => { gnd({ mode: 0, x: W / 2, y: WALL_Y - 78, rx: 240, sq: .3, dur: 1.5, open: .22, col: C.col, n: 6 }); gnd({ mode: 1, x: W / 2, y: WALL_Y - 78, rx: 160, sq: .32, dur: .8, open: .2, col: C.col, n: 5 }); });   // 一刀劈地：大片放射地裂，冲起一圈
   } else if (f.boss === 'lijue') {                                                  // 一把古铜横刀从左扫到右，刀后一路烟火
@@ -3604,6 +3609,75 @@ function hdlState(f) { const t = f.t - HDL_T0, open = t < 0 ? .02 : t < .45 ? 1 
   return { open: Math.max(.02, open), fade: t < 0 ? 0 : f.t > HDL_T1 + .2 ? Math.max(0, 1 - (f.t - HDL_T1 - .2) / .3) : 1, flash: Math.exp(-Math.pow((f.t - .9) / .07, 2)) + .7 * Math.exp(-Math.pow((f.t - HDL_T1 - .4) / .06, 2)) }; }
 const DIPPER = [[.42, -.28], [.46, .2], [.12, .3], [.04, -.12], [-.28, -.2], [-.56, -.08], [-.86, .14]];   // 北斗七星（天枢…摇光），地面坐标（乘半径、纵向压扁）
 const hdlP = (f, X, Y) => [f.x + X * HDL_RX * .85, f.y + Y * HDL_RX * .85 * HDL_SQ];
+// ===== 法术纹理（10-30 用户照参考黑洞特效画的，美术/法术纹理_黑底；黑底、用 lighter 叠加，黑色等于透明）=====
+// 照参考的三件事：放招时把地面压暗偏冷（光才亮得起来）；泛光（特效先画在离屏画布上，缩小再放大糊一层光叠回去）；主体用画好的纹理转、流、弯，不用代码画线
+const TEXN = ['nebula', 'petal', 'ribbon', 'flame', 'dbody', 'dhead', 'stars'];
+for (const n of TEXN) { IMG['tex_' + n] = new Image(); IMG['tex_' + n].src = 'img/tex_' + n + '.jpg' + BUST; }
+const texOK = () => TEXN.every(n => ready(IMG['tex_' + n]));
+const GLW = { c: document.createElement('canvas'), s: document.createElement('canvas'), s2: document.createElement('canvas') };
+function glowPass(fn, bloom = .9) {                                              // fn(g)：g 是离屏画布（逻辑坐标、已设 lighter）
+  const k = Math.min(2, RS), c = GLW.c, w = Math.ceil(W * k), h = Math.ceil(H * k);
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; GLW.s.width = Math.ceil(W / 4); GLW.s.height = Math.ceil(H / 4); GLW.s2.width = Math.ceil(W / 10); GLW.s2.height = Math.ceil(H / 10); }
+  const g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.clearRect(0, 0, w, h); g.setTransform(k, 0, 0, k, 0, 0); g.globalCompositeOperation = 'lighter'; fn(g); g.setTransform(1, 0, 0, 1, 0, 0);
+  for (const sc of [GLW.s, GLW.s2]) { const q = sc.getContext('2d'); q.clearRect(0, 0, sc.width, sc.height); q.imageSmoothingQuality = 'high'; q.drawImage(c, 0, 0, sc.width, sc.height); }
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = bloom * .7; ctx.drawImage(GLW.s, 0, 0, W, H); ctx.globalAlpha = bloom * .6; ctx.drawImage(GLW.s2, 0, 0, W, H);   // 两层光晕：近的一层、远的一层
+  ctx.globalAlpha = 1; ctx.drawImage(c, 0, 0, W, H); ctx.restore();
+}
+function stageDark() {                                                         // 放大招时地面压暗：黄天当立、华雄地火、吕布火龙
+  let k = 0; for (const f of G.fx) { const t = f.t, d = f.dur || 1; if (t < 0) continue;
+    if (f.k === 'hdl' || f.k === 'dragon' || f.k === 'fireline') k = Math.max(k, Math.min(1, t / .25, (d - t) / .45)); }
+  return clamp(k, 0, 1);
+}
+function drawStrip(g, im, pts, wfn, alpha = 1) {                               // 一条纹理沿折线弯着画：pts 从尾到头，wfn(u) 是这一段的宽
+  let L = 0; const seg = []; for (let i = 1; i < pts.length; i++) { const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg.push(l); L += l; } if (L < 1) return;
+  let acc = 0; g.globalAlpha = alpha;
+  for (let i = 1; i < pts.length; i++) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], l = seg[i - 1], u0 = acc / L, u1 = (acc + l) / L, w = wfn((u0 + u1) / 2); acc += l;
+    g.save(); g.translate((x0 + x1) / 2, (y0 + y1) / 2); g.rotate(Math.atan2(y1 - y0, x1 - x0)); g.drawImage(im, u0 * im.width, 0, Math.max(1, (u1 - u0) * im.width), im.height, -l / 2 - .6, -w / 2, l + 1.2, w); g.restore(); }
+  g.globalAlpha = 1;
+}
+const starTex = (g, x, y, sz, i, a) => { const im = IMG.tex_stars; g.globalAlpha = a; g.drawImage(im, (i % 6) * 128, 0, 128, 128, x - sz / 2, y - sz / 2, sz, sz); g.globalAlpha = 1; };
+function hdlGroundTex(g, f) {                                                   // 黄天当立贴地：星图、地面光、星云旋涡盘（两层不同速度转）
+  const t = f.t, wash = t < .2 ? t / .2 : t < HDL_T1 ? 1 : Math.max(0, 1 - (t - HDL_T1) / .5); if (wash <= 0) return;
+  g.save(); g.translate(f.x, f.y); g.scale(1, HDL_SQ); const gr = g.createRadialGradient(0, 0, 0, 0, 0, HDL_RX * 1.2);
+  gr.addColorStop(0, `rgba(120,110,255,${.28 * wash})`); gr.addColorStop(1, 'rgba(40,40,160,0)'); g.fillStyle = gr; g.beginPath(); g.arc(0, 0, HDL_RX * 1.2, 0, 6.283); g.fill(); g.restore();
+  const sa = t < HDL_T0 ? 1 : Math.max(0, 1 - (t - HDL_T0) / .5);
+  if (sa > 0) { for (let k = 0; k < 36; k++) { const a = k / 36 * 6.283 + t * .9, vis = (Math.sin(a * 1.5 - t * 3) + 1) / 2; if (vis < .3) continue; const [x, y] = hdlP(f, Math.cos(a) * 1.05, Math.sin(a) * 1.05); starTex(g, x, y, 10, k, sa * wash * vis * .8); }
+    g.lineCap = 'round'; for (let k = 0; k < 7; k++) { const tk = .15 + k * .08; if (t < tk) break; const u = Math.min(1, (t - tk) / .1), [x, y] = hdlP(f, ...DIPPER[k]);
+      if (k > 0) { const [x0, y0] = hdlP(f, ...DIPPER[k - 1]); g.globalAlpha = sa * .6; g.strokeStyle = '#a8b4ff'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + (x - x0) * u, y0 + (y - y0) * u); g.stroke(); }
+      starTex(g, x, y, 34 * (1 + 1.2 * Math.exp(-(t - tk) / .07)), k, sa * u); } g.globalAlpha = 1; }
+  const S = hdlState(f); if (t > HDL_T0 && S.fade > 0) { const neb = IMG.tex_nebula;
+    for (const [rs, sp, al] of [[1.05, -1.1, .95], [.72, -2.2, .7]]) { const R = HDL_RX * rs * S.open; g.save(); g.translate(f.x, f.y); g.scale(1, HDL_SQ); g.rotate((t - HDL_T0) * sp + f.seed * 6); g.globalAlpha = S.fade * al * (1 + .6 * S.flash); g.drawImage(neb, -R, -R, R * 2, R * 2); g.restore(); }
+    g.globalAlpha = 1; }
+}
+function hdlTopTex(g, f) {                                                      // 黄天当立上层：蓄的光带、光瓣绽放、飘带绕转
+  const t = f.t; g.lineCap = 'round';
+  if (t < .62) { const P = u => { const a = [f.hx, f.hy], b = [f.x + 90, f.y - 190], c = [f.x, f.y]; return [(1 - u) * (1 - u) * a[0] + 2 * u * (1 - u) * b[0] + u * u * c[0], (1 - u) * (1 - u) * a[1] + 2 * u * (1 - u) * b[1] + u * u * c[1]]; };
+    const head = Math.min(1, t / .5), fade = t > .5 ? 1 - (t - .5) / .12 : 1, pts = []; for (let k = 14; k >= 0; k--) { const u = head - k * .04; if (u >= 0) pts.push(P(u)); }
+    if (pts.length > 1) drawStrip(g, IMG.tex_ribbon, pts, u => 6 + 22 * u, fade); const [hx, hy] = P(head); starTex(g, hx, hy, 40, 1, fade); }
+  if (t > .78 && t < 1.5) { const u = (t - .78) / .72, sc = .35 + .9 * (1 - Math.pow(1 - Math.min(1, u * 1.5), 3)), a = u < .2 ? u / .2 : Math.max(0, 1 - (u - .2) / .8), R = 150 * sc, im = IMG.tex_petal;
+    g.save(); g.translate(f.x, f.y - 40); g.rotate(u * .4); g.scale(1, .85); g.globalAlpha = a * .62; g.drawImage(im, -R, -R, R * 2, R * 2); g.restore(); g.globalAlpha = 1; }   // 最亮时别过曝（泛光会再加一层）
+  const S = hdlState(f);
+  if (t > HDL_T0 && S.fade > 0) for (let r = 0; r < 3; r++) { const rx = HDL_RX * (.7 + .2 * r) * S.open, ry = rx * (.3 + .1 * r), tilt = -.35 + .3 * r, th0 = (t - HDL_T0) * (3 - .6 * r) + r * 2.1, cx = f.x, cy = f.y - 24 - 12 * r, pts = [];
+    for (let k = 16; k >= 0; k--) { const a = th0 - k * .11, x = Math.cos(a) * rx, y = Math.sin(a) * ry; pts.push([cx + x * Math.cos(tilt) - y * Math.sin(tilt), cy + x * Math.sin(tilt) + y * Math.cos(tilt)]); }
+    drawStrip(g, IMG.tex_ribbon, pts, u => 8 + 26 * u, S.fade * .9); }
+}
+function fireTex(g, f) {                                                        // 华雄地火：火焰条沿裂缝从落点往两边烧开；前后两层错开、火苗高低窜动
+  const t = f.t, im = IMG.tex_flame, spd = 420, life = 1.25, n = 48, sw = W / n;   // 切细条、高低用平滑波动，不成一块块台阶
+  for (const [layer, hk, off, al] of [[0, .8, 0, .65], [1, 1.15, .5, 1]]) for (let i = 0; i < n; i++) {
+    const x = i * sw, age = t - Math.abs(x + sw / 2 - f.x) / spd; if (age <= 0) continue; const env = Math.min(1, age / .12) * Math.max(0, 1 - Math.max(0, age - life * .55) / (life * .45)); if (env <= 0) continue;
+    const xc = x + sw / 2, fl = .78 + .22 * Math.sin(xc * .045 + t * 9 + layer * 1.7) + .14 * Math.sin(xc * .13 - t * 13 + layer), h = 92 * hk * env * fl, sx = ((i + off) * sw / W * im.width + t * 60) % (im.width - sw / W * im.width);
+    g.globalAlpha = al * Math.min(1, env * 1.3); g.drawImage(im, sx, 0, sw / W * im.width, im.height, x - 1, f.y - h, sw + 2, h + 6); }
+  g.globalAlpha = 1;
+}
+function dragonTex(g, f) {                                                      // 吕布火龙：龙身纹理沿扭动的路径弯折，龙头在前头转向
+  const t = f.t, head = Math.min(1, t / .78) ** .85, fade = t < .78 ? 1 : Math.max(0, 1 - (t - .78) / .35); if (fade <= 0) return;
+  const N = 30, pts = []; for (let i = 0; i < N; i++) { const sv = head - i * .022; if (sv < 0) break; pts.push(dragonAt(f, sv)); } if (pts.length < 3) return;
+  for (let i = 1; i < pts.length - 1; i++) { const [ax, ay] = pts[i - 1], [bx, by] = pts[i + 1], L = Math.hypot(bx - ax, by - ay) || 1, sw = Math.sin(i * .55 - t * 14) * 9 * Math.min(1, i / 4); pts[i] = [pts[i][0] - (by - ay) / L * sw, pts[i][1] + (bx - ax) / L * sw]; }
+  drawStrip(g, IMG.tex_dbody, pts.slice().reverse(), u => 14 + 48 * u, fade);
+  const [hx, hy] = pts[0], [nx, ny] = pts[2], ang = Math.atan2(hy - ny, hx - nx), im = IMG.tex_dhead, hw = 120, hh = hw * im.height / im.width;
+  g.save(); g.translate(hx, hy); g.rotate(ang); if (Math.cos(ang) < 0) g.scale(1, -1); g.globalAlpha = fade; g.drawImage(im, -hw * .62, -hh / 2, hw, hh); g.restore(); g.globalAlpha = 1;
+  if (t < .8 && vr() < .7) { const [x, y] = pts[Math.floor(vr() * pts.length)]; (G.shards = G.shards || []).push({ k: 'ember', x: x + VR(-5, 5), y: y + VR(-5, 5), vx: VR(-25, 25), vy: VR(-60, -20), born: G.vt || 0, life: VR(.35, .6), s: VR(2.5, 4), c: '#ffb070' }); }
+}
 function drawHdlGround(f) {                                                     // 预兆：地面蓝紫光、北斗七星、点状星轨（贴地，在敌人身后）
   const t = f.t, wash = t < .2 ? t / .2 : t < HDL_T1 ? 1 : Math.max(0, 1 - (t - HDL_T1) / .5); if (wash <= 0) return;
   ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(f.x, f.y); ctx.scale(1, HDL_SQ);
@@ -3734,10 +3808,10 @@ function spxPass(layer) {
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, SPX.tex.noise); gl.uniform1i(SPX.su.uNoise, 1); gl.uniform1i(SPX.su.uRamp, 2);
   let drew = 0;
   for (const b of SPX.bodies) { if (b.burst || b.paint || b.layer !== layer) continue; const t = vt - b.born; if (t < 0) continue; spxDraw(b, t); drew++; }
-  if (layer === 'ground' && SPX.vortexP) for (const f of G.fx) if (f.k === 'hdl') { spxVortex(f); drew++; }
+  if (layer === 'ground' && SPX.vortexP && !texOK()) for (const f of G.fx) if (f.k === 'hdl') { spxVortex(f); drew++; }   // 有纹理时改用星云盘
   if (layer === 'ground' && SPX.groundP) for (const f of G.fx) if (f.k === 'gnd' && f.t >= 0) { spxGround(f); drew++; }   // 贴地法阵
   if (layer === 'top' && SPX.shoutP) for (const f of G.fx) if (f.k === 'shout_efk' && f.t >= 0 && f.t < f.dur) { spxShout(f); drew++; }   // 张飞声浪（实时生成）
-  if (layer === 'top' && SPX.fireP) for (const f of G.fx) if (f.k === 'fireline' && f.t >= 0) { spxFire(f); drew++; }   // 华雄地火（实时生成）   // 黄天当立的天裂旋涡（在敌将身后）
+  if (layer === 'top' && SPX.fireP && !texOK()) for (const f of G.fx) if (f.k === 'fireline' && f.t >= 0) { spxFire(f); drew++; }   // 华雄地火（实时生成）   // 黄天当立的天裂旋涡（在敌将身后）
   for (const b of SPX.bodies) {                                                  // 有生命的画稿：撑开（带回弹）、从后面掠到前面、淡掉
     if (!b.paint || b.layer !== layer) continue; const t = vt - b.born; if (t < 0) continue; const u = t / b.life, e = 1 - Math.pow(1 - Math.min(1, u * 2.5), 3);
     const sc = b.pop + (1.06 - b.pop) * e - .06 * clamp((u - .4) / .6, 0, 1), a = u < .5 ? 1 : 1 - (u - .5) / .5;
