@@ -3983,7 +3983,6 @@ function drawFx(f) {
   } else if (f.k === 'blocked') { const u = f.t / 1.2; if (u > 1) return;          // 举盾挡下：大字「挡」，下面一行「反击」
     const sc = 1 + .3 * Math.max(0, 1 - u * 5), al = u < .7 ? 1 : (1 - u) / .3;
     txt('挡', W / 2 + 2, WALL_Y - 120 + 2, 86 * sc, '#000', 'center', FONT, .2 * al); txt('挡', W / 2, WALL_Y - 120, 86 * sc, INK, 'center', FONT, al);
-    txt('反击！招式伤害 +50%', W / 2, WALL_Y - 64, 16, CINNABAR, 'center', FONT, al);
   } else if (f.k === 'shieldup') { const D = 1.4, u = f.t / D; if (u > 1) return;     // 举盾：屏幕中间竖起一面大盾，停一会儿再淡掉（10-26 用户：「这个盾要放大在屏幕中间持续一段时间，不然几乎看不到，就一个大盾即可」）
     const t = f.t, pop = t < .12 ? .55 + .5 * ease(t / .12) : t < .22 ? 1.05 - .05 * (t - .12) / .1 : 1, al = u > .78 ? (1 - u) / .22 : Math.min(1, t / .06), cx = W / 2, cy = WALL_Y - 150, S2 = 210 * pop;
     ctx.save(); ctx.globalAlpha = al * .55; const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, S2 * .8); g.addColorStop(0, 'rgba(255,214,120,.8)'); g.addColorStop(1, 'rgba(255,190,90,0)'); ctx.fillStyle = g; ctx.fillRect(cx - S2, cy - S2, S2 * 2, S2 * 2); ctx.restore();
@@ -4099,7 +4098,7 @@ function drawHud() {
   if (G.wells) st.push(['井 ' + G.wells.filter(w => w.n >= 3).length + '/3' + (G.sealFound ? ' · 得玉玺' : ''), UIC.cream]);
   if (G.RU.rage) st.push(['怒 ' + (G.rageT > 0 ? '暴怒中' : G.stabs + '/' + G.RU.rage), G.rageT > 0 ? UIC.red2 : UIC.cream]);
   // 10-29 用户：「反击出现在蓝框这里，如果有ready 的大招就提示一下」——反击倒计时挪到场中（城头上方那块空地），招式好了就点名催放
-  if (G.counterT > 0 && G.state === 'play' && !G.fx.some(f => (f.k === 'blocked' && f.t < 1.1) || (f.k === 'shieldup' && f.t < 1.3))) { const cy = WALL_Y - 192, pul = .5 + .5 * Math.sin(uiNow() * 10);
+  if (G.counterT > 0 && G.state === 'play' /* 10-29 用户：盾上那行保留、盾下那行去掉 */) { const cy = WALL_Y - 192, pul = .5 + .5 * Math.sin(uiNow() * 10);
     const rd = []; for (let i = 0; i < NS; i++) { const id = G.order[i]; if (id && knows(id) && G.t >= G.ready[i] && !(G.seal[i] > 0) && (!G.RU.casts || G.casts > 0) && rd.indexOf(id) < 0) rd.push(id); }
     const tag = (t, y, sz, fill) => { ctx.save(); ctx.font = `${sz}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(40,14,6,.8)'; ctx.strokeText(t, W / 2, y);
       ctx.lineWidth = 2; ctx.strokeStyle = UIC.gold2; ctx.strokeText(t, W / 2, y); ctx.fillStyle = fill; ctx.fillText(t, W / 2, y); ctx.restore(); };
