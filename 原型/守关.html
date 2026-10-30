@@ -291,7 +291,7 @@ const SK_X = 2, ATK_X = 16;   /* 招式每下 ×2、普攻 ×16：普攻扛大�
 // 招式要学（10-25 夜用户：「第一关没有技能，只有普攻和滚木，但也要很快通过，刘备学会技能，关张第2，3关」）：
 // 第一关三人只有普攻，开局送一层滚木；打完第一关刘备学会双股剑、第二关关羽学会青龙斩、第三关张飞学会当阳一喝。按关序算，重打前面的关也照这个
 const LEARN = { liu: 2, guan: 3, zhang: 4 };                                         // 第几关起会这一招
-const knows = id => !LEARN[id] || !G || G.lv.id >= LEARN[id];
+const knows = id => !LEARN[id] || !G || G.lv.id >= LEARN[id] || (!G.sim && !window.__sg.simming && (BEST[LEARN[id] - 1] || 0) > 0);   // 10-30 用户：「回头打旧关时，应该是带着新的技能和等级和武器的」——学会的招（打过教这招的那关）回旧关也能用；机器人推演照旧按关号
 // 武将成长（10-25 用户：「打完一关，参战将领必须升经验升级，武力那些要设计，参加光荣的三国志」）：
 // 五维照光荣三国志：统率、武力、智力、政治、魅力（满 100）。base 是第一关时的值（184 年，三人还年轻），up 是每升一级涨多少（各人长的方向不一样）。
 // 战斗里只看「比第一级多了多少」，所以一级时和调好的平衡一模一样：
@@ -878,6 +878,7 @@ const dayStr = off => { const d = new Date(nowMs() + ((window.__sg && window.__s
 const dayNum = s => Math.round(Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 864e5);
 const weekKey = s => { const n = dayNum(s); return n - ((n + 3) % 7); };                // 这一周的星期一（1970-01-01 是星期四）
 // 军务题库：挑你打过的关，加一个打法条件；条件只用你手里有的
+const unsNeed = id => id <= 5 ? 1 : 2;   // 10-30 用户：「你一次怎么能喝断两次无双？」——第五关邓茂一场只打 40 秒上下，整场多半只出一两次无双、一喝冷却 20 秒，两次几乎做不到；第五关只要一次
 const TASKS = {
   star3:   { ok: lv => true, text: n => `${n}拿三星`, check: (r, G) => r.stars >= 3 },
   noleak:  { ok: lv => lv.kind !== 'duel', text: n => `${n}漏兵不超过两个`, check: (r, G) => r.win && G.leaked <= 2 },
@@ -888,7 +889,7 @@ const TASKS = {
   combo:   { ok: lv => lv.kind !== 'duel' && fighters(lv).length > 1, text: n => `${n}晋升时拿一个连携战法`, check: (r, G) => r.win && PERKS.some(p => p.combo && G.perks[p.id]) },
   huts:    { ok: lv => !!(lv.rules && lv.rules.huts), text: n => `${n}把草营全烧掉`, check: (r, G) => r.win && G.huts.length && G.huts.every(h => h.burnt) },
   civ:     { ok: lv => (lv.waves || []).some(w => FOES[w[1]].civ), text: n => `${n}救下九成百姓`, check: (r, G) => r.win && G.saved >= G.civTotal * .9 },
-  block:   { ok: lv => lv.kind === 'duel', text: n => `${n}一喝喝断两次无双`, check: (r, G) => r.win && (G.unsBroken || 0) >= 2 },   // 10-28 举盾改自动，军务改成喝断无双
+  block:   { ok: lv => lv.kind === 'duel', text: (n, id) => `${n}一喝喝断${unsNeed(id) > 1 ? '两' : '一'}次无双`, check: (r, G) => r.win && (G.unsBroken || 0) >= unsNeed(G.lv.id) },   // 10-28 举盾改自动，军务改成喝断无双
   // 按关的打法军务（10-26 补）：护车、护友军、护将旗、夜里省火把、井里捞玉玺
   cart:    { ok: lv => !!(lv.rules && lv.rules.cart && lv.rules.cart.kind !== 'ram'), text: n => `${n}车驾保住八成`, check: (r, G) => r.win && G.cart && G.cart.hp >= G.cart.max * .8 },
   ram:     { ok: lv => !!(lv.rules && lv.rules.cart && lv.rules.cart.kind === 'ram'), text: n => `${n}冲车保住一半撞开关门`, check: (r, G) => r.win && G.cart && G.cart.hp >= G.cart.max * .5 },
@@ -5301,7 +5302,7 @@ function drawGainCard(g, x, y, w, h, tt, win, top) {
   const need = needLv(cur.lv), fr = cur.lv >= LV_CAP ? 1 : cur.exp / need;
   slotBar(tx, y + 27, 66, 8, [[fr, '#a8701a', '#ffe08a']]); uiText('+' + Math.round(g.g * p), tx + 70, y + 31, 10, '#ffd76e', 'left', PLAIN, { lw: 2.5 });
   // 伤害：一条两段（深的是招式，浅的是普攻），右上一个总数；学了招才写招名
-  const dx = x + 156, dw = w - 156 - 12, sk = g.sk || 0, nb = Math.max(0, g.dmg - sk), learnt = !LEARN[g.id] || G.lv.id >= LEARN[g.id], hue = GEN_HUE[g.id], gr = clamp((tt - .2) / .8, 0, 1);
+  const dx = x + 156, dw = w - 156 - 12, sk = g.sk || 0, nb = Math.max(0, g.dmg - sk), learnt = knows(g.id), hue = GEN_HUE[g.id], gr = clamp((tt - .2) / .8, 0, 1);
   if (learnt && sk > 0) uiText(GEN[g.id].skill, dx, y + 14, 11, hue[1], 'left', FONT, { lw: 3 });
   uiText(fmtDmg(g.dmg * gr), dx + dw, y + 14, 13, UIC.cream, 'right', FONT, { lw: 3 });
   const mx = Math.max(1, top || g.dmg);
