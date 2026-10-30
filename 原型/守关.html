@@ -1767,6 +1767,7 @@ function smartCast(al) {
 const playerAuto = () => G && !G.sim && !window.__sg.auto && !G.RU.casts && G.autoCast;
 function startCast(i) {
   const id = G.order[i]; (G.castBy = G.castBy || {})[id] = 1;
+  if (!G.sim && IMG['eye_' + id]) { const vt = G.vt || 0; G.cutLast = G.cutLast || {}; if (vt - (G.cutLast[id] ?? -99) > 8 && vt - (G.cutAny ?? -99) > 2.5) { G.cutLast[id] = G.cutAny = vt; G.fx.push({ k: 'cutin', t: 0, dur: 1.05, id, name: skName(id) }); } }   // 10-29 大招眼部特写（每人 8 秒、全场 2.5 秒最多一次）
   if (G.RU.casts) G.casts--;
   let boost = 1;
   if (G.jiNext && id !== 'liu') { boost *= G.jiMul || 1.6; G.jiNext = false; G.fx.push({ k: 'txt', t: 0, x: genX(i), y: GY - 120, text: '激将 +' + Math.round(((G.jiMul || 1.6) - 1) * 100) + '%', size: 16, color: AZURE }); }
@@ -2091,6 +2092,7 @@ function renderScreen() {
   if (screen === 'ach') { drawAch(); return; }
   if (screen === 'armory') { drawArmory2(); return; }
   if (screen === 'counsel') { drawCounsel(); return; }
+  if (screen === 'qimou') { drawQimou(); return; }
   if (screen === 'gate') { drawGate(); return; }
   if (screen === 'prep') { drawPrep(); return; }
   if (screen === 'sand') { drawSand(); return; }
@@ -2126,7 +2128,8 @@ function renderScreen() {
   for (const s of G.shots) drawShot(s);
   if (SPX.ok) spxParts(); else drawParts();
   spxPass('top');
-  drawFbs(); drawSpfx(false); for (const f of G.fx) { if (f.k === 'hdl') drawHdlTop(f); else if (f.k === 'dragon') drawDragon(f); }   // 黄天当立：光带、光瓣、飘带
+  drawFbs(); drawSpfx(false); for (const f of G.fx) { if (f.k === 'hdl') drawHdlTop(f); else if (f.k === 'dragon') drawDragon(f); }
+  for (const f of G.fx) if (f.k === 'cutin') drawCutIn(f);   // 黄天当立：光带、光瓣、飘带
   drawShards();
   if (ML) { const dt = clamp((G.vt || 0) - (ML.vt0 ?? (G.vt || 0)), 0, 1 / 20); ML.vt0 = G.vt || 0; ML.step(dt); if (ML.render(cv.width, cv.height)) ctx.drawImage(ML.canvas, 0, 0, W, H); ML.drawParts(ctx); }
   drawWash();
@@ -2393,6 +2396,10 @@ function drawFoe(e) {
   if (e.hp < e.max && !T.boss) bar(x - 10 * ps, y - top - 2 * ps, 20 * ps, 2, e.hp / e.max, INK2, 'rgba(29,26,23,.12)');   // 血条用墨色，别和力士的红巾撞色
 }
 // 场上道具（10-25 用户指着程序画的拒马：「这个也要gpt 重新画」）：ChatGPT 画的，工具/cut_props.py 抠成 img/props.png；没有就照旧程序画
+// 10-29 Codex 画的奇谋与大招素材（美术/奇谋与大招_1029）：深堑、墨笔横幅、刘关张眼部特写、奇谋卡框与 17 张卡面
+const QM_CARDS = ['qinglong', 'wenjiu', 'roar', 'pojian', 'shuang', 'hujin', 'ambush', 'ploy', 'ditch', 'jiji', 'foe_ambush', 'foe_fire', 'foe_lijian', 'foe_jijiang', 'foe_rush', 'foe_reinf', 'foe_yaoshu'];
+for (const n of ['ditch', 'brush_k', 'brush_r', 'card_frame']) { IMG[n] = new Image(); IMG[n].src = 'img/' + n + '.png' + BUST; }
+for (const n of ['eye_guan', 'eye_zhang', 'eye_liu', ...QM_CARDS.map(k => 'card_' + k)]) { IMG[n] = new Image(); IMG[n].src = 'img/' + n + '.jpg' + BUST; }
 for (const n of ['well_0', 'well_1', 'well_2', 'seal']) { IMG[n] = new Image(); IMG[n].src = 'img/' + n + '.png' + BUST; }   // 井中玉玺（10-29 用户画）
 const PROPS = {}; IMG.props = new Image(); IMG.props.src = 'img/props.png' + BUST; fetch('img/props.json' + BUST).then(r => r.json()).then(j => Object.assign(PROPS, j)).catch(() => {});
 // Blender 车驾步行循环：马腿与车轮同一段序列，缺图时沿用原静态车驾。
@@ -2464,7 +2471,8 @@ function drawBossVfx(k, t, x, y, size, rot = 0, alpha = 1, wx = 1) {
   if (V.efk) { ctx.globalAlpha = alpha * .9; ctx.drawImage(C, 0, 0, sw, sh, -dw / 2, -dh / 2, dw, dh); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = alpha * .35; ctx.drawImage(C, 0, 0, sw, sh, -dw / 2, -dh / 2, dw, dh); }   /* Effekseer 的透明是干净的：正常叠上去保住颜色，再「变亮」叠一层发光 */
   else { ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = alpha * .62; ctx.drawImage(C, 0, 0, sw, sh, -dw / 2, -dh / 2, dw, dh); } ctx.restore();   /* 10-27 用户：「我觉得都要优化一下」——「滤色」叠上去像光，不再是平涂实心块盖住场景；胡轸加亮那层用户说「保持之前的淡更好看」，去掉了 */
 }
-const BVFX_OFF = { huzhen: 1, huaxiong: 1, lvbu: 1 };   /* 10-29 华雄、吕布：录好的火图不动、显死板，改成实时的地火和火龙 */   /* 10-27 用户：「不行，有明显的正方形。你还是自己画如何？」——胡轸不用 Veo 录像，回到两把画稿巨刀 */
+const NEW_FIRE = false;   // 10-29 华雄地火、吕布火龙的实时版草稿：离用户要的级别差得远，等纹理到了重做，先关着（线上用原来的）
+const BVFX_OFF = NEW_FIRE ? { huzhen: 1, huaxiong: 1, lvbu: 1 } : { huzhen: 1 };   /* 10-29 华雄、吕布：录好的火图不动、显死板，改成实时的地火和火龙 */   /* 10-27 用户：「不行，有明显的正方形。你还是自己画如何？」——胡轸不用 Veo 录像，回到两把画稿巨刀 */
 let BVFX_C = null, BVFX_T = null;
 function bvfxTint(C, sw, sh, col) {                                               // 保留明暗和羽化后的透明，只换色相：先存一份，铺颜色（color 混合），再按原透明裁回
   if (!col) return C; if (!BVFX_T) BVFX_T = document.createElement('canvas'); const T = BVFX_T; if (T.width < sw || T.height < sh) { T.width = Math.max(T.width, sw); T.height = Math.max(T.height, sh); }
@@ -2541,7 +2549,7 @@ function drawBossUlt(f) {
   } else if (f.boss === 'huaxiong') {                                               // 一刀从天劈下，城前地裂、整排着火
     const p = Math.min(1, t / .16), y = TOP - 80 + (cy - 40 - TOP + 80) * (p * p);
     drawTint('dao2', C.col, W / 2, y, 560, Math.PI, A * fade, .9); bossGlow(W / 2, y + 120, 130, C.glow, .35 * A * fade);
-    at1(f, 'slam', .16, () => { if (SPX.ok && SPX.fireP) G.fx.push({ k: 'fireline', t: 0, dur: 1.75, x: W / 2, y: WALL_Y - 58, seed: VR(0, 1) }); else if (ML) for (let k = 0; k < 3; k++) setTimeout(() => ML && ML.fx.roar(70 + k * 110, WALL_Y - 14), k * 40); });   // 10-29 地火改实时生成（原来录好的火图加三团烟）
+    at1(f, 'slam', .16, () => { if (NEW_FIRE && SPX.ok && SPX.fireP) G.fx.push({ k: 'fireline', t: 0, dur: 1.75, x: W / 2, y: WALL_Y - 58, seed: VR(0, 1) }); else if (ML) for (let k = 0; k < 3; k++) setTimeout(() => ML && ML.fx.roar(70 + k * 110, WALL_Y - 14), k * 40); });   // 10-29 地火改实时生成（原来录好的火图加三团烟）
     bossBursts(f, C, 3, .16, .06);
     at1(f, 'gnd', .16, () => { gnd({ mode: 0, x: W / 2, y: WALL_Y - 78, rx: 240, sq: .3, dur: 1.5, open: .22, col: C.col, n: 6 }); gnd({ mode: 1, x: W / 2, y: WALL_Y - 78, rx: 160, sq: .32, dur: .8, open: .2, col: C.col, n: 5 }); });   // 一刀劈地：大片放射地裂，冲起一圈
   } else if (f.boss === 'lijue') {                                                  // 一把古铜横刀从左扫到右，刀后一路烟火
@@ -2551,8 +2559,8 @@ function drawBossUlt(f) {
     bossBursts(f, C, 6, .08, .07);
     at1(f, 'gnd', .02, () => gnd({ mode: 3, x: W / 2, y: WALL_Y - 80, rx: 210, sq: .3, dur: 1.4, open: .5, col: C.col }));   // 横扫：刀痕跟着刀从左烙到右
   } else if (f.boss === 'lvbu') {                                                   // 吕布：火龙盘起，巨戟直刺，再一记横扫全场
-    at1(f, 'dragon', 0, () => { G.fx.push({ k: 'dragon', t: 0, dur: 1.2, bx: f.bx, by: f.by }); });   // 10-29 火龙：盘旋上升再扎向城头（原来两条墨流火丝）
-    at1(f, 'dhit', .78, () => { burst(W / 2, WALL_Y - 60, C.prof, 90, 0, 6); if (ML) ML.fx.roar(W / 2, WALL_Y - 20); punch(W / 2, WALL_Y - 60, .06); });   // 龙扎到城头炸开
+    at1(f, 'dragon', 0, () => { if (NEW_FIRE) G.fx.push({ k: 'dragon', t: 0, dur: 1.2, bx: f.bx, by: f.by }); else if (ML) { ML.fx.fireWhip(f.bx, f.by + 10); ML.fx.fireWhip(f.bx, f.by + 10); } });   // 10-29 火龙：盘旋上升再扎向城头（原来两条墨流火丝）
+    if (NEW_FIRE) at1(f, 'dhit', .78, () => { burst(W / 2, WALL_Y - 60, C.prof, 90, 0, 6); if (ML) ML.fx.roar(W / 2, WALL_Y - 20); punch(W / 2, WALL_Y - 60, .06); });   // 龙扎到城头炸开
     const p = Math.min(1, t / .2); drawTint('spear', C.col, (f.bx + W / 2) / 2, (f.by + cy) / 2, 240 + 380 * p, Math.atan2(cy - f.by, W / 2 - f.bx) + Math.PI / 2, A * Math.max(0, 1 - Math.max(0, t - .4) / .3), .8);
     if (t > .35) { const q = Math.min(1, (t - .35) / .3); drawTint('blade', C.col, W / 2, cy - 20, 440, -1.3 + 2.6 * q, A * fade * (veo ? .45 : 1), .9, .8); bossGlow(W / 2, cy, 170, C.glow, .4 * A * fade); }
     bossBursts(f, C, 6, .2, .05); at1(f, 'sweep', .5, () => { if (ML) for (let k = 0; k < 2; k++) ML.fx.roar(100 + k * 160, WALL_Y - 14); });
@@ -3214,7 +3222,25 @@ function roarInit(f) {
 // 地面那一层的特效（画在敌人和城墙下面）：当阳一喝喝出那一下地面闪一层红光，地裂一节节裂开透红光
 // 怒雷火沟：城前一道横贯全场的地裂（淡墨一笔），裂缝里的火用墨流层喷（和当阳一喝同一套真火），不再画一排锥形火苗（10-25 用户：「好假」）；
 // 没有 WebGL2 时只留那道裂缝
+// 大招眼部特写（10-29 用户看了《三国望神州》：「这个大招的设计好，人物只展露眼睛，并且很凌厉的样子，横幅不规则，里面写着招数的名字」）：
+// 一笔黑墨横幅从左刷进来，左边六成透出这员武将的眼睛（Codex 画），右边黑墨上写招名；停一下，往右收掉。不停战场
+const CUT_CV = document.createElement('canvas'); CUT_CV.width = 660; CUT_CV.height = 220;
+function drawCutIn(f) {
+  const br = IMG.brush_k, eye = IMG['eye_' + f.id]; if (!ready(br) || !ready(eye)) return; const u = f.t / f.dur; if (u >= 1) return;
+  const bw = 330, bh = 110, cx = W / 2, cy = TOP + 128, g = CUT_CV.getContext('2d'), k = 2;
+  g.clearRect(0, 0, CUT_CV.width, CUT_CV.height); g.globalCompositeOperation = 'source-over'; g.drawImage(br, 0, 0, bw * k, bh * k);
+  g.globalCompositeOperation = 'source-atop'; const ew = bw * .64 * k, eh = ew * eye.height / eye.width; g.save(); g.beginPath(); g.rect(0, 0, ew, bh * k); g.clip(); g.drawImage(eye, 0, (bh * k - eh) / 2, ew, eh); g.restore();
+  const fade = g.createLinearGradient(ew - 60 * k, 0, ew, 0); fade.addColorStop(0, 'rgba(10,8,6,0)'); fade.addColorStop(1, 'rgba(10,8,6,1)'); g.fillStyle = fade; g.fillRect(ew - 60 * k, 0, 60 * k, bh * k);   // 眼睛往右融进黑墨
+  g.globalCompositeOperation = 'source-over';
+  const rev = u < .16 ? ease(u / .16) : 1, out = u > .8 ? (u - .8) / .2 : 0, a = 1 - out, x0 = cx - bw / 2 + out * 40;
+  ctx.save(); ctx.globalAlpha = a; ctx.beginPath(); ctx.rect(x0, cy - bh / 2 - 10, bw * rev, bh + 20); ctx.clip();
+  ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 12; ctx.drawImage(CUT_CV, 0, 0, bw * k, bh * k, x0, cy - bh / 2, bw, bh); ctx.restore();
+  if (u > .12) { const ta = Math.min(1, (u - .12) / .1) * a, sl = (1 - Math.min(1, (u - .12) / .12)) * 18;   // 招名：横排白字、深色描边加人物色淡光，压在右边墨最厚处，从右滑进来
+    ctx.save(); ctx.globalAlpha = ta; uiText(f.name, x0 + bw * .78 + sl, cy + 4, f.name.length > 3 ? 22 : 26, '#fff8ea', 'center', FONT, { glow: (HERO_COL[f.id] || '#ffffff') + 'dd', glowR: 12, lw: 6 }); ctx.restore(); }
+}
 function drawTrench() {
+  if (G.trenchFire === false && ready(IMG.ditch)) { const im = IMG.ditch, w = 400, h = w * im.height / im.width, a = Math.min(1, (8 - G.trenchT) / .25, G.trenchT / 1);   // 卢植的深堑：用画的鹿角木桩深沟（10-29 Codex 画）
+    ctx.save(); ctx.globalAlpha = Math.max(0, a); ctx.drawImage(im, W / 2 - w / 2, G.trenchY - h * .55, w, h); ctx.restore(); return; }
   const a = Math.min(1, G.trenchT / 1), y = G.trenchY, ps = persp(y); ctx.save(); ctx.globalAlpha = a * .7;
   brush(ctx, [[0, y + 2], [W * .3, y - 1], [W * .6, y + 3], [W, y]], (G.trenchFire === false ? 10 : 4) * ps + 2, '#2a120a', .8, () => 1, .1, vr); ctx.restore();   // 卢植的堑：一道更宽的土沟
   if (ML && G.trenchFire !== false && G.trenchT > .6 && vr() < .7) { const x = VR(8, W - 8); ML.splat(x, y - 2, VR(-25, 25), VR(-80, -40), VR(4, 6), [0, VR(.4, .7), .1, 0]); }   // 一条低低的火，不挡战场
@@ -5366,8 +5392,37 @@ function campGoal() {                                                           
   const key = U.need && !INV.up[U.need] ? U.need : g.key;                           // 终阶要先开封二阶
   const tot = upCost(key); return { ng, key, U: UPS[key], tot, ...eta(tot) };       // 只看下一步要的（兵器 +1 → +2 一级一级来）
 }
+// 奇谋卡（10-29 用户：「大招和军师计谋按图2这种方式」）：一排竖卡，上面 Codex 画的插画、下面纸色说明栏；分大招、我方军师计、敌方军师计三页；点一张放大看
+const QM = { tab: 0, sel: null };
+const QM_TAG = { 攻: ['攻击', '#a8301f'], 控: ['控制', '#2f5f8a'], 增: ['增益', '#3d6b3a'], 计: ['计谋', '#6a4a14'] };
+const QM_LIST = [
+  ['大招', [['qinglong', '青龙斩', '关羽', '攻', '扫倒一片，晕住的多受一半'], ['wenjiu', '温酒斩将', '关羽', '攻', '一刀重斩最危险的一个'], ['roar', '当阳一喝', '张飞', '控', '喝退城前的敌人，喝晕一阵；喝断敌将无双'],
+    ['pojian', '丈八破阵', '张飞', '攻', '一矛穿阵，沿线的都挨'], ['shuang', '双股剑', '刘备', '攻', '飞剑追打，砍中晕住的翻倍'], ['hujin', '仁德护阵', '刘备', '增', '给城防套一层护盾，8 秒']]],
+  ['我方计', [['ambush', '伏兵', '简雍', '计', '两侧河沟藏乡勇，看准时机点令旗'], ['ploy', '缓兵之计', '简雍', '控', '逼退城前的兵，全军停步 6 秒'], ['ditch', '凿堑', '卢植', '控', '城前深堑 8 秒：过堑慢一半、骑兵落马'], ['jiji', '将计就计', '卢植', '计', '敌军师头一个计当场破掉']]],
+  ['敌方计', [['foe_ambush', '伏兵', '张宝 · 李儒', '攻', '5–6 骑从侧翼杀出'], ['foe_fire', '火箭', '李儒', '攻', '城防 -5%，拒马烧掉'], ['foe_lijian', '离间', '张宝 · 李儒', '控', '封关羽或刘备的招式 6 秒'], ['foe_jijiang', '激将', '李儒', '控', '城下骂阵：三人普攻慢一半 6 秒'],
+    ['foe_rush', '急行', '张宝 · 李儒', '增', '敌军快三成，10 秒'], ['foe_reinf', '援军', '张宝 · 李儒', '增', '最后一波多来 8 个兵'], ['foe_yaoshu', '妖术回春', '张宝', '增', '场上黄巾回三成血']]] ];
+function drawQmCard(c, x, y, w, sel) {                                           // 卡框 342×513：插画窗口约 (21,21)–(321,348)，纸色说明栏约 y 350–487
+  const [key, name, who, tag, desc] = c, h = w * 1.5, k = w / 342, art = IMG['card_' + key], fr = IMG.card_frame;
+  ctx.save(); if (sel) { ctx.shadowColor = 'rgba(255,210,120,.8)'; ctx.shadowBlur = 14; }
+  if (ready(art)) { const sw = art.width, sh = sw * 328 / 300; ctx.drawImage(art, 0, 0, sw, Math.min(sh, art.height), x + 21 * k, y + 21 * k, 300 * k, 328 * k); }   // 插画取上半，填满窗口
+  if (ready(fr)) ctx.drawImage(fr, x, y, w, h); ctx.restore();
+  const py = y + 350 * k, T = QM_TAG[tag];
+  uiText(name, x + w / 2, py + 22 * k, Math.max(11, 30 * k), '#2a1a0e', 'center', FONT, { stroke: false });
+  ctx.fillStyle = T[1]; rr(x + 30 * k, py + 48 * k, 70 * k, 26 * k, 4); ctx.fill(); uiText(T[0], x + 65 * k, py + 61 * k, Math.max(8, 18 * k), '#fff4e0', 'center', PLAIN, { stroke: false });
+  uiText(who, x + w - 30 * k, py + 61 * k, Math.max(8, 18 * k), '#6a4a2a', 'right', PLAIN, { stroke: false });
+  if (w >= 150) fitLines(desc, w - 50 * k, Math.max(8, 19 * k), PLAIN).slice(0, 3).forEach((ln, i) => uiText(ln, x + 25 * k, py + (92 + i * 24) * k, Math.max(8, 19 * k), '#3a2a1a', 'left', PLAIN, { stroke: false }));
+}
+function drawQimou() {
+  campBg('奇谋'); const [, list] = QM_LIST[QM.tab];
+  QM_LIST.forEach(([nm], i) => { const x = 22 + i * 108, on = i === QM.tab; pill(x, 56, 100, 26, nm, () => { QM.tab = i; QM.sel = null; }, on); });
+  const w = 104, gap = 8, x0 = (W - 3 * w - 2 * gap) / 2;
+  list.forEach((c, i) => { const x = x0 + (i % 3) * (w + gap), y = 94 + Math.floor(i / 3) * 166; drawQmCard(c, x, y, w, false); hit(x, y, w, w * 1.5, () => { QM.sel = c; }); });
+  plaque(112, 606, 136, 32, '返回', () => { screen = QM.from || 'camp'; }, false);
+  if (QM.sel) { ctx.fillStyle = 'rgba(8,5,3,.82)'; ctx.fillRect(0, 0, W, H); const bw = 240; drawQmCard(QM.sel, (W - bw) / 2, 70, bw, true); hit(0, 0, W, H, () => { QM.sel = null; }); }
+}
 function drawCamp() {
   campBg('军帐'); dailyTick();
+  plaque3(10, 14, 80, 26, '奇谋', () => { screen = 'qimou'; QM.sel = null; });   // 10-29 奇谋卡（大招、军师计、敌方计）
   { const n = achClaimable().length; plaque3(W - 104, 14, 94, 26, '功绩簿', () => { screen = 'ach'; }, n > 0); if (n) uiSeal(W - 10, 14, 16, String(n), UIC.red, true);   /* 牌匾按原图比例，宽 128 时正好 26 高，字在中间（10-29 用户：「字要居中」） */ }
   const gl = campGoal(), TOPY = gl ? 0 : -66;   // 没东西要备时顶上只放一块矮的官阶卡（10-29 用户：「这4个框的大小应该如蓝框」）
   plate(14, 58, W - 28, gl ? 166 : 100, !!gl);
