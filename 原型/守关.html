@@ -1057,7 +1057,8 @@ function startLevel(i) {
     if (hasPas('guan', 'tuodao')) G.st.n.guan++; if (hasPas('zhang', 'weizhen')) G.st.daze += .3; if (hasPas('liu', 'rende')) G.st.ren++; if (hasPas('liu', 'jijiang')) { G.st.ji = true; G.jiMul = 1.4; }
     if (hasPas('liu', 'jieyi') && ['guan', 'zhang', 'liu'].every(x => team.includes(x))) G.st.cdMul *= .9;
     const B = INV.bonus || {}; G.bonusAtk = (B.同心 && ['guan', 'zhang', 'liu'].every(x => team.includes(x)) ? 1.1 : 1) * (B.孤胆 && team.length < 3 ? 1.15 : 1); if (B.军心) G.st.cdMul *= .95;   // 战功换来的永久加成
-    G.combos = combosOf(L).map(c => c.id); for (const c of G.combos) { const p = PERKS.find(q => q.id === c); if (p) { p.fn(G.st); G.perks[c] = 1; } }   /* 配招成的连携直接生效，三选一里不再出这张 */
+    G.combos = combosOf(Object.fromEntries(Object.entries(L).filter(([id]) => knows(id)))).map(c => c.id);   // 10-30：还没学会招的人不算进连携（第三关张飞还不会一喝，原来却白拿晕而斩之、双剑破阵）
+    for (const c of G.combos) { const p = PERKS.find(q => q.id === c); if (p) { p.fn(G.st); G.perks[c] = 1; } }   /* 配招成的连携直接生效，三选一里不再出这张 */
     G.nuqi = 0; G.mengT = 0; G.pojT = -9; G.shi = {}; G.comboLv = {}; G.pojMul = 1; G.cnt = { cYun: 0, cHeng: 0, cHeKill: 0, cShuang: 0, cRen: 0, cTao: 0, cHe: 0, pojMax: 0, wjBig: 0, shieldAbs: 0, wallMin: 1 }; G.castBy = {}; G.team = team; }
   G.adv = PREP && PREP.li === i && PREP.adviser ? { id: PREP.adviser, cond: PREP.cond, used: false, militiaT: 3 } : null;
   G.amb = lv.id >= 5 ? ambushFor(lv) : null; G.ambushed = false; G.ambushN = 0;
