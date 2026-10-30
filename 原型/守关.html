@@ -1357,11 +1357,12 @@ const TEACH = {
 };
 // 本关目标（10-28 用户：「每关的1 2 3 星的达成目标没写清楚……要有一个本关目标的按键，开战前也要展示」）：准备页、战斗里各一个按钮，第一次打这关开战时自动弹一次
 // 三星条件每关不一样（10-28 用户：「每关的目标最好有差异」）：一星打赢、两星城防过半各关一样；三星按这关的玩法挑一条（借军务的判定），都不沾的才看城防 85%
+const S3_WALL = { 3: .7 };   // 10-30 用户：「三星改城防 70%」——第三关 smart 机器人 12 种子城防只剩 50–77%，85% 一局都够不到
 function star3(lv, amb) {
   if (amb) return { text: `简雍的伏兵一次扫到 ${amb.need} 人以上`, check: (r, G) => (G.ambushN || 0) >= amb.need };
   for (const k of ['seal', 'civ', 'huts', 'ram', 'cart', 'ally', 'flags', 'block']) if (TASKS[k].ok(lv)) return { text: k === 'cart' ? (lv.rules.cart.label || '车驾') + '保住八成' : TASKS[k].text('', lv.id), check: TASKS[k].check };
   if (chargePicks(lv).length) return { text: '冲阵一次都没撞上城', check: (r, G) => Object.values(G.chg || {}).every(c => !(c.hit > 0)) };
-  return { text: '城防剩 85% 以上', check: (r, G) => r.frac >= .85 };
+  const need = S3_WALL[lv.id] || .85; return { text: `城防剩 ${Math.round(need * 100)}% 以上`, check: (r, G) => r.frac >= need };
 }
 function goalLines(lv, amb) {
   const duel = lv.kind === 'duel', cart = lv.rules && lv.rules.cart && !lv.rules.cart.optional, wall = duel ? '我方城防（就是你们的血）' : '城防';
