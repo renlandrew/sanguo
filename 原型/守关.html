@@ -743,7 +743,7 @@ const FEATS = [
   ['f11', '打法', '斗将关城防始终不低于九成', [['陨铁', 1]], c => G.lv.kind === 'duel' && c.wallMin >= .9],
   ['f12', '打法', '第十关以后不用滚木、连弩打赢', [['残页', 5]], () => G.lv.id > 10 && !G.logUsed && !G.nuUsed],
   ['f13', '打法', '关掉自动出招，三星打赢', [['资历', 4]], (c, st) => st >= 3 && G.lv.id >= 4 && !G.autoCast && !window.__sg.featAuto],
-  ['f14', '阵容', '第五关以后只带两人打赢', [['被动', '孤胆']], () => G.lv.id >= 5 && G.fighters.length === 2 && !G.lv.solo],
+  ['f14', '阵容', '第五关以后刘备一招不出打赢', [['被动', '孤胆']], () => G.lv.id >= 5 && G.fighters.includes('liu') && !(G.castBy || {}).liu],   // 10-29 用户选 B：准备页只能换位不能下阵，「只带两人」做不到，改成刘备一招不出
   ['f15', '阵容', '张飞伤害第一打赢斗将关', [['残页', 5]], () => G.lv.kind === 'duel' && G.dmgBy && G.dmgBy.zhang > Math.max(G.dmgBy.guan || 0, G.dmgBy.liu || 0)],
 ];
 function featCheck(stars) { const c = G.cnt || {}; INV.comboSeen = INV.comboSeen || {}; if (!G.sim) for (const k of ['cYun', 'cHeng', 'cHe', 'cShuang', 'cRen', 'cTao']) if (c[k]) INV.comboSeen[k] = 1;
@@ -952,7 +952,7 @@ function startLevel(i) {
     if (hasPas('liu', 'jieyi') && ['guan', 'zhang', 'liu'].every(x => team.includes(x))) G.st.cdMul *= .9;
     const B = INV.bonus || {}; G.bonusAtk = (B.同心 && ['guan', 'zhang', 'liu'].every(x => team.includes(x)) ? 1.1 : 1) * (B.孤胆 && team.length < 3 ? 1.15 : 1); if (B.军心) G.st.cdMul *= .95;   // 战功换来的永久加成
     G.combos = combosOf(L).map(c => c.id); for (const c of G.combos) { const p = PERKS.find(q => q.id === c); if (p) { p.fn(G.st); G.perks[c] = 1; } }   /* 配招成的连携直接生效，三选一里不再出这张 */
-    G.nuqi = 0; G.mengT = 0; G.pojT = -9; G.shi = {}; G.comboLv = {}; G.pojMul = 1; G.cnt = { cYun: 0, cHeng: 0, cHeKill: 0, cShuang: 0, cRen: 0, cTao: 0, cHe: 0, pojMax: 0, wjBig: 0, shieldAbs: 0, wallMin: 1 }; G.team = team; }
+    G.nuqi = 0; G.mengT = 0; G.pojT = -9; G.shi = {}; G.comboLv = {}; G.pojMul = 1; G.cnt = { cYun: 0, cHeng: 0, cHeKill: 0, cShuang: 0, cRen: 0, cTao: 0, cHe: 0, pojMax: 0, wjBig: 0, shieldAbs: 0, wallMin: 1 }; G.castBy = {}; G.team = team; }
   G.adv = PREP && PREP.li === i && PREP.adviser ? { id: PREP.adviser, cond: PREP.cond, used: false, militiaT: 3 } : null;
   G.amb = lv.id >= 5 ? ambushFor(lv) : null; G.ambushed = false; G.ambushN = 0;
   G.foeAdv = RU.foeAdv ? { ...FOE_ADV[RU.foeAdv], ambushed: false } : null; G.slowT = 0; G.events = [];
@@ -1708,7 +1708,7 @@ function smartCast(al) {
 }
 const playerAuto = () => G && !G.sim && !window.__sg.auto && !G.RU.casts && G.autoCast;
 function startCast(i) {
-  const id = G.order[i];
+  const id = G.order[i]; (G.castBy = G.castBy || {})[id] = 1;
   if (G.RU.casts) G.casts--;
   let boost = 1;
   if (G.jiNext && id !== 'liu') { boost *= G.jiMul || 1.6; G.jiNext = false; G.fx.push({ k: 'txt', t: 0, x: genX(i), y: GY - 120, text: '激将 +' + Math.round(((G.jiMul || 1.6) - 1) * 100) + '%', size: 16, color: AZURE }); }
