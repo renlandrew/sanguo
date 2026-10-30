@@ -1942,6 +1942,7 @@ function end(win, why) {
   G.result = { win, stars, frac, time: G.t, why, first: win && !BEST[G.lv.id], goals };
   if (G.result.first && !G.sim && STORY['l' + G.lv.id] && !storySeen('l' + G.lv.id)) G.result.story = 'l' + G.lv.id;   // 首通每一关：结算完演一场（10-26 起三十关都有）
   if (win && !G.sim) { BEST[G.lv.id] = Math.max(BEST[G.lv.id] || 0, stars); saveBest(); }
+  if (!G.sim && G.cnt) { INV.comboSeen = INV.comboSeen || {}; for (const k of ['cYun', 'cHeng', 'cHe', 'cShuang', 'cRen', 'cTao']) if (G.cnt[k]) INV.comboSeen[k] = 1; saveInv(); }   // 10-29：六个连携跨局累计，输了的那局打出来的也算，当场存盘
   G.feats = win && G.cnt ? featCheck(stars) : []; if (!G.sim && G.feats.length) { INV.feat = INV.feat || {}; for (const f of G.feats) INV.feat[f] = 1; saveInv(); }
   if (!G.sim) { awardExp(win, stars); settleLoot(win); G.fx = G.fx.filter(f => !['wave', 'banner', 'txt', 'leak'].includes(f.k)); }   // 战场上的横幅、飘字别透过结算页露出来
 }
