@@ -2603,10 +2603,22 @@ function drawFbs() {
 // 11–30 关的地图还没画的先借相近的（汜水关、虎牢关借谷口，酸枣大营借黄巾大营）
 const MAP_ALIAS = { sishui: 'canyon', hulao: 'canyon', suanzao: 'camp', luoyang: 'plain', ruins: 'plain' };
 const mapKey = m => ready(IMG['bg_' + m]) ? m : (MAP_ALIAS[m] || m);
+// 配色收敛（10-29 用户：「感觉我们现在的颜色有些多有些乱」，参考《三国望神州》纸白、淡墨、一点朱红）：场景图一律降饱和、往宣纸色靠，
+// 第一次画时算一遍存起来（不每帧滤镜，手机不卡）；人物色只留在各自招式特效里
+const INKBG = new Map(), INK_SAT = .45;
+function inkBg(im) {
+  let c = INKBG.get(im); if (c) return c;
+  c = document.createElement('canvas'); c.width = im.naturalWidth || im.width; c.height = im.naturalHeight || im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+  try { const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
+    for (let i = 0; i < p.length; i += 4) { const l = .3 * p[i] + .59 * p[i + 1] + .11 * p[i + 2];
+      p[i] = l + (p[i] - l) * INK_SAT + 6; p[i + 1] = l + (p[i + 1] - l) * INK_SAT + 4; p[i + 2] = l + (p[i + 2] - l) * INK_SAT; }   // 留四成五的色，再往米黄宣纸偏一点
+    g.putImageData(d, 0, 0); } catch (e) { return im; }                                   // 读不了像素（跨域）就用原图
+  INKBG.set(im, c); return c;
+}
 function drawBg() {
   const mb = G && IMG['bg_' + mapKey(G.lv.map)], bg = ready(mb) ? mb : IMG.bg;
   if (!ready(bg)) { ctx.drawImage(BG, 0, 0, W, H); return; }
-  ctx.drawImage(bg, 0, 0, W, H);
+  ctx.drawImage(inkBg(bg), 0, 0, W, H);
   const wg = ctx.createLinearGradient(0, TOP + 10, 0, TOP + 120); wg.addColorStop(0, 'rgba(236,228,210,0)'); wg.addColorStop(1, 'rgba(236,228,210,.32)');   // 战场中间再淡一层，小兵看得清；上沿渐变，不留横缝
   ctx.fillStyle = wg; ctx.fillRect(0, TOP + 10, W, WALL_Y - TOP - 10);
 }
@@ -3810,7 +3822,7 @@ function drawNums() {
   if (!G.nums || !G.nums.length) return; const now = G.vt || 0; G.nums = G.nums.filter(n => now - n.born < .9);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
   for (const n of G.nums) {
-    const t = now - n.born; if (t < 0) continue; const big = BIGSRC.has(n.src), [fill, edge] = n.crit ? ['#ffe27a', '#5a3a08'] : n.src === 'burn' ? ['#ff9a4a', '#3a1206'] : (DMG_STYLE[WHO[n.src]] || ['#ffffff', INK]);
+    const t = now - n.born; if (t < 0) continue; const big = BIGSRC.has(n.src), [fill, edge] = n.crit ? ['#ffe27a', '#5a3a08'] : n.src === 'burn' ? ['#e8c9a8', '#3a1206'] : big ? (DMG_STYLE[WHO[n.src]] || ['#ffffff', INK]) : ['#fbf6ea', INK];   // 10-29 配色收敛：普攻白字墨边，只有招式用人物色
     const pop = t < .1 ? 1.5 - .5 * (t / .1) : 1, sz = (n.crit ? 21 : big ? (n.named ? 16 : 13) : n.src === 'burn' ? 10 : 12) * pop, y = n.y - 24 * ease(t / .9), a = t < .62 ? 1 : 1 - (t - .62) / .28;
     const label = (n.crit ? '破绽 ' : DMG_NAME[n.src] && n.named ? DMG_NAME[n.src] + ' ' : '') + '-' + Math.max(1, Math.round(n.v * SHOWX));
     ctx.globalAlpha = a; ctx.font = `italic 900 ${sz}px ${PLAIN}`; ctx.lineWidth = Math.max(2.5, sz * .24); ctx.strokeStyle = edge; ctx.strokeText(label, n.x, y); ctx.fillStyle = fill; ctx.fillText(label, n.x, y);
@@ -4169,7 +4181,7 @@ function drawHud() {
   uiText('退军', 170, 22.5, 11, UIC.cream, 'center', FONT, { stroke: false }); hit(150, 6, 40, 30, () => { screen = 'menu'; G = null; });
   const st = []; if (G.RU.casts) st.push(['招式剩 ' + G.casts, G.casts <= 3 ? UIC.red2 : UIC.cream]);
   if (G.RU.timed && !G.timedDone) st.push([G.RU.timed.label + ' ' + Math.max(0, G.RU.timed.t * TIMEX.v - G.t).toFixed(0) + ' 秒', UIC.gold2]);
-  if (G.civs) st.push(['救下 ' + G.saved + '/' + G.civTotal + (G.misfire ? ' · 误伤 ' + G.misfire : ''), '#9be0c0']);
+  if (G.civs) st.push(['救下 ' + G.saved + '/' + G.civTotal + (G.misfire ? ' · 误伤 ' + G.misfire : ''), UIC.cream]);
   if (G.wells) st.push(['井 ' + G.wells.filter(w => w.n >= 3).length + '/3' + (G.sealFound ? ' · 得玉玺' : ''), UIC.cream]);
   if (G.RU.rage) st.push(['怒 ' + (G.rageT > 0 ? '暴怒中' : G.stabs + '/' + G.RU.rage), G.rageT > 0 ? UIC.red2 : UIC.cream]);
   // 10-29 用户：「反击出现在蓝框这里，如果有ready 的大招就提示一下」——反击倒计时挪到场中（城头上方那块空地），招式好了就点名催放
@@ -4720,7 +4732,7 @@ function storyNext() { if (storyBusy()) return; const L = STORY[STP.key], ln = L
   const then = STP.then; STP = null; screen = 'menu'; if (then) then(); }
 function drawStoryImg(k, a) {
   const im = IMG[k]; if (!ready(im)) return; ctx.save(); ctx.globalAlpha = a;
-  if (STORY_GLOW[k]) { const sb = STP && STP.bg && IMG['bg_' + mapKey(STP.bg)]; if (ready(sb)) ctx.drawImage(sb, 0, 0, W, H); else drawBg(); ctx.fillStyle = 'rgba(8,5,4,.55)'; ctx.fillRect(0, 0, W, H);     // 抠好的人物：战场底图压暗，身后一团人物色的光，人从下面站上来
+  if (STORY_GLOW[k]) { const sb = STP && STP.bg && IMG['bg_' + mapKey(STP.bg)]; if (ready(sb)) ctx.drawImage(inkBg(sb), 0, 0, W, H); else drawBg(); ctx.fillStyle = 'rgba(8,5,4,.55)'; ctx.fillRect(0, 0, W, H);     // 抠好的人物：战场底图压暗，身后一团人物色的光，人从下面站上来
     const g = ctx.createRadialGradient(W / 2, 250, 10, W / 2, 250, 260); g.addColorStop(0, `rgba(${STORY_GLOW[k]},.45)`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, 520);
     const h = k.startsWith('pt_') ? 400 : 470, w = h * im.width / im.height, sh = STP && STP.fx && STP.fx.k === 'thunder' ? THUNDER.reduce((m, [dt, v]) => Math.max(m, v * Math.max(0, 1 - (uiNow() - STP.fx.t0 - dt) / .6) * (uiNow() - STP.fx.t0 >= dt)), 0) * VR(-6, 6) : 0;   // 其他人的立绘画小一点（10-26 用户：「这个吕布白边明显，可以小一些」）
     ctx.drawImage(im, W / 2 - w / 2 + sh, 486 - h, w, h); }
@@ -5352,7 +5364,7 @@ function enterLevel(i) {
   PREP.sel = -1; G = null; screen = 'prep'; PREP.t0 = uiNow();
 }
 function prepBg(lv) {
-  const k = 'bg_' + mapKey(lv.map); if (ready(IMG[k])) ctx.drawImage(IMG[k], 0, 0, W, H); else drawBg();
+  const k = 'bg_' + mapKey(lv.map); if (ready(IMG[k])) ctx.drawImage(inkBg(IMG[k]), 0, 0, W, H); else drawBg();
   const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, 'rgba(8,5,4,.78)'); bg.addColorStop(1, 'rgba(6,4,3,.94)'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
 }
 function prepHead(lv, title) {
