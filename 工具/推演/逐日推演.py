@@ -12,17 +12,19 @@ DAILY = dict(精铁=2 + 2 + 2 * 2 + 3,   # 点卯 2、征战掉落上限 2、探
 FORT_PER_VISIT, FORT_FULL = 92, 250     # 刘备魅力 92：攒满 250 多一页残页
 WPN_IRON = [4, 4, 10, 10, 15, 15, 20, 20, 25, 25]
 def wpn_cost(k):                        # 三人各升到 k 级合计
-    return dict(精铁=3 * math.ceil(WPN_IRON[k - 1] / 3), 陨铁=1 if k >= 4 and k % 2 == 0 else 0)   # 10-29 用户「只改陨铁」：这一级谁先打造谁出一块
+    return dict(精铁=3 * math.ceil(WPN_IRON[k - 1] / 3), 陨铁=1 if k >= 4 and k % 2 == 0 else 0, 专属=3 * MAT_NEED.get(k, 0))
+MAT_NEED = {6: 2, 7: 2, 8: 3, 9: 3, 10: 4}   # 10-29 专属材料（三人各一种，这里合成一池）：每人每级要几份
+MAT_SRC_OPEN = 8                                # 三种材料最早的刷点第 3、5、7、8 关，过了第 8 关三种都能刷；每种一天最多 2 → 合计 6   # 10-29 用户「只改陨铁」：这一级谁先打造谁出一块
 SKILL = {'liu2': (9, 6), 'guan2': (11, 12), 'zhang2': (22, 18), 'liu3': (27, 18)}   # 门槛关、残页
 NODES = {5: 1, 10: 2, 15: 3, 20: 4, 25: 5, 30: 6}                                     # 打这关前要几阶
 ACH_NODE = {5: [3, 4], 10: [7, 9], 15: [12, 14], 20: [17, 19], 25: [22, 24], 30: [27, 29]}   # 每阶两项（三星／两星）：精铁 2、残页 1、资历 4
-FEATS = dict(资历=4 * 4, 残页=5 * 4, 陨铁=3)                                           # 十五项战功里给物品的部分
+FEATS = dict(资历=4 * 4, 残页=5 * 4, 陨铁=3, 专属=6 * 3)   # 10-29 六项功绩各给某人专属材料 3                                           # 十五项战功里给物品的部分
 # 每关兵器最低几级能赢（机器人 smart，3 个种子至少 2 胜；技能按推荐都学了）——由浏览器实测填入
 WIN_WPN = {13: 2, 15: 4, 20: 6, 21: 2, 23: 6, 24: 2, 25: 8, 28: 2, 29: 4, 30: 10}   # 10-29 实测（其余关 +0 就能赢）
 LEVELS_PER_DAY_CAP = 99                   # 一天最多打几关新关（体力不限关卡；这里只看材料、官阶）
 
 def run(feat_share=1.0, days=16, verbose=True):
-    inv = dict(精铁=0, 残页=0, 机缘=0, 陨铁=0, 将印=0, 资历=0); fort = 0
+    inv = dict(精铁=0, 残页=0, 机缘=0, 陨铁=0, 将印=0, 资历=0, 专属=0); fort = 0
     rank, wpn, skills, cleared = 0, 0, set(), 0
     log = []
     feat_left = {k: v * feat_share for k, v in FEATS.items()}
@@ -31,6 +33,7 @@ def run(feat_share=1.0, days=16, verbose=True):
         fort += 2 * FORT_PER_VISIT; inv['残页'] += fort // FORT_FULL; fort %= FORT_FULL
         if d % 7 == 4 or d == 4: pass
         if d >= 4 and (d - 4) % 7 == 0: inv['将印'] += 1                         # 每周十道军务：每天三道，第四天满
+        if cleared >= MAT_SRC_OPEN: inv['专属'] += 6                            # 刷三种专属材料，各拿满当天 2 份
         while inv['机缘'] >= 100: inv['机缘'] -= 100; inv['陨铁'] += 1
         # 战功：按通关进度平均摊到第 5–25 关
         start = cleared; today = []
@@ -57,6 +60,7 @@ def run(feat_share=1.0, days=16, verbose=True):
             cleared = nxt; today.append(nxt)
             inv['精铁'] += 2                                                    # 首通
             if nxt == 20: inv['将印'] += 1
+            if nxt in (5, 10, 15, 20, 25): inv['陨铁'] += 1                      # 10-29 斗将关首通各一块陨铁
             for lv, lvs in ACH_NODE.items():
                 if nxt in lvs and rank + 1 == list(NODES).index(lv) + 1: inv['精铁'] += 2; inv['残页'] += 1; inv['资历'] += 4
             if 5 <= nxt <= 25:
@@ -68,7 +72,7 @@ def run(feat_share=1.0, days=16, verbose=True):
         if cleared >= 30: break
     if verbose:
         for d, t, r, w, iv, why in log:
-            print(f'第{d:>2}天 过 {(str(t[0]) + "–" + str(t[-1])) if t else "—":>6}  官阶{r} 兵器+{w}  精铁{iv["精铁"]:.0f} 残页{iv["残页"]:.0f} 陨铁{iv["陨铁"]:.1f} 资历{iv["资历"]:.0f}  卡：{why}')
+            print(f'第{d:>2}天 过 {(str(t[0]) + "–" + str(t[-1])) if t else "—":>6}  官阶{r} 兵器+{w}  精铁{iv["精铁"]:.0f} 残页{iv["残页"]:.0f} 陨铁{iv["陨铁"]:.1f} 专属{iv["专属"]:.0f} 资历{iv["资历"]:.0f}  卡：{why}')
     return log
 
 if __name__ == '__main__':

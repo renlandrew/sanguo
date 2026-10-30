@@ -668,21 +668,28 @@ const EXPECT = (() => { const r = { guan: { lv: 1, exp: 0 }, zhang: { lv: 1, exp
 //            「要给玩家明显的感觉，他还差一些物品升级某个技能，要等第二天甚至几天才能得到，激励持续上线」；设计、推演见 ../设计/第一章设定.md 5.6） ----------
 // 时间公平：每天能拿的有上限、人人一样，多玩不多拿；漏掉的天点卯、军务最多补两天；掉落是定数，没有随机。
 const IKEY = `sgz.${SAVE_NS}.inv`, DKEY = `sgz.${SAVE_NS}.daily`;
-const ITEMS = { 精铁: '打兵器', 残页: '研习招式（军务、杂务给）', 将印: '觉醒', 陨铁: '陨铁：天外落下的铁，兵器 +4 起每两级要一块（出外探访、结交豪杰攒机缘换来）' };   // 10-25 夜「神兵材料」改名「陨铁」   // 10-25 用户看了军帐：「好复杂」——甲片、马鬃（甲胄、坐骑）和军需（温酒、符水）都砍了，只留卡关要的；同日加神兵材料
+const ITEMS = { 精铁: '打兵器', 残页: '研习招式（军务、杂务给）', 将印: '觉醒', 陨铁: '陨铁：天外落下的铁，兵器 +4 起每两级要一块（斗将关首通、出外探访攒机缘）', 青龙鳞: '关羽兵器 +6 起要', 蛇纹镔铁: '张飞兵器 +6 起要', 雌雄剑胚: '刘备兵器 +6 起要' };   // 10-25 夜「神兵材料」改名「陨铁」   // 10-25 用户看了军帐：「好复杂」——甲片、马鬃（甲胄、坐骑）和军需（温酒、符水）都砍了，只留卡关要的；同日加神兵材料
 const ITEM_TIP = {                                                                   // 悬停说明：第一行名字，下面用途、来源（10-26 用户嫌原来的「很口语很儿戏，不像游戏」）
   精铁: '精铁\n百炼之铁，锻造兵器所需\n来源：点卯、征战、出外探访、日常杂务',
   残页: '兵书残页\n研习招式进阶所需\n来源：征战军令、日常杂务',
   将印: '将印\n大将之印，可令一员武将觉醒\n来源：每周完成十道军务',
-  陨铁: '陨铁\n天外陨铁，兵器二阶以上锻造所需\n来源：出外探访积累机缘',
+  陨铁: '陨铁\n天外陨铁，兵器 +4 起每两级一块；三块可换一份专属材料\n来源：斗将关首通、出外探访积累机缘',
+  青龙鳞: '青龙鳞\n青龙偃月刀 +6 起锻造所需\n来源：第三关、第十七关打赢（每天最多两片），功绩「喝而斩之」「温酒斩将」',
+  蛇纹镔铁: '蛇纹镔铁\n丈八蛇矛 +6 起锻造所需\n来源：第五关、第八关打赢（每天最多两块），功绩「丈八破阵」「喝断无双」',
+  雌雄剑胚: '雌雄剑胚\n双股剑 +6 起锻造所需\n来源：第七关、第廿四关打赢（每天最多两块），功绩「桃园同心」「仁德护阵」',
   体力: '体力\n日常杂务每项消耗十点\n每五分钟恢复一点，上限一百二十' };
-const ITEM_C = { 精铁: '#c9cdd2', 残页: '#f0d9a0', 将印: '#e2563a', 陨铁: '#8fe8ff', 体力: '#9be0a0' };
+const ITEM_C = { 精铁: '#c9cdd2', 残页: '#f0d9a0', 将印: '#e2563a', 陨铁: '#8fe8ff', 体力: '#9be0a0', 青龙鳞: '#7fe0b8', 蛇纹镔铁: '#ff9a5a', 雌雄剑胚: '#9cc8ff' };
+// 专属材料（10-29 用户：「陨铁再给多些，不要卡，但第三等级开始，每个人的武器都有专属材料，材料必须是在特定关卡里刷或者完成特定成就」）：
+// 兵器第三档（+6）起每人要自己的材料；指定关打赢掉 1、三星掉 2，每种一天最多 2；两项功绩各给 3；三块陨铁可换一份（保底）
+const MAT = { guan: { name: '青龙鳞', lv: [3, 17] }, zhang: { name: '蛇纹镔铁', lv: [5, 8] }, liu: { name: '雌雄剑胚', lv: [7, 24] } }, MAT_NEED = { 6: 2, 7: 2, 8: 3, 9: 3, 10: 4 }, MAT_CAP = 2, MAT_SWAP = 3;
+const matOfLv = id => Object.values(MAT).filter(m => m.lv.includes(id));
 const WPN_IRON = [4, 4, 10, 10, 15, 15, 20, 20, 25, 25];
-const WPN_ONE = k => { const c = { 精铁: Math.ceil(WPN_IRON[k - 1] / 3) }; if (k >= 4 && k % 2 === 0 && !['guan', 'zhang', 'liu'].some(h => (INV.up['wpn_' + h] || 0) >= k)) c.陨铁 = 1; return c; };   // 10-29 逐日推演：每人各要一块，三人到 +10 共 12 块，一天只产约 0.3 块，要 34–40 天才打到吕布；用户：「只改陨铁」——照「资源不变」，这一级谁先打造谁出那一块，三人合计 +4／+6／+8／+10 各一块   // 一人一把：精铁三分之一   /* 10-27 用户：「要增加武器的升级频率」——5 级拆成 10 级，每级 +8%，精铁对半拆，陨铁在 4、6、8、10 级各一块；斗将关要 2/4/6/8/10 级，到关的天数不变 */
+const WPN_ONE = (k, h) => { const c = { 精铁: Math.ceil(WPN_IRON[k - 1] / 3) }; if (h && MAT_NEED[k]) c[MAT[h].name] = MAT_NEED[k]; if (k >= 4 && k % 2 === 0 && !['guan', 'zhang', 'liu'].some(h => (INV.up['wpn_' + h] || 0) >= k)) c.陨铁 = 1; return c; };   // 10-29 逐日推演：每人各要一块，三人到 +10 共 12 块，一天只产约 0.3 块，要 34–40 天才打到吕布；用户：「只改陨铁」——照「资源不变」，这一级谁先打造谁出那一块，三人合计 +4／+6／+8／+10 各一块   // 一人一把：精铁三分之一   /* 10-27 用户：「要增加武器的升级频率」——5 级拆成 10 级，每级 +8%，精铁对半拆，陨铁在 4、6、8、10 级各一块；斗将关要 2/4/6/8/10 级，到关的天数不变 */
 const WPN_MAX = 10, wpnVis = w => Math.min(5, Math.floor((w || 0) / 2));   // 画面档位：两级换一次样子（兵器图、刀气光效仍是 0–5 档）                                                // 兵器 +1…+5 各要多少精铁：天天玩的约第 1、4、7、10、14 天攒够，正好赶上第 5、15、20、25、30 关的斗将
 const UPS = {                                                                        // 能打造、开封的东西：每级要什么、做什么
-  wpn_guan: { name: '青龙偃月刀', hero: 'guan', max: WPN_MAX, cost: k => WPN_ONE(k), desc: k => `关羽普攻、招式 +${8 * k}%` },   // 10-29 用户：「单独打造，但是资源不变」——每人一把单独升，每次花原来的三分之一
-  wpn_zhang: { name: '丈八蛇矛', hero: 'zhang', max: WPN_MAX, cost: k => WPN_ONE(k), desc: k => `张飞普攻、招式 +${8 * k}%` },
-  wpn_liu: { name: '双股剑', hero: 'liu', max: WPN_MAX, cost: k => WPN_ONE(k), desc: k => `刘备普攻、招式 +${8 * k}%` },
+  wpn_guan: { name: '青龙偃月刀', hero: 'guan', max: WPN_MAX, cost: k => WPN_ONE(k, 'guan'), desc: k => `关羽普攻、招式 +${8 * k}%` },   // 10-29 用户：「单独打造，但是资源不变」——每人一把单独升，每次花原来的三分之一
+  wpn_zhang: { name: '丈八蛇矛', hero: 'zhang', max: WPN_MAX, cost: k => WPN_ONE(k, 'zhang'), desc: k => `张飞普攻、招式 +${8 * k}%` },
+  wpn_liu: { name: '双股剑', hero: 'liu', max: WPN_MAX, cost: k => WPN_ONE(k, 'liu'), desc: k => `刘备普攻、招式 +${8 * k}%` },
   wpn:    { name: '兵器', max: WPN_MAX, cost: k => k >= 4 && k % 2 === 0 ? { 精铁: WPN_IRON[k - 1], 陨铁: 1 } : { 精铁: WPN_IRON[k - 1] }, desc: k => `普攻、招式 +${8 * k}%` },   // 10-26 用户：「神兵不能那么容易升级，必须和卡关卡同步」——每级 +12%、精铁 8/20/30/40/50   // 10-25 用户：「神兵材料是升级武器的要素」
   liu2:   { name: '双股剑 · 剑印', gen: 'liu', max: 1, cost: () => ({ 残页: 6 }), desc: () => '砍中的定住 4 秒：走不动、放不了箭、施不了法' },
   guan2:  { name: '青龙斩 · 龙鳞破甲', gen: 'guan', max: 1, cost: () => ({ 残页: 12 }), desc: () => '扫过的 4 秒内盾和甲都失效、多受 20%' },
@@ -700,7 +707,7 @@ const GATE_SAY = { 5: '邓茂甲厚，兵器不到 +2 砍不动他', 9: '术士�
   15: '胡轸刀快，兵器最好先到 +4', 20: '华雄护罩厚，兵器要到 +6', 22: '狼骑成群，先研习张飞的怒雷',
   25: '李傕护罩更厚，兵器要到 +8', 27: '追兵砍百姓，先研习剑印终阶', 30: '吕布？兵器 +10，再觉醒一人' };
 const upAt = id => { const u = {}; for (const [g, req] of Object.entries(GATES)) if (+g <= id) for (const [k, v] of Object.entries(req)) u[k] = Math.max(u[k] || 0, v); if (u.wpn) for (const h of ['guan', 'zhang', 'liu']) u['wpn_' + h] = u.wpn; return u; };   // 按推荐打到第 id 关时手里有的
-let INV = { it: { 精铁: 0, 残页: 0, 将印: 0, 陨铁: 0 }, up: {}, awake: null, seal20: false, luck: 0 };
+let INV = { it: { 精铁: 0, 残页: 0, 将印: 0, 陨铁: 0, 青龙鳞: 0, 蛇纹镔铁: 0, 雌雄剑胚: 0 }, up: {}, awake: null, seal20: false, luck: 0 };
 try { const o = JSON.parse(localStorage.getItem(IKEY) || '{}'); INV = { ...INV, ...o, it: { ...INV.it, ...(o.it || {}) }, up: { ...(o.up || {}) } }; } catch (e) {}
 if (INV.up.wpn && !INV.wpn10) INV.up.wpn = Math.min(10, INV.up.wpn * 2); INV.wpn10 = true;   // 10-27 兵器 5 级改 10 级：旧档等级翻倍
 if (!INV.wpnSplit) { for (const h of ['guan', 'zhang', 'liu']) INV.up['wpn_' + h] = Math.max(INV.up['wpn_' + h] || 0, INV.up.wpn || 0); INV.wpnSplit = true; }   // 10-29 三人分开打造：旧档三人都按原来的等级
@@ -732,19 +739,19 @@ const ACH_STAR = [5, 15, 30, 50, 75];
 const FEATS = [
   ['f1', '连携', '一局打出 3 次「晕而斩之」', [['资历', 4]], c => c.cYun >= 3],
   ['f2', '连携', '打出「横竖斩」', [['残页', 5]], c => c.cHeng >= 1],
-  ['f3', '连携', '「喝而斩之」斩死一员头目或敌将', [['陨铁', 1]], c => c.cHeKill >= 1],
-  ['f4', '连携', '打出「桃园同心」', [['被动', '同心']], c => c.cTao >= 1],
+  ['f3', '连携', '「喝而斩之」斩死一员头目或敌将', [['陨铁', 1], ['青龙鳞', 3]], c => c.cHeKill >= 1],
+  ['f4', '连携', '打出「桃园同心」', [['雌雄剑胚', 3], ['被动', '同心']], c => c.cTao >= 1],
   ['f5', '连携', '六个连携都打出过', [['头像', '金框']], () => ['cYun', 'cHeng', 'cHe', 'cShuang', 'cRen', 'cTao'].every(k => (INV.comboSeen || {})[k])],
-  ['f6', '配招', '丈八破阵一招穿死 8 个敌人', [['资历', 4]], c => c.pojMax >= 8],
-  ['f7', '配招', '仁德护阵挡下三成城防伤害', [['残页', 5]], c => c.shieldAbs >= .3],
-  ['f8', '配招', '温酒斩将一局斩下 2 员头目或敌将', [['陨铁', 1]], c => c.wjBig >= 2],   // 10-29 推演：一关大将、头目最多三个，温酒留着专等他们也斩不到 3 个，改 2
+  ['f6', '配招', '丈八破阵一招穿死 8 个敌人', [['资历', 4], ['蛇纹镔铁', 3]], c => c.pojMax >= 8],
+  ['f7', '配招', '仁德护阵挡下三成城防伤害', [['残页', 5], ['雌雄剑胚', 3]], c => c.shieldAbs >= .3],
+  ['f8', '配招', '温酒斩将一局斩下 2 员头目或敌将', [['陨铁', 1], ['青龙鳞', 3]], c => c.wjBig >= 2],   // 10-29 推演：一关大将、头目最多三个，温酒留着专等他们也斩不到 3 个，改 2
   ['f9', '配招', '三人都带满两个被动打赢', [['被动', '军心']], () => ['guan', 'zhang', 'liu'].every(id => G.fighters.includes(id) && (G.pas[id] || []).length >= 2)],
   ['f10', '打法', '第五关以后不漏一个兵打赢', [['资历', 4]], () => G.lv.id >= 5 && G.lv.kind !== 'duel' && G.leaked === 0],
   ['f11', '打法', '斗将关城防始终不低于九成', [['陨铁', 1]], c => G.lv.kind === 'duel' && c.wallMin >= .9],
   ['f12', '打法', '第十关以后不用滚木、连弩打赢', [['残页', 5]], () => G.lv.id > 10 && !G.logUsed && !G.nuUsed],
   ['f13', '打法', '关掉自动出招，三星打赢', [['资历', 4]], (c, st) => st >= 3 && G.lv.id >= 4 && !G.autoCast && !window.__sg.featAuto],
   ['f14', '阵容', '第五关以后刘备一招不出打赢', [['被动', '孤胆']], () => G.lv.id >= 5 && G.fighters.includes('liu') && !(G.castBy || {}).liu],   // 10-29 用户选 B：准备页只能换位不能下阵，「只带两人」做不到，改成刘备一招不出
-  ['f15', '阵容', '斗将关一局喝断 5 次无双', [['残页', 5]], () => G.lv.kind === 'duel' && (G.unsBroken || 0) >= 5],   // 10-29 推演：张飞一喝是控场，斗将伤害怎么打都排不到第一，改成喝断无双（第十、十五、二十、三十关做得到）
+  ['f15', '阵容', '斗将关一局喝断 5 次无双', [['残页', 5], ['蛇纹镔铁', 3]], () => G.lv.kind === 'duel' && (G.unsBroken || 0) >= 5],   // 10-29 推演：张飞一喝是控场，斗将伤害怎么打都排不到第一，改成喝断无双（第十、十五、二十、三十关做得到）
 ];
 function featCheck(stars) { const c = G.cnt || {}; INV.comboSeen = INV.comboSeen || {}; if (!G.sim) for (const k of ['cYun', 'cHeng', 'cHe', 'cShuang', 'cRen', 'cTao']) if (c[k]) INV.comboSeen[k] = 1;
   return FEATS.filter(([id, , , , f]) => { try { return f(c, stars); } catch (e) { return false; } }).map(f => f[0]); }
@@ -794,6 +801,7 @@ const TASKS = {
   ally:    { ok: lv => !!(lv.rules && lv.rules.ally), text: (n, id) => `${n}${LEVELS.find(l => l.id === id)?.rules.ally.name || '友军'}保住一半血`, check: (r, G) => r.win && G.ally && G.ally.hp >= G.ally.max * .5 },
   flags:   { ok: lv => !!(lv.rules && lv.rules.flags), text: n => `${n}两面将旗一面不倒`, check: (r, G) => r.win && !G.flagsDown },
   torch:   { ok: lv => !!(lv.rules && lv.rules.night), text: n => `${n}只点一支火把`, check: (r, G) => r.win && G.lightN >= 2 },
+  mat:     { ok: lv => matOfLv(lv.id).length > 0, text: (n, id) => `${n}打赢一次（掉${matOfLv(id).map(m => m.name).join('、')}）`, check: (r, G) => r.win },   // 10-29 刷专属材料顺手做军务
   seal:    { ok: lv => !!(lv.rules && lv.rules.wells), text: n => `${n}捞出传国玉玺`, check: (r, G) => r.win && G.sealFound },
   ploy:    { ok: lv => lv.id === 12, text: n => `${n}在伏兵杀出时放缓兵之计`, check: (r, G) => r.win && G.adv && G.adv.used && G.adv.cond === 'ambush' },
 };
@@ -854,6 +862,7 @@ const dailyTotal = () => DAILY.taskN + DAILY.visitN + CHORES.length;
 // 今天还能拿多少、明天起每天最多拿多少（给「还差几样、几天后够」用）；杂务给的也算上（10-26：杂务改给物品后这里漏算，天数说多了）
 const choreGain = (k, left) => CHORE_PAY.reduce((a, [ck, n], i) => a + (ck === k && (!left || !choreOn(i)) ? n : 0), 0);
 function income(k) {
+  if (Object.values(MAT).some(m => m.name === k)) { const m = Object.values(MAT).find(m => m.name === k), open = m.lv.some(id => BEST[id]); return [open ? MAT_CAP - (DAILY.caps[k] || 0) : 0, open ? MAT_CAP : 0]; }
   if (k === '残页') return [(DAILY.tasks.filter(t => !t.done).length + Math.max(0, DAILY.taskN - DAILY.tasks.length)) * TASK_PAY + choreGain(k, true), 3 * TASK_PAY + choreGain(k)];
   if (k === '精铁') { const v = visitGain().iron; return [DROP_CAP - (DAILY.caps.精铁 || 0) + (DAILY.visitN - DAILY.visits) * v + choreGain(k, true), 2 + DROP_CAP + 2 * v + choreGain(k)]; }
   return [0, 0];
@@ -900,6 +909,8 @@ function settleLoot(win) {
     const give = (k, n, cap) => { if (cap && (DAILY.caps[k] || 0) >= DROP_CAP) { loot.push({ k, n: 0, capped: true }); return; } INV.it[k] += n; if (cap) DAILY.caps[k] = (DAILY.caps[k] || 0) + n; loot.push({ k, n }); };
     give('精铁', 1, true);
     if (lv.id === 20 && !INV.seal20) { INV.seal20 = true; give('将印', 1); }
+    if (lv.kind === 'duel' && lv.id < 30 && !(INV.duelMet || (INV.duelMet = {}))[lv.id]) { INV.duelMet[lv.id] = 1; give('陨铁', 1); }   // 10-29 陨铁多给：斗将关首通各一块
+    for (const m of matOfLv(lv.id)) { const n = Math.min(r.stars >= 3 ? 2 : 1, MAT_CAP - (DAILY.caps[m.name] || 0)); if (n > 0) { INV.it[m.name] += n; DAILY.caps[m.name] = (DAILY.caps[m.name] || 0) + n; loot.push({ k: m.name, n }); } else loot.push({ k: m.name, n: 0, capped: true }); }   // 专属材料：赢了必掉，三星掉 2，每种一天最多 2
   }
   r.tasks = [];
   for (const t of DAILY.tasks) if (!t.done && t.lv === lv.id && TASKS[t.k].check(r, G)) {
@@ -5181,6 +5192,11 @@ function drawArmory2() {
   uiText(WPN[id], 22, 92, 22, UIC.gold2, 'left', FONT, { glow: `rgba(${WPN_GLOW[id]},.5)`, glowR: 10 });
   uiText(`${WPN_TIER[lvl]}${wl ? ' · +' + wl : ''}`, 22, 116, 15, `rgb(${WPN_GLOW[id]})`, 'left', FONT);
   uiText(wl ? UPS[AK].desc(wl) : '还没精炼', 22, 136, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });
+  { const M = MAT[id], got = DAILY.caps[M.name] || 0, lvs = M.lv.map(lvName).join('、');   // 专属材料哪里来（10-29）：+6 起要；今天还能刷几块；点「去刷」开最前面那关
+    uiText(`${M.name}：${lvs}打赢掉（今日 ${got}/${MAT_CAP}）`, 22, 156, 11, ITEM_C[M.name], 'left', PLAIN, { stroke: false });
+    uiText('功绩也给，兵器 +6 起要', 22, 172, 10, 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false });
+    const go = M.lv.find(l => BEST[l] != null || BEST[l - 1] != null || l === 1); if (got < MAT_CAP && go) pill(22, 182, 56, 22, '去刷', () => openLevel(go - 1));
+    if ((INV.it.陨铁 || 0) >= MAT_SWAP) pill(84, 182, 96, 22, `陨铁 ${MAT_SWAP} 换 1`, () => { INV.it.陨铁 -= MAT_SWAP; INV.it[M.name]++; saveInv(); sfx('anvil'); }); }
   ['guan', 'zhang', 'liu'].forEach((g, k) => { const x = W - 70, y = 70 + k * 92, on = g === id;                       // 右边三格：三人的兵器
     ctx.save(); if (!on) ctx.globalAlpha = .5; ctx.fillStyle = 'rgba(14,10,7,.8)'; rr(x, y, 58, 84, 7); ctx.fill();   /* 和底栏武将牌一样：暗底加细金框（关卡牌那张缩小了里面的金边像个方框） */
     const gl = INV.up['wpn_' + g] || 0; drawWeapon(g, wpnVis(gl), x + 29, y + 36, 66, WPN_ROT[g], t, false); if (canUp('wpn_' + g)) uiSeal(x + 52, y + 8, 12, '升', UIC.red, true); if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, x - 1, y - 1, 60, 86, 60, 60, 60, 60, .1); ctx.restore();
@@ -5196,9 +5212,9 @@ function drawArmory2() {
     Object.entries(cost).forEach(([it, n], j) => { const have = INV.it[it] || 0, yy = y + 60 + j * 16;
       uiText(`${it} ${Math.min(have, n)}/${n}`, 100, yy, 12, ITEM_C[it], 'left', PLAIN, { stroke: false }); uiBar('arm_' + it, 170, yy - 3, 90, 6, have / n, '#8a5a14', '#ffd76e', { edge: 'rgba(0,0,0,0)' }); });
     if (canUp(AK)) pill(W - 98, y + 66, 76, 30, '打造', () => { doUp(AK); ARM.forge = { t0: uiNow(), id, lv: INV.up[AK], hit: 0 }; sfx('anvil'); });
-    else uiText(etaText(e.d, e.lack), W - 24, y + 94, 12, etaColor(e.d), 'right', FONT, { stroke: false }); }
+    else uiText(e.d >= 99 && cost[MAT[id].name] ? `先打到${lvName(MAT[id].lv[0])}` : etaText(e.d, e.lack), W - 24, y + 94, 12, etaColor(e.d), 'right', FONT, { stroke: false }); }   // 出材料的关还没打过：算不出天数
   /* 10-26 用户圈了「三人的兵器一起精炼」：「去掉这句」 */
-  { const its = ['精铁', '陨铁']; plate(14, 46, 120, 26, false); its.forEach((k, i) => { const x = 32 + i * 56; drawItemIcon(k, x, 59, 16); uiText(String(INV.it[k] || 0), x + 11, 59, 12, UIC.cream, 'left', PLAIN, { stroke: false }); }); }   // 手上有多少材料（10-29 用户）
+  { const its = ['精铁', '陨铁', MAT[id].name]; plate(14, 46, 168, 26, false); its.forEach((k, i) => { const x = 32 + i * 56; drawItemIcon(k, x, 59, 16); uiText(String(INV.it[k] || 0), x + 11, 59, 12, UIC.cream, 'left', PLAIN, { stroke: false }); }); }   // 手上有多少材料（10-29 用户）
   plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; }, false);
   if (ARM.forge) drawForge(ARM.forge);
 }
