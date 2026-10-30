@@ -89,8 +89,6 @@ IMG.trio = new Image(); IMG.trio.src = 'img/trio.png?v=1027b';
 // 3D 建模渲出来的小兵图集（Meshy → Blender → 水墨着色，见 ../工具/）；没有时退回程序画的
 const BUST = '?t=' + Date.now();                     // 原型阶段图集常改，别吃浏览器缓存
 // Effekseer 用原声浪画稿渲染的透明逐帧图，缺失时回退原画。
-const ROAR_EFK = { image: new Image(), meta: null }; ROAR_EFK.image.src = 'img/fx_shout_efk.webp' + BUST;
-fetch('img/fx_shout_efk.json' + BUST).then(r => r.ok ? r.json() : null).then(m => { ROAR_EFK.meta = m; }).catch(() => {});
 // 城墙、战场背景（ChatGPT 画的，../工具/make_scene.py 处理）；没有时退回程序画的
 for (const [k, ext] of [['wall', 'png'], ['bg', 'jpg']]) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.' + ext + BUST; }
 // 各关地图自己的整张背景（10-25 用户：程序画的谷口山崖太假，「要让 gpt 画」「直接重新画就好了」）：有图就用它、不再叠程序画的那层，没有就用通用战场
@@ -2933,7 +2931,7 @@ function uiButton(x, y, w, h, label, fn, kind = 'main') {
   uiText(label, x + w / 2, y + h / 2 + 1, fitSize(label, Math.min(24, h * .5), w - h * .8), main ? '#fff4dc' : UIC.cream, 'center'); hit(x, y, w, h, fn);
 }
 // 星星（10-25 夜用户：「三星这样展示过于html」）：换成 ChatGPT 画的金星、空星槽（img/ui_star_on|off.png，原图 美术/界面/星星与导航图标.jpg）；图没到时照旧代码画
-for (const k of ['ui_star_on', 'ui_star_off', 'ui_nav_camp', 'ui_nav_armory', 'ui_nav_map', 'ui_nav_sys', 'ui_nav_month', 'fx_shout']) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.png' + BUST; }
+for (const k of ['ui_star_on', 'ui_star_off', 'ui_nav_camp', 'ui_nav_armory', 'ui_nav_map', 'ui_nav_sys', 'ui_nav_month']) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.png' + BUST; }
 function uiStar(x, y, r, on, pop = 1) {
   const sim = IMG[on ? 'ui_star_on' : 'ui_star_off'];
   if (ready(sim)) { const s = r * 2.3 * pop, h = s * sim.height / sim.width; ctx.save(); if (on) { ctx.shadowColor = 'rgba(255,210,100,.7)'; ctx.shadowBlur = r * .8; } ctx.drawImage(sim, x - s / 2, y - h / 2 - r * .05, s, h); ctx.restore(); return; }
@@ -3810,7 +3808,7 @@ function spxPass(layer) {
   for (const b of SPX.bodies) { if (b.burst || b.paint || b.layer !== layer) continue; const t = vt - b.born; if (t < 0) continue; spxDraw(b, t); drew++; }
   if (layer === 'ground' && SPX.vortexP && !texOK()) for (const f of G.fx) if (f.k === 'hdl') { spxVortex(f); drew++; }   // 有纹理时改用星云盘
   if (layer === 'ground' && SPX.groundP) for (const f of G.fx) if (f.k === 'gnd' && f.t >= 0) { spxGround(f); drew++; }   // 贴地法阵
-  if (layer === 'top' && SPX.shoutP) for (const f of G.fx) if (f.k === 'shout_efk' && f.t >= 0 && f.t < f.dur) { spxShout(f); drew++; }   // 张飞声浪（实时生成）
+  if (layer === 'top' && SPX.shoutP) for (const f of G.fx) if (f.k === 'shout' && f.t >= 0 && f.t < f.dur) { spxShout(f); drew++; }   // 张飞声浪（实时生成）
   if (layer === 'top' && SPX.fireP && !texOK()) for (const f of G.fx) if (f.k === 'fireline' && f.t >= 0) { spxFire(f); drew++; }   // 华雄地火（实时生成）   // 黄天当立的天裂旋涡（在敌将身后）
   for (const b of SPX.bodies) {                                                  // 有生命的画稿：撑开（带回弹）、从后面掠到前面、淡掉
     if (!b.paint || b.layer !== layer) continue; const t = vt - b.born; if (t < 0) continue; const u = t / b.life, e = 1 - Math.pow(1 - Math.min(1, u * 2.5), 3);
@@ -4003,36 +4001,11 @@ function spxStab(x0, y0, x, y) {
   inkSplash(x, y, 22, .05); spxBurst(x, y, 30, 'star' + Math.floor(VR(0, 4)), '#f07a1e', .24, { delay: .06, opac: .3 });
 }
 // 张飞「当阳一喝」：三道分段的声浪（烟材质，赭红），从城墙正中往外撑开；城前地面裂开（火材质，地面那一遍）
-function spxRoar(f) {
-  const O = [HX, WALL_Y + 40], kR = f.R / 175;
-  const ZX = clamp(f.ox ?? HX, 60, W - 60);
-  // 声浪（10-25 夜用户：「张飞喝退太像火，修改下颜色和形状为声波？有点像街霸里面的波动拳」）：ChatGPT 画的一团声浪（img/fx_shout.png，白金芯、暗红墨边，不是火），
-  // 从张飞身上往前冲出去、越冲越大再淡掉，后面跟一道小一点的回声；打到的人只扬尘、不着火。没有画稿时照旧用下面的地火
-  if (ROAR_EFK.meta && ready(ROAR_EFK.image)) {
-    G.fx.push({ k: 'shout_efk', t: 0, dur: .8, x: W / 2, y: WALL_Y - 24, s: kR, ox: ZX, seed: VR(0, 1) });
-    for (const h of (f.hits || []).slice(0, 8)) spxHeart(h[0], h[1], 9, 'dust', 'smoke', .62, { delay: .1 + (WALL_Y - h[1]) / f.R * .22, bits: .3, count: 3 });
-    spxDim(.36); punch(ZX, WALL_Y - 80, .05); G.freeze = Math.max(G.freeze || 0, .06); return;
-  }
-  if (ready(IMG.fx_shout)) { G.fx.push({ k: 'shout', t: 0, dur: .72, x: W / 2, y: WALL_Y - 30, s: kR }); G.fx.push({ k: 'shout', t: -.12, dur: .6, x: W / 2, y: WALL_Y - 30, s: kR * .7 });
-    for (const h of (f.hits || []).slice(0, 8)) spxHeart(h[0], h[1], 9, 'dust', 'smoke', .62, { delay: .1 + (WALL_Y - h[1]) / f.R * .22, bits: .3, count: 3 });
-    spxDim(.36); punch(ZX, WALL_Y - 80, .05); G.freeze = Math.max(G.freeze || 0, .06); return; }
-  if (ML) { ML.fx.roar(ZX, WALL_Y - 26); setTimeout(() => ML && ML.fx.fireWhip(ZX, WALL_Y - 10), 0); spxDim(.4); spxWash(ZX, WALL_Y - 40, 'fire', .45); punch(ZX, WALL_Y - 60, .05); G.freeze = Math.max(G.freeze || 0, .06); return; }   // 墨流层：火爆＋火丝
-  if (fbPlay('bao', ZX, WALL_Y - 40, 230 * kR, null, { glow: .5 })) spxHeart(ZX, WALL_Y - 26, 30 * kR, 'fire', 'flame', 1, { bits: 0, count: 14 });
-  else spxHeart(HX, WALL_Y - 26, 30 * kR, 'dust', 'smoke', 1.2, { bits: .6, count: 24, ground: true });
-  if (!hasFb('bao')) spxRing(HX, WALL_Y - 10, 70 * kR, 'dust', { w: 4, squash: .55 });
-  for (const h of (f.hits || []).slice(0, 8)) if (!fbPlay('hit_fire', h[0], h[1], 42, null, { delay: .08 + (WALL_Y - h[1]) / f.R * .18 })) spxHeart(h[0], h[1], 9, 'dust', 'smoke', .62, { delay: .08 + (WALL_Y - h[1]) / f.R * .18, bits: .3, count: 3 });
-  spxDim(.4); spxWash(ZX, WALL_Y - 40, 'fire', .5); punch(ZX, WALL_Y - 60, .05); G.freeze = Math.max(G.freeze || 0, .06);
-  [0, 1, 2].forEach(k => {
-    const R0 = (120 + 55 * k) * kR; let a = -Math.PI + VR(.55, .75);
-    while (a < -.7) { const span = Math.min(VR(.55, 1), -.6 - a); if (span > .2) { const a0 = a;
-        spxBody(spxPath(30, t => { const an = a0 + span * t; return [O[0] + Math.cos(an) * R0, O[1] + Math.sin(an) * R0 * .9]; }, t => (20 - 4 * k) * swell(t, .35)), 'dust', 'smoke', { style: 'heavy', pivot: O, delay: k * .07, coreAmt: .5, tile: 2, alpha: .75, opacity: .55 });
-        spxBody(spxPath(30, t => { const an = a0 + span * t; return [O[0] + Math.cos(an) * (R0 - 6), O[1] + Math.sin(an) * (R0 - 6) * .9]; }, t => (12 - 2 * k) * swell(t, .5)), 'ink', 'ink', { style: 'heavy', pivot: O, delay: k * .07 + .02, alpha: .7, opacity: 1, tile: 2 }); }
-      a += span + VR(.06, .12); }
-  });
-  for (let i = 0; i < 6; i++) {                                                              // 地裂
-    const x0 = VR(20, W - 20), y0 = WALL_Y - VR(20, f.R * .85), a = VR(0, 6.283), L = VR(28, 48), jag = Array.from({ length: 6 }, () => VR(-4, 4));
-    spxBody(spxPath(18, t => [x0 + Math.cos(a) * L * t + jag[Math.min(5, Math.floor(t * 6))] * Math.sin(Math.PI * t), y0 + Math.sin(a) * L * t * .55], t => 2.6 * swell(t, .5)), 'fire', 'flame', { style: 'heavy', layer: 'ground', rigid: true, revealEase: 1, holdScale: 3, delay: VR(.03, .12), coreAmt: 1.2, tile: 1 });
-  }
+function spxRoar(f) {                                                        // 10-30 用户：「你不能全部删除这个旧图相关代码吗」——旧的声浪画稿、Effekseer 火焰拱形、墨流火丝几条路都删了，只剩实时声浪（FS_SHOUT；没就绪时画简化弧线）
+  const kR = f.R / 175, ZX = clamp(f.ox ?? HX, 60, W - 60);
+  G.fx.push({ k: 'shout', t: 0, dur: .8, s: kR, ox: ZX, seed: VR(0, 1) });
+  for (const h of (f.hits || []).slice(0, 8)) spxHeart(h[0], h[1], 9, 'dust', 'smoke', .62, { delay: .1 + (WALL_Y - h[1]) / f.R * .22, bits: .3, count: 3 });   // 打到的人只扬尘
+  spxDim(.36); punch(ZX, WALL_Y - 80, .05); G.freeze = Math.max(G.freeze || 0, .06);
 }
 // 刘备「剑气」：照雾港「剑气」——一青一金两道浅弧剑浪，从后面掠过目标、再往前飞；飞行时两道细光绞成双螺旋
 // 刘备普攻剑气（10-25 用户发来一张图：「剑气最好做成类似这样」——几束金色流光扇形射向敌人，亮头长尾）：
@@ -4452,8 +4425,8 @@ function drawFx(f) {
     ctx.save(); ctx.globalAlpha = al; ctx.fillStyle = '#6b5236'; ctx.beginPath(); ctx.arc(cx, cy, S2 / 2, 0, 6.283); ctx.fill(); ctx.strokeStyle = UIC.gold; ctx.lineWidth = 6; ctx.stroke(); ctx.restore();
   } else if (f.k === 'txt') { const u = f.t / (f.dur || 1.1); txt(f.text, f.x, f.y - Math.min(1, f.t / 1.1) * 18, f.size, f.color, 'center', FONT, clamp(u < .7 ? 1 : (1 - u) / .3, 0, 1)); }
   else if (f.k === 'wave') drawWaveBanner(f);
-  else if (f.k === 'shout_efk') {   // 原画通过 Effekseer 做一次向前冲；光晕随主体走，不增加重复圆环或几何光板。
-    const M = ROAR_EFK.meta, im = ROAR_EFK.image, u = f.t / f.dur;
+  else if (f.k === 'shout') {   // 张飞声浪：光效层就绪时由 FS_SHOUT 画（spxShout），这里只画没就绪时的简化弧线
+    const u = f.t / f.dur;
     if (u >= 0 && u < 1 && !(SPX.ok && SPX.shoutP)) {   // 10-30 用户圈着旧火弧：「这个还可以优化吗」——光效层没就绪（刚加载、不支持 WebGL）时也不再画那张死的火焰图，
       const ox = clamp(f.ox ?? W / 2, 50, W - 50), oy = WALL_Y + 8; ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';   // 改成和新声浪一个样子的简化版：三道淡色弧往外推、断续、变淡
       for (let i = 0; i < 3; i++) { const ui = clamp((f.t - i * .11) / .6, 0, 1); if (ui <= 0 || ui >= 1) continue; const R = 36 + (300 * f.s - 36) * (1 - Math.pow(1 - ui, 2.2)), a = (1 - ui * ui) * (1 - .3 * i);
@@ -4461,37 +4434,7 @@ function drawFx(f) {
           ctx.globalAlpha = a * .8; ctx.strokeStyle = '#fff2e2'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(ox, oy, R, R * .9, 0, a0, a1); ctx.stroke(); } }
       ctx.restore();
     }
-    if (false) {   // 旧的录好的火焰图（留着不画）
-      const i = Math.min(M.frames.length - 1, Math.floor(u * M.frames.length)), r = M.frames[i], c = M.centers[i];
-      const h = 430 * f.s, w = h * M.width / M.height, x = f.x - w / 2, y = f.y - h;
-      const fade = Math.min(1, u / .12, (1 - u) / .25), fl = .75 + .25 * Math.sin(f.t * 31);
-      if (c) { const cx = x + c[0] / M.width * w, cy = y + c[1] / M.height * h, radius = w * 1.2;
-        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .95 * fade * fl;
-        const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius); glow.addColorStop(0, 'rgba(255,234,165,.95)'); glow.addColorStop(.42, 'rgba(255,182,70,.45)'); glow.addColorStop(1, 'rgba(255,156,50,0)');
-        ctx.fillStyle = glow; ctx.fillRect(cx-radius, cy-radius, radius*2, radius*2); ctx.restore(); }
-      ctx.save(); ctx.drawImage(im, r[0], r[1], r[2], r[3], x, y, w, h);
-      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .48 * fade * fl; ctx.drawImage(im, r[0], r[1], r[2], r[3], x, y, w, h); ctx.restore();
-      // 三个错时的金白闪芒贴着声浪边缘掠过，每次只亮一处，不做密集粒子。
-      if (c) for (const [when, dx, dy] of [[.17,-.28,-.075],[.39,.26,-.06],[.62,-.06,.025]]) {
-        const pulse = Math.exp(-Math.pow((u - when) / .065, 2)); if (pulse < .02) continue;
-        const px = x + c[0] / M.width * w + dx * w, py = y + c[1] / M.height * h + dy * h, size = w * (.14 + .06 * pulse);
-        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = pulse * fade;
-        const g = ctx.createRadialGradient(px, py, 0, px, py, size * 2.4); g.addColorStop(0, 'rgba(255,248,209,1)'); g.addColorStop(.22, 'rgba(255,212,103,.85)'); g.addColorStop(1, 'rgba(255,171,47,0)');
-        ctx.fillStyle = g; ctx.fillRect(px-size*2.4, py-size*2.4, size*4.8, size*4.8);
-        ctx.fillStyle = '#fff9de'; ctx.beginPath(); ctx.moveTo(px, py-size); ctx.quadraticCurveTo(px+size*.1,py-size*.1,px+size*.65,py); ctx.quadraticCurveTo(px+size*.1,py+size*.1,px,py+size); ctx.quadraticCurveTo(px-size*.1,py+size*.1,px-size*.65,py); ctx.quadraticCurveTo(px-size*.1,py-size*.1,px,py-size); ctx.fill(); ctx.restore();
-      }
-    }
   }
-  else if (f.k === 'shout') {                                                       // 张飞的声浪：往上冲、从小撑大、头尾淡
-    const im = IMG.fx_shout, u = f.t / f.dur; if (u > 0 && ready(im)) { const tr = ease(Math.min(1, u * 1.3)), y = f.y - 250 * tr, k = (.5 + .9 * tr) * f.s, h = 150 * k, w = h * im.width / im.height, a = u < .1 ? u / .1 : u > .65 ? (1 - u) / .35 : 1;
-      // 10-28 用户：「移到中间，加上光芒闪烁，不要静态，而是流动的」——放屏幕正中；按横条切开、每条左右波动着画（像气流在扭），后面一团金光、上面再叠一遍提亮闪烁
-      const x0 = f.x - w / 2, y0 = y - h * .35, fl = .55 + .45 * Math.sin(f.t * 47) * Math.sin(f.t * 23 + 1);
-      ctx.save(); ctx.globalAlpha = a * (.45 + .35 * fl); const g = ctx.createRadialGradient(f.x, y0 + h * .4, 4, f.x, y0 + h * .4, w * .7); g.addColorStop(0, 'rgba(255,235,170,.9)'); g.addColorStop(.5, 'rgba(255,170,80,.35)'); g.addColorStop(1, 'rgba(255,150,60,0)');
-      ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(f.x - w, y0 - h * .2, w * 2, h * 1.4); ctx.restore();
-      const N = 28, sh = im.height / N, dh = h / N;
-      for (const [mode, al] of [['source-over', a], ['lighter', a * .35 * fl]]) { ctx.save(); ctx.globalCompositeOperation = mode; ctx.globalAlpha = al;
-        for (let i = 0; i < N; i++) { const dx = Math.sin(i * .55 - f.t * 18) * 6 * k * (1 - i / N * .5); ctx.drawImage(im, 0, i * sh, im.width, sh + 1, x0 + dx, y0 + i * dh, w, dh + 1); }
-        ctx.restore(); } } }
   else if (f.k === 'cYun') drawCYun(f);
   else if (f.k === 'cShuang') drawCShuang(f);
   else if (f.k === 'cHeng') drawCHeng(f);
