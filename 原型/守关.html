@@ -397,16 +397,14 @@ function shiCard(id) {
 }
 const COMBO_WHO = { cHe: ['zhang', 'guan'], cRen: ['liu'], cYun: ['zhang', 'guan'], cHeng: ['zhang', 'guan'], cShuang: ['zhang', 'liu'], cTao: ['zhang', 'liu', 'guan'] };
 const comboLvOf = c => (COMBO_WHO[c] || []).every(id => (G.shi[id] || 0) >= 2) ? 2 : 1;   // 两人都到 2 级势，连携升一级
-// 势升级的画面（10-29 用户：「升级时要很炫……很光，很闪，旦不要做得一个样子」）：各人自己的颜色和画稿爆花，2、4 级更大、多一层法阵和绝技名
-const SHI_LOOK = { guan: { col: '#5fe3a8', glow: 'rgba(90,230,160,', fb: ['hit_jade', 'yanyue'] }, zhang: { col: '#ff8a4a', glow: 'rgba(255,120,50,', fb: ['hit_fire', 'bao'] }, liu: { col: '#9fd6ff', glow: 'rgba(120,190,255,', fb: ['hit_azure', 'hit_gold'] }   /* 10-29 用户：原来的扇形光条和十字「好丑，好像一个洗碗刷」，换成和张飞一样的炸花 */ };
+// 势升级的画面（10-29 用户：「升级时要很炫……很光，很闪，旦不要做得一个样子」）：各人自己颜色的光，2、4 级更大、带绝技名（10-30 爆花去掉）
+const SHI_LOOK = { guan: { col: '#5fe3a8', glow: 'rgba(90,230,160,' }, zhang: { col: '#ff8a4a', glow: 'rgba(255,120,50,' }, liu: { col: '#9fd6ff', glow: 'rgba(120,190,255,' }   /* 10-29 用户：原来的扇形光条和十字「好丑，好像一个洗碗刷」，换成和张飞一样的炸花；10-30 炸花也去掉 */ };
 function shiFx(id, n) {                                                             // 10-29 用户：「升级为什么出现在战场内？」——战场停住、压暗，在上面演完再接着打
-  const L = SHI_LOOK[id], big = !!SHI[G.act[id]][n], m = big ? 7 : 4;
-  const bursts = Array.from({ length: m }, (_, k) => { const a = k / m * 6.283 + VR(-.3, .3), r = VR(60, big ? 150 : 110); return { k: L.fb[k % 2], x: W / 2 + Math.cos(a) * r, y: 250 + Math.sin(a) * r * .8, s: VR(90, big ? 170 : 120), d: k * .07, rot: VR(0, 6.283) }; });
-  G.shiUp = { t: 0, dur: big ? 2.2 : 1.5, id, n, big, name: big ? SHI[G.act[id]][n][0] : '', bursts }; sfx('gong');
+  const big = !!SHI[G.act[id]][n];   // 10-30 用户：「军功的势的效果那里，去掉所有烟花效果」——围着炸的爆花去掉，只留压暗、人物色光、势名和星
+  G.shiUp = { t: 0, dur: big ? 2.2 : 1.5, id, n, big, name: big ? SHI[G.act[id]][n][0] : '' }; sfx('gong');
 }
 function drawShiUp(f) {
   { const a = Math.min(1, f.t / .15) * (f.t > f.dur - .3 ? Math.max(0, (f.dur - f.t) / .3) : 1); ctx.save(); ctx.globalAlpha = .9 * a; ctx.fillStyle = '#06080a'; ctx.fillRect(0, 0, W, H); ctx.restore(); }   // 压暗
-  for (const b of f.bursts) { const M = FBM[b.k], tt = f.t - b.d, dur = M ? M.dur * 1.4 : .6; if (tt < 0 || tt > dur || !hasFb(b.k)) continue; fbFrame(b.k, Math.min(M.n - 1, Math.floor(tt / dur * M.n)), b.x, b.y, b.s, b.rot, 1, 1, .7); }
   const L = SHI_LOOK[f.id], t = f.t, u = Math.min(1, t / .25), out = t > f.dur - .4 ? Math.max(0, (f.dur - t) / .4) : 1, cx = W / 2, cy = 250, e = 1 - Math.pow(1 - u, 3);
   ctx.save(); ctx.globalAlpha = .55 * out * u; const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, f.big ? 260 : 190); g.addColorStop(0, L.glow + '.85)'); g.addColorStop(.4, L.glow + '.25)'); g.addColorStop(1, L.glow + '0)');
   ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore();                              // 一大团人物色的光
