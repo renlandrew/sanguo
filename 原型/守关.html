@@ -737,14 +737,14 @@ const FEATS = [
   ['f5', '连携', '六个连携都打出过', [['头像', '金框']], () => ['cYun', 'cHeng', 'cHe', 'cShuang', 'cRen', 'cTao'].every(k => (INV.comboSeen || {})[k])],
   ['f6', '配招', '丈八破阵一招穿死 8 个敌人', [['资历', 4]], c => c.pojMax >= 8],
   ['f7', '配招', '仁德护阵挡下三成城防伤害', [['残页', 5]], c => c.shieldAbs >= .3],
-  ['f8', '配招', '温酒斩将一局斩下 3 员头目或敌将', [['陨铁', 1]], c => c.wjBig >= 3],
+  ['f8', '配招', '温酒斩将一局斩下 2 员头目或敌将', [['陨铁', 1]], c => c.wjBig >= 2],   // 10-29 推演：一关大将、头目最多三个，温酒留着专等他们也斩不到 3 个，改 2
   ['f9', '配招', '三人都带满两个被动打赢', [['被动', '军心']], () => ['guan', 'zhang', 'liu'].every(id => G.fighters.includes(id) && (G.pas[id] || []).length >= 2)],
   ['f10', '打法', '第五关以后不漏一个兵打赢', [['资历', 4]], () => G.lv.id >= 5 && G.lv.kind !== 'duel' && G.leaked === 0],
   ['f11', '打法', '斗将关城防始终不低于九成', [['陨铁', 1]], c => G.lv.kind === 'duel' && c.wallMin >= .9],
   ['f12', '打法', '第十关以后不用滚木、连弩打赢', [['残页', 5]], () => G.lv.id > 10 && !G.logUsed && !G.nuUsed],
   ['f13', '打法', '关掉自动出招，三星打赢', [['资历', 4]], (c, st) => st >= 3 && G.lv.id >= 4 && !G.autoCast && !window.__sg.featAuto],
   ['f14', '阵容', '第五关以后刘备一招不出打赢', [['被动', '孤胆']], () => G.lv.id >= 5 && G.fighters.includes('liu') && !(G.castBy || {}).liu],   // 10-29 用户选 B：准备页只能换位不能下阵，「只带两人」做不到，改成刘备一招不出
-  ['f15', '阵容', '张飞伤害第一打赢斗将关', [['残页', 5]], () => G.lv.kind === 'duel' && G.dmgBy && G.dmgBy.zhang > Math.max(G.dmgBy.guan || 0, G.dmgBy.liu || 0)],
+  ['f15', '阵容', '斗将关一局喝断 5 次无双', [['残页', 5]], () => G.lv.kind === 'duel' && (G.unsBroken || 0) >= 5],   // 10-29 推演：张飞一喝是控场，斗将伤害怎么打都排不到第一，改成喝断无双（第十、十五、二十、三十关做得到）
 ];
 function featCheck(stars) { const c = G.cnt || {}; INV.comboSeen = INV.comboSeen || {}; if (!G.sim) for (const k of ['cYun', 'cHeng', 'cHe', 'cShuang', 'cRen', 'cTao']) if (c[k]) INV.comboSeen[k] = 1;
   return FEATS.filter(([id, , , , f]) => { try { return f(c, stars); } catch (e) { return false; } }).map(f => f[0]); }
@@ -5735,7 +5735,7 @@ window.__sg = {
           this.forceC = null; takePerk(autoPick()); } else step(DT); n++; } }
     this.seed = 0; this.auto = false; return Object.fromEntries(Object.entries(out).map(([k, [a, b]]) => [k, '荐错 ' + Math.round(a / b * 100) + '% (' + b + ')'])); }, ult: (k, foe) => playUlt(k, foe, true), get inv() { return INV; }, get daily() { return DAILY; }, dayOff: 0, tick: () => dailyTick(), gateLack: id => gateLack(id), nextGate: () => nextGate(), get scr() { return screen; }, set scr(v) { screen = v; },
   // 不画面，直接跑：一直到这一关结束（auto 时自动选战法），返回结果
-  sim(i, maxT = 300) { this.auto = true; this.simming = true; startLevel(i); this.simming = false; G.sim = true; let n = 0; while (G.state !== 'over' && G.t < maxT && n < 1e6) { if (G.state === 'pick') takePerk(autoPick()); step(DT); n++; } return { win: G.result && G.result.win, stars: G.result && G.result.stars, wall: Math.round(G.wall), t: Math.round(G.t), killed: G.killed, leaked: G.leaked, total: G.total, rank: G.rank, perks: G.perks }; },
+  sim(i, maxT = 300) { this.auto = true; this.simming = true; startLevel(i); this.simming = false; G.sim = true; let n = 0; while (G.state !== 'over' && G.t < maxT && n < 1e6) { if (G.state === 'pick') takePerk(autoPick()); if (this.hook) this.hook(G); step(DT); n++; } return { win: G.result && G.result.win, stars: G.result && G.result.stars, wall: Math.round(G.wall), t: Math.round(G.t), killed: G.killed, leaked: G.leaked, total: G.total, rank: G.rank, perks: G.perks }; },
   // 每关换 n 个种子各跑一遍：平均星数、胜场、城防、用时、撞城的兵、输的原因（调平衡用）
   bench(levels = LEVELS.map((_, i) => i), n = 6, naive = false) {
     const out = []; this.naive = naive;
