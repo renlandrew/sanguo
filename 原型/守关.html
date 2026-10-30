@@ -27,7 +27,8 @@
 const REL_LIST = 'fx_boss_|story_|bg_|room|card_|enemy_|huangjin|lishi|gong|cyz|yayi|dengmao|shushi|qibing|xiliang|feixiong|xianzhen|baixing|zhangjiao|tieqi|langqi|huzhen|huaxiong|lijue|gaoshun|lvbu|panfeng|wuanguo|qishou|zhangbao|duyou|qushuai|zhangliang|xiaowei|yushe';
 const LAZY_RE = new RegExp('img/(ult_|fb/|' + REL_LIST + ')'), REL_RE = new RegExp('img/(' + REL_LIST + ')');   // 技能图（大招录像 ult_、命中帧动画 fb/）用到才加载但不释放；其余换关时放掉
 const SRC_SET = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src').set;
-const LOADQ = [], ALLIMG = new Set(), _Img = window.Image; window.Image = function (...a) { const im = new _Img(...a); ALLIMG.add(im);
+const ALLCV = [], _ce = document.createElement.bind(document); document.createElement = function (t, ...a) { const el = _ce(t, ...a); if (String(t).toLowerCase() === 'canvas' && /[?&]memlog/.test(location.search)) { el._at = (new Error().stack.split('\n')[2] || '').replace(/.*守关.html[^:]*:/, '').trim(); ALLCV.push(new WeakRef(el)); } return el; };   // 调试 ?memlog：记下所有画布，看谁在涨
+const LOADQ = [], ALLIMG = new Set(), _Img = window.Image; window.Image = function (...a) { const im = new _Img(...a); ALLIMG.add(new WeakRef(im));   // 弱引用：只给 __sg.mem 数，不拦着回收（10-30 原来强引用，用完的图收不掉）
   Object.defineProperty(im, 'src', { configurable: true, get() { return im._url || ''; }, set(u) { im._url = u; if (LAZY_RE.test(u)) { im._lazy = u; return; }
     if (!LOADED) { LOADQ.push(im); im.addEventListener('load', () => (im.decode ? im.decode() : Promise.resolve()).catch(() => {}).then(() => { im._ok = 1; })); im.addEventListener('error', () => { im._ok = 1; }); }
     SRC_SET.call(im, u); } });
@@ -2719,7 +2720,7 @@ function fbFrame(k, i, x, y, size, rot, alpha = 1, flip = 1, glow = 0) {
 // 10-27 用户问「和场景搭吗？要不要修改下颜色，透明度」：冷蓝实心块和黄沙暖色场景撞色、挡人——光矛换暖金色；除妖脸外都用「变亮」叠加（像光，看得见底下），妖脸只降一点透明
 const SP_LOOK = { spears: { tint: '#ffc65a', blend: 'lighter', alpha: .85 }, dome: { blend: 'lighter', alpha: .32 }, sigil_purple: { blend: 'lighter', alpha: .9 }, sigil_gold: { blend: 'lighter', alpha: .9 }, arcs: { blend: 'lighter', alpha: .9 }, face: { alpha: .88 } };
 function spTint(im, col) { const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0); g.globalCompositeOperation = 'color'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); g.globalCompositeOperation = 'destination-in'; g.drawImage(im, 0, 0); return c; }
-const SPV = {}; for (const k of ['sigil_purple', 'arcs', 'face', 'dome', 'spears', 'sigil_gold']) { const im = new Image(); im.src = 'img/fx_sp_' + k + '.webp' + BUST; fetch('img/fx_sp_' + k + '.json' + BUST).then(r => r.ok ? r.json() : null).then(j => { if (!j) return; const L = SP_LOOK[k] || {}; const set = src => { SPV[k] = { im: src, m: j.anims.play, stand: j.stand, L }; }; if (L.tint) { const go = () => set(spTint(im, L.tint)); im.complete && im.naturalWidth ? go() : im.addEventListener('load', go); } else set(im); }).catch(() => {}); }
+const SPV = {}; for (const k of ['sigil_purple', 'arcs', 'face', 'dome', 'spears', 'sigil_gold']) { const im = new Image(); im.src = 'img/fx_sp_' + k + '.webp' + BUST; fetch('img/fx_sp_' + k + '.json' + BUST).then(r => r.ok ? r.json() : null).then(j => { if (!j) return; const L = SP_LOOK[k] || {}; const set = src => { SPV[k] = { im: src, m: j.anims.play, stand: j.stand, L }; }; if (SP_SOFT[k]) { const go = () => set(spSoft(k, im, SP_SOFT[k])); im.complete && im.naturalWidth ? go() : im.addEventListener('load', go); } else if (L.tint) { const go = () => set(spTint(im, L.tint)); im.complete && im.naturalWidth ? go() : im.addEventListener('load', go); } else set(im); }).catch(() => {}); }
 function spPlay(k, x, y, size, o = {}) { if (!G || G.sim || !SPV[k]) return; (G.spfx = G.spfx || []).push({ k, x, y, size, born: (G.vt || 0) + (o.delay || 0), fps: o.fps || 16, sy: o.sy || 1, fitW: o.fitW || 0, ground: !!o.ground, alpha: o.alpha ?? 1, follow: o.follow || null }); }
 // 10-29 用户：「不要用太多金色……那种色就相对柔和」：护盾罩原是金橙火，敌将每记重招都先冒一片金——整张图集算一遍：饱和留三成、往淡青白偏
 const SP_SOFT = { dome: [.3, [.86, .93, 1]] }, SPSOFT = {};
@@ -5376,18 +5377,17 @@ function drawResult() {
     uiText(k, cx, 275, 10, 'rgba(246,210,122,.8)', 'center', PLAIN, { stroke: false }); uiText(v, cx, 291, fitSize(v, 16, pw / cells.length - 10, 99, FONT, 3), UIC.cream, 'center', FONT, { lw: 3 }); });
   const sandSub = PREP && PREP.li === G.li && PREP.last ? `沙盘推演预计 ${PREP.last.stars.toFixed(1)} 星 · 实际 ${r.stars} 星` : null;
   const sub = sandSub || (r.first && G.lv.reward ? G.lv.reward : '');
-  { const gs = r.goals || [], miss = gs.findIndex(g => !g.ok), gy = sub ? 340 : 320;                  // 三星条件：全达成写金字；没达成写第一条没做到的，朱红
-    const line = miss < 0 ? '三星达成 · ' + gs[2].text : '未达成：' + gs[miss].text, ns = miss < 0 ? 0 : miss + 1, sz = fitSize(line, 12, W - 50 - ns * 15, 99, FONT, 3);
-    if (gs.length) { ctx.font = `${sz}px ${FONT}`; const tw = ctx.measureText(line).width, x0 = W / 2 - (tw + ns * 15) / 2;   // 前面几颗星用星星图
-      for (let k = 0; k < ns; k++) uiStar(x0 + 7 + k * 15, gy, 6.5, false);
-      uiText(line, x0 + ns * 15 + (ns ? 4 : 0), gy, sz, miss < 0 ? '#ffe08a' : '#ff7a5a', 'left', FONT, { lw: 3, glow: miss < 0 ? 'rgba(255,200,90,.6)' : null, glowR: 8 }); } }
+  { const gs = r.goals || [], gy = sub ? 338 : 318;   // 三颗星各一行：几颗星 + 条件，做到的金字，没做到的朱红带「未达成」（10-30 用户：「看不出来3颗星对应的哪个完成了，或者哪个没完成」；原来只写一行）
+    gs.forEach((g, k) => { const y = gy + k * 14, ln = g.text + (g.ok ? '' : ' · 未达成'), sz = fitSize(ln, 11, W - 60 - 44, 99, FONT, 3), x0 = 30 + 44;
+      for (let q = 0; q <= k; q++) uiStar(x0 - 8 - (k - q) * 13, y, 5.5, g.ok);
+      uiText(ln, x0, y, sz, g.ok ? '#ffe08a' : '#ff8a6a', 'left', FONT, { lw: 3 }); }); }
   const lootR = !!(G.advLog || []).some(a => a.bad) && r.loot && r.loot.length;          // 军师认错占了下面那格时，战利品缩小放到这一行右边
   if (sub) { const mw = lootR ? W - 150 : W - 70, sz = fitSize(sub, 12, mw, 99, FONT, 3), cx = W / 2 - (lootR ? 36 : 0), first = r.first && !sandSub; ctx.font = `${sz}px ${FONT}`; const sw2 = ctx.measureText(sub).width;
     if (first) uiSeal(cx - sw2 / 2 - 4, 320, 18, '首', UIC.red);
     uiText(sub, cx + (first ? 8 : 0), 320, sz, sandSub || r.first ? UIC.gold2 : 'rgba(244,230,196,.6)', 'center', FONT, { lw: 3 }); }
   ctx.restore();
   // 出战武将一张张滑出来
-  const t1 = 1.05, gap = .22, ch = 46, y0 = 336 + (PREP && PREP.li === G.li && PREP.last || r.first && G.lv.reward ? 18 : 0), top = Math.max(0, ...gains.map(g => g.dmg));
+  const t1 = 1.05, gap = .22, ch = 40, y0 = 336 + 28 + (PREP && PREP.li === G.li && PREP.last || r.first && G.lv.reward ? 18 : 0), top = Math.max(0, ...gains.map(g => g.dmg));
   gains.forEach((g, k) => drawGainCard(g, 14, y0 + k * (ch + 4), W - 28, ch, t - (t1 + k * gap), win, top));
   // 下面一格：听了军师荐错的卡，军师自己认错（10-25 夜用户：「低智军师常常犯错……事后会以逗比方式告诉用户，这是军师的问题」）；没有就摆战利品
   const tb = t1 + gains.length * gap + (gains.length ? 1.4 : .2), ba = clamp((t - (tb - .4)) / .3, 0, 1), armed = t >= tb, al = ba * (armed ? 1 : .5);
@@ -6195,6 +6195,9 @@ function drawMenu() {
   if (ready(IMG.trio)) { const im = IMG.trio, wide = im.width > im.height, h = wide ? W * im.height / im.width : 318, w = h * im.width / im.height; ctx.drawImage(im, W / 2 - w / 2, wide ? 150 : 138, w, h); }   // 横图铺满一屏宽；10-27 换成 Codex 画的竖版三人（灰底抠图），按高度画、居中，脚落在关卡牌上面
   uiText('群雄逐鹿', W / 2, 96, 50, UIC.gold2, 'center', FONT, { glow: `rgba(255,190,80,${.5 + .2 * Math.sin(t * 2)})`, glowR: 20, lw: 7 });
   const nt = dailyTick(); if (nt) MENU.note = { ...nt, t0: t };
+  if (CRASH && !CRASH.t0) CRASH.t0 = t;
+  if (CRASH && t - CRASH.t0 < 12) { const c = CRASH, msg = `上次${c.scr === 'play' && c.lv ? `第 ${c.lv} 关第 ${c.t} 秒` : '在' + ({ menu: '主页', levels: '选关' }[c.scr] || c.scr)}页面被手机关掉重开（图片约 ${c.mb}MB）`;   // 中断提示：截图发回来查
+    ctx.save(); ctx.globalAlpha = Math.min(1, (12 - (t - c.t0)) / .6); ctx.fillStyle = 'rgba(40,8,4,.82)'; rr(14, 124, W - 28, 24, 8); ctx.fill(); uiText(msg, W / 2, 136, fitSize(msg, 11, W - 40, 99, PLAIN, 3), '#ffd2b8', 'center', PLAIN, { lw: 3 }); ctx.restore(); }
   // 左上角资料卡：过了几关、几颗星、精铁
   const done = LEVELS.filter(lv => BEST[lv.id]).length, stars = LEVELS.reduce((a, lv) => a + (BEST[lv.id] || 0), 0);
   { const mg = monthLeft() > 0; if (mg) { ctx.save(); ctx.shadowColor = 'rgba(255,205,100,.75)'; ctx.shadowBlur = 12; } plate(8, 10, 176, 46); if (mg) ctx.restore(); } uiText('第一章 · ' + RANKS[rankNow()].name, 18, 24, fitSize('第一章 · ' + RANKS[rankNow()].name, 13, 156), UIC.gold2, 'left', FONT, { stroke: false });   // 不写「几关、过了几关」这类设计上的数（10-25 夜用户）
@@ -6351,7 +6354,7 @@ window.__sg = {
     this.seed = 0; return JSON.stringify(out); },
   pick: i => takePerk(i), step: n => { for (let k = 0; k < n; k++) { if (G.state === 'pick' && window.__sg.auto) takePerk(autoPick()); step(DT); } },
   // 一直跑到某种特效刚出来 at 秒（截图用）
-  until(kind, at = .1, maxN = 20000) { const old = new Set(G.fx); for (let k = 0; k < maxN; k++) { if (G.state === 'pick') takePerk(autoPick()); step(DT); const f = G.fx.find(f => f.k === kind && !old.has(f)); if (f && f.t >= at) return true; } return false; }, get mem() { const r = [...ALLIMG].filter(im => im.complete && im.naturalWidth).map(im => [(im._url || '').split('/').pop().split('?')[0], im.naturalWidth * im.naturalHeight * 4 / 1e6]).concat(Object.entries(SHEET_C).map(([k, e]) => ['画布 ' + k, e.c.width * e.c.height * 4 / 1e6])).sort((a, b) => b[1] - a[1]); return { MB: Math.round(r.reduce((a, b) => a + b[1], 0)), top: r.slice(0, 25).map(([k, v]) => k + ' ' + v.toFixed(0)) }; }, get woken() { return [...WOKEN].map(im => (im._url || '').split('/').pop().split('?')[0]); },   // 调试：换关后留在内存里的大图
+  until(kind, at = .1, maxN = 20000) { const old = new Set(G.fx); for (let k = 0; k < maxN; k++) { if (G.state === 'pick') takePerk(autoPick()); step(DT); const f = G.fx.find(f => f.k === kind && !old.has(f)); if (f && f.t >= at) return true; } return false; }, get mem() { const r = [...ALLIMG].map(w => w.deref()).filter(im => im && im.complete && im.naturalWidth).map(im => [(im._url || '').split('/').pop().split('?')[0], im.naturalWidth * im.naturalHeight * 4 / 1e6]).concat(Object.entries(SHEET_C).map(([k, e]) => ['画布 ' + k, e.c.width * e.c.height * 4 / 1e6])).sort((a, b) => b[1] - a[1]); const cvs = ALLCV.map(w => w.deref()).filter(c => c && c.width * c.height > 1).map(c => c.width * c.height * 4 / 1e6); return { cvN: cvs.length, cvMB: Math.round(cvs.reduce((a, b) => a + b, 0)), cvTop: ALLCV.map(w => w.deref()).filter(c => c && c.width * c.height > 250000).map(c => c.width + 'x' + c.height + '@' + c._at), MB: Math.round(r.reduce((a, b) => a + b[1], 0)), top: r.slice(0, 25).map(([k, v]) => k + ' ' + v.toFixed(0)) }; }, get woken() { return [...WOKEN].map(im => (im._url || '').split('/').pop().split('?')[0]); },   // 调试：换关后留在内存里的大图
   tap: (x, y) => cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: cv.getBoundingClientRect().left + x * S, clientY: cv.getBoundingClientRect().top + y * S })),
 };
 
@@ -6362,7 +6365,15 @@ function frame(now) {
   acc += d * (window.__sg.turbo ?? 1) * (G && screen === 'play' && G.state === 'play' && spdOpen() ? INV.spd || 1 : 1); let n = 0;   // 二倍速：每帧多推一倍       // turbo = 0 就停住（截图用）
   while (acc >= DT && n < 600) { if (G) step(DT); acc -= DT; n++; }
   render(); bgMirror(); requestAnimationFrame(frame);
+  if (now - aliveT > 2000) { aliveT = now; aliveMark(); }
 }
+// 中断记录（10-30 用户：「我第五关一直没能打完就自动刷新页面」）：每两秒记一下在哪关第几秒、图片占多少；正常关页面、切到后台会擦掉，
+// 剩下的就是被系统杀掉重开的——下次进主页提示一行，让用户截图回来
+let aliveT = 0; const CRASH = (() => { try { const j = JSON.parse(localStorage.getItem('sgz.alive') || 'null'); localStorage.removeItem('sgz.alive'); return j && Date.now() - j.at < 15 * 60e3 ? j : null; } catch (e) { return null; } })();
+function aliveMark() { if (document.hidden) return; try { let mb = 0; for (const w of ALLIMG) { const im = w.deref(); if (im && im.complete && im.naturalWidth) mb += im.naturalWidth * im.naturalHeight * 4e-6; }
+  localStorage.setItem('sgz.alive', JSON.stringify({ at: Date.now(), scr: screen, lv: G && G.lv ? G.lv.id : 0, t: G ? Math.round(G.t || 0) : 0, mb: Math.round(mb) })); } catch (e) {} }
+const aliveClear = () => { try { localStorage.removeItem('sgz.alive'); } catch (e) {} };
+addEventListener('pagehide', aliveClear); document.addEventListener('visibilitychange', () => { if (document.hidden) aliveClear(); });
 const BGV = document.getElementById('bgv'), BGX = BGV.getContext('2d'); let bgTick = 0;
 function bgMirror() { const wide = innerWidth > W * S + 2; if (BGV.style.display !== (wide ? '' : 'none')) BGV.style.display = wide ? '' : 'none'; if (!wide || (bgTick++ & 3)) return;   /* 10-27 手机上变糊：全屏加模糊滤镜的底层画布让手机浏览器把整页降了清晰度，窄屏直接不显示 */ BGX.drawImage(cv, 0, 0, 36, 64); }   // 宽屏才画，每 4 帧缩成 36×64 一次，放大加模糊就够当底
 function boot() { fit(); addEventListener('resize', fit); if (new URLSearchParams(location.search).has('story')) playStory('open', () => { screen = 'menu'; }, true);   /* 网址带 ?story：直接从序章开始翻看第一章全部剧情（10-26 用户：「你专门开个故事我看看，可以来回翻动的」） */
