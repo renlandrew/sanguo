@@ -84,7 +84,7 @@ const GUAN_RANK_FILES = ['p_guan_rank_1_head.jpg', 'p_guan_rank_2_head_v2.jpg', 
 const GUAN_RANK_PORTRAITS = GUAN_RANK_FILES.map(file => { const im = new Image(); im.src = `img/${file}?v=20261029d`; return im; });
 const RANK_IMG = {}; for (const id of ['guan', 'zhang', 'liu']) for (let r = 1; r <= 6; r++) { const im = new Image(); im.src = `img/rank_${id}_${r}.jpg?v=20261029`; RANK_IMG[id + r] = im; }   // 10-29 三兄弟六个官阶的新装头像（美术/<人>/官阶设计_20261029、关羽/官阶头像_简化雕刻）
 const heroRankPortrait = (id, r = INV.rank || 0) => { const im = r >= 1 ? RANK_IMG[id + Math.min(6, r)] : null; return ready(im) ? im : IMG[id]; };
-for (const k of ['jianyong', 'liru']) { IMG['p_' + k] = new Image(); IMG['p_' + k].src = 'img/p_' + k + '.jpg'; }   // 军师头像（10-25，ChatGPT 画，原图 美术/界面/军师头像_简雍李儒.jpg）
+for (const k of ['jianyong', 'liru', 'zhangbao']) { IMG['p_' + k] = new Image(); IMG['p_' + k].src = 'img/p_' + k + '.jpg'; }   // 军师头像（10-25，ChatGPT 画，原图 美术/界面/军师头像_简雍李儒.jpg）
 IMG.trio = new Image(); IMG.trio.src = 'img/trio.png?v=1027b';
 // 3D 建模渲出来的小兵图集（Meshy → Blender → 水墨着色，见 ../工具/）；没有时退回程序画的
 const BUST = '?t=' + Date.now();                     // 原型阶段图集常改，别吃浏览器缓存
@@ -420,9 +420,55 @@ function drawShiUp(f) {
   if (f.big && t > .45) { const a = clamp((t - .45) / .2, 0, 1) * out; ctx.save(); ctx.globalAlpha = a; uiText(f.name, cx, cy + 86, 22, '#ffffff', 'center', FONT, { glow: L.glow + '.95)', glowR: 18, lw: 4 }); ctx.restore(); }
 }
 const GEAR = ['fire', 'log', 'jum', 'pozhen', 'banma', 'jinshu', 'order', 'nu', 'mend'];
-// 敌方军师（10-25 样本）：李儒——第三波开始 4 秒后伏一队铁骑从左侧杀出；看破拒马（你带拒马，第二波起他放火箭烧掉）
-const FOE_ADV = { liru: { name: '李儒', title: '董卓谋主', ambush: { wave: 2, delay: 4, kind: 'tieqi', n: 8, x0: 16, x1: 70, y: 300 }, seeJum: true },
-  liru27: { name: '李儒', title: '献策焚城', ambush: { wave: 3, delay: 3, kind: 'tieqi', n: 6, x0: 290, x1: 344, y: 290 } } };   // 10-26：火烧洛阳是李儒的主意，第二次出场换右侧伏兵、不烧拒马
+// 敌方军师（10-29 用户：「对方一旦开始有军师也有战法，并且我们设置5-7个战法，随机，如果我们军师智力比较高，战斗前会提醒，如果比对方低，就不会提醒。玩家即使再来一次，对方战法不一定一样」）
+// 两位：张宝（黄巾，智 62，每局抽 1 个）、李儒（董卓，智 86，每局抽 2 个）。我方军师智力高过他：开战前报出每个计、发动前 3 秒再提醒；低就只说看不透。
+// 真人每局重抽（Math.random）；机器人推演按种子抽（同一种子每次一样，平衡测试可复现）
+const FOE_CS = {
+  zhangbao: { name: '张宝', title: '地公将军', zhi: 62, n: 1, pool: ['ambush', 'rush', 'reinf', 'yaoshu', 'lijian'] },
+  liru: { name: '李儒', title: '董卓谋主', zhi: 86, n: 2, pool: ['ambush', 'fire', 'lijian', 'jijiang', 'rush', 'reinf'] } };
+const FOE_CS_LV = { 6: 'zhangbao', 7: 'zhangbao', 9: 'zhangbao', 12: 'liru', 13: 'liru', 14: 'liru', 16: 'liru', 17: 'liru', 18: 'liru', 19: 'liru', 21: 'liru', 22: 'liru', 23: 'liru', 24: 'liru', 26: 'liru', 27: 'liru', 28: 'liru', 29: 'liru' };
+const FOE_CS_MUST = { 12: 'ambush' };                                                  // 第十二关教缓兵之计：李儒一定带伏兵
+const TAC = {   // 每个计：名字、看破时怎么报（T 是抽到的那一份：w 第几波、d 波开始后几秒、side、hero）
+  ambush: { name: '伏兵', tell: T => `第${CN[T.w]}波开始约 ${Math.round(T.d)} 秒，${T.n} 骑从${T.side < 0 ? '左' : '右'}侧杀出` },
+  fire:   { name: '火箭', tell: T => `第${CN[T.w]}波，一阵火箭射上城头：城防 -5%，拒马烧掉` },
+  lijian: { name: '离间', tell: T => `第${CN[T.w]}波，离间${GEN[T.hero].name}：他的招式被封 6 秒` },
+  jijiang:{ name: '激将', tell: T => `第${CN[T.w]}波，城下骂阵：三人普攻慢一半 6 秒` },
+  rush:   { name: '急行', tell: T => `第${CN[T.w]}波，全军急行：快三成，10 秒` },
+  reinf:  { name: '援军', tell: T => `最后一波，再来 ${T.n} 个兵` },
+  yaoshu: { name: '妖术回春', tell: T => `第${CN[T.w]}波，场上黄巾回三成血` } };
+function rollFoeTac(lv, sim) {
+  const ck = FOE_CS_LV[lv.id]; if (!ck || lv.kind === 'duel') return null; const C = FOE_CS[ck];
+  const rr = sim ? mulberry(lv.id * 131 + 17 + (window.__sg.seed || 0)) : Math.random, nW = G.queue[G.queue.length - 1].w + 1;
+  const pool = C.pool.slice(), out = []; if (FOE_CS_MUST[lv.id]) { out.push(FOE_CS_MUST[lv.id]); pool.splice(pool.indexOf(FOE_CS_MUST[lv.id]), 1); }
+  while (out.length < C.n && pool.length) out.push(pool.splice(Math.floor(rr() * pool.length), 1)[0]);
+  const heroes = G.fighters.filter(h => G.order.includes(h) && h !== 'zhang');           // 离间不封张飞：冲阵、无双都靠他一喝，封了就是死局（10-29 第 22 关推演）
+  return { ck, ...C, tacs: out.map(k => ({ k, w: k === 'reinf' ? nW - 1 : Math.min(nW - 1, 2 + Math.floor(rr() * Math.max(1, nW - 2))), d: 2 + rr() * 5, side: rr() < .5 ? -1 : 1, hero: heroes[Math.floor(rr() * heroes.length)] || 'guan',
+    n: k === 'ambush' ? 5 + Math.floor(rr() * 2) : 8, done: false, warned: false })) };
+}
+const foeSeen = () => G.foeCs && counselNow()[1].zhi > G.foeCs.zhi;                   // 我方军师智力高过他才看得破
+function fireTac(T) {
+  const C = G.foeCs, cav = ck => ck === 'zhangbao' ? 'qibing' : 'tieqi'; T.done = true; G.events.push([G.t, TAC[T.k].name[0]]); let sub = '';
+  if (T.k === 'ambush') { const x0 = T.side < 0 ? 16 : 290; for (let k = 0; k < T.n; k++) spawn({ kind: cav(C.ck), x: R(x0, x0 + 54), w: G.wave, lane: false, g: 'foeAdv' }, 300 + R(-24, 24)); G.total += T.n; G.liAmbT = G.t; sub = `${T.n} 骑从${T.side < 0 ? '左' : '右'}侧杀出`; }
+  else if (T.k === 'fire') { G.wall = Math.max(1, G.wall - G.wallMax * .05); if (G.st.jum) { G.st.jum = false; G.jumBurnt = true; } sub = '城防 -5%' + (G.jumBurnt ? '，拒马烧掉' : ''); G.shake = .2; }
+  else if (T.k === 'lijian') { const i = G.order.indexOf(T.hero); if (i >= 0) G.seal[i] = Math.max(G.seal[i] || 0, 6); sub = `${GEN[T.hero].name}的招式被封 6 秒`; }
+  else if (T.k === 'jijiang') { G.tauntT = Math.max(G.tauntT || 0, 6); sub = '三人普攻慢一半 6 秒'; }
+  else if (T.k === 'rush') { for (const e of alive()) if (!e.duel) e.hasteT = Math.max(e.hasteT || 0, 10); sub = '敌军快三成，10 秒'; }
+  else if (T.k === 'reinf') { const kind = (G.queue.find(q => !FOES[q.kind].boss && !FOES[q.kind].civ) || {}).kind || 'bing'; for (let k = 0; k < T.n; k++) spawn({ kind, x: R(40, W - 40), w: G.wave, lane: false, g: 'foeAdv' }, R(70, 110)); G.total += T.n; sub = `又来 ${T.n} 个${FOES[kind].name}`; }
+  else if (T.k === 'yaoshu') { for (const e of alive()) if (!e.duel && !FOES[e.kind].civ) e.hp = Math.min(e.max, e.hp + e.max * .3); sub = '场上黄巾回三成血'; }
+  if (!G.sim) G.fx.push({ k: 'banner', t: 0, text: `${C.name} · ${TAC[T.k].name}`, sub });
+}
+function stepFoeTac() {
+  const C = G.foeCs; if (!C) return; const seen = foeSeen(), [, M] = counselNow();
+  for (const T of C.tacs) { if (T.done || G.wave < T.w) continue; const el = G.wave > T.w ? 99 : G.t - G.waveT0;
+    if (seen && !T.warned && !G.sim && el >= T.d - 3) { T.warned = true; G.tip = { text: `${M.name}：小心，${C.name}要用${TAC[T.k].name}——${TAC[T.k].tell(T)}`, t0: G.t }; }
+    if (el >= T.d) fireTac(T); }
+}
+function foeTacIntro() {                                                              // 开战前：看得破就报每个计，看不破只说看不透
+  const C = G.foeCs, [, M] = counselNow(), seen = foeSeen();
+  const goals = seen ? [['', `${M.name}（智 ${M.zhi}）看破了他的计策：`], ...C.tacs.map(T => ['', `· ${TAC[T.k].name}：${TAC[T.k].tell(T)}`])]
+    : [['', `${M.name}（智 ${M.zhi}）看不透${C.name}的计策，只能见招拆招。`], ['', `换智力高过 ${C.zhi} 的军师，开战前就能看破。`]];
+  G.teach = { key: null, title: `敌军师 · ${C.name}（智 ${C.zhi}）`, goals, plain: true, t0: uiNow() };   // plain：没有星，不缩进
+}
 const isCav = T => !T.civ && (T.spd >= 48 || !!T.mount);
 // 晋升（10-25 夜用户：「每关减到 3–5 次」）：原来门槛 8、16、24…，一关晋升 5–14 次。改成按这关大约能拿多少军功分段：
 // MER 是机器人会搭配、按推荐等级打这关拿到的军功（6 个种子平均，除掉推荐等级的魅力系数；斗将不算最后斩敌将那一下），改了波次用 __sg.merTest() 重测；
@@ -513,7 +559,7 @@ const LEVELS = [
       [34, 'xiliang', 26, 10, 'rand'], [44, 'xiliang', 20, 0, 'wedge'], [50, 'xiaowei', 1, 0, 'rand', { g: 'b', lead: true }], [50, 'xiliang', 24, 8, 'rand', { g: 'b' }]],
     tips: [[1, '夜里限时：守住城门，等曹操骑马出城；黑处的敌人打不到，用「火把」照亮'], [6, '西凉兵举着盾：剑气、刀气打正面只有一半，张飞的矛照刺'], [22, '西凉校尉带兵，斩了他，他带的兵就溃散']] },
   { id: 12, name: '十八路会盟', sub: '酸枣大营 · 诸侯会盟，西凉铁骑来袭营', hpMul: 2.458,   /* 沙盘推演样本关（10-25 夜晋升减少后按改前星数重调 5.88→3.2）：原来比按推荐等级调的 4.88 强三成五，配对了（拒马）三星、不配一星多 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'suanzao', reward: '刘备可学「激将」',
-    rules: { volley: { every: 15, n: 10, dmg: 22, text: '袁绍营放箭' }, foeAdv: 'liru' },
+    rules: { volley: { every: 15, n: 10, dmg: 22, text: '袁绍营放箭' } },
     waves: [[2, 'xiliang', 20, 8, 'rand'], [8, 'tieqi', 4, 4, 'rand'], [16, 'xiliang', 22, 0, 'wedge'], [22, 'tieqi', 6, 5, 'rand'], [28, 'xiliang', 30, 10, 'rand'], [38, 'tieqi', 8, 6, 'rand'],
       [44, 'xiliang', 24, 0, 'line'], [52, 'xiaowei', 1, 0, 'rand', { g: 'a', lead: true }], [52, 'tieqi', 8, 0, 'line', { g: 'a' }], [60, 'xiliang', 30, 10, 'rand']],
     tips: [[1, '友军：袁绍营每 15 秒放一轮箭'], [7, '西凉铁骑冲得快、撞城重——用张飞的一喝把他们喝下马']] },
@@ -583,7 +629,7 @@ const LEVELS = [
   { id: 27, name: '火烧洛阳', sub: '洛阳废墟 · 董卓迁都，西凉兵追杀百姓', hpMul: 3.143, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'ruins', reward: '刘备可学「仁德」',
     waves: [[2, 'baixing', 6, 6, 'rand'], [4, 'xiliang', 14, 8, 'rand'], [12, 'baixing', 8, 8, 'rand'], [14, 'xiliang', 20, 0, 'wedge'], [22, 'baixing', 8, 8, 'rand'], [24, 'xiliang', 26, 10, 'rand'],
       [34, 'baixing', 10, 8, 'rand'], [36, 'gongqi', 6, 5, 'rand'], [44, 'baixing', 8, 8, 'rand'], [46, 'xiliang', 28, 10, 'rand'], [56, 'xiliang', 30, 10, 'rand']],
-    rules: { foeAdv: 'liru27' },
+    rules: {},
     tips: [[1, '百姓往城门跑：进了城算救下'], [5, '招式打到百姓算误伤；西凉兵追上百姓会砍倒他们'], [9, '李儒献策：第三波一开打，右侧杀出六骑西凉铁骑']] },
   { id: 28, name: '井中玉玺', sub: '洛阳废墟 · 宫中井里有五色毫光', hpMul: 4.121, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'ruins', reward: '传国玉玺（法宝）',
     rules: { wells: [[90, 300], [180, 250], [270, 310]] },
@@ -967,7 +1013,7 @@ function startLevel(i) {
     G.nuqi = 0; G.mengT = 0; G.pojT = -9; G.shi = {}; G.comboLv = {}; G.pojMul = 1; G.cnt = { cYun: 0, cHeng: 0, cHeKill: 0, cShuang: 0, cRen: 0, cTao: 0, cHe: 0, pojMax: 0, wjBig: 0, shieldAbs: 0, wallMin: 1 }; G.castBy = {}; G.team = team; }
   G.adv = PREP && PREP.li === i && PREP.adviser ? { id: PREP.adviser, cond: PREP.cond, used: false, militiaT: 3 } : null;
   G.amb = lv.id >= 5 ? ambushFor(lv) : null; G.ambushed = false; G.ambushN = 0;
-  G.foeAdv = RU.foeAdv ? { ...FOE_ADV[RU.foeAdv], ambushed: false } : null; G.slowT = 0; G.events = [];
+  G.foeAdv = null; G.foeCs = rollFoeTac(lv, sim); G.slowT = 0; G.events = [];   // 10-29 旧的固定计（FOE_ADV）换成随机抽
   if (RU.fire) { const p = PERKS.find(p => p.id === 'fire'); p.fn(G.st); G.perks.fire = 1; }
   for (const id of RU.give || []) { const p = PERKS.find(p => p.id === id); p.fn(G.st); G.perks[id] = (G.perks[id] || 0) + 1; }      // 开局送的战法（连弩）
   if (RU.wall) G.wall = RU.wall / 100 * G.wallMax;
@@ -990,7 +1036,8 @@ function spawn(q, y) {
   const T = FOES[q.kind];
   if (G.RU.pass && q.lane !== false) q = { ...q, x: HX + (q.x - HX) * .62 };
   if (T.civ && y == null) y = R(250, 320);                                            // 百姓从半路的废墟里跑出来                     // 关隘：两边是山崖，敌人挤在中间
-  const hp = T.hp * HPX * HP_X * (G.lv.hpMul || 1) * (TUNE.hp || 1), e = { kind: q.kind, x: q.x, y: y ?? HZ + R(0, 6), hp, max: hp, stun: 0, knock: 0, burnT: 0, burnDps: 0, hitT: 0, f: R(0, 4), shootT: R(.5, 1.5), jit: R(-18, 18), dead: false, atk: false,
+  // 10-29 敌军师分兵用计：普通兵血 ×0.92（机器人不会看提醒，不补就有关输）
+  const hp = T.hp * HPX * HP_X * (G.lv.hpMul || 1) * (TUNE.hp || 1) * (G.foeCs && !T.boss && !T.duel ? .92 : 1), e = { kind: q.kind, x: q.x, y: y ?? HZ + R(0, 6), hp, max: hp, stun: 0, knock: 0, burnT: 0, burnDps: 0, hitT: 0, f: R(0, 4), shootT: R(.5, 1.5), jit: R(-18, 18), dead: false, atk: false,
     duel: !!T.duel, g: q.g, lead: !!q.lead, w: q.w ?? -1, ch: q.ch ?? null, chargeT: 0, healT: R(1, 3), windT2: (T.wind || 0) * .6, guardT: 2, shield: 0, ph: R(0, 6.28) };
   const ms = MAP_SPAWN[G.lv.map]; if (ms && y == null) e.y = ms.y + R(0, 4);
   if (q.lane !== false) e.x = VPX + (q.x - VPX) * depth(e.y);
@@ -1171,7 +1218,7 @@ function perkEval(p, I = foeIntel()) {
   if (p.id === 'pozhen') return I.shield >= 4 ? why(830 + I.shield, `后面还有 ${I.shield} 个举盾的，刀气剑气打他们只有一半`) : why(-50, '这关没有举盾的兵，用不上');
   if (p.id === 'banma') return I.cav >= 4 ? why(830 + I.cav, `后面还有 ${I.cav} 骑要冲过来，不绊马打骑兵只有一半`) : why(-50, '这关没有骑兵，用不上');
   if (p.id === 'jinshu') return I.healer >= 2 ? why(830 + I.healer * 4, `${I.healer} 个术士会给兵回血加速`) : why(-50, '这关没有术士，用不上');
-  if (p.id === 'jum' && G.foeAdv && G.foeAdv.seeJum) return why(-100, `${G.foeAdv.name}看得破拒马，摆了也会被烧`);
+  if (p.id === 'jum' && G.foeCs && foeSeen() && G.foeCs.tacs.some(T => T.k === 'fire' && !T.done)) return why(-100, `${G.foeCs.name}要放火箭，摆了拒马也会被烧`);
   if (p.id === 'mend') return v0 > 0 ? why(v0, `城防只剩 ${Math.round(G.wall / G.wallMax * 100)}%，先补墙`) : why(v0, '城防还够，补墙浪费一次晋升');
   if (p.shi) return why(v0, (G.shi[p.gen] || 0) ? `接着捧${GEN[p.gen].name}` : `${GEN[p.gen].name}这一路能打`);
   if (p.combo) return why(v0, `连携凑齐了：${p.combo.map(id => GEN[id].name).join('、')}一起打`);
@@ -1280,16 +1327,17 @@ function closeTeach() { if (!G.teach || uiNow() - G.teach.t0 < .5) return; if (G
 function drawTeach() {
   const T = G.teach, u = ease(Math.min(1, (uiNow() - T.t0) / .25)), low = T.key === 'charge' || T.key === 'uns';   // 冲阵、无双：框放低一点、遮罩淡一点，露出说的那队敌人、那员敌将
   ctx.save(); ctx.fillStyle = `rgba(8,5,3,${(low ? .3 : .55) * u})`; ctx.fillRect(0, 0, W, H);
-  const lines = T.goals ? T.goals.flatMap(([st, tx]) => fitLines(tx, W - 150, 15, PLAIN).map((ln, i) => [i ? '' : st, ln])) : fitLines(T.text, W - 96, 15, PLAIN).map(ln => ['', ln]), bh = 92 + lines.length * 22, bx = 24, bw = W - 48, by = H * (low ? .6 : .36) - bh / 2 + (1 - u) * 20;
+  const gi = T.goals && !T.plain, lines = T.goals ? T.goals.flatMap(([st, tx]) => fitLines(tx, gi ? W - 150 : W - 96, 15, PLAIN).map((ln, i) => [i ? '' : st, ln])) : fitLines(T.text, W - 96, 15, PLAIN).map(ln => ['', ln]), bh = 92 + lines.length * 22, bx = 24, bw = W - 48, by = H * (low ? .6 : .36) - bh / 2 + (1 - u) * 20;
   ctx.globalAlpha = u; plate(bx, by, bw, bh);
   uiText(T.title, W / 2, by + 34, 22, goldGrad(by + 34, 22), 'center', FONT, { lw: 5, glow: 'rgba(255,200,90,.5)', glowR: 8 });
-  lines.forEach(([st, ln], i) => { if (st) for (let k = 0; k < st.length; k++) uiStar(bx + 32 + k * 16, by + 66 + i * 22, 7, true);   /* 用星星图（10-29 用户：「这里的星用图片，不要html」） */ uiText(ln, bx + (T.goals ? 78 : 24), by + 66 + i * 22, 15, UIC.cream, 'left', PLAIN, { lw: 3 }); });
+  lines.forEach(([st, ln], i) => { if (st) for (let k = 0; k < st.length; k++) uiStar(bx + 32 + k * 16, by + 66 + i * 22, 7, true);   /* 用星星图（10-29 用户：「这里的星用图片，不要html」） */ uiText(ln, bx + (gi ? 78 : 24), by + 66 + i * 22, 15, UIC.cream, 'left', PLAIN, { lw: 3 }); });
   if (uiNow() - T.t0 > .5) uiText('点一下继续', W / 2, by + bh - 14, 11, `rgba(244,230,196,${.4 + .35 * Math.sin(uiNow() * 4)})`, 'center', PLAIN, { stroke: false });
   ctx.restore();
 }
 function step(dt) {
   if (!G.sim && !G.goal0) { G.goal0 = true; if (!BEST[G.lv.id]) showGoals(); }   // 第一次打这关：开战先亮本关目标
   if (!G.sim && !G.teach0 && !G.teach) { G.teach0 = true; teach({ 1: 'basic', 2: 'skill', 4: 'manual', 5: 'duel' }[G.lv.id]); }
+  if (!G.sim && G.foeCs && !G.csShown && !G.teach && !window.__sg.auto) { G.csShown = true; foeTacIntro(); }   // 敌军师：每局开战前报一次（看破了报计，看不破说看不透）
   if (G.paused || G.panel || G.teach) return;                                       // 暂停、看军功、教学说明时整个战场停住
   if (G.ult) { G.ult.t += dt; if (G.ult.t >= G.ult.dur) G.ult = null; return; }
   if (G.shiUp) { G.shiUp.t += dt; if (G.shiUp.t >= G.shiUp.dur) G.shiUp = null; return; }   // 势升级画面：战场停住          // 大招特写：整个战场停住，演完再接着打
@@ -1473,14 +1521,7 @@ function stepRules(dt) {
   if (G.lights.length) { for (const L of G.lights) L.t -= dt; G.lights = G.lights.filter(L => L.t > 0); }
   if (G.lightN > 0 && (G.lightChk -= dt) <= 0) {   // 夜战火把也自动插（10-28）
     G.lightChk = 1; botLight(alive()); }
-  // 敌方军师：看破拒马——第二波起放火箭烧掉
-  if (G.foeAdv && G.foeAdv.seeJum && G.st.jum && G.wave >= 1) { G.st.jum = false; G.jumBurnt = true; G.events.push([G.t, '烧']); G.fx.push({ k: 'banner', t: 0, text: G.foeAdv.name + '火烧拒马', sub: '看破：拒马第二波起被火箭烧掉' }); G.shake = .2; }
-  // 敌方军师：伏兵
-  const FA = G.foeAdv; if (FA && FA.ambush && !FA.ambushed && G.wave >= FA.ambush.wave && G.t - G.waveT0 >= FA.ambush.delay) {
-    const A = FA.ambush; FA.ambushed = true; G.liAmbT = G.t; G.events.push([G.t, '伏']);
-    for (let k = 0; k < A.n; k++) spawn({ kind: A.kind, x: R(A.x0, A.x1), w: G.wave, lane: false, g: 'foeAdv' }, A.y + R(-24, 24));
-    G.total += A.n; G.fx.push({ k: 'banner', t: 0, text: FA.name + '的伏兵', sub: A.n + ' 骑' + FOES[A.kind].name + '从' + (A.x0 > W / 2 ? '右' : '左') + '侧杀出' }); G.shake = .25;
-  }
+  stepFoeTac();                                                                // 敌方军师的计（10-29 随机）
   if (G.amb && !G.ambushed) {                                // 伏兵：玩家点令旗放（drawAmbushBtn）；河沟那段第一次挤进一堆人时教一次；机器人等人够多才放
     const n = ambushCount(); if (n >= 8) teach('ambush');
     if ((G.sim || window.__sg.auto) && (n >= G.amb.need + 4 || (G.qi >= G.queue.length && n >= 6))) fireAmbush();
@@ -4960,7 +5001,7 @@ function drawRoster() {
 const CAMP = { t0: 0, pickAwake: false };
 let GATE = null;
 // 物品图标（ChatGPT 画，img/item_<名>.png）；没到时画一块同色的圆角块写首字
-for (const k of ['精铁', '残页', '将印', '陨铁', '体力', '机缘']) { IMG['item_' + k] = new Image(); IMG['item_' + k].src = 'img/item_' + encodeURIComponent(k) + '.png' + BUST; }
+for (const k of ['精铁', '残页', '将印', '陨铁', '体力', '机缘', '青龙鳞', '蛇纹镔铁', '雌雄剑胚']) { IMG['item_' + k] = new Image(); IMG['item_' + k].src = 'img/item_' + encodeURIComponent(k) + '.png' + BUST; }
 function drawItemIcon(k, cx, cy, s) {
   if (ITEM_TIP[k]) hov(cx - s / 2 - 2, cy - s / 2 - 2, s + 4, s + 4, ITEM_TIP[k]);          // 图标都带悬停说明
   const im = IMG['item_' + k]; if (ready(im)) { const f = s / Math.max(im.width, im.height); ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); return; }
@@ -5326,11 +5367,11 @@ function drawPrep() {
     let cx = 66 + ctx.measureText(FOES[k].name + ' ×' + n).width + 10; for (const tg of note[0]) { ctx.fillStyle = '#6e1a10'; ctx.beginPath(); ctx.roundRect(cx, y + 4, 18, 16, 4); ctx.fill(); uiText(tg, cx + 9, y + 12, 11, UIC.gold2, 'center', PLAIN, { stroke: false }); cx += 22; }
     uiText(note[1], 66, y + 29, 10, 'rgba(244,230,196,.65)', 'left', PLAIN, { stroke: false }); });
   let ey = 88 + Math.min(4, fc.length) * 36; if (lv.rules && lv.rules.volley) { uiText('友军 · ' + lv.rules.volley.text + '，每 ' + lv.rules.volley.every + ' 秒一轮', 16, ey + 4, 10, '#9fd3a0', 'left', PLAIN, { stroke: false }); ey += 16; }
-  const FA = lv.rules && lv.rules.foeAdv && FOE_ADV[lv.rules.foeAdv];                // 敌方军师：计策是明牌（推演会算进去）；看破写明针对什么
-  if (FA) { const seen = P.kits.includes('jum');
-    if (ready(IMG.p_liru)) { ctx.save(); ctx.beginPath(); ctx.roundRect(14, ey, 28, 28, 5); ctx.clip(); ctx.drawImage(IMG.p_liru, 12, ey - 2, 32, 32); ctx.restore(); ctx.strokeStyle = '#a8301f'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.roundRect(14, ey, 28, 28, 5); ctx.stroke(); } else uiSeal(28, ey + 14, 20, FA.name[0], '#5a1d12'); uiText('敌方军师 · ' + FA.name + '（' + FA.title + '）', 46, ey + 8, 13, '#ffb39a', 'left', FONT, { lw: 3 });
-    uiText(`伏兵：第${CN[FA.ambush.wave]}波开始后，${FA.ambush.n} 骑${FOES[FA.ambush.kind].name}从${FA.ambush.x0 > W / 2 ? '右' : '左'}侧杀出`, 46, ey + 25, 10, 'rgba(244,230,196,.75)', 'left', PLAIN, { stroke: false });
-    if (FA.seeJum) uiText(seen ? '看破：你带了拒马——第二波起他放火箭烧掉' : '看破：料定你会用拒马挡铁骑（带了第二波起就烧掉）', 46, ey + 40, 10, seen ? '#ff9a7a' : 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false, glow: seen ? 'rgba(226,86,58,.6)' : null }); ey += 52; }
+  const fck = lv.kind !== 'duel' && FOE_CS_LV[lv.id], FC = fck && FOE_CS[fck];       // 敌方军师（10-29 随机计）：只报他是谁、你的军师看不看得破
+  if (FC) { const [, M] = counselNow(), seen = M.zhi > FC.zhi, pim = IMG['p_' + fck];
+    if (ready(pim)) { ctx.save(); ctx.beginPath(); ctx.roundRect(14, ey, 28, 28, 5); ctx.clip(); ctx.drawImage(pim, 12, ey - 2, 32, 32); ctx.restore(); ctx.strokeStyle = '#a8301f'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.roundRect(14, ey, 28, 28, 5); ctx.stroke(); } else uiSeal(28, ey + 14, 20, FC.name[0], '#5a1d14', true);
+    uiText(`敌军师 ${FC.name}（${FC.title} · 智 ${FC.zhi}）每局随机用 ${FC.n} 个计`, 46, ey + 10, 11, '#ff9a7a', 'left', FONT, { stroke: false });
+    uiText(seen ? `${M.name}（智 ${M.zhi}）看得破：开战前报出他的计` : `${M.name}（智 ${M.zhi}）看不透：开战后见招拆招`, 46, ey + 25, 10, seen ? '#9be0a0' : 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false }); ey += 40; }
   // 布阵：点两张换位置
   const by = ey + 6; secTitle('布阵 · 出手顺序（五格，点两张换位置）', by);
   for (let k = 0; k < NS; k++) { const x = 12 + k * 68, y = by + 16, w = 64, h = 64, id = P.order[k], on = P.sel === k;
