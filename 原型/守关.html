@@ -5323,11 +5323,11 @@ function drawGainCard(g, x, y, w, h, tt, win, top) {
   const need = needLv(cur.lv), fr = cur.lv >= LV_CAP ? 1 : cur.exp / need;
   slotBar(tx, y + 27, 66, 8, [[fr, '#a8701a', '#ffe08a']]); uiText('+' + Math.round(g.g * p), tx + 70, y + 31, 10, '#ffd76e', 'left', PLAIN, { lw: 2.5 });
   // 伤害：一条两段（深的是招式，浅的是普攻），右上一个总数；学了招才写招名
-  const dx = x + 156, dw = w - 156 - 12, sk = g.sk || 0, nb = Math.max(0, g.dmg - sk), learnt = knows(g.id), hue = GEN_HUE[g.id], gr = clamp((tt - .2) / .8, 0, 1);
-  if (learnt && sk > 0) uiText(GEN[g.id].skill, dx, y + 14, 11, hue[1], 'left', FONT, { lw: 3 });
+  const dx = x + 156, dw = w - 156 - 12, sk = g.sk || 0, nb = Math.max(0, g.dmg - sk), learnt = knows(g.id), gr = clamp((tt - .2) / .8, 0, 1);
+  if (learnt && sk > 0) uiText(GEN[g.id].skill, dx, y + 14, 11, '#ffd98a', 'left', FONT, { lw: 3 });   // 10-30 用户：「伤害统一用一种颜色就好」——原来按人上色
   uiText(fmtDmg(g.dmg * gr), dx + dw, y + 14, 13, UIC.cream, 'right', FONT, { lw: 3 });
   const mx = Math.max(1, top || g.dmg);
-  slotBar(dx, y + 25, dw, 11, [[sk / mx * gr, hue[0], hue[1]], [nb / mx * gr, '#6a5a44', '#e8dcc0']]);
+  slotBar(dx, y + 25, dw, 11, [[sk / mx * gr, '#b8601e', '#ffc46a'], [nb / mx * gr, '#6a5a44', '#e8dcc0']]);
   ctx.restore();
 }
 function drawResult() {
@@ -5369,25 +5369,21 @@ function drawResult() {
   // 三颗星：每颗下面一行小字写它要什么（原来是一整行「一星守住 · 二星城防过半 · 三星城防八成五」，用户说太 HTML）
   for (let k = 0; k < 3; k++) { const st = .4 + k * .18, u = clamp((t - st) / .22, 0, 1), on = k < r.stars, sx = W / 2 + (k - 1) * 62, sy = 244 - (k === 1 ? 4 : 0);
     uiStar(sx, sy, 18, on && u > 0, on ? (u < 1 ? 1.8 - .8 * ease(u) : 1) : 1); }   // 10-25 夜用户：「这个有点太密集」——星下小字去掉
-  // 斩敌、城防、用时放进一块画的漆面金边牌：上面一行小字是名目，下面大字是数
-  const la = clamp((t - .9) / .3, 0, 1), cells = [['斩敌', String(G.killed)], ['城防', Math.round(r.frac * 100) + '%'], ['用时', Math.round(r.time) + '秒']];
-  if (G.civs) cells.push(['救下百姓', String(G.saved)]); if (G.sealFound) cells.push(['井中', '得玉玺']);
-  ctx.save(); ctx.globalAlpha = la; const pw = 290, px0 = (W - pw) / 2; plate(px0, 266, pw, 38);
-  cells.forEach(([k, v], j) => { const cx = px0 + pw * (j + .5) / cells.length;
-    uiText(k, cx, 275, 10, 'rgba(246,210,122,.8)', 'center', PLAIN, { stroke: false }); uiText(v, cx, 291, fitSize(v, 16, pw / cells.length - 10, 99, FONT, 3), UIC.cream, 'center', FONT, { lw: 3 }); });
+  const la = clamp((t - .9) / .3, 0, 1);
+  ctx.save(); ctx.globalAlpha = la;   // 10-30 用户圈着斩敌、城防、用时那块牌：「其实没必要」——去掉，城防剩多少写在二星那行
   const sandSub = PREP && PREP.li === G.li && PREP.last ? `沙盘推演预计 ${PREP.last.stars.toFixed(1)} 星 · 实际 ${r.stars} 星` : null;
   const sub = sandSub || (r.first && G.lv.reward ? G.lv.reward : '');
-  { const gs = r.goals || [], gy = sub ? 338 : 318;   // 三颗星各一行：几颗星 + 条件，做到的金字，没做到的朱红带「未达成」（10-30 用户：「看不出来3颗星对应的哪个完成了，或者哪个没完成」；原来只写一行）
+  { const gs = r.goals || [], gy = sub ? 298 : 278;   // 三颗星各一行：几颗星 + 条件，做到的金字，没做到的朱红带「未达成」（10-30 用户：「看不出来3颗星对应的哪个完成了，或者哪个没完成」；原来只写一行）
     gs.forEach((g, k) => { const y = gy + k * 14, ln = g.text + (g.ok ? '' : ' · 未达成'), sz = fitSize(ln, 11, W - 60 - 44, 99, FONT, 3), x0 = 30 + 44;
       for (let q = 0; q <= k; q++) uiStar(x0 - 8 - (k - q) * 13, y, 5.5, g.ok);
       uiText(ln, x0, y, sz, g.ok ? '#ffe08a' : '#ff8a6a', 'left', FONT, { lw: 3 }); }); }
   const lootR = !!(G.advLog || []).some(a => a.bad) && r.loot && r.loot.length;          // 军师认错占了下面那格时，战利品缩小放到这一行右边
   if (sub) { const mw = lootR ? W - 150 : W - 70, sz = fitSize(sub, 12, mw, 99, FONT, 3), cx = W / 2 - (lootR ? 36 : 0), first = r.first && !sandSub; ctx.font = `${sz}px ${FONT}`; const sw2 = ctx.measureText(sub).width;
-    if (first) uiSeal(cx - sw2 / 2 - 4, 320, 18, '首', UIC.red);
-    uiText(sub, cx + (first ? 8 : 0), 320, sz, sandSub || r.first ? UIC.gold2 : 'rgba(244,230,196,.6)', 'center', FONT, { lw: 3 }); }
+    if (first) uiSeal(cx - sw2 / 2 - 4, 280, 18, '首', UIC.red);
+    uiText(sub, cx + (first ? 8 : 0), 280, sz, sandSub || r.first ? UIC.gold2 : 'rgba(244,230,196,.6)', 'center', FONT, { lw: 3 }); }
   ctx.restore();
   // 出战武将一张张滑出来
-  const t1 = 1.05, gap = .22, ch = 40, y0 = 336 + 28 + (PREP && PREP.li === G.li && PREP.last || r.first && G.lv.reward ? 18 : 0), top = Math.max(0, ...gains.map(g => g.dmg));
+  const t1 = 1.05, gap = .22, ch = 44, y0 = 296 + 28 + (PREP && PREP.li === G.li && PREP.last || r.first && G.lv.reward ? 18 : 0), top = Math.max(0, ...gains.map(g => g.dmg));
   gains.forEach((g, k) => drawGainCard(g, 14, y0 + k * (ch + 4), W - 28, ch, t - (t1 + k * gap), win, top));
   // 下面一格：听了军师荐错的卡，军师自己认错（10-25 夜用户：「低智军师常常犯错……事后会以逗比方式告诉用户，这是军师的问题」）；没有就摆战利品
   const tb = t1 + gains.length * gap + (gains.length ? 1.4 : .2), ba = clamp((t - (tb - .4)) / .3, 0, 1), armed = t >= tb, al = ba * (armed ? 1 : .5);
@@ -5403,7 +5399,7 @@ function drawResult() {
       uiText(n ? '×' + n : '满', sz / 2 - 3, sz / 2 - 6, 11, n ? '#fff2dc' : UIC.red2, 'right', PLAIN, { lw: 3 }); ctx.restore(); }); };
   if (blame) { const u = clamp((t - (tb - .5)) / .35, 0, 1); if (u > 0) { ctx.save(); ctx.globalAlpha = u; ctx.translate(0, (1 - ease(u)) * 20);
       drawCounselSay(blame.ck, COUNSEL[blame.ck], blame.text, by - 4, 1, blame.retort); ctx.restore(); }
-    by += 70; if (ents.length) drawLoot(26, W - 22 - (ents.length - 1) * 17, 320); }
+    by += 70; if (ents.length) drawLoot(26, W - 22 - (ents.length - 1) * 17, 280); }
   else if (ents.length) { drawLoot(40, W / 2, by + 22); by += 50; }
   const AC = r.ach || [];                                                               // 10-30 这局新达成的功绩：盖「功」印、写几项，下一行列名字（在战利品下、按钮上）
   if (AC.length) { const u = clamp((t - (tb - .2)) / .3, 0, 1), yb0 = H - 52; if (u > 0) { const two = by + 40 <= yb0 - 4, ay = Math.min(by + 14, yb0 - (two ? 34 : 14));
