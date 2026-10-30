@@ -2521,8 +2521,9 @@ function drawProp(k, x, y, w, alpha = 1, rot = 0) {
   ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(rot); ctx.drawImage(IMG.props, r[0], r[1], r[2], r[3], -w / 2, -h, w, h); ctx.restore(); ctx.globalAlpha = 1;
 }
 // 10-30 用户：「马绳要放在关前啊」——绊马索画在骑兵绊倒的那条线上（离城 130），原来只在城垛上一个小图标
-function drawBanma() { const im = IMG.banma_field; if (!ready(im)) return; const w = W + 20, h = w * im.height / im.width, y = WALL_Y - 118;   // 10-30 用户画的一整条（美术/道具/绊马索_地上.png，去灰底）：横贯关前，底边落在绊马线
-  ctx.drawImage(im, W / 2 - w / 2, y - h, w, h); }
+function drawBanma() { const im = IMG.banma_field; if (!ready(im)) return;   // 10-30 用户画的一整条（美术/道具/绊马索_地上.png，去灰底）；用户：「太粗太大了，你做两条吧」——缩小、前后两道
+  for (const [y, w] of [[WALL_Y - 136, 150], [WALL_Y - 108, 170]]) { const h = w * im.height / im.width, step = w * .92;   // 一张画四根桩，接着画时首尾两根桩叠在一起
+    for (let x = -w * .04 - 6; x < W; x += step) ctx.drawImage(im, x, y - h, w, h); } }
 function drawJum() {
   if (hasProp('jum')) { for (let x = 4; x < W + 40; x += 46) drawProp('jum', x, WALL_Y - 50, 52); return; }
   const y = WALL_Y - 64;
