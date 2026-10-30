@@ -52,6 +52,11 @@ PLAN = {
     'lvbu': {'idle': ('idle', range(0, 16, 2)), 'heavy': ('die', range(0, 14)), 'rush': ('rush', range(14, 40, 2)), 'hit': ('die', range(14, 20)), 'die': ('die', range(14, 40, 2))},   # 10-27 新画风重录：重击那条背景冒出一大团深蓝，改用倒下那条开头的挥戟   # 倒下第 5、6 帧胸口 Veo 加了一团亮光，从 9 起
     'gaoshun': {'run': ('run', range(21, 32)), 'ram': ('ram', range(6, 40, 3)),   # 跑步一周 11 帧；开头镜头还在追，人先小后大，按身宽归一（FIT）
                  'hit': ('die', range(18, 24)), 'die': ('die', range(14, 40, 2))},   # 倒下：戟断了、躲到盾后单膝跪地
+    # 10-29 新画首录（make_foe_pack4.py）：邓茂斗将（原来借程远志的 3D 模型）；旗手、张宝、督邮朝镜头原地走／跑；督邮出手那条第 8 帧起灰底上有斜光纹
+    'dengmao': {'idle': ('idle', range(0, 24, 2)), 'heavy': ('heavy', range(4, 40, 3)), 'summon': ('summon', range(4, 40, 3)), 'hit': ('die', range(0, 8, 2)), 'die': ('die', range(6, 40, 3))},
+    'qishou': {'run': ('run', range(16, 32)), 'ram': ('ram', range(4, 34, 2)), 'die': ('die', range(4, 34, 2))},
+    'zhangbao': {'run': ('run', range(8, 32, 2)), 'ram': ('cast', range(0, 40, 3)), 'die': ('die', range(4, 40, 3))},
+    'duyou': {'run': ('run', range(8, 32, 2)), 'ram': ('ram', range(0, 40, 3)), 'die': ('die', range(0, 34, 2))},
     'panfeng': {'idle': ('ram', range(0, 4)), 'ram': ('ram', range(0, 40, 3))},
     'wuanguo': {'idle': ('ram', range(0, 4)), 'ram': ('ram', range(0, 40, 3))},
 }
@@ -73,7 +78,9 @@ ALIAS = {'zhangjiao': {'run': 'idle', 'ram': 'cast', 'fly': 'die'}, 'qibing': {'
          'huzhen': {'run': 'idle', 'ram': 'combo', 'cast': 'combo', 'heavy': 'combo', 'fly': 'die'},
          'huaxiong': {'run': 'idle', 'ram': 'heavy', 'cast': 'heavy', 'fly': 'die'}, 'lijue': {'run': 'idle', 'ram': 'heavy', 'cast': 'heavy', 'fly': 'die'},
          'lvbu': {'run': 'rush', 'ram': 'heavy', 'cast': 'heavy', 'fly': 'die'}, 'gaoshun': {'fly': 'die'},
-         'panfeng': {'run': 'idle'}, 'wuanguo': {'run': 'idle'}}
+         'panfeng': {'run': 'idle'}, 'wuanguo': {'run': 'idle'},
+         'dengmao': {'run': 'idle', 'ram': 'heavy', 'cast': 'heavy', 'fly': 'die'}, 'qishou': {'hit': 'run', 'fly': 'die'},
+         'zhangbao': {'hit': 'run', 'fly': 'die', 'cast': 'ram'}, 'duyou': {'hit': 'run', 'fly': 'die'}}
 
 def gray_of(rgb):
     a = rgb.astype(np.float32)
@@ -111,7 +118,7 @@ def cells(path):
     sheet = np.asarray(Image.open(path).convert('RGB')); ch, cw = sheet.shape[0] // ROWS, sheet.shape[1] // COLS
     return [sheet[(i // COLS) * ch:(i // COLS + 1) * ch, (i % COLS) * cw:(i % COLS + 1) * cw] for i in range(N)]
 
-FOE = {'zhangjiao', 'qibing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'lvbu', 'gaoshun', 'panfeng', 'wuanguo'}   # 敌人和友军：图集不带 g_ 前缀
+FOE = {'dengmao', 'qishou', 'zhangbao', 'duyou', 'zhangjiao', 'qibing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'lvbu', 'gaoshun', 'panfeng', 'wuanguo'}   # 敌人和友军：图集不带 g_ 前缀
 for g in (sys.argv[2:] or ['guan', 'zhang', 'liu']):
     takes = {p.stem.split('_', 1)[1]: p for p in SRC.glob(f'{g}[0-9]_*.jpg')}
     base = 'idle' if 'idle' in takes else next(iter(PLAN.get(g, {}).values()), (None,))[0]   # 脚底和缩放按这条的首帧定
