@@ -1,11 +1,11 @@
 # 10-29 晚：深堑、大招眼部特写、奇谋卡
 
-参考：用户发的《三国望神州》截图和商店视频——水墨工笔、低饱和、纸白墨黑加一点朱红；大招只露眼睛的横条特写；奇谋做成一排竖卡。
+参考：用户发的《三国望神州》——学它的版式（大招只露眼睛的横条特写、奇谋竖卡）和克制的配色；画风不学水墨（10-29 用户：「不需要接近水墨」），照我们现在的厚涂立绘，颜色略压、每张只一个主色。
 
 ## 1. 卢植的深堑（战场道具，横向，透明底）
 
 ```
-A long horizontal defensive trench dug across the ground in front of an ancient Chinese city wall, seen from a high top-down three-quarter view: a dark earth ditch about as wide as two soldiers, freshly dug soil piled along both edges, a row of sharpened wooden stakes and cheval-de-frise (lumen deer-horn barricades, crossed sharpened logs) planted along the far edge pointing outward, Chinese ink-wash painting style with light watercolor, muted earth browns and ink greys, no people, no text, isolated on a transparent background, wide panoramic strip composition 4:1
+A long horizontal defensive trench dug across the ground in front of an ancient Chinese city wall, seen from a high top-down three-quarter view: a dark earth ditch about as wide as two soldiers, freshly dug soil piled along both edges, a row of sharpened wooden stakes and cheval-de-frise (lumen deer-horn barricades, crossed sharpened logs) planted along the far edge pointing outward, semi-realistic hand-painted game illustration matching a painted battlefield, slightly muted earth browns and greys, no people, no text, isolated on a transparent background, wide panoramic strip composition 4:1
 ```
 用法：横铺在城前那道堑的位置，8 秒后淡出。图最好是 4:1 的横条，左右两头自然收尖，方便拉宽。
 
@@ -13,7 +13,7 @@ A long horizontal defensive trench dug across the ground in front of an ancient 
 
 统一写法（换括号里的人）：
 ```
-Extreme close-up of only the eyes and brows of [人物], a horizontal strip crop from just above the eyebrows to just below the eyes, fierce and sharp gaze looking slightly to the side, Chinese ink-wash and fine-line gongbi painting style, mostly black ink and pale paper tones with one restrained accent color, dramatic side lighting, high detail on the eyes, no text, wide cinematic strip 4:1
+Extreme close-up of only the eyes and brows of [人物], a horizontal strip crop from just above the eyebrows to just below the eyes, fierce and sharp gaze looking slightly to the side, semi-realistic hand-painted game illustration in the same style as the hero portraits, slightly muted colors with one restrained accent color, dramatic side lighting, high detail on the eyes, no text, wide cinematic strip 4:1
 ```
 - 关羽：`Guan Yu, long narrow phoenix eyes, thick heavy brows, a red-tinted face, a hint of a green headscarf at the top edge`（点缀色：暗青）
 - 张飞：`Zhang Fei, wide round glaring eyes, bristling thick black brows, fierce furious expression`（点缀色：暗朱红）
@@ -31,12 +31,12 @@ A single bold horizontal Chinese calligraphy ink brush stroke, black ink, ragged
 
 ### 卡框（一张通用）
 ```
-An empty vertical card frame for a Chinese ink-wash strategy game, 2:3 portrait, thin dark lacquered wood border with small antique bronze corner fittings, a blank aged rice-paper panel in the lower third for text, the upper two thirds empty and transparent for an illustration, no text, transparent background
+An empty vertical card frame for a Three Kingdoms strategy game, 2:3 portrait, thin dark lacquered wood border with small antique bronze corner fittings, a blank aged rice-paper panel in the lower third for text, the upper two thirds empty and transparent for an illustration, no text, transparent background
 ```
 
 ### 卡面插画（统一写法，换括号）
 ```
-Vertical card illustration 2:3, [画面], Chinese ink-wash painting with fine gongbi linework, mostly ink greys and pale paper with ONE dominant accent color [主色], strong silhouette, dynamic diagonal composition, misty background fading to paper white at the bottom, no text, no border
+Vertical card illustration 2:3, [画面], semi-realistic hand-painted game illustration, slightly muted palette with ONE dominant accent color [主色], strong silhouette, dynamic diagonal composition, misty background fading out at the bottom, no text, no border
 ```
 
 | 卡 | 画面 | 主色 |

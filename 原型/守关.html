@@ -2603,15 +2603,15 @@ function drawFbs() {
 // 11–30 关的地图还没画的先借相近的（汜水关、虎牢关借谷口，酸枣大营借黄巾大营）
 const MAP_ALIAS = { sishui: 'canyon', hulao: 'canyon', suanzao: 'camp', luoyang: 'plain', ruins: 'plain' };
 const mapKey = m => ready(IMG['bg_' + m]) ? m : (MAP_ALIAS[m] || m);
-// 配色收敛（10-29 用户：「感觉我们现在的颜色有些多有些乱」，参考《三国望神州》纸白、淡墨、一点朱红）：场景图一律降饱和、往宣纸色靠，
+// 配色收敛（10-29 用户：「感觉我们现在的颜色有些多有些乱」；又说「不需要接近水墨」）：场景图一律降一点饱和，
 // 第一次画时算一遍存起来（不每帧滤镜，手机不卡）；人物色只留在各自招式特效里
-const INKBG = new Map(), INK_SAT = .45;
+const INKBG = new Map(), INK_SAT = .7;   // 10-29 用户：「不需要接近水墨」——只压掉刺眼的饱和，保留厚涂画风，不往宣纸色偏
 function inkBg(im) {
   let c = INKBG.get(im); if (c) return c;
   c = document.createElement('canvas'); c.width = im.naturalWidth || im.width; c.height = im.naturalHeight || im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
   try { const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
     for (let i = 0; i < p.length; i += 4) { const l = .3 * p[i] + .59 * p[i + 1] + .11 * p[i + 2];
-      p[i] = l + (p[i] - l) * INK_SAT + 6; p[i + 1] = l + (p[i + 1] - l) * INK_SAT + 4; p[i + 2] = l + (p[i + 2] - l) * INK_SAT; }   // 留四成五的色，再往米黄宣纸偏一点
+      p[i] = l + (p[i] - l) * INK_SAT; p[i + 1] = l + (p[i + 1] - l) * INK_SAT; p[i + 2] = l + (p[i + 2] - l) * INK_SAT; }   // 留七成的色
     g.putImageData(d, 0, 0); } catch (e) { return im; }                                   // 读不了像素（跨域）就用原图
   INKBG.set(im, c); return c;
 }
@@ -5741,7 +5741,7 @@ const MAP_NODE = [                                                              
 const MAP_TOP = 100, MAP_BOT = 576;
 function drawCampaignMap(mim, t) {
   ctx.save(); ctx.beginPath(); ctx.rect(0, MAP_TOP, W, MAP_BOT - MAP_TOP); ctx.clip();
-  const mh = W * mim.height / mim.width; ctx.drawImage(mim, 0, MAP_TOP + (MAP_BOT - MAP_TOP - mh) / 2, W, mh);
+  const mh = W * mim.height / mim.width; ctx.drawImage(inkBg(mim), 0, MAP_TOP + (MAP_BOT - MAP_TOP - mh) / 2, W, mh);   // 10-29 配色收敛：战役地图也降饱和
   const fd = ctx.createLinearGradient(0, MAP_TOP, 0, MAP_BOT); fd.addColorStop(0, 'rgba(8,5,4,.75)'); fd.addColorStop(.07, 'rgba(8,5,4,0)'); fd.addColorStop(.93, 'rgba(8,5,4,0)'); fd.addColorStop(1, 'rgba(8,5,4,.8)'); ctx.fillStyle = fd; ctx.fillRect(0, MAP_TOP, W, MAP_BOT - MAP_TOP);
   const N = MAP_NODE[MENU.seg], base = MENU.seg * 10, open = i => i === 0 || BEST[LEVELS[i - 1].id] || window.__sg.all;
   /* 不画连线：图上本来就画了行军的土路；直线来回交叉又乱又像几何图形 */
