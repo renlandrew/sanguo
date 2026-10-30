@@ -461,11 +461,11 @@ function stepFoeTac() {
   const C = G.foeCs; if (!C) return; const seen = foeSeen(), [, M] = counselNow();
   for (const T of C.tacs) { if (T.done || G.wave < T.w) continue; const el = G.wave > T.w ? 99 : G.t - G.waveT0;
     if (seen && !T.warned && !G.sim && el >= T.d - 3) { T.warned = true; G.tip = { text: `${M.name}：小心，${C.name}要用${TAC[T.k].name}——${TAC[T.k].tell(T)}`, t0: G.t }; }
-    if (el >= T.d) fireTac(T); }
+    if (el >= T.d) { if (G.lz && !G.lz.broke) { G.lz.broke = true; T.done = true; G.events.push([G.t, '破']); if (!G.sim) G.fx.push({ k: 'banner', t: 0, text: '卢植 · 将计就计', sub: `破了${C.name}的${TAC[T.k].name}` }); continue; } fireTac(T); } }   // 卢植：敌军师第一个计当场破掉
 }
 function foeTacIntro() {                                                              // 开战前：看得破就报每个计，看不破只说看不透
   const C = G.foeCs, [, M] = counselNow(), seen = foeSeen();
-  const goals = seen ? [['', `${M.name}（智 ${M.zhi}）看破了他的计策：`], ...C.tacs.map(T => ['', `· ${TAC[T.k].name}：${TAC[T.k].tell(T)}`])]
+  const goals = seen ? [['', `${M.name}（智 ${M.zhi}）看破了他的计策：`], ...C.tacs.map(T => ['', `· ${TAC[T.k].name}：${TAC[T.k].tell(T)}`]), ...(G.lz ? [['', `卢植将计就计：头一个计当场破掉`]] : [])]
     : [['', `${M.name}（智 ${M.zhi}）看不透${C.name}的计策，只能见招拆招。`], ['', `换智力高过 ${C.zhi} 的军师，开战前就能看破。`]];
   G.teach = { key: null, title: `敌军师 · ${C.name}（智 ${C.zhi}）`, goals, plain: true, t0: uiNow() };   // plain：没有星，不缩进
 }
@@ -997,7 +997,7 @@ function startLevel(i) {
   if (sim && window.__sg.upOver) Object.assign(exp, window.__sg.upOver(exp, lv.id) || {});   // 推演：按某天手里的东西覆盖（逐日推演用）
   G.up = sim ? (window.__sg.noUp ? {} : exp) : window.__sg.all ? Object.fromEntries([...new Set([...Object.keys(own), ...Object.keys(exp)])].map(k => [k, Math.max(own[k] || 0, exp[k] || 0)])) : { ...own };
   G.upMul = 1; G.wpnLv = {}; for (const h of ['guan', 'zhang', 'liu']) G.wpnLv[h] = G.up['wpn_' + h] ?? G.up.wpn ?? 0; G.awake = G.up.awake ? (!sim && INV.awake) || 'guan' : null;
-  G.blocks = 0; G.trenchT = 0; G.logUsed = false; G.nuUsed = false; G.logArm = false; G.nuArm = false; G.lights = []; G.lightN = RU.night ? 3 : 0; G.lightArm = false; G.lightChk = 0;
+  G.blocks = 0; G.trenchT = 0; G.trenchFire = true; G.logUsed = false; G.nuUsed = false; G.logArm = false; G.nuArm = false; G.lights = []; G.lightN = RU.night ? 3 : 0; G.lightArm = false; G.lightChk = 0;
   if (G.up.liu3) G.st.liuSwords += 2;
   G.wpnNeed = (GATES[lv.id] || {}).wpn || 0;
   if (!window.__sg.simming && GATES[lv.id] && gateLack(lv.id).length) { const [, C] = counselNow(); G.tips = [[.5, `${C.name}：${GATE_SAY[lv.id]}`], ...(G.tips || [])]; }   // 缺推荐的东西：开战时军师提一句（10-26 不再拦关）
@@ -1013,6 +1013,7 @@ function startLevel(i) {
     G.nuqi = 0; G.mengT = 0; G.pojT = -9; G.shi = {}; G.comboLv = {}; G.pojMul = 1; G.cnt = { cYun: 0, cHeng: 0, cHeKill: 0, cShuang: 0, cRen: 0, cTao: 0, cHe: 0, pojMax: 0, wjBig: 0, shieldAbs: 0, wallMin: 1 }; G.castBy = {}; G.team = team; }
   G.adv = PREP && PREP.li === i && PREP.adviser ? { id: PREP.adviser, cond: PREP.cond, used: false, militiaT: 3 } : null;
   G.amb = lv.id >= 5 ? ambushFor(lv) : null; G.ambushed = false; G.ambushN = 0;
+  G.lz = (sim ? window.__sg.forceC === 'luzhi' : counselNow()[0] === 'luzhi') && lv.kind !== 'duel' ? { used: false, broke: false } : null;   // 推演只在 forceC 指定卢植时带   // 10-29 用户「只加卢植」：卢植的计
   G.foeAdv = null; G.foeCs = rollFoeTac(lv, sim); G.slowT = 0; G.events = [];   // 10-29 旧的固定计（FOE_ADV）换成随机抽
   if (RU.fire) { const p = PERKS.find(p => p.id === 'fire'); p.fn(G.st); G.perks.fire = 1; }
   for (const id of RU.give || []) { const p = PERKS.find(p => p.id === id); p.fn(G.st); G.perks[id] = (G.perks[id] || 0) + 1; }      // 开局送的战法（连弩）
@@ -1243,7 +1244,7 @@ const COUNSEL = {
   jianyong: { name: '简雍', title: '涿郡同乡', zhi: 72, spec: '时机', bias: '守', blind: '将', unlock: 4, plan: 'ambush',   // 10-28：第四关后剧情自荐当军师，第五关起能带；带的计是伏兵
     say: '打仗嘛，先把城守住', note: '带「伏兵」：两侧河沟藏乡勇，看准时机点令旗——用对了才有三星。偏守，打敌将的战法常低估' },
   luzhi: { name: '卢植', title: '北中郎将 · 刘备之师', zhi: 88, spec: '兵法', bias: '控', blind: 'cav', unlock: 9,
-    say: '兵者，诡道也', note: '兵法正道：连携、对症都看得准；没跟西凉骑兵打过，骑兵的事常看走眼' },
+    say: '兵者，诡道也', note: '带「凿堑」（城前挖一道深堑，敌兵过堑慢一半、骑兵落马，8 秒）和「将计就计」（破掉敌军师第一个计）。连携、对症看得准；骑兵的事常看走眼' },
 };
 for (const k of Object.keys(COUNSEL)) if (!IMG['p_' + k]) { IMG['p_' + k] = new Image(); IMG['p_' + k].src = 'img/p_' + k + '.jpg' + BUST; }
 const counselOK = k => !COUNSEL[k].unlock || BEST[COUNSEL[k].unlock];
@@ -1380,8 +1381,8 @@ function step(dt) {
     if (e.hasteT > 0) e.hasteT -= dt;
     if (e.breakT > 0) e.breakT -= dt;
     const rooted = e.rootT > 0; if (rooted) e.rootT -= dt;                         // 剑印：定在原地，放不了箭、施不了法
-    e.inTrench = G.trenchT > 0 && !T.civ && !T.boss && Math.abs(e.y - G.trenchY) < 14;   // 怒雷火沟：走进去着火、慢一半，骑兵落马
-    if (e.inTrench) { if (!(e.burnT > 0)) { e.burnT = 1; e.burnDps = 10 * HPX; } if (T.mount && e.stun <= 0) e.stun = .25; }
+    e.inTrench = G.trenchT > 0 && !T.civ && !T.boss && Math.abs(e.y - G.trenchY) < (G.trenchFire === false ? 30 : 14);   // 卢植的堑宽一些、不着火   // 怒雷火沟：走进去着火、慢一半，骑兵落马
+    if (e.inTrench) { if (G.trenchFire !== false && !(e.burnT > 0)) { e.burnT = 1; e.burnDps = 10 * HPX; } if (T.mount && e.stun <= 0) e.stun = .25; }
     if (G.st.trip && T.mount && !e.tripped && e.y > WALL_Y - 130 && e.stun <= 0) { e.tripped = true; e.stun = .3; }   // 绊马索：冲到城前绊倒落马
     // 本事：术士洒符水、张宝妖风、张梁挡刀
     if (T.heal && !G.st.noHeal) { e.healT -= dt; if (e.healT <= 0 && e.stun <= 0 && !rooted) {   /* 驱邪符：符水失效 */ e.healT = T.heal.every * ACT_X; e.castT = .8; for (const f of near(e, T.heal.r, f => !FOES[f.kind].boss)) { f.hp = Math.min(f.max, f.hp + f.max * T.heal.pct); f.hasteT = 3; } G.fx.push({ k: 'wisp', t: 0, x: e.x, y: e.y - 20, r: T.heal.r }); } }
@@ -1522,6 +1523,7 @@ function stepRules(dt) {
   if (G.lightN > 0 && (G.lightChk -= dt) <= 0) {   // 夜战火把也自动插（10-28）
     G.lightChk = 1; botLight(alive()); }
   stepFoeTac();                                                                // 敌方军师的计（10-29 随机）
+  if (G.lz && !G.lz.used && (G.sim || window.__sg.auto) && alive().filter(e => !FOES[e.kind].boss && !FOES[e.kind].civ && e.y > LZ_Y - 90 && e.y < LZ_Y + 10).length >= 8) fireDitch();   // 机器人：堑前挤了 8 个以上才挖
   if (G.amb && !G.ambushed) {                                // 伏兵：玩家点令旗放（drawAmbushBtn）；河沟那段第一次挤进一堆人时教一次；机器人等人够多才放
     const n = ambushCount(); if (n >= 8) teach('ambush');
     if ((G.sim || window.__sg.auto) && (n >= G.amb.need + 4 || (G.qi >= G.queue.length && n >= 6))) fireAmbush();
@@ -1803,7 +1805,7 @@ function resolveSkill(id, boost = 1) {
     for (const e of al) { const d = WALL_Y - e.y; if (d < R0 || e.duel) { e.roaredT = G.t; const T = FOES[e.kind], res = T.boss ? (T.taunt || T.rampage ? 1 : .35) : (T.stunRes || 1); if (T.taunt || T.rampage) shoutBack(e); hurt(e, 24 * HPX * boost, 'roar'); if (e.duel && e.mv && e.mv.k !== 'heal') { if (e.mv.uns) G.unsBroken = (G.unsBroken || 0) + 1; e.mv = null; e.moveT = (G.lv.gap || 3) * TIMEX.v; if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 110, text: '打断！', size: 24, color: CINNABAR }); }   /* 一喝喝断敌将正在蓄的招（10-26 用户：「张飞的喝不能阻断」——原来只晕 0.5 秒，晕完突刺照样落下） */ if (!e.duel) e.knock += SPD_X * (28 + 50 * (1 - d / R0)) * res; e.stun = Math.max(e.stun, G.st.zhangStun * res); } }
     G.fx.push({ k: 'roar', t: 0, ox: genX(G.order.indexOf('zhang')), R: R0, hits: al.filter(e => WALL_Y - e.y < R0).map(e => [e.x, e.y - 14]), rays: Array.from({ length: 15 }, (_, i) => ({ a: -Math.PI * .93 + Math.PI * .86 * (i + R(-.35, .35)) / 14, l: R0 * R(.45, 1.02), w: R(12, 24), bend: R(-.12, .12) })) });
     G.shake = .3; G.roarT = G.t;
-    if (G.up && G.up.zhang2) { G.trenchT = 4; G.trenchY = WALL_Y - Math.min(R0, 160) * .62; }   // 怒雷：城前留一道火沟
+    if (G.up && G.up.zhang2) { G.trenchT = 4; G.trenchY = WALL_Y - Math.min(R0, 160) * .62; G.trenchFire = true; }   // 怒雷：城前留一道火沟
   } else if (id === 'liu') {
     const pri = al.filter(e => e.y > TOP - 4 && !FOES[e.kind].civ && !FOES[e.kind].invuln && seen(e)).sort((a, b) => ((b.stun > 0) - (a.stun > 0)) || (b.hp - a.hp));
     for (let k = 0; k < G.st.liuSwords; k++) { const e = pri[k % Math.max(1, pri.length)]; if (!e) break; const lx = genX(G.order.indexOf('liu')); G.shots.push({ k: 'sword', side: k % 2, x: lx + (k % 2 ? 10 : -10), y: GY - 46, target: e, t: 0, trail: [], ang: -Math.PI / 2, boost }); }
@@ -1969,6 +1971,16 @@ function fireAmbush() {                                          // 伏兵从两
   G.fx.push({ k: 'ambush', t: 0 }); G.fx.push({ k: 'banner', t: 0, text: ok ? '伏兵杀出！' : '伏兵杀出', sub: '扫掉 ' + n + ' 人' + (ok ? ' · 时机正好' : ' · 人少了，这关最多两星') }); G.shake = .3; sfx('horn');
 }
 // 河沟那一段：两边草里露出乡勇的枪尖和小旗（还没放时）；左边一面大令旗按钮「伏兵」，放过就收起
+// 卢植的凿堑（10-29）：城前挖一道深堑 8 秒，过堑的慢一半、骑兵落马（不着火，和张飞的怒雷火沟分开）；玩家点令旗，机器人等城前挤满了才挖
+const LZ_Y = WALL_Y - 110;
+function fireDitch() { if (!G.lz || G.lz.used || G.state !== 'play') return; G.lz.used = true; G.trenchT = 8; G.trenchY = LZ_Y; G.trenchFire = false; G.events.push([G.t, '堑']);
+  if (!G.sim) { G.fx.push({ k: 'banner', t: 0, text: '卢植 · 凿堑', sub: '城前深堑 8 秒：过堑慢一半，骑兵落马' }); G.shake = .15; sfx('horn'); } }
+function drawDitchBtn() {
+  if (!G.lz || G.lz.used || G.state !== 'play') return; const t = uiNow(), bx = 66, by = LZ_Y - 40, r = 24, pulse = .5 + .5 * Math.sin(t * 5), btn = IMG.ui_ambush_btn;
+  ctx.save(); ctx.shadowColor = `rgba(255,190,80,${.5 + .4 * pulse})`; ctx.shadowBlur = 16;
+  if (ready(btn)) ctx.drawImage(btn, bx - r, by - r, r * 2, r * 2); else { ctx.fillStyle = '#2a1a10'; ctx.beginPath(); ctx.arc(bx, by, r, 0, 6.283); ctx.fill(); }
+  ctx.restore(); uiText('凿堑', bx, by + r + 11, 12, UIC.gold2, 'center', FONT, { lw: 3 }); hit(bx - r, by - r, r * 2, r * 2 + 18, fireDitch);
+}
 function drawAmbushBtn() {
   const A = G.amb; if (!A || G.ambushed || G.state !== 'play') return;
   const cy = (A.y0 + A.y1) / 2, t = uiNow();
@@ -3163,8 +3175,8 @@ function roarInit(f) {
 // 没有 WebGL2 时只留那道裂缝
 function drawTrench() {
   const a = Math.min(1, G.trenchT / 1), y = G.trenchY, ps = persp(y); ctx.save(); ctx.globalAlpha = a * .7;
-  brush(ctx, [[0, y + 2], [W * .3, y - 1], [W * .6, y + 3], [W, y]], 4 * ps + 2, '#2a120a', .8, () => 1, .1, vr); ctx.restore();
-  if (ML && G.trenchT > .6 && vr() < .7) { const x = VR(8, W - 8); ML.splat(x, y - 2, VR(-25, 25), VR(-80, -40), VR(4, 6), [0, VR(.4, .7), .1, 0]); }   // 一条低低的火，不挡战场
+  brush(ctx, [[0, y + 2], [W * .3, y - 1], [W * .6, y + 3], [W, y]], (G.trenchFire === false ? 10 : 4) * ps + 2, '#2a120a', .8, () => 1, .1, vr); ctx.restore();   // 卢植的堑：一道更宽的土沟
+  if (ML && G.trenchFire !== false && G.trenchT > .6 && vr() < .7) { const x = VR(8, W - 8); ML.splat(x, y - 2, VR(-25, 25), VR(-80, -40), VR(4, 6), [0, VR(.4, .7), .1, 0]); }   // 一条低低的火，不挡战场
 }
 function drawGroundFx() {
   if (G.trenchT > 0) drawTrench();
@@ -4377,7 +4389,7 @@ function drawBattleBtns() {
   if (spdOpen()) { const on = (INV.spd || 1) > 1, sy = py - 42; ctx.save(); if (on) { ctx.shadowColor = `rgba(255,200,90,${.5 + .3 * Math.sin(uiNow() * 4)})`; ctx.shadowBlur = 12; } roundBtn(px, sy, 16, '', '', () => { INV.spd = on ? 1 : 2; saveInv(); }, false); ctx.restore();
     uiText(on ? '×2' : '×1', px, sy + 1, 12, on ? UIC.gold2 : UIC.cream, 'center', PLAIN, { lw: 3 }); }
   const over = G.fx.some(f => f.k === 'skname' && f.t < f.dur && Math.abs(f.x - 32) < 45);              // 最左那员武将出招时，竖排招名的旗带正好落在这颗按钮上：按钮先淡下去让字露出来
-  drawAmbushBtn();
+  drawAmbushBtn(); drawDitchBtn();
   if (G.propTip && (G.propTip.hover || uiNow() - G.propTip.t0 < 2.2)) { const T = G.propTip, lines = fitLines(T.desc, 150, 11, PLAIN), bw = 170, bh = 26 + lines.length * 14, bx = clamp(T.x - bw / 2, 6, W - bw - 6), by = T.y - bh - 8;   // 军械小图标的说明（点一下 / 鼠标停住）
     uiPanel(bx, by, bw, bh, { r: 6, alpha: .95 }); uiText(T.name, bx + 10, by + 13, 13, UIC.gold2, 'left', FONT, { stroke: false }); lines.forEach((ln, i) => uiText(ln, bx + 10, by + 30 + i * 14, 11, UIC.cream, 'left', PLAIN, { stroke: false })); }
   ctx.save(); if (over) ctx.globalAlpha = .22; roundBtn(32, 402, 20, '功', '军功', () => { G.panel = true; G.panelAdv = null; MENU.panelT = uiNow(); }, false); ctx.restore();
