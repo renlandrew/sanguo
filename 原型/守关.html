@@ -2521,9 +2521,10 @@ function drawProp(k, x, y, w, alpha = 1, rot = 0) {
   ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(rot); ctx.drawImage(IMG.props, r[0], r[1], r[2], r[3], -w / 2, -h, w, h); ctx.restore(); ctx.globalAlpha = 1;
 }
 // 10-30 用户：「马绳要放在关前啊」——绊马索画在骑兵绊倒的那条线上（离城 130），原来只在城垛上一个小图标
-function drawBanma() { const im = IMG.banma_field; if (!ready(im)) return;   // 10-30 用户画的一整条（美术/道具/绊马索_地上.png，去灰底）；用户：「太粗太大了，你做两条吧」——缩小、前后两道
-  for (const [y, w] of [[WALL_Y - 136, 150], [WALL_Y - 108, 170]]) { const h = w * im.height / im.width, step = w * .92;   // 一张画四根桩，接着画时首尾两根桩叠在一起
-    for (let x = -w * .04 - 6; x < W; x += step) ctx.drawImage(im, x, y - h, w, h); } }
+function drawBanma() { const im = IMG.banma_field; if (!ready(im)) return;   // 10-30 用户画的一整条（美术/道具/绊马索_地上.png，去灰底）
+  // 用户：「太粗太大了」「我意思是这样接两条，和远处那样细，如果一条就够屏幕，那就一条」——一道，两张左右接上（接口两根桩叠成一根），粗细照 150 宽那张
+  const w = (W + 16) / 1.9, h = 150 * im.height / im.width, y = WALL_Y - 122;   /* 首尾桩中心在 5%、95%，接口错开 0.9 张正好叠上 */
+  for (let k = 0; k < 2; k++) ctx.drawImage(im, -8 + k * w * .9, y - h, w, h); }
 function drawJum() {
   if (hasProp('jum')) { for (let x = 4; x < W + 40; x += 46) drawProp('jum', x, WALL_Y - 50, 52); return; }
   const y = WALL_Y - 64;
