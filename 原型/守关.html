@@ -2437,25 +2437,29 @@ function burst(x, y, prof, size, delay = 0, n = 4) {
 // 主体都是 GPT 画稿（刀风 blade、刀气 dao2、火矛 spear，按每员敌将的颜色重新上色），配真流体（墨流层的火、烟）和爆13 帧动画；
 // 不整屏闪、不压暗、不推镜头（10-26 用户：「屏幕不要闪动」），范围靠画稿画得大、横贯城头。只管画面，不碰伤害和判定；随机只用 VR
 const BOSS_FX = {
-  dengmao:   { col: '#e0a23a', glow: '#ffd27a', prof: 'gold' },     // 黄巾土金：一杆巨枪直扎城头
-  zhangjiao: { col: '#b46cff', glow: '#f4d36a', prof: 'gold' },     // 紫金天雷：五道天雷横扫城头
+  dengmao:   { col: '#c9ab7e', glow: '#efe2c8', prof: 'sand' },     // 黄巾淡土色：一杆巨枪直扎城头（10-29 用户「不要用太多金色」：原来土金）
+  zhangjiao: { col: '#b46cff', glow: '#e4ccff', prof: 'violet' },   // 紫色天雷：五道天雷横扫城头（10-29 一招一个主色：原来紫配金）
   huzhen:    { col: '#d8403a', glow: '#ff9a6a', prof: 'fire' },     // 赤红双刀：两道巨刀交叉斩
-  huaxiong:  { col: '#4f7aa8', glow: '#ffb04a', prof: 'fire' },     // 铁灰大刀：一刀从天劈下，地裂一线火
-  lijue:     { col: '#c88a3a', glow: '#ffcf7a', prof: 'gold' },     // 古铜横刀：一刀从左横扫到右
-  lvbu:      { col: '#e0304a', glow: '#ff7ab0', prof: 'fire' },     // 赤红画戟：火龙盘起、巨戟直刺、再横扫全场
+  huaxiong:  { col: '#d0602a', glow: '#ffb070', prof: 'fire' },     // 焦红大刀：一刀从天劈下，地裂一线火（10-29 原来铁灰配橙，统一成火色）
+  lijue:     { col: '#a99a86', glow: '#e6ddd0', prof: 'sand' },     // 青铜灰横刀：一刀从左横扫到右（10-29 原来古铜金）
+  lvbu:      { col: '#e0304a', glow: '#ff9a8a', prof: 'fire' },     // 赤红画戟：火龙盘起、巨戟直刺、再横扫全场（10-29 光晕去掉粉色）
 };
 const BTINT = {};
 // Veo 录的法术动画（黑底去黑、切成逐帧图集，工具/veo/cut_vfx.py）：重招落地时叠在画稿上播，每秒 12 帧；读不到就只演画稿和墨流
 const BVFX = {}; for (const k of Object.keys(BOSS_FX)) { const im = new Image(); im.src = 'img/fx_boss_' + k + '.webp' + BUST; fetch('img/fx_boss_' + k + '.json' + BUST).then(r => r.ok ? r.json() : null).then(j => { if (j) BVFX[k] = { im, m: j.anims.play, stand: j.stand, efk: j.src === 'effekseer' }; }).catch(() => {}); }
 function drawBossVfx(k, t, x, y, size, rot = 0, alpha = 1, wx = 1) {
   const V = BVFX[k]; if (!V || !ready(V.im)) return; const R = V.m.rects, i = Math.floor(t * 20); if (i < 0 || i >= R.length) return; const [sx, sy, sw, sh] = R[i], kk = size / V.stand;   /* 每秒 20 帧：录的 4 秒太慢，压到一秒半左右跟上打中那一下 */
-  const C = bvfxFeather(V.im, sx, sy, sw, sh);
+  const C = bvfxTint(bvfxFeather(V.im, sx, sy, sw, sh), sw, sh, BOSS_FX[k] && '#' + softCol(BOSS_FX[k].col).map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join(''));   // 10-29 一招一个主色：录像染成这员敌将的颜色（原来几员都是同一片黄橙火）
   ctx.save(); ctx.translate(x, y); ctx.rotate(rot); const dw = sw * kk * wx, dh = sh * kk;
   if (V.efk) { ctx.globalAlpha = alpha * .9; ctx.drawImage(C, 0, 0, sw, sh, -dw / 2, -dh / 2, dw, dh); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = alpha * .35; ctx.drawImage(C, 0, 0, sw, sh, -dw / 2, -dh / 2, dw, dh); }   /* Effekseer 的透明是干净的：正常叠上去保住颜色，再「变亮」叠一层发光 */
-  else { ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = alpha * .95; ctx.drawImage(C, 0, 0, sw, sh, -dw / 2, -dh / 2, dw, dh); } ctx.restore();   /* 10-27 用户：「我觉得都要优化一下」——「滤色」叠上去像光，不再是平涂实心块盖住场景；胡轸加亮那层用户说「保持之前的淡更好看」，去掉了 */
+  else { ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = alpha * .62; ctx.drawImage(C, 0, 0, sw, sh, -dw / 2, -dh / 2, dw, dh); } ctx.restore();   /* 10-27 用户：「我觉得都要优化一下」——「滤色」叠上去像光，不再是平涂实心块盖住场景；胡轸加亮那层用户说「保持之前的淡更好看」，去掉了 */
 }
 const BVFX_OFF = { huzhen: 1 };   /* 10-27 用户：「不行，有明显的正方形。你还是自己画如何？」——胡轸不用 Veo 录像，回到两把画稿巨刀 */
-let BVFX_C = null;
+let BVFX_C = null, BVFX_T = null;
+function bvfxTint(C, sw, sh, col) {                                               // 保留明暗和羽化后的透明，只换色相：先存一份，铺颜色（color 混合），再按原透明裁回
+  if (!col) return C; if (!BVFX_T) BVFX_T = document.createElement('canvas'); const T = BVFX_T; if (T.width < sw || T.height < sh) { T.width = Math.max(T.width, sw); T.height = Math.max(T.height, sh); }
+  const t = T.getContext('2d'); t.globalCompositeOperation = 'copy'; t.drawImage(C, 0, 0, sw, sh, 0, 0, sw, sh);
+  const c = C.getContext('2d'); c.globalCompositeOperation = 'color'; c.fillStyle = col; c.fillRect(0, 0, sw, sh); c.globalCompositeOperation = 'destination-in'; c.drawImage(T, 0, 0, sw, sh, 0, 0, sw, sh); c.globalCompositeOperation = 'source-over'; return C; }
 function bvfxFeather(im, sx, sy, sw, sh) {                                          // 10-27 用户：「法术两边被截断了，形成长方形」——录像出了画框的地方四边渐隐，不留直边
   if (!BVFX_C) BVFX_C = document.createElement('canvas'); const C = BVFX_C;
   if (C.width < sw || C.height < sh) { C.width = Math.max(C.width, sw); C.height = Math.max(C.height, sh); }
@@ -2510,6 +2514,7 @@ function drawBossUlt(f) {
     const p = Math.min(1, t / .18), x1 = f.bx + (W / 2 - f.bx) * p, y1 = f.by + (cy - f.by) * p, rot = Math.atan2(cy - f.by, W / 2 - f.bx) + Math.PI / 2;
     if (!veo) drawTint('spear', C.col, (f.bx + x1) / 2, (f.by + y1) / 2, 160 + 320 * p, rot, A * Math.max(0, 1 - Math.max(0, t - .3) / .3), .8);
     at1(f, 'jet', .02, () => ML && ML.fx.jet(f.bx, f.by, W / 2, cy)); bossBursts(f, C, 4, .18, .05);
+    at1(f, 'gnd', .16, () => { gnd({ mode: 1, x: W / 2, y: WALL_Y - 70, rx: 210, sq: .34, dur: 1.2, open: .3, col: C.col, n: 8 }); gnd({ mode: 0, x: f.bx, y: f.by + 6, rx: 70, sq: .36, dur: .9, open: .12, col: C.col, n: 6 }); });   // 枪扎到城头：城前一圈碎环冲开；起手处脚下崩裂
   } else if (f.boss === 'zhangjiao') {                                              // 天上翻起乌云，五道天雷依次劈在城头
     at1(f, 'cloud', 0, () => { if (MLB) for (let k = 0; k < 10; k++) MLB.splat(VR(10, W - 10), TOP + VR(10, 60), VR(-200, 200), VR(-40, 60), VR(14, 22), [1.4, 0, .3, 0]); });
     if (!clip) for (let i = 0; i < 5; i++) { const t0 = .05 + i * .1, u = (t - t0) / .45; if (u < 0 || u > 1) continue; const x = 36 + i * 72 + Math.sin(i * 7.3) * 14, al = (u < .2 ? 1 : (1 - u) / .8) * A;
@@ -2517,25 +2522,30 @@ function drawBossUlt(f) {
       brush(ctx, pts, 26, C.col, .35 * al, () => 1, 0, vr); brush(ctx, pts, 10, C.glow, .9 * al, () => 1, 0, vr); brush(ctx, pts, 3.5, '#ffffff', al, () => 1, 0, vr);
       bossGlow(x, WALL_Y - 20, 90, C.col, .6 * al); }
     bossBursts(f, C, 5, .05, .1);
+    for (let i = 0; i < 5; i++) at1(f, 'g' + i, .1 + i * .1, () => gnd({ mode: 0, x: 36 + i * 72 + Math.sin(i * 7.3) * 14, y: WALL_Y - 64, rx: 86, sq: .38, dur: 1.1, open: .1, col: C.col, n: 7 }));   // 每道雷落地一片焦裂
   } else if (f.boss === 'huzhen') {                                                 // 两道赤红巨刀从两边交叉斩下
     if (!veo) for (const side of [-1, 1]) { const p = Math.min(1, t / .22), a0 = side < 0 ? -1.2 : 1.2, rot = a0 - side * 2.4 * p, x = W / 2 + side * (170 - 120 * p), y = cy - 70 + 40 * p;   // 画得够大，交叉时两头伸到屏幕边上
       drawTint('blade', C.col, x, y, 420, rot, A * fade * .85, .5, .45); }   // 压扁成细长的刀光，不要两大块红
     bossBursts(f, C, 5, .2, .04);
+    at1(f, 'gnd', .2, () => gnd({ mode: 2, x: W / 2, y: WALL_Y - 84, rx: 220, sq: .42, dur: 1.3, open: .18, col: C.col }));   // 交叉两道刀痕烙在城前地上
   } else if (f.boss === 'huaxiong') {                                               // 一刀从天劈下，城前地裂、整排着火
     const p = Math.min(1, t / .16), y = TOP - 80 + (cy - 40 - TOP + 80) * (p * p);
     drawTint('dao2', C.col, W / 2, y, 560, Math.PI, A * fade, .9); bossGlow(W / 2, y + 120, 130, C.glow, .35 * A * fade);
-    at1(f, 'slam', .16, () => { if (ML) for (let k = 0; k < 7; k++) setTimeout(() => ML && ML.fx.roar(30 + k * 50, WALL_Y - 14), k * 25); });
+    at1(f, 'slam', .16, () => { if (ML) for (let k = 0; k < 3; k++) setTimeout(() => ML && ML.fx.roar(70 + k * 110, WALL_Y - 14), k * 40); });   // 10-29 烟从七团减到三团：满场灰褐烟显脏、盖住地裂
     bossBursts(f, C, 3, .16, .06);
+    at1(f, 'gnd', .16, () => { gnd({ mode: 0, x: W / 2, y: WALL_Y - 78, rx: 240, sq: .3, dur: 1.5, open: .22, col: C.col, n: 6 }); gnd({ mode: 1, x: W / 2, y: WALL_Y - 78, rx: 160, sq: .32, dur: .8, open: .2, col: C.col, n: 5 }); });   // 一刀劈地：大片放射地裂，冲起一圈
   } else if (f.boss === 'lijue') {                                                  // 一把古铜横刀从左扫到右，刀后一路烟火
     const p = Math.min(1, t / .5), x = -120 + (W + 240) * (1 - Math.pow(1 - p, 2));
     drawTint('blade', C.col, x, cy - 10, 380, Math.PI / 2, A * fade, .8, .7); bossGlow(x, cy - 10, 130, C.glow, .45 * A * fade);
     if (ML && p < 1 && vr() < .9) ML.splat(x - 40, cy, -500, VR(-160, 40), VR(8, 12), [0, .9, .7, 0]);
     bossBursts(f, C, 6, .08, .07);
+    at1(f, 'gnd', .02, () => gnd({ mode: 3, x: W / 2, y: WALL_Y - 80, rx: 210, sq: .3, dur: 1.4, open: .5, col: C.col }));   // 横扫：刀痕跟着刀从左烙到右
   } else if (f.boss === 'lvbu') {                                                   // 吕布：火龙盘起，巨戟直刺，再一记横扫全场
     at1(f, 'dragon', 0, () => { if (ML) { ML.fx.fireWhip(f.bx, f.by + 10); ML.fx.fireWhip(f.bx, f.by + 10); } });
     const p = Math.min(1, t / .2); drawTint('spear', C.col, (f.bx + W / 2) / 2, (f.by + cy) / 2, 240 + 380 * p, Math.atan2(cy - f.by, W / 2 - f.bx) + Math.PI / 2, A * Math.max(0, 1 - Math.max(0, t - .4) / .3), .8);
     if (t > .35) { const q = Math.min(1, (t - .35) / .3); drawTint('blade', C.col, W / 2, cy - 20, 440, -1.3 + 2.6 * q, A * fade * (veo ? .45 : 1), .9, .8); bossGlow(W / 2, cy, 170, C.glow, .4 * A * fade); }
-    bossBursts(f, C, 6, .2, .05); at1(f, 'sweep', .5, () => { if (ML) for (let k = 0; k < 5; k++) ML.fx.roar(40 + k * 70, WALL_Y - 14); });
+    bossBursts(f, C, 6, .2, .05); at1(f, 'sweep', .5, () => { if (ML) for (let k = 0; k < 2; k++) ML.fx.roar(100 + k * 160, WALL_Y - 14); });
+    at1(f, 'gnd', .2, () => gnd({ mode: 1, x: W / 2, y: WALL_Y - 76, rx: 220, sq: .34, dur: 1.2, open: .25, col: C.col, n: 10 })); at1(f, 'gnd2', .35, () => gnd({ mode: 3, x: W / 2, y: WALL_Y - 100, rx: 220, sq: .3, dur: 1.2, open: .3, col: C.col }));   // 巨戟扎地冲开一圈，再横扫一道刀痕
   }
 }
 // 普攻动起来（10-25 用户圈着火矛、刀风：「带点效果，火啊光啊之类的，动起来」）：飞行物身后一条渐细的光带，沿途闪几点亮光；火矛喷真火（墨流层）、带火星
@@ -2588,14 +2598,20 @@ const SP_LOOK = { spears: { tint: '#ffc65a', blend: 'lighter', alpha: .85 }, dom
 function spTint(im, col) { const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0); g.globalCompositeOperation = 'color'; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height); g.globalCompositeOperation = 'destination-in'; g.drawImage(im, 0, 0); return c; }
 const SPV = {}; for (const k of ['sigil_purple', 'arcs', 'face', 'dome', 'spears', 'sigil_gold']) { const im = new Image(); im.src = 'img/fx_sp_' + k + '.webp' + BUST; fetch('img/fx_sp_' + k + '.json' + BUST).then(r => r.ok ? r.json() : null).then(j => { if (!j) return; const L = SP_LOOK[k] || {}; const set = src => { SPV[k] = { im: src, m: j.anims.play, stand: j.stand, L }; }; if (L.tint) { const go = () => set(spTint(im, L.tint)); im.complete && im.naturalWidth ? go() : im.addEventListener('load', go); } else set(im); }).catch(() => {}); }
 function spPlay(k, x, y, size, o = {}) { if (!G || G.sim || !SPV[k]) return; (G.spfx = G.spfx || []).push({ k, x, y, size, born: (G.vt || 0) + (o.delay || 0), fps: o.fps || 16, sy: o.sy || 1, fitW: o.fitW || 0, ground: !!o.ground, alpha: o.alpha ?? 1, follow: o.follow || null }); }
+// 10-29 用户：「不要用太多金色……那种色就相对柔和」：护盾罩原是金橙火，敌将每记重招都先冒一片金——整张图集算一遍：饱和留三成、往淡青白偏
+const SP_SOFT = { dome: [.3, [.86, .93, 1]] }, SPSOFT = {};
+function spSoft(k, im, [sat, tint]) {
+  if (SPSOFT[k]) return SPSOFT[k]; const c = document.createElement('canvas'); c.width = im.naturalWidth || im.width; c.height = im.naturalHeight || im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+  try { const d = g.getImageData(0, 0, c.width, c.height), p = d.data; for (let q = 0; q < p.length; q += 4) { const l = .3 * p[q] + .59 * p[q + 1] + .11 * p[q + 2]; for (let j = 0; j < 3; j++) p[q + j] = (l + (p[q + j] - l) * sat) * tint[j]; } g.putImageData(d, 0, 0); } catch (e) { return im; }
+  return SPSOFT[k] = c; }
 function drawSpfx(ground) {
   if (!G.spfx || !G.spfx.length) return; const vt = G.vt || 0;
   G.spfx = G.spfx.filter(f => vt - f.born < SPV[f.k].m.rects.length / f.fps);
   for (const f of G.spfx) { if (f.ground !== ground) continue; const t = vt - f.born; if (t < 0) continue; const V = SPV[f.k], R = V.m.rects, i = Math.min(R.length - 1, Math.floor(t * f.fps)), [sx, sy, sw, sh] = R[i], kk = f.size / V.stand, an = V.m.anchor;
     const x = f.follow ? f.follow.x : f.x, y = f.follow ? f.follow.y + (f.y || 0) : f.y, a = f.alpha * Math.min(1, (R.length - 1 - i) / 4 + .2);
-    const L = V.L || {}, aa = a * (L.alpha ?? 1); if (!(V.im.width || V.im.naturalWidth)) continue;
-    ctx.save(); ctx.translate(x, y); ctx.scale(f.fitW ? f.fitW / (sw * kk) : 1, f.sy); if (L.blend)   /* fitW：横向拉到这么宽（护阵的罩拉过屏幕两边，帧边的直线落在屏幕外；10-29 用户） */ ctx.globalCompositeOperation = L.blend; ctx.globalAlpha = aa; ctx.drawImage(V.im, sx, sy, sw, sh, -an[0] * kk, -an[1] * kk, sw * kk, sh * kk);
-    if (!L.blend) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = aa * .25; ctx.drawImage(V.im, sx, sy, sw, sh, -an[0] * kk, -an[1] * kk, sw * kk, sh * kk); } ctx.restore(); }
+    const L = V.L || {}, aa = a * (L.alpha ?? 1); if (!(V.im.width || V.im.naturalWidth)) continue; const IMS = SP_SOFT[f.k] ? spSoft(f.k, V.im, SP_SOFT[f.k]) : V.im;
+    ctx.save(); ctx.translate(x, y); ctx.scale(f.fitW ? f.fitW / (sw * kk) : 1, f.sy); if (L.blend)   /* fitW：横向拉到这么宽（护阵的罩拉过屏幕两边，帧边的直线落在屏幕外；10-29 用户） */ ctx.globalCompositeOperation = L.blend; ctx.globalAlpha = aa; ctx.drawImage(IMS, sx, sy, sw, sh, -an[0] * kk, -an[1] * kk, sw * kk, sh * kk);
+    if (!L.blend) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = aa * .25; ctx.drawImage(IMS, sx, sy, sw, sh, -an[0] * kk, -an[1] * kk, sw * kk, sh * kk); } ctx.restore(); }
 }
 function drawFbs() {
   if (!G.fbs || !G.fbs.length) return; const vt = G.vt || 0;
@@ -3327,11 +3343,51 @@ void main(){
   float rw = .06 + .05 * n2, ring = exp(-pow((r - .36 - (n - .5) * .08) / rw, 2.)) * (.55 + .75 * n);
   float core = 1. - smoothstep(.2, .34, r);
   float mist = smoothstep(1.6, .9, r) * (1. - disk) * n * .45;
-  vec3 dark = vec3(.10, .06, .02), earth = vec3(.42, .26, .08), gold = vec3(.93, .70, .28), hot = vec3(1., .96, .82);
+  vec3 dark = vec3(.05, .05, .14), earth = vec3(.22, .26, .58), gold = vec3(.62, .70, .98), hot = vec3(.95, .97, 1.);   // 10-29 用户：「不要用太多金色……相对柔和」「偏蓝比较好」——照参考图换成蓝紫盘、蓝白亮环
   vec3 c = mix(earth, gold, clamp(n * 1.2 - r * .3, 0., 1.)) * disk * streak + hot * ring * (1. + 1.6 * uFlash) + gold * mist;
   float al = clamp(disk * streak * .85 + ring + mist, 0., 1.);
   c = mix(c, dark, core); al = max(al, core * .9);
   al *= uFade; gl_FragColor = vec4(c * al, al);
+}`;
+// 贴地法阵（10-29 用户：「其它法术可以据此统一优化一次吗」「做」）：照黄天当立的五条——暗（焦黑）、亮边（发白、被噪声打碎）、本色主体、外散；
+// 一招一个主色；压扁贴地；裂开 → 一闪 → 停 → 按噪声溶解收掉（不直接淡没）。一套代码四种形：0 放射裂纹、1 冲击（碎环＋放射纹）、2 交叉刀痕、3 横扫刀痕
+const FS_GROUND = `precision mediump float; varying vec2 vUv;
+uniform sampler2D uNoise; uniform float uMode, uProg, uFlash, uDis, uSeed, uN; uniform vec3 uDark, uBody, uHot;
+float cut(float d, float w){ return 1. - smoothstep(0., w, d); }
+void main(){
+  vec2 p = (vUv - .5) * 2.; float r = length(p), a = atan(p.y, p.x);
+  float n = texture2D(uNoise, vUv * 1.7 + uSeed).r, n2 = texture2D(uNoise, vUv * 4.3 - uSeed).g, n3 = texture2D(uNoise, vUv * 2.1 + vec2(uSeed * 1.7, .3)).b;
+  float body = 0., hot = 0., dark = 0.;
+  if (uMode < .5 || (uMode < 1.5 && r < uProg)) {
+    float ang = a / 6.2832 * uN + (n - .5) * .9 + uSeed * 3.;
+    float th = abs(fract(ang) - .5) * r * 6.2832 / uN;
+    float line = cut(th, .028 * (1.25 - r) + .004 + .012 * n2) * smoothstep(1., .55, r);
+    float mask = 1. - smoothstep(uProg - .15, uProg, r);
+    float k = uMode < .5 ? 1. : .55;
+    hot += line * mask * (1.3 - r) * k; body += (line * mask + exp(-r * r * 9.) * uProg * .8) * k;
+    dark += (1. - smoothstep(0., .5, r)) * .55 * mask * k;
+  }
+  if (uMode > .5 && uMode < 1.5) {
+    float w = .06 + .06 * n2, ring = exp(-pow((r - uProg - (n - .5) * .14) / w, 2.)) * (.35 + .9 * n) * (1. - uProg * .55);
+    hot += ring * .9; body += ring;
+  }
+  if (uMode > 1.5 && uMode < 2.5) {
+    for (int i = 0; i < 2; i++) { float sg = i == 0 ? 1. : -1.;
+      float d = abs(p.y - sg * p.x * .62 + (n - .5) * .06), tp = 1. - smoothstep(.65, 1., abs(p.x)), rv = 1. - smoothstep(uProg * 1.15 - .1, uProg * 1.15, abs(p.x));
+      hot += cut(d, .05 * tp + .004) * tp * rv; body += cut(d, .22 * tp + .01) * tp * rv * .7; dark += cut(d, .12 * tp) * tp * rv * .45; }
+  }
+  if (uMode > 2.5) {
+    float fx = uProg * 2.3 - 1.15, d = abs(p.y + sin(p.x * 3. + uSeed * 6.) * .07 + (n - .5) * .09), tp = 1. - smoothstep(.75, 1., abs(p.x)), rv = 1. - smoothstep(fx - .12, fx, p.x);
+    float head = exp(-pow((p.x - fx) / .07, 2.)) * cut(d, .3);
+    hot += cut(d, .06 * tp + .004) * tp * rv + head; body += cut(d, .28 * tp + .01) * tp * rv * .6 + head * .6; dark += cut(d, .15 * tp) * tp * rv * .5;
+  }
+  float keep = smoothstep(uDis - .08, uDis + .08, n3 * .9 + .05);
+  float rim = (1. - smoothstep(0., .06, abs(n3 * .9 + .05 - uDis))) * step(.01, uDis);
+  hot = clamp(hot, 0., 1.); body = clamp(body, 0., 1.); dark = clamp(dark, 0., 1.);
+  vec3 c = uBody * body + uHot * hot * (1. + 2. * uFlash) + uHot * rim * (body + hot);
+  float al = clamp(body * .8 + hot, 0., 1.);
+  c = mix(c, uDark, dark * (1. - hot)); al = max(al, dark * .7);
+  al *= keep; gl_FragColor = vec4(c * al, al);
 }`;
 // 画稿（10-25 用户：「需要的话就先用gpt 画剑气刀气」）：ChatGPT 在黑底上画的刀气、剑气、矛气，工具/vfx/cut_paint.py 转成光；没有时用光带
 const PAINT = {}; fetch('img/fx_paint.json' + BUST).then(r => r.json()).then(j => Object.assign(PAINT, j)).catch(() => {});
@@ -3349,6 +3405,7 @@ function spxInit() {
   SPX.fa = loc(SPX.flareP, ['aPos', 'aUv', 'aCol', 'aExt'], 'a');
   SPX.fu = loc(SPX.flareP, ['uView', 'uAtlas']);
   SPX.pa = loc(SPX.paintP, ['aPos', 'aUv', 'aCol', 'aExt'], 'a'); SPX.pu = loc(SPX.paintP, ['uView', 'uAtlas']);
+  try { SPX.groundP = prog(VS_SWEEP, FS_GROUND); SPX.gu = loc(SPX.groundP, ['uView', 'uNoise', 'uMode', 'uProg', 'uFlash', 'uDis', 'uSeed', 'uN', 'uDark', 'uBody', 'uHot']); SPX.ga = loc(SPX.groundP, ['aPos', 'aUv'], 'a'); } catch (e) { console.error('贴地法阵着色器', e); SPX.groundP = null; }
   try { SPX.vortexP = prog(VS_SWEEP, FS_VORTEX); SPX.vu = loc(SPX.vortexP, ['uView', 'uNoise', 'uC', 'uR', 'uT', 'uOpen', 'uFade', 'uFlash', 'uSeed']); SPX.va = loc(SPX.vortexP, ['aPos', 'aUv'], 'a'); } catch (e) { console.error('旋涡着色器', e); SPX.vortexP = null; }   // 旋涡坏了只少这一个，别的照常
   { const im = new Image(); im.onload = () => { SPX.tex.paint = spxTex(im, false); }; im.src = 'img/fx_paint.png' + BUST; }
   SPX.buf = gl.createBuffer();
@@ -3386,6 +3443,8 @@ const PROF = {
   dust: { ramp: ['#2a140c', '#6a2612', '#b84a1a', '#e8873a', '#ffd9a8'], line: '#ffd27a', core: '#fff0d6' },
   azure: { ramp: ['#071f3a', '#0e4f8c', '#2f8fd8', '#8fd0ff', '#eef8ff'], line: '#ffffff', core: '#f6fbff' },
   gold: { ramp: ['#3a2406', '#8a5a10', '#d39a2a', '#f5d06a', '#fff6dc'], line: '#ffffff', core: '#fffbe8' },
+  violet: { ramp: ['#1c0a33', '#4a1f80', '#8a4fd8', '#c9a2ff', '#f5ecff'], line: '#ffffff', core: '#fbf6ff' },
+  sand: { ramp: ['#2a2420', '#5e5246', '#9e8e78', '#d8ccb6', '#fbf7ee'], line: '#ffffff', core: '#fffdf6' },   // 10-29 少用金：邓茂、李傕的炸开改淡沙色   // 10-29 张角天雷：一招一个主色，炸开也用紫
   ink: { ramp: ['#0c0a09', '#1d1a17', '#2e2924', '#4a4239', '#6e655a'], line: '#2a2520', core: '#3a332b' },
 };
 const swell = (t, p) => Math.pow(Math.max(0, Math.sin(Math.PI * clamp(t, 0, 1))), p);
@@ -3477,6 +3536,22 @@ function drawHdlBits(f) {                                                      /
     const x = f.x + Math.cos(a) * r, y = f.y + Math.sin(a) * r * HDL_SQ, sz = 9 * (1 - u * .6);
     ctx.save(); ctx.globalAlpha = S.fade * (u < .15 ? u / .15 : 1); ctx.translate(x, y); ctx.rotate(b.rot + u * 9); ctx.fillStyle = '#e9c860'; ctx.fillRect(-sz * .35, -sz, sz * .7, sz * 2); ctx.fillStyle = '#a8301f'; ctx.fillRect(-sz * .12, -sz * .7, sz * .24, sz * 1.2); ctx.restore(); }
 }
+// 贴地法阵一份：{ k: 'gnd', mode, x, y, rx, sq, dur, open, col: 主色, seed, n: 裂纹条数 }；裂开 open 秒（三次缓出）、裂开到六成时一闪、过半后按噪声溶解
+const COOL = [.82, .9, 1];
+const softCol = h => { const c = rgb3(h), l = .3 * c[0] + .59 * c[1] + .11 * c[2]; return c.map((v, j) => (l + (v - l) * .55) * .78 + .22 * COOL[j]); };   // 10-29 柔和：饱和留五成五、往淡蓝白提两成（用户「偏蓝比较好」）
+const hexMix = (h, k, to) => softCol(h).map((v, j) => v + ((to ? COOL[j] * 1.05 : 0) - v) * k);   // 亮处往蓝白，不往纯白
+function spxGround(f) {
+  const gl = SPX.gl, t = f.t, op = f.open || .18, prog = 1 - Math.pow(1 - Math.min(1, t / op), 3), d0 = f.dur * .5, dis = t > d0 ? Math.min(1.05, (t - d0) / (f.dur - d0)) : 0;
+  const rx = f.rx, ry = f.rx * (f.sq || .4), x0 = f.x - rx, x1 = f.x + rx, y0 = f.y - ry, y1 = f.y + ry, U = SPX.gu;
+  gl.useProgram(SPX.groundP); gl.uniform2f(U.uView, W, H); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, SPX.tex.noise); gl.uniform1i(U.uNoise, 1);
+  gl.uniform1f(U.uMode, f.mode); gl.uniform1f(U.uProg, prog); gl.uniform1f(U.uFlash, Math.exp(-Math.pow((t - op * .6) / .06, 2))); gl.uniform1f(U.uDis, dis); gl.uniform1f(U.uSeed, f.seed); gl.uniform1f(U.uN, f.n || 9);
+  gl.uniform3fv(U.uDark, hexMix(f.col, .82, 0)); gl.uniform3fv(U.uBody, softCol(f.col)); gl.uniform3fv(U.uHot, hexMix(f.col, .78, 1));   // 一个主色：暗处往黑、亮处往白
+  gl.bindBuffer(gl.ARRAY_BUFFER, SPX.buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x0, y0, 0, 0, x1, y0, 1, 0, x0, y1, 0, 1, x1, y1, 1, 1]), gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(SPX.ga.aPos); gl.vertexAttribPointer(SPX.ga.aPos, 2, gl.FLOAT, false, 16, 0); gl.enableVertexAttribArray(SPX.ga.aUv); gl.vertexAttribPointer(SPX.ga.aUv, 2, gl.FLOAT, false, 16, 8);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.useProgram(SPX.sweep); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, SPX.tex.matter);
+}
+const gnd = (o) => { if (!G.sim) G.fx.push({ k: 'gnd', t: 0, seed: VR(0, 1), ...o }); };
 function spxPass(layer) {
   if (!SPX.ok || !G) return;
   const gl = SPX.gl, vt = G.vt || 0;
@@ -3486,7 +3561,8 @@ function spxPass(layer) {
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, SPX.tex.noise); gl.uniform1i(SPX.su.uNoise, 1); gl.uniform1i(SPX.su.uRamp, 2);
   let drew = 0;
   for (const b of SPX.bodies) { if (b.burst || b.paint || b.layer !== layer) continue; const t = vt - b.born; if (t < 0) continue; spxDraw(b, t); drew++; }
-  if (layer === 'ground' && SPX.vortexP) for (const f of G.fx) if (f.k === 'hdl') { spxVortex(f); drew++; }   // 黄天当立的天裂旋涡（在敌将身后）
+  if (layer === 'ground' && SPX.vortexP) for (const f of G.fx) if (f.k === 'hdl') { spxVortex(f); drew++; }
+  if (layer === 'ground' && SPX.groundP) for (const f of G.fx) if (f.k === 'gnd' && f.t >= 0) { spxGround(f); drew++; }   // 贴地法阵   // 黄天当立的天裂旋涡（在敌将身后）
   for (const b of SPX.bodies) {                                                  // 有生命的画稿：撑开（带回弹）、从后面掠到前面、淡掉
     if (!b.paint || b.layer !== layer) continue; const t = vt - b.born; if (t < 0) continue; const u = t / b.life, e = 1 - Math.pow(1 - Math.min(1, u * 2.5), 3);
     const sc = b.pop + (1.06 - b.pop) * e - .06 * clamp((u - .4) / .6, 0, 1), a = u < .5 ? 1 : 1 - (u - .5) / .5;
