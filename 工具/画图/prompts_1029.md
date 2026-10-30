@@ -148,3 +148,14 @@
 画风：明亮鲜艳的厚涂手游角色设定图；学习参考图的色彩、明暗、笔触，不复制其构图。大色块、明确体积、清楚剪影，金属用几块光滑大面和简单高光。
 排除：不要鳞甲、不要鱼鳞纹、不要锁子甲、不要密集小甲片、小铆钉、细碎纹理、噪点；不要兽头、狮子头护腰、龙纹、金色雕花、尖刺装饰；不要文字、标签、水印；不要光效、火焰、烟雾；不要背景阴影、暗色光晕和人物周围的深色边。
 ```
+
+## 井（第廿八关「井中玉玺」，10-29）
+
+画法照 props.png：正面略俯视、亮色手绘、低饱和金、纯中灰底、只画一个、四周留空、不要文字。三张同一口井、同角度同大小，方便叠放切换。
+
+1. **普通井**：
+`A single ancient Chinese village well from the Eastern Han dynasty, a low round well curb of rough grey stacked stones with moss in the cracks, a simple wooden windlass frame on two posts with a coiled hemp rope and a small wooden bucket resting on the rim, dark water visible inside, seen from the front at a slight top-down three-quarter view, bright hand-painted game illustration, soft warm light, muted gold accents, simple large shapes, no tiny details, plain mid-gray background, single object, centered with generous margin, no text, no people`
+2. **捞过（空井）**：同一口井，`same well, same angle and size, but already searched: the bucket hangs pulled up dripping, a few wet stones and a broken pottery jar beside the curb, the water inside is muddy and dark, slightly dimmer colors`
+3. **藏玉玺（发金光）**：同一口井，`same well, same angle and size, a warm golden light glows up from deep inside the well, soft golden rays rising out of the opening and lighting the inner stones and the windlass from below, a few large soft gold light motes, the stones keep their grey color, no jade seal visible yet`
+
+（可选）4. **传国玉玺**单图：`the Imperial Jade Seal of the Han dynasty, a square white-green jade seal with a coiled five-dragon knob on top and one corner repaired with gold, glowing softly, front three-quarter view, bright hand-painted game illustration, plain mid-gray background, single object, centered with margin, no text`
