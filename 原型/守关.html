@@ -5311,7 +5311,7 @@ function drawGainCard(g, x, y, w, h, tt, win, top) {
   const p = ease(clamp((tt - .35) / 1.1, 0, 1)), cur = addExp({ lv: g.lv0, exp: g.exp0 }, Math.round(g.g * p)), up = cur.lv > g.lv0;
   if (cur.lv !== g.shownLv) { if (g.shownLv != null) g.flashT = tt; g.shownLv = cur.lv; }
   const fl = g.flashT != null ? clamp(1 - (tt - g.flashT) / .5, 0, 1) : 0;
-  plate(x, y, w, h, fl > 0);
+  plate(x, y, w, h, fl > 0); y += (h - 44) / 2; h = 44;   // 10-30 用户：「框内上下padding也要大一些」——框高了，里面照 44 高排、上下居中
   // 头像：圆的、套金圈（10-25 夜用户嫌密：一行只留名字、等级、细经验条，右边一条伤害条和总数；五维涨了几点到武将页看）
   const px = x + 26, py = y + h / 2, pr = 16, fc = FACE[g.id];
   ctx.save(); ctx.beginPath(); ctx.arc(px, py, pr, 0, 6.283); ctx.clip(); ctx.fillStyle = '#2a1f16'; ctx.fill(); if (ready(IMG[g.id])) ctx.drawImage(IMG[g.id], fc[0], fc[1], fc[2], fc[2], px - pr, py - pr, pr * 2, pr * 2); ctx.restore();
@@ -5335,7 +5335,7 @@ function drawResult() {
   // 整屏压暗：上面透一点战场，越往下越黑
   const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, `rgba(8,5,4,${Math.min(.6, t * 2)})`); bg.addColorStop(.4, `rgba(10,6,5,${Math.min(.84, t * 2.4)})`); bg.addColorStop(1, `rgba(6,4,3,${Math.min(.97, t * 3)})`);
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  const cy = 126, brt = .5 + .5 * Math.sin(t * 2.2);                                // 10-25 夜用户：「结算拉低一些」——徽章从 98 挪到 126、缩小一圈，下面各行跟着往下                                    // 徽章背后一团会呼吸的光
+  const cy = 112, brt = .5 + .5 * Math.sin(t * 2.2);                                // 10-25 夜用户：「结算拉低一些」——徽章从 98 挪到 126、缩小一圈，下面各行跟着往下                                    // 徽章背后一团会呼吸的光
   const gl = ctx.createRadialGradient(W / 2, cy, 0, W / 2, cy, 175); gl.addColorStop(0, win ? `rgba(255,196,90,${.3 + .12 * brt})` : `rgba(190,46,28,${.22 + .08 * brt})`); gl.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = gl; ctx.fillRect(0, 0, W, 300);
   // 胜利神光（10-25 用户：「后面的光旋转还需要更游戏化，不是HTML化」）：不再画直边三角光条，换成 ChatGPT 画的金色体积光（img/ui_rays.png）；
@@ -5364,26 +5364,26 @@ function drawResult() {
     ctx.beginPath(); ctx.moveTo(sx, sy - r * 2.2); ctx.quadraticCurveTo(sx + r * .18, sy, sx, sy + r * 2.2); ctx.quadraticCurveTo(sx - r * .18, sy, sx, sy - r * 2.2); ctx.fill(); ctx.restore(); }
   const title = win ? (G.lv.kind === 'duel' ? '斩将' : G.cart && !G.RU.cart.optional ? (G.cart.kind === 'ram' ? '破关' : '救下了') : '守住了') : (r.why || '城破了');
   const fs = fitSize(title, 46, W - 60, 99, FONT, 7), tu = clamp((t - .16) / .24, 0, 1), tsc = 1.45 - .45 * ease(tu);
-  ctx.save(); ctx.globalAlpha = tu; ctx.translate(W / 2, 202); ctx.scale(tsc, tsc);
+  ctx.save(); ctx.globalAlpha = tu; ctx.translate(W / 2, 188); ctx.scale(tsc, tsc);
   uiText(title, 0, 0, fs, goldGrad(0, fs, win), 'center', FONT, { glow: win ? 'rgba(255,200,90,.85)' : 'rgba(226,86,58,.8)', glowR: 18, lw: 7 }); ctx.restore();
   // 三颗星：每颗下面一行小字写它要什么（原来是一整行「一星守住 · 二星城防过半 · 三星城防八成五」，用户说太 HTML）
-  for (let k = 0; k < 3; k++) { const st = .4 + k * .18, u = clamp((t - st) / .22, 0, 1), on = k < r.stars, sx = W / 2 + (k - 1) * 62, sy = 244 - (k === 1 ? 4 : 0);
+  for (let k = 0; k < 3; k++) { const st = .4 + k * .18, u = clamp((t - st) / .22, 0, 1), on = k < r.stars, sx = W / 2 + (k - 1) * 62, sy = 230 - (k === 1 ? 4 : 0);   // 10-30 用户：「上下距离啊」——徽章到星整体上提 14，让下面战利品、功绩、按钮之间松一点
     uiStar(sx, sy, 18, on && u > 0, on ? (u < 1 ? 1.8 - .8 * ease(u) : 1) : 1); }   // 10-25 夜用户：「这个有点太密集」——星下小字去掉
   const la = clamp((t - .9) / .3, 0, 1);
   ctx.save(); ctx.globalAlpha = la;   // 10-30 用户圈着斩敌、城防、用时那块牌：「其实没必要」——去掉，城防剩多少写在二星那行
   const sandSub = PREP && PREP.li === G.li && PREP.last ? `沙盘推演预计 ${PREP.last.stars.toFixed(1)} 星 · 实际 ${r.stars} 星` : null;
   const sub = sandSub || (r.first && G.lv.reward ? G.lv.reward : '');
-  { const gs = r.goals || [], gy = sub ? 312 : 292;   // 10-30 用户：「padding大一些，和上面的3星的margin也大一点」   // 三颗星各一行：几颗星 + 条件，做到的金字，没做到的朱红带「未达成」（10-30 用户：「看不出来3颗星对应的哪个完成了，或者哪个没完成」；原来只写一行）
+  { const gs = r.goals || [], gy = sub ? 298 : 278;   // 10-30 用户：「padding大一些，和上面的3星的margin也大一点」   // 三颗星各一行：几颗星 + 条件，做到的金字，没做到的朱红带「未达成」（10-30 用户：「看不出来3颗星对应的哪个完成了，或者哪个没完成」；原来只写一行）
     gs.forEach((g, k) => { const y = gy + k * 18, ln = g.text + (g.ok ? '' : ' · 未达成'), sz = fitSize(ln, 12, W - 60 - 44, 99, FONT, 3), x0 = 30 + 44;
       for (let q = 0; q <= k; q++) uiStar(x0 - 8 - (k - q) * 13, y, 5.5, g.ok);
       uiText(ln, x0, y, sz, g.ok ? '#ffe08a' : '#ff8a6a', 'left', FONT, { lw: 3 }); }); }
   const lootR = !!(G.advLog || []).some(a => a.bad) && r.loot && r.loot.length;          // 军师认错占了下面那格时，战利品缩小放到这一行右边
   if (sub) { const mw = lootR ? W - 150 : W - 70, sz = fitSize(sub, 12, mw, 99, FONT, 3), cx = W / 2 - (lootR ? 36 : 0), first = r.first && !sandSub; ctx.font = `${sz}px ${FONT}`; const sw2 = ctx.measureText(sub).width;
-    if (first) uiSeal(cx - sw2 / 2 - 4, 280, 18, '首', UIC.red);
-    uiText(sub, cx + (first ? 8 : 0), 280, sz, sandSub || r.first ? UIC.gold2 : 'rgba(244,230,196,.6)', 'center', FONT, { lw: 3 }); }
+    if (first) uiSeal(cx - sw2 / 2 - 4, 266, 18, '首', UIC.red);
+    uiText(sub, cx + (first ? 8 : 0), 266, sz, sandSub || r.first ? UIC.gold2 : 'rgba(244,230,196,.6)', 'center', FONT, { lw: 3 }); }
   ctx.restore();
   // 出战武将一张张滑出来
-  const t1 = 1.05, gap = .22, ch = 44, y0 = 296 + 52 + (PREP && PREP.li === G.li && PREP.last || r.first && G.lv.reward ? 18 : 0), top = Math.max(0, ...gains.map(g => g.dmg));
+  const t1 = 1.05, gap = .22, ch = 50, y0 = 282 + 46 + (PREP && PREP.li === G.li && PREP.last || r.first && G.lv.reward ? 18 : 0), top = Math.max(0, ...gains.map(g => g.dmg));
   gains.forEach((g, k) => drawGainCard(g, 14, y0 + k * (ch + 4), W - 28, ch, t - (t1 + k * gap), win, top));
   // 下面一格：听了军师荐错的卡，军师自己认错（10-25 夜用户：「低智军师常常犯错……事后会以逗比方式告诉用户，这是军师的问题」）；没有就摆战利品
   const tb = t1 + gains.length * gap + (gains.length ? 1.4 : .2), ba = clamp((t - (tb - .4)) / .3, 0, 1), armed = t >= tb, al = ba * (armed ? 1 : .5);
@@ -5399,10 +5399,10 @@ function drawResult() {
       uiText(n ? '×' + n : '满', sz / 2 - 3, sz / 2 - 6, 11, n ? '#fff2dc' : UIC.red2, 'right', PLAIN, { lw: 3 }); ctx.restore(); }); };
   if (blame) { const u = clamp((t - (tb - .5)) / .35, 0, 1); if (u > 0) { ctx.save(); ctx.globalAlpha = u; ctx.translate(0, (1 - ease(u)) * 20);
       drawCounselSay(blame.ck, COUNSEL[blame.ck], blame.text, by - 4, 1, blame.retort); ctx.restore(); }
-    by += 70; if (ents.length) drawLoot(26, W - 22 - (ents.length - 1) * 17, 280); }
-  else if (ents.length) { drawLoot(40, W / 2, by + 22); by += 50; }
+    by += 70; if (ents.length) drawLoot(26, W - 22 - (ents.length - 1) * 17, 266); }
+  else if (ents.length) { const sm = !!(r.ach && r.ach.length); drawLoot(sm ? 32 : 40, W / 2, by + (sm ? 18 : 22)); by += sm ? 40 : 50; }   // 下面还有功绩一行时图标小一点
   const AC = r.ach || [];                                                               // 10-30 这局新达成的功绩：盖「功」印、写几项，下一行列名字（在战利品下、按钮上）
-  if (AC.length) { const u = clamp((t - (tb - .2)) / .3, 0, 1), yb0 = H - 52; if (u > 0) { const two = by + 40 <= yb0 - 4, ay = Math.min(by + 14, yb0 - (two ? 34 : 14));
+  if (AC.length) { const u = clamp((t - (tb - .2)) / .3, 0, 1), yb0 = H - 54; if (u > 0) { const two = by + 40 <= yb0 - 4, ay = Math.min(by + 16, yb0 - (two ? 34 : 14));
       const head = `达成功绩 ${AC.length} 项 · 去功绩簿领奖`, names = AC.join('、'); ctx.save(); ctx.globalAlpha = u; ctx.translate(0, (1 - ease(u)) * 12);
       if (two) { ctx.font = `13px ${FONT}`; const hw = ctx.measureText(head).width; uiSeal(W / 2 - hw / 2 - 6, ay, 18, '功', UIC.red); uiText(head, W / 2 + 8, ay, 13, '#ffe08a', 'center', FONT, { lw: 3, glow: 'rgba(255,200,90,.6)', glowR: 8 });
         uiText(names, W / 2, ay + 20, fitSize(names, 12, W - 40, 99, PLAIN, 3), UIC.cream, 'center', PLAIN, { lw: 3 }); }
@@ -5410,9 +5410,9 @@ function drawResult() {
       ctx.restore(); } }
   // 牌匾按钮一排放在最下面：经验条涨完才能点
   const go = fn => () => { const k = r.story; if (k && !storySeen(k)) { G = null; playStory(k, fn); } else fn(); };   // 有剧情先演完再去
-  const back = go(() => { screen = 'levels'; G = null; }), yb = H - 52;
-  if (next) { plaque(8, yb, 108, 42, '再来', go(() => openLevel(li)), false, al); plaque(120, yb, 120, 42, '下一关', go(() => openLevel(li + 1)), true, al); plaque(244, yb, 108, 42, '返回', back, false, al); }
-  else { plaque(20, yb, 156, 42, '再来', go(() => openLevel(li)), true, al); plaque(184, yb, 156, 42, '返回', back, false, al); }
+  const back = go(() => { screen = 'levels'; G = null; }), yb = H - 54;   // 10-30 用户：「3个btn 短一些，上下padding大一点点」——108/120/108 宽 42 高 → 96/108/96 宽 46 高，居中
+  if (next) { plaque(22, yb, 96, 46, '再来', go(() => openLevel(li)), false, al); plaque(126, yb, 108, 46, '下一关', go(() => openLevel(li + 1)), true, al); plaque(242, yb, 96, 46, '返回', back, false, al); }
+  else { plaque(54, yb, 120, 46, '再来', go(() => openLevel(li)), true, al); plaque(186, yb, 120, 46, '返回', back, false, al); }
 }
 // 军师认错（10-25 夜）：这一关听了他荐错的卡，结算时他自己出来认，口气逗一点；旁边一位兄弟（穿越来的，说话很现代）回一句
 const BLAME = {
@@ -6219,8 +6219,12 @@ function drawMenu() {
   if (MENU.note && t - MENU.note.t0 < 3.2) { const u = (t - MENU.note.t0) / 3.2, a = u < .1 ? u / .1 : u > .8 ? (1 - u) / .2 : 1, g = MENU.note.got;
     const ny = cy0 - 92; ctx.save(); ctx.globalAlpha = a; if (ready(IMG.ui_banner)) draw9(IMG.ui_banner, 8, ny, W - 16, 80, 90, 90, 0, 0, 80 / 89);   // 挪到关卡牌上面，别挡住三兄弟的脸（10-26 试玩）
     uiText('点卯', W / 2, ny + 26, 20, '#f6d27a', 'center', FONT, { glow: 'rgba(255,190,80,.7)', glowR: 10 });
-    const s3 = Object.entries(g).map(([k, n]) => `${k} +${n}`).join(' · ') + (MENU.note.packs > 1 ? `（补领 ${MENU.note.packs - 1} 天）` : '') + ' · 今日军务 ' + DAILY.taskN + ' 道';
-    uiText(s3, W / 2, ny + 53, fitSize(s3, 12, W - 16 - 2 * 92, 99, PLAIN), UIC.cream, 'center', PLAIN); ctx.restore(); }   // 字只放横幅中间那块，不压两头的花饰（10-26 用户：「又超出了」）
+    // 10-30 用户：「精铁那些用图标」——物品写成图标 + 数，后面接补领和今日军务
+    const tail = (MENU.note.packs > 1 ? `（补领 ${MENU.note.packs - 1} 天）` : '') + ' · 今日军务 ' + DAILY.taskN + ' 道', ents = Object.entries(g), is = 20, fz = 12;
+    ctx.font = `${fz}px ${PLAIN}`; const segW = ents.map(([, n]) => is + 2 + ctx.measureText('+' + n).width), tw = ctx.measureText(tail).width, tot = segW.reduce((a, b) => a + b, 0) + (ents.length - 1) * 8 + tw, k0 = Math.min(1, (W - 16 - 2 * 92) / tot);
+    ctx.save(); ctx.translate(W / 2, ny + 53); ctx.scale(k0, k0); let x = -tot / 2;
+    ents.forEach(([k, n], j) => { drawItemIcon(k, x + is / 2, 0, is); uiText('+' + n, x + is + 2, 0, fz, UIC.cream, 'left', PLAIN); x += segW[j] + 8; });
+    uiText(tail, x - 8, 0, fz, UIC.cream, 'left', PLAIN); ctx.restore(); ctx.restore(); }   // 字只放横幅中间那块，不压两头的花饰（10-26 用户：「又超出了」）
   // 底栏：乌漆一条、上沿细金线（顶栏那张倒过来），五个图标钮
   if (ready(IMG.ui2_top)) { ctx.save(); ctx.translate(0, H); ctx.scale(1, -1); draw9(IMG.ui2_top, -24, -6, W + 48, 94, 40, 40, 8, 12, .5); ctx.restore(); }
   else { ctx.fillStyle = 'rgba(14,10,7,.92)'; ctx.fillRect(0, H - 88, W, 88); }
@@ -6342,6 +6346,7 @@ window.__sg = {
     this.seed = 0; this.naive = false; return out.join('\n');
   },
   // 每关军功 MER 重测（10-25 夜）：机器人会搭配、按推荐等级跑 n 个种子，军功平均除以魅力系数；斗将不算最后斩敌将那一下。返回字符串，抄回 MER
+  note: (got = { 精铁: 2 }, packs = 1) => { MENU.note = { got, packs, t0: uiNow() }; },   // 点卯横幅（截图核对用）
   goals: i => goalLines(LEVELS[i], null).map(x => x.join(' ')),   // 各关目标（核对用）
   story(k, i = 0) { playStory(k, () => { screen = 'menu'; }); STP.i = i; STP.t0 = -99; STP.prev = null; },   // 看某场剧情的第 i 句（截图核对用；会记成看过，用测试档）
   merTest(levels = LEVELS.map((_, i) => i), n = 6) { const out = {};
