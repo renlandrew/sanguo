@@ -2505,6 +2505,7 @@ for (const n of ['ditch', 'brush_k', 'brush_r', 'card_frame', 'flag_up', 'flag_d
 const EYE_FOE = ['lvbu', 'huaxiong', 'zhangjiao', 'lijue', 'huzhen', 'dengmao'];   // 10-30 敌将眼部特写（Codex 画）：放无双、黄天当立时用朱红笔刷横幅
 for (const n of ['eye_guan', 'eye_zhang', 'eye_liu', ...EYE_FOE.map(k => 'eye_' + k), ...QM_CARDS.map(k => 'card_' + k)]) { IMG[n] = new Image(); IMG[n].src = 'img/' + n + '.jpg' + BUST; }
 for (const n of ['well_0', 'well_1', 'well_2', 'seal']) { IMG[n] = new Image(); IMG[n].src = 'img/' + n + '.png' + BUST; }   // 井中玉玺（10-29 用户画）
+IMG.banma_field = new Image(); IMG.banma_field.src = 'img/banma_field.png' + BUST;
 const PROPS = {}; IMG.props = new Image(); IMG.props.src = 'img/props.png' + BUST; fetch('img/props.json' + BUST).then(r => r.json()).then(j => Object.assign(PROPS, j)).catch(() => {});
 // Blender 车驾步行循环：马腿与车轮同一段序列，缺图时沿用原静态车驾。
 const CART_WALK = Array.from({ length: 8 }, (_, i) => { const im = new Image(); im.src = 'img/cart_blender_frames/' + String(i).padStart(2, '0') + '.png' + BUST; return im; });
@@ -2520,8 +2521,8 @@ function drawProp(k, x, y, w, alpha = 1, rot = 0) {
   ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(rot); ctx.drawImage(IMG.props, r[0], r[1], r[2], r[3], -w / 2, -h, w, h); ctx.restore(); ctx.globalAlpha = 1;
 }
 // 10-30 用户：「马绳要放在关前啊」——绊马索画在骑兵绊倒的那条线上（离城 130），原来只在城垛上一个小图标
-function drawBanma() { const im = IMG.ui_ico_banma; if (!ready(im)) return; const y = WALL_Y - 122, ps = persp(y), w = 140 * ps, h = w * im.height / im.width;
-  ctx.save(); ctx.globalAlpha = .95; for (let k = 0; k < 4; k++) { const x = W * (k + .5) / 4; ctx.drawImage(im, x - w / 2, y - h * .8, w, h); } ctx.restore(); }
+function drawBanma() { const im = IMG.banma_field; if (!ready(im)) return; const w = W + 20, h = w * im.height / im.width, y = WALL_Y - 118;   // 10-30 用户画的一整条（美术/道具/绊马索_地上.png，去灰底）：横贯关前，底边落在绊马线
+  ctx.drawImage(im, W / 2 - w / 2, y - h, w, h); }
 function drawJum() {
   if (hasProp('jum')) { for (let x = 4; x < W + 40; x += 46) drawProp('jum', x, WALL_Y - 50, 52); return; }
   const y = WALL_Y - 64;
