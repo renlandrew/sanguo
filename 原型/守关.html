@@ -1692,9 +1692,11 @@ function stepShot(s, dt) {
     if (!G.sim && vr() < .12) part('petal', s.x, s.y, { vx: VR(-30, 30), vy: VR(-20, 20), life: 1, s: VR(2.8, 3.8), g: 20, drag: 2 });   // 飞剑拖一路桃花
     if (d < v + 4) {
       const crit = e.stun > 0 || (G.st.shuang && G.t - (e.roaredT ?? -9) < WIN_ROAR), d0 = G.st.liuDmg * (s.boost || 1); hurt(e, d0 * (crit ? 2 : 1), 'sword');
+      gnd({ mode: 2, x: e.x, y: e.y - 2, rx: crit ? 64 : 44, sq: .4, dur: .75, open: .1, col: HCOL.liu });   // 10-29 双股剑：每把剑落点一小块交叉剑痕
       if (((G.up && G.up.liu2) || G.shiRoot) && !e.dead && !FOES[e.kind].boss) e.rootT = Math.max(e.rootT || 0, G.up && G.up.liu3 ? 6 : G.up && G.up.liu2 ? 4 : 3);   // 剑印
       if (crit && G.st.shuang) { if (G.cnt) G.cnt.cShuang++; if (!e.dead) e.stun += G.comboLv && G.comboLv.cShuang > 1 ? 2 : 1; const spl = []; for (const f of alive()) if (f !== e && Math.hypot(f.x - e.x, f.y - e.y) < 40) { hurt(f, d0 * .5, 'sword'); spl.push([f.x, f.y - 14 * FOES[f.kind].s * persp(f.y)]); }
         if (!G.sim) { const title = (G.vt || 0) - (G.shuangTitle ?? -9) > 6, zi = G.order.indexOf('zhang'); if (title) G.shuangTitle = G.vt || 0;   // 连携「双剑破阵」专属画面（只管画面）
+          if (title) gnd({ mode: 2, x: e.x, y: e.y - 2, rx: 110, sq: .4, dur: 1.2, open: .15, col: HCOL.liu, delay: .1 });   // 双剑破阵：两剑交叉烙地
           G.fx.push({ k: 'cShuang', t: 0, dur: title ? 1.7 : .7, x: e.x, y: ty, spl: spl.slice(0, 6), title, zx: genX(zi >= 0 ? zi : 0), lx: genX(G.order.indexOf('liu')) });
           burst(e.x, ty, 'azure', 90, .12, 4); burst(e.x, ty, 'gold', 70, .16, 3); for (const [sx, sy] of spl.slice(0, 6)) burst(sx, sy, 'gold', 46, .3, 2);
           if (ML) for (let q = 0; q < 3; q++) ML.splat(e.x + VR(-8, 8), ty + 10, VR(-30, 30), VR(-200, -120), VR(7, 10), [0, VR(.7, 1), .25, 0]);   // 被劈的人身上冒张飞的火（又晕住）
@@ -1791,6 +1793,7 @@ function botCast(al) {
 function taoyuan() { if (G.cnt) G.cnt.cTao++; for (let i = 0; i < NS; i++) if (G.order[i]) G.ready[i] = Math.max(G.t, G.ready[i] - 2);
   if (G.sim) return;                                                                        // 连携「桃园同心」专属画面（原来只弹一条横幅）
   const sl = G.fx.filter(q => q.k === 'slash').pop(), px = clamp(sl ? sl.x : W / 2, 70, W - 70), py = clamp(sl ? sl.y : 280, 230, 380),   /* 汇合点放在战场中间，别躲到顶上令旗后面 */ X = id => genX(G.order.indexOf(id));
+  gnd({ mode: 1, x: px, y: py + 20, rx: 180, sq: .36, dur: 1.6, open: .3, col: HCOL.liu, n: 6, delay: .5 });   // 桃园同心：三人合力处一大圈
   G.fx.push({ k: 'cTao', t: 0, dur: 2, px, py, xs: [[X('zhang'), '255,110,50'], [X('liu'), '120,190,255'], [X('guan'), '90,235,170']] });
   for (const [prof, d, sz] of [['fire', .2, 110], ['azure', .23, 100], ['jade', .26, 120], ['gold', .3, 150]]) burst(px, py, prof, sz, d, 3); fbPlay('bao', px, py, 230, null, { delay: .24, glow: .7 });
   spxWash(px, py, 'gold', .5); spxDim(.5); punch(px, py, .1); G.freeze = Math.max(G.freeze || 0, .14); G.shake = Math.max(G.shake || 0, .45);
@@ -1806,6 +1809,7 @@ function resolveSkill(id, boost = 1) {
     for (const e of al) { const d = WALL_Y - e.y; if (d < R0 || e.duel) { e.roaredT = G.t; const T = FOES[e.kind], res = T.boss ? (T.taunt || T.rampage ? 1 : .35) : (T.stunRes || 1); if (T.taunt || T.rampage) shoutBack(e); hurt(e, 24 * HPX * boost, 'roar'); if (e.duel && e.mv && e.mv.k !== 'heal') { if (e.mv.uns) G.unsBroken = (G.unsBroken || 0) + 1; e.mv = null; e.moveT = (G.lv.gap || 3) * TIMEX.v; if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 110, text: '打断！', size: 24, color: CINNABAR }); }   /* 一喝喝断敌将正在蓄的招（10-26 用户：「张飞的喝不能阻断」——原来只晕 0.5 秒，晕完突刺照样落下） */ if (!e.duel) e.knock += SPD_X * (28 + 50 * (1 - d / R0)) * res; e.stun = Math.max(e.stun, G.st.zhangStun * res); } }
     G.fx.push({ k: 'roar', t: 0, ox: genX(G.order.indexOf('zhang')), R: R0, hits: al.filter(e => WALL_Y - e.y < R0).map(e => [e.x, e.y - 14]), rays: Array.from({ length: 15 }, (_, i) => ({ a: -Math.PI * .93 + Math.PI * .86 * (i + R(-.35, .35)) / 14, l: R0 * R(.45, 1.02), w: R(12, 24), bend: R(-.12, .12) })) });
     G.shake = .3; G.roarT = G.t;
+    gnd({ mode: 1, x: genX(G.order.indexOf('zhang')), y: WALL_Y - 26, rx: Math.min(R0, 200) * 1.05, sq: .36, dur: 1.1, open: .22, col: HCOL.zhang, n: 12 });   // 10-29 我方大招补贴地层：一喝冲开一圈地裂
     if (G.up && G.up.zhang2) { G.trenchT = 4; G.trenchY = WALL_Y - Math.min(R0, 160) * .62; G.trenchFire = true; }   // 怒雷：城前留一道火沟
   } else if (id === 'liu') {
     const pri = al.filter(e => e.y > TOP - 4 && !FOES[e.kind].civ && !FOES[e.kind].invuln && seen(e)).sort((a, b) => ((b.stun > 0) - (a.stun > 0)) || (b.hp - a.hp));
@@ -1815,11 +1819,13 @@ function resolveSkill(id, boost = 1) {
     const { cx, cy, r } = aim; let hit = 0; const dir = cx >= genX(G.order.indexOf('guan')) ? 1 : -1;
     G.visDelay = e => clamp((dir > 0 ? e.x - (cx - r * 1.15) : (cx + r * 1.15) - e.x) / (2.3 * r), 0, 1) * .18;   // 刀头从左往右（或反过来）扫 0.18 秒
     const inS = al.filter(e => Math.hypot(e.x - cx, (e.y - 14 - cy) * 1.25) < r);
+    gnd({ mode: 3, x: cx, y: cy + 10, rx: r * 1.3 * dir, sq: .3, dur: 1.1, open: .2, col: HCOL.guan });   // 10-29 青龙斩：刀痕跟着刀扫过去，烙在地上
     if (G.cnt && G.st.yunzhan && inS.some(e => e.stun > 0 || G.t - (e.roaredT ?? -9) < WIN_ROAR)) G.cnt.cYun++; if (G.cnt && G.combos && G.combos.includes('cHeng') && G.t - (G.pojT ?? -9) < WIN_POJ) G.cnt.cHeng++;
     for (const e of inS) { if ((G.up && G.up.guan2) || G.shiBreak) e.breakT = 4; hurt(e, G.st.guanDmg * boost * (e.stun > 0 ? (G.st.yunzhan ? (G.comboLv && G.comboLv.cYun > 1 ? 3.5 : 2.5) : 1.5) : G.st.yunzhan && G.t - (e.roaredT ?? -9) < WIN_ROAR ? (G.comboLv && G.comboLv.cYun > 1 ? 3.5 : 2.5) : 1), 'slash'); hit++; }
     if (G.st.exec) { let k = 0; for (const e of inS) if (!e.dead && !FOES[e.kind].boss && e.hp < e.max * .3) { e.hp = 0; die(e, 'slash'); k++; } const gi = G.order.indexOf('guan'); if (k) { G.ready[gi] = Math.max(G.t, G.ready[gi] - .3 * k); G.fx.push({ k: 'txt', t: 0, x: cx, y: cy - r * .6 - 20, text: '刀下无生 ' + k, size: 16, color: JADE }); } }
     const yun = G.st.yunzhan && !G.sim ? inS.filter(e => e.stun > 0 || G.t - (e.roaredT ?? -9) < WIN_ROAR) : [];   // 连携「晕而斩之」专属画面（只管画面，sim 里不做）
     if (yun.length) { const ys = yun.map(e => [e.x, e.y - 14, G.visDelay(e)]), zi = G.order.indexOf('zhang');
+      gnd({ mode: 2, x: cx, y: cy + 8, rx: r * 1.2, sq: .38, dur: 1.4, open: .2, col: '#e8754a', delay: .35 });   // 晕而斩之：火刃十字烙地
       G.fx.push({ k: 'cYun', t: 0, dur: 1.8, x: cx, y: cy, hits: ys.slice(0, 8), zx: genX(zi >= 0 ? zi : 0), gx: genX(G.order.indexOf('guan')) });
       for (const [hx, hy, d] of ys.slice(0, 6)) { burst(hx, hy, 'fire', 64, d, 3); burst(hx, hy, 'jade', 86, d + .04, 3); }
       spxWash(cx, cy, 'fire', .5); punch(cx, cy, .08); G.freeze = Math.max(G.freeze || 0, .12);
@@ -1830,6 +1836,7 @@ function resolveSkill(id, boost = 1) {
       for (const [hx, hy, d] of ys.slice(0, 6)) burst(hx, hy - 6, 'fire', 96, d + .16, 4);
       const sk = G.fx.filter(q => q.k === 'skname' && q.id === 'guan').pop(); if (sk) { sk.text = '晕而斩之'; sk.t = 0; } }
     if (!G.sim && G.combos && G.combos.includes('cHeng') && G.t - (G.pojT ?? -9) < WIN_POJ && G.pojX != null) {   // 连携「横竖斩」专属画面（只管画面）
+      gnd({ mode: 3, x: cx, y: cy + 8, rx: r * 1.3, sq: .3, dur: 1.4, open: .25, col: HCOL.guan, delay: .3 }); gnd({ mode: 0, x: cx, y: cy + 8, rx: r * .9, sq: .36, dur: 1.2, open: .15, col: '#e8754a', n: 8, delay: .55 });   // 横竖斩：一横刀痕、再一竖炸裂
       const zi = G.order.indexOf('zhang'); G.fx.push({ k: 'cHeng', t: 0, dur: 1.8, px: G.pojX, x: cx, y: cy, r, dir, zx: genX(zi >= 0 ? zi : 0), gx: genX(G.order.indexOf('guan')) });
       burst(G.pojX, cy, 'fire', 110, .12, 5); burst(G.pojX, cy, 'jade', 90, .16, 4); spxWash(G.pojX, cy, 'jade', .45); spxDim(.55); punch(G.pojX, cy, .1);   /* 压暗走引擎那层（画在特效底下），不盖住真火和爆炸 */ G.freeze = Math.max(G.freeze || 0, .12); G.shake = Math.max(G.shake || 0, .45);
       fbPlay('hit_fire', G.pojX, cy, 220, null, { delay: .1, glow: .7 }); fbPlay('bao', G.pojX, cy, 250, null, { delay: .13, glow: .7 }); fbPlay('hit_jade', G.pojX, cy, 200, null, { delay: .17, glow: .6 });   // 交点三层爆
@@ -1870,6 +1877,7 @@ function resolveWenjiu(boost = 1, skip) {
   hurt(e, 260 * HPX * boost * (G.wjMul || 1) * (he ? 2 : 1), 'wenjiu'); if (!e.dead) e.knock += 30 * SPD_X;
   G.fx.push({ k: 'wenjiu', t: 0, dur: .8, x: e.x, y: e.y - 20 * FOES[e.kind].s * persp(e.y), he }); fbPlay('yanyue', e.x, e.y - 20, 220, null, { glow: .7 }); fbPlay('hit_jade', e.x, e.y - 20, 160, null, { delay: .08, glow: .6 });
   if (he && !G.sim) { const ty = e.y - 20 * FOES[e.kind].s * persp(e.y), zi = G.order.indexOf('zhang');                  // 连携「喝而斩之」专属画面（只管画面；原来只飘一行字）
+    gnd({ mode: 1, x: e.x, y: e.y - 2, rx: 120, sq: .36, dur: 1.3, open: .2, col: HCOL.guan, n: 9, delay: .4 });   // 喝而斩之：斩落处冲开一圈
     G.fx.push({ k: 'cHe', t: 0, dur: 1.9, x: e.x, y: ty, gy: e.y, zx: genX(zi >= 0 ? zi : 0), gx: genX(G.order.indexOf('guan')) });
     fbPlay('hit_fire', e.x, ty, 240, null, { delay: .16, glow: .7 }); fbPlay('bao', e.x, e.y - 6, 280, null, { delay: .19, glow: .75 }); fbPlay('hit_gold', e.x, ty, 200, null, { delay: .23, glow: .6 });
     if (ML) for (let q = 0; q < 10; q++) { const a = q / 10 * 6.283; ML.splat(e.x + Math.cos(a) * 34, e.y - 4 + Math.sin(a) * 12, Math.cos(a) * 60, VR(-260, -160), VR(8, 11), [0, VR(.8, 1.1), .3, 0]); }   // 张飞一喝：敌人脚下一圈火往上窜，钉住他
@@ -1891,6 +1899,7 @@ function resolveHujin(boost = 1) {
   if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: W / 2, y: WALL_Y - 120, text: '仁德护阵', size: 22, color: AZURE });
   if (!G.sim && G.combos && G.combos.includes('cRen')) {                                   // 连携「仁剑」专属画面（只管画面）：发动一下 + 护盾在时三人脚下的光
     const li = G.order.indexOf('liu'), xs = G.order.map((id, i) => id ? genX(i) : null).filter(x => x != null);
+    gnd({ mode: 1, x: W / 2, y: WALL_Y - 30, rx: 200, sq: .3, dur: 1.4, open: .35, col: HCOL.liu, n: 7 });   // 仁剑：城前一圈柔光
     G.fx.push({ k: 'cRen', t: 0, dur: 1.8, lx: genX(li), xs }); G.fx.push({ k: 'cRenAura', t: 0, dur: 8.2, xs });
     for (const x of xs) { burst(x, GY - 50, 'azure', 80, .1 + Math.abs(x - genX(li)) / 600, 3); burst(x, GY - 50, 'gold', 60, .16 + Math.abs(x - genX(li)) / 600, 2); }
     for (let k = 0; k < 26; k++) part('petal', genX(li) + VR(-20, 20), GY - 40, { vx: VR(-260, 260), vy: VR(-260, -90), life: VR(1.2, 1.8), s: VR(3, 4.4), g: 60, drag: 1.4 });   // 桃花从刘备那里撒开
@@ -3361,32 +3370,32 @@ void main(){
   if (uMode < .5 || (uMode < 1.5 && r < uProg)) {
     float ang = a / 6.2832 * uN + (n - .5) * .9 + uSeed * 3.;
     float th = abs(fract(ang) - .5) * r * 6.2832 / uN;
-    float line = cut(th, .028 * (1.25 - r) + .004 + .012 * n2) * smoothstep(1., .55, r);
+    float line = cut(th, .07 * (1.25 - r) + .012 + .025 * n2) * smoothstep(1., .5, r);   // 10-29 原来 3 像素宽看不见，加粗
     float mask = 1. - smoothstep(uProg - .15, uProg, r);
     float k = uMode < .5 ? 1. : .55;
-    hot += line * mask * (1.3 - r) * k; body += (line * mask + exp(-r * r * 9.) * uProg * .8) * k;
-    dark += (1. - smoothstep(0., .5, r)) * .55 * mask * k;
+    hot += line * mask * (1.4 - r) * k; body += (line * mask * 1.3 + exp(-r * r * 5.) * uProg * 1.1) * k;
+    dark += (1. - smoothstep(0., .6, r)) * .7 * mask * k;
   }
   if (uMode > .5 && uMode < 1.5) {
-    float w = .06 + .06 * n2, ring = exp(-pow((r - uProg - (n - .5) * .14) / w, 2.)) * (.35 + .9 * n) * (1. - uProg * .55);
+    float w = .1 + .08 * n2, ring = exp(-pow((r - uProg * .92 - (n - .5) * .14) / w, 2.)) * (.5 + .9 * n) * (1. - uProg * .45);
     hot += ring * .9; body += ring;
   }
   if (uMode > 1.5 && uMode < 2.5) {
     for (int i = 0; i < 2; i++) { float sg = i == 0 ? 1. : -1.;
       float d = abs(p.y - sg * p.x * .62 + (n - .5) * .06), tp = 1. - smoothstep(.65, 1., abs(p.x)), rv = 1. - smoothstep(uProg * 1.15 - .1, uProg * 1.15, abs(p.x));
-      hot += cut(d, .05 * tp + .004) * tp * rv; body += cut(d, .22 * tp + .01) * tp * rv * .7; dark += cut(d, .12 * tp) * tp * rv * .45; }
+      hot += cut(d, .1 * tp + .01) * tp * rv; body += cut(d, .38 * tp + .02) * tp * rv * .9; dark += cut(d, .2 * tp) * tp * rv * .6; }
   }
   if (uMode > 2.5) {
     float fx = uProg * 2.3 - 1.15, d = abs(p.y + sin(p.x * 3. + uSeed * 6.) * .07 + (n - .5) * .09), tp = 1. - smoothstep(.75, 1., abs(p.x)), rv = 1. - smoothstep(fx - .12, fx, p.x);
     float head = exp(-pow((p.x - fx) / .07, 2.)) * cut(d, .3);
-    hot += cut(d, .06 * tp + .004) * tp * rv + head; body += cut(d, .28 * tp + .01) * tp * rv * .6 + head * .6; dark += cut(d, .15 * tp) * tp * rv * .5;
+    hot += cut(d, .13 * tp + .01) * tp * rv + head; body += cut(d, .45 * tp + .02) * tp * rv * .9 + head * .6; dark += cut(d, .24 * tp) * tp * rv * .6;
   }
   float keep = smoothstep(uDis - .08, uDis + .08, n3 * .9 + .05);
   float rim = (1. - smoothstep(0., .06, abs(n3 * .9 + .05 - uDis))) * step(.01, uDis);
   hot = clamp(hot, 0., 1.); body = clamp(body, 0., 1.); dark = clamp(dark, 0., 1.);
   vec3 c = uBody * body + uHot * hot * (1. + 2. * uFlash) + uHot * rim * (body + hot);
-  float al = clamp(body * .8 + hot, 0., 1.);
-  c = mix(c, uDark, dark * (1. - hot)); al = max(al, dark * .7);
+  float al = clamp(body * .9 + hot, 0., 1.);
+  c = mix(c, uDark, dark * (1. - hot)); al = max(al, dark * .75);
   al *= keep; gl_FragColor = vec4(c * al, al);
 }`;
 // 画稿（10-25 用户：「需要的话就先用gpt 画剑气刀气」）：ChatGPT 在黑底上画的刀气、剑气、矛气，工具/vfx/cut_paint.py 转成光；没有时用光带
@@ -3538,20 +3547,21 @@ function drawHdlBits(f) {                                                      /
 }
 // 贴地法阵一份：{ k: 'gnd', mode, x, y, rx, sq, dur, open, col: 主色, seed, n: 裂纹条数 }；裂开 open 秒（三次缓出）、裂开到六成时一闪、过半后按噪声溶解
 const COOL = [.82, .9, 1];
-const softCol = h => { const c = rgb3(h), l = .3 * c[0] + .59 * c[1] + .11 * c[2]; return c.map((v, j) => (l + (v - l) * .55) * .78 + .22 * COOL[j]); };   // 10-29 柔和：饱和留五成五、往淡蓝白提两成（用户「偏蓝比较好」）
+const softCol = h => { const c = rgb3(h), l = .3 * c[0] + .59 * c[1] + .11 * c[2]; return c.map((v, j) => (l + (v - l) * .7) * .85 + .15 * COOL[j]); };   // 10-29 柔和：饱和留七成、往淡蓝白提一成半（用户「偏蓝比较好」；五成五时裂纹几乎全白、认不出是谁的招）
 const hexMix = (h, k, to) => softCol(h).map((v, j) => v + ((to ? COOL[j] * 1.05 : 0) - v) * k);   // 亮处往蓝白，不往纯白
 function spxGround(f) {
   const gl = SPX.gl, t = f.t, op = f.open || .18, prog = 1 - Math.pow(1 - Math.min(1, t / op), 3), d0 = f.dur * .5, dis = t > d0 ? Math.min(1.05, (t - d0) / (f.dur - d0)) : 0;
-  const rx = f.rx, ry = f.rx * (f.sq || .4), x0 = f.x - rx, x1 = f.x + rx, y0 = f.y - ry, y1 = f.y + ry, U = SPX.gu;
+  const rx = f.rx, ry = Math.abs(f.rx) * (f.sq || .4), x0 = f.x - rx, x1 = f.x + rx, y0 = f.y - ry, y1 = f.y + ry, U = SPX.gu;
   gl.useProgram(SPX.groundP); gl.uniform2f(U.uView, W, H); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, SPX.tex.noise); gl.uniform1i(U.uNoise, 1);
   gl.uniform1f(U.uMode, f.mode); gl.uniform1f(U.uProg, prog); gl.uniform1f(U.uFlash, Math.exp(-Math.pow((t - op * .6) / .06, 2))); gl.uniform1f(U.uDis, dis); gl.uniform1f(U.uSeed, f.seed); gl.uniform1f(U.uN, f.n || 9);
-  gl.uniform3fv(U.uDark, hexMix(f.col, .82, 0)); gl.uniform3fv(U.uBody, softCol(f.col)); gl.uniform3fv(U.uHot, hexMix(f.col, .78, 1));   // 一个主色：暗处往黑、亮处往白
+  gl.uniform3fv(U.uDark, hexMix(f.col, .82, 0)); gl.uniform3fv(U.uBody, softCol(f.col)); gl.uniform3fv(U.uHot, hexMix(f.col, .55, 1));   // 一个主色：暗处往黑、亮处往白
   gl.bindBuffer(gl.ARRAY_BUFFER, SPX.buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x0, y0, 0, 0, x1, y0, 1, 0, x0, y1, 0, 1, x1, y1, 1, 1]), gl.DYNAMIC_DRAW);
   gl.enableVertexAttribArray(SPX.ga.aPos); gl.vertexAttribPointer(SPX.ga.aPos, 2, gl.FLOAT, false, 16, 0); gl.enableVertexAttribArray(SPX.ga.aUv); gl.vertexAttribPointer(SPX.ga.aUv, 2, gl.FLOAT, false, 16, 8);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   gl.useProgram(SPX.sweep); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, SPX.tex.matter);
 }
-const gnd = (o) => { if (!G.sim) G.fx.push({ k: 'gnd', t: 0, seed: VR(0, 1), ...o }); };
+const gnd = (o) => { if (!G.sim) G.fx.push({ k: 'gnd', t: -(o.delay || 0), seed: VR(0, 1), ...o }); };   // delay：晚几秒才裂开（跟着刀到）
+const HCOL = { guan: '#4fc898', zhang: '#e8754a', liu: '#6aa8e8' };   // 我方贴地法阵的人物色（再经 softCol 调柔偏蓝）
 function spxPass(layer) {
   if (!SPX.ok || !G) return;
   const gl = SPX.gl, vt = G.vt || 0;
