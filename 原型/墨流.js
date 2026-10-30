@@ -123,7 +123,7 @@ void main(){ vUv = aPos * .5 + .5; vL = vUv - vec2(uTexel.x, 0.); vR = vUv + vec
   const flake = (x, y, vx, vy, col) => parts.push({ k: 'flake', x, y, vx, vy, g: 40, drag: 2.2, s: rnd(3, 5.5), rot: rnd(0, 6), spin: rnd(-9, 9), t: 0, life: rnd(.9, 1.5), c: col || (CFG.palette === 'qingjin' ? (Math.random() < .35 ? '#e8c050' : '#1f9a82') : '#16130f') });
   // GPT 画的刀气（10-25 用户看了程序画的弯刀：「你这项一个弧形，不行，可以接上gpt 那张图在里面吗？」）：和游戏同一张 img/fx_paint.png（工具/vfx/cut_paint.py 转的光），
   // blade 那一格是一道竖着的拱形刀光（外弧朝上）。量过：外沿弧心在格内 (197, 212)、半径 187；从左脚（约 99°）经顶部扫到右脚（约 38°）共 299°，绕 (197, 300) 转
-  const PAINT = { img: new Image(), meta: null }; PAINT.img.src = (opt.base || '') + 'img/fx_paint.png'; fetch((opt.base || '') + 'img/fx_paint.json').then(r => r.json()).then(j => { PAINT.meta = j; }).catch(() => {});
+  const PAINT = { img: opt.paintImg || new Image(), meta: null }; if (!opt.paintImg) PAINT.img.src = (opt.base || '') + 'img/fx_paint.png';   // paintImg：调用方已有的同一张图（10-30 两层墨流各载一份，手机内存吃紧） fetch((opt.base || '') + 'img/fx_paint.json').then(r => r.json()).then(j => { PAINT.meta = j; }).catch(() => {});
   const paintOk = () => PAINT.meta && PAINT.img.complete && PAINT.img.naturalWidth > 0;
   const OFF = document.createElement('canvas'), OX = OFF.getContext('2d');
   const BL = { ox: 197, oy: 212, r: 187, mx: 197, my: 300, a0: 99 * Math.PI / 180, span: 299 / 360 };
