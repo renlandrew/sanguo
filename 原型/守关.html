@@ -2316,6 +2316,7 @@ function drawFoe(e) {
   if (e.hp < e.max && !T.boss) bar(x - 10 * ps, y - top - 2 * ps, 20 * ps, 2, e.hp / e.max, INK2, 'rgba(29,26,23,.12)');   // 血条用墨色，别和力士的红巾撞色
 }
 // 场上道具（10-25 用户指着程序画的拒马：「这个也要gpt 重新画」）：ChatGPT 画的，工具/cut_props.py 抠成 img/props.png；没有就照旧程序画
+for (const n of ['well_0', 'well_1', 'well_2', 'seal']) { IMG[n] = new Image(); IMG[n].src = 'img/' + n + '.png' + BUST; }   // 井中玉玺（10-29 用户画）
 const PROPS = {}; IMG.props = new Image(); IMG.props.src = 'img/props.png' + BUST; fetch('img/props.json' + BUST).then(r => r.json()).then(j => Object.assign(PROPS, j)).catch(() => {});
 // Blender 车驾步行循环：马腿与车轮同一段序列，缺图时沿用原静态车驾。
 const CART_WALK = Array.from({ length: 8 }, (_, i) => { const im = new Image(); im.src = 'img/cart_blender_frames/' + String(i).padStart(2, '0') + '.png' + BUST; return im; });
@@ -2592,7 +2593,15 @@ function drawFieldThings() {
     txt(f.name[0], 10, -34, 13, '#f3ecdd', 'center'); ctx.restore();
     if (f.up) txt(f.name, f.x, f.y + 10, 10, INK2, 'center', PLAIN);
   }
-  for (const w of G.wells || []) {                                               // 井：一圈井栏，点三下；打捞过的发暗，玉玺那口发金光
+  for (const w of G.wells || []) {                                               // 井：点三下；打捞过的发暗，玉玺那口发金光
+    // 10-29 用户画好三张井（普通、捞过、发金光）＋传国玉玺：同一裁切框，脚底对齐 w.y+8；没图时照旧程序画
+    const st = w.n >= 3 ? (w.seal ? 2 : 1) : 0, im = IMG['well_' + st];
+    if (ready(im)) { const ps = persp(w.y) / .36, ww = 50 * ps, wh = ww * im.height / im.width;
+      if (st === 2) { const g = ctx.createRadialGradient(w.x, w.y - 14 * ps, 0, w.x, w.y - 14 * ps, 44 * ps), a = .45 + .2 * Math.sin(G.t * 4); g.addColorStop(0, `rgba(255,214,110,${a})`); g.addColorStop(1, 'rgba(255,214,110,0)'); ctx.fillStyle = g; ctx.fillRect(w.x - 44 * ps, w.y - 58 * ps, 88 * ps, 88 * ps); }
+      ctx.drawImage(im, w.x - ww / 2, w.y + 8 - wh, ww, wh);
+      if (st === 2 && ready(IMG.seal)) { const sw = 24 * ps, sh = sw * IMG.seal.height / IMG.seal.width, by = w.y + 8 - wh * .4 + 3 * Math.sin(G.t * 3); ctx.drawImage(IMG.seal, w.x - sw / 2, by - sh, sw, sh); }   // 玉玺浮在井口上方
+      if (w.n < 3) for (let k = 0; k < 3; k++) { ctx.fillStyle = k < w.n ? CINNABAR : 'rgba(29,26,23,.35)'; ctx.fillRect(w.x - 10 + k * 8, w.y + 12, 6, 4); }
+      continue; }
     ctx.fillStyle = w.n >= 3 ? '#5a534a' : '#8f877a'; ctx.beginPath(); ctx.ellipse(w.x, w.y, 17, 7, 0, 0, 6.283); ctx.fill();
     ctx.fillStyle = '#1d1a17'; ctx.beginPath(); ctx.ellipse(w.x, w.y - 1, 11, 4, 0, 0, 6.283); ctx.fill();
     brush(ctx, [[w.x - 13, w.y], [w.x - 13, w.y - 20], [w.x + 13, w.y - 20], [w.x + 13, w.y]], 1.6, INK, .85, () => 1, 0, vr);
