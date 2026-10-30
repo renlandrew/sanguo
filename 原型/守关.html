@@ -936,7 +936,8 @@ function startLevel(i) {
     G.pow[id] = 1 + .015 * d[1]; G.lead[id] = 1 + .015 * d[0]; G.cdg[id] = 1 / (1 + .008 * d[2]); if (team.includes(id)) { pol = Math.max(pol, d[3]); cha = Math.max(cha, d[4]); } }
   G.wallMax = 100 * (1 + .008 * pol); G.wall = G.wallMax; G.needMul = 1 / (1 + .015 * cha);
   // 打造、开封过的东西（10-25）：机器人按推荐打到这关时该有的算；?all 跳关试玩时，没有的按推荐补上（同等级的规矩）
-  const own = INV.up, exp = upAt(lv.id); if (sim && window.__sg.wpnLess && exp.wpn) exp.wpn -= window.__sg.wpnLess;   // wpnLess：推演「兵器差几级」
+  const own = INV.up, exp = upAt(lv.id); if (sim && window.__sg.wpnLess && exp.wpn) { exp.wpn -= window.__sg.wpnLess; for (const h of ['guan', 'zhang', 'liu']) exp['wpn_' + h] = exp.wpn; }   // wpnLess：推演「兵器差几级」（10-29 三人分开后也要改各人的）
+  if (sim && window.__sg.upOver) Object.assign(exp, window.__sg.upOver(exp, lv.id) || {});   // 推演：按某天手里的东西覆盖（逐日推演用）
   G.up = sim ? (window.__sg.noUp ? {} : exp) : window.__sg.all ? Object.fromEntries([...new Set([...Object.keys(own), ...Object.keys(exp)])].map(k => [k, Math.max(own[k] || 0, exp[k] || 0)])) : { ...own };
   G.upMul = 1; G.wpnLv = {}; for (const h of ['guan', 'zhang', 'liu']) G.wpnLv[h] = G.up['wpn_' + h] ?? G.up.wpn ?? 0; G.awake = G.up.awake ? (!sim && INV.awake) || 'guan' : null;
   G.blocks = 0; G.trenchT = 0; G.logUsed = false; G.nuUsed = false; G.logArm = false; G.nuArm = false; G.lights = []; G.lightN = RU.night ? 3 : 0; G.lightArm = false; G.lightChk = 0;
