@@ -24,7 +24,7 @@
 // 加载页（10-27 用户：「做一个加载页面，全部加载完才进入游戏界面」）：开头这段时间里 new 出来的图都记下来，全部好了（或坏了）才进主页；最多等 30 秒
 // 10-30 用户：「有时会自己重新刷新？」「也有突然断了链接不上」——服务器日志看是 iPhone 每分钟左右重开一次页面：所有图解码后合计约 2.1GB，Safari 内存不够把页面杀了。
 // 大图（大招录像、敌将华彩、剧情图、战场底图、各兵种和敌将图集、命中帧动画）改成用到才加载：设 src 时先记下，第一次 ready() 问到它才真去下载解码，也不算进加载页
-const REL_LIST = 'ult_|fx_boss_|fx_sp_|story_|bg_|room|card_|enemy_|huangjin|lishi|gong|cyz|yayi|dengmao|shushi|qibing|xiliang|feixiong|xianzhen|baixing|zhangjiao|tieqi|langqi|huzhen|huaxiong|lijue|gaoshun|lvbu|panfeng|wuanguo|qishou|zhangbao|duyou|qushuai|zhangliang|xiaowei|yushe';
+const REL_LIST = 'ult_|fx_boss_|fx_sp_|map_|bg\\.|story_|bg_|room|card_|enemy_|huangjin|lishi|gong|cyz|yayi|dengmao|shushi|qibing|xiliang|feixiong|xianzhen|baixing|zhangjiao|tieqi|langqi|huzhen|huaxiong|lijue|gaoshun|lvbu|panfeng|wuanguo|qishou|zhangbao|duyou|qushuai|zhangliang|xiaowei|yushe';
 const LAZY_RE = new RegExp('img/(fb/|' + REL_LIST + ')'), REL_RE = new RegExp('img/(' + REL_LIST + ')');   // 命中帧动画 fb/ 用到才加载但不释放；其余换关时放掉
 // 10-30 用户：「第五关又重启」——大招特写（ult_，每张约 60MB）原来学了就一直留着，前几关剧情学了三招就三张；改成也换关释放，开打前只叫起这关觉醒那人和敌将的，剧情学招前先叫起
 const SRC_SET = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src').set;
@@ -35,6 +35,7 @@ const LOADQ = [], ALLIMG = new Set(), _Img = window.Image; window.Image = functi
     SRC_SET.call(im, u); } });
   return im; };
 const WOKEN = new Set(); let CUR_LV = -1;
+const relImg = im => { if (im && im._rel) { im._lazy = im._url; im._rel = 0; im.removeAttribute('src'); WOKEN.delete(im); } };   // 马上放掉一张用到才载的图（下次用到再载）
 const wake = im => { if (!im) return; if (im._lazy) { const u = im._lazy; im._lazy = null; if (REL_RE.test(u)) { im._rel = 1; WOKEN.add(im); } SRC_SET.call(im, u); } if (im._rel) im._lv = CUR_LV; };
 // 10-30 用户：「换关时把上一关的图释放掉，但技能图不释放」——开打前先把这关要的图叫起来（记上这关），再把别的放掉；放掉的下次用到会再加载
 function releaseImgs() { for (const im of WOKEN) if (im._lv !== CUR_LV) { im._lazy = im._url; im._rel = 0; im.removeAttribute('src'); WOKEN.delete(im); } }
@@ -1048,11 +1049,11 @@ let ML = null;
 // 换成第二层墨流（黑墨调色，和青龙斩的青金墨分开）画在敌人后面：从他身上往外、往上冒一缕缕墨烟，约一秒淡掉
 let MLB = null;
 function startLevel(i) {
-  sheetPrune(i); if (!window.__sg.simming) { MAPL = {}; SPR = {}; SPRHIT = {}; for (const k in SPDV) delete SPDV[k]; for (const im of INKBG.keys()) if (im !== IMG.bg) INKBG.delete(im); G && (G.spW = null); }   // 上一关的垫底画布、染色副本放掉 if (ML) ML.clear(); if (MLB) MLB.clear();
+  sheetPrune(i); if (!window.__sg.simming) { MAPL = {}; SPR = {}; SPRHIT = {}; for (const k in SPDV) delete SPDV[k]; INKBG.clear(); G && (G.spW = null); }   // 上一关的垫底画布、染色副本放掉 if (ML) ML.clear(); if (MLB) MLB.clear();
   const lv = LEVELS[i], RU = lv.rules || {};
-  if (!window.__sg.simming) { CUR_LV = i; const js = JSON.stringify(lv); ready(IMG['bg_' + lv.map]); if (MAP_ALIAS[lv.map]) ready(IMG['bg_' + MAP_ALIAS[lv.map]]);   // 用到才加载的图：开打前先把这关的兵种图集、底图、敌将华彩叫起来，免得头几个兵看不见
+  if (!window.__sg.simming) { CUR_LV = i; const js = JSON.stringify(lv); for (const k in BGC) if (k !== lv.map && k !== MAP_ALIAS[lv.map]) delete BGC[k]; if (!BGC[lv.map]) ready(IMG['bg_' + lv.map]); if (!IMG['bg_' + lv.map] && MAP_ALIAS[lv.map] && !BGC[MAP_ALIAS[lv.map]]) ready(IMG['bg_' + MAP_ALIAS[lv.map]]);   // 用到才加载的图：开打前先把这关的兵种图集、底图、敌将华彩叫起来，免得头几个兵看不见
     for (const [k, T] of Object.entries(FOES)) if (js.includes('"' + k + '"')) for (const n of [T.sheet || T.alt, T.sheet && T.sheet + '_back', ...(T.sheet === 'qibing' ? [1, 2, 3, 4, 5, 6, 7].map(d => 'qibing_' + d) : [])]) if (n) { ready(IMG[n]); if (BVFX[k]) ready(BVFX[k].im); }
-    { const aw = (INV.up || {}).awake ? INV.awake || 'guan' : null; if (aw && ULT[aw]) ready(ULT[aw].im); for (const k of ULT_FOE) if (js.includes('"' + k + '"')) ready(ULT[k].im); }   // 这关会演的大招特写
+    { const aw = (INV.up || {}).awake ? INV.awake || 'guan' : null; if (aw && ULT[aw]) ready(ultIm(aw, true)); for (const k of ULT_FOE) if (js.includes('"' + k + '"')) ready(ULT[k].im); }   // 这关会演的大招特写
     releaseImgs(); }
   rnd = mulberry(lv.id * 7919 + (window.__sg.seed || 0));
   const queue = buildQueue(lv), chg = {}; for (const it of queue) if (it.ch != null) (chg[it.ch] ??= { total: 0, n: 0, last: 0, state: 'mark' }).total++;
@@ -2185,7 +2186,7 @@ function renderScreen() {
   const pu = G.punch, pt = pu ? (G.vt || 0) - pu.t0 : 9;                                          // 镜头往打中的地方推一下
   if (pt < .35) { const k = 1 + pu.k * (pt < .06 ? pt / .06 : Math.pow(1 - (pt - .06) / .29, 2)); ctx.translate(pu.x, pu.y); ctx.scale(k, k); ctx.translate(-pu.x, -pu.y); }
   drawBg();
-  { const mk = mapKey(G.lv.map); if (!ready(IMG['bg_' + mk]) && MAPF[mk]) ctx.drawImage(MAPL[mk] || (MAPL[mk] = MAPF[mk]()), 0, 0, W, H); }
+  { const mk = mapKey(G.lv.map); if (!bgOf(mk) && MAPF[mk]) ctx.drawImage(MAPL[mk] || (MAPL[mk] = MAPF[mk]()), 0, 0, W, H); }
   drawScorch();
   for (const d of G.decals) { const a = .22 * clamp(1 - d.t / 14, 0, 1); if (a <= 0) continue;   /* 10-30 手机卡：血迹 30 → 14 秒淡完，满场时每帧从约 140 张降到几十张 */ ctx.globalAlpha = a; const sz = 40 * d.s; ctx.drawImage(BLOTS[d.i], d.x - sz / 2, d.y - sz * .35, sz, sz * .7); }
   ctx.globalAlpha = 1;
@@ -2239,28 +2240,29 @@ function renderScreen() {
 // 觉醒的那人放招时演，张角天雷、吕布方天画戟出招时演；同一人 20 秒内只演一次。武将页点头像也能看。机器人试跑不演、不停
 const ULT = {}, ULT_FOE = new Set(['zhangjiao', 'lvbu']);
 for (const k of ['guan', 'zhang', 'liu', 'zhangjiao', 'lvbu']) { const im = new Image(); im.src = 'img/ult_' + k + '.webp' + BUST; ULT[k] = { im, meta: null };
+  if (!ULT_FOE.has(k)) { const b = ULT[k].bim = new Image(); b.src = 'img/ult_' + k + '_b.webp' + BUST; }   // 打仗只放出招那段：另切一张只含前 battleN 帧的（10-30 第 4–30 关复现：觉醒那人整张 63MB 每关常驻，这张约 40MB）
   fetch('img/ult_' + k + '.json' + BUST).then(r => r.ok ? r.json() : null).then(j => { ULT[k].meta = j; }).catch(() => {}); }
 const ULT_NAME = { guan: '青龙斩', zhang: '当阳一喝', liu: '双股剑', zhangjiao: '天雷', lvbu: '方天画戟' };
 const ULT_COL = { guan: ['#5fd39a', 'rgba(60,200,140,'], zhang: ['#ff8a5a', 'rgba(255,110,50,'], liu: ['#8fd0ff', 'rgba(90,170,255,'], zhangjiao: ['#ffd76e', 'rgba(255,210,90,'], lvbu: ['#ff6a5a', 'rgba(230,50,40,'] };
-const ultReady = k => ULT[k] && ULT[k].meta && ready(ULT[k].im);
+const ultIm = (k, b) => b && ULT[k].bim ? ULT[k].bim : ULT[k].im, ultReady = (k, b) => ULT[k] && ULT[k].meta && ready(ultIm(k, b));   // b：打仗时用短的那张
 function playUlt(k, foe, force) {
-  if (G.sim || !ultReady(k)) return; G.ultLast = G.ultLast || {};
+  if (G.sim || !ultReady(k, true)) return; G.ultLast = G.ultLast || {};
   if (!force && (G.vt || 0) - (G.ultLast[k] ?? -99) < 20) return; G.ultLast[k] = G.vt || 0;
   const m = ULT[k].meta, sp = foe || !m.battleN ? 1 : 1.5, n = foe ? m.n : Math.min(m.n, m.battleN || m.n);   // 10-27 新录 8 秒学招特写：打仗时只放出招那一段、1.5 倍速，收招的捋须／大笑留给武将页
   G.ult = { k, t: 0, sp, dur: (n / m.fps + .45) / sp, foe: !!foe };
 }
 const ULT_HOLD = {};                                                     // 武将页预览定格在哪一帧（不写就是最后一帧）
 function drawUlt(k, t, dur, foe, hold, label = '觉醒', center = false) {   // center：剧情里学会招式用，人居中、从头播到最后一帧停住（10-28 用户：「录像要居中，完整播放」「张飞则往右那么一点点」）                                                // hold：武将页预览，演完停在最后一帧，等玩家点「退出」才退（hold 是退场已过的秒数，没点时 -1）
-  if (!ultReady(k)) return; const { im, meta: m } = ULT[k], [col, rgb] = ULT_COL[k];
+  const bt = hold == null && !center; if (!ultReady(k, bt)) return; const im = ultIm(k, bt), m = ULT[k].meta, [col, rgb] = ULT_COL[k];
   const a = hold != null ? (t < .14 ? t / .14 : 1) * (hold >= 0 ? Math.max(0, 1 - hold / .28) : 1) : t < .14 ? t / .14 : t > dur - .28 ? Math.max(0, (dur - t) / .28) : 1, enter = ease(Math.min(1, t / .2)), dir = k === 'zhang' || k === 'lvbu' ? 1 : -1;
   ctx.save(); ctx.setTransform(RS, 0, 0, RS, 0, 0);
   ctx.globalAlpha = a * (hold != null || center ? .97 : .8); ctx.fillStyle = foe ? '#1c0604' : '#06080a'; ctx.fillRect(0, 0, W, H);   // 压暗（武将页、剧情里看大招时背景全暗，10-29 用户）
   ctx.globalAlpha = a; ctx.globalCompositeOperation = 'lighter';
   const gx = W / 2 - dir * 20, gy = H * .5, gl = ctx.createRadialGradient(gx, gy, 10, gx, gy, 300); gl.addColorStop(0, rgb + '.42)'); gl.addColorStop(1, rgb + '0)');
   ctx.fillStyle = gl; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over';                           // 身后一大团人物色的光
-  const f0 = Math.floor(Math.max(0, t - .06) * m.fps), hf = ULT_HOLD[k] ?? m.n - 1, fi = !center && hold != null && f0 >= m.n ? Math.max(hf, 2 * (m.n - 1) - f0) : Math.min(m.n - 1, f0) /* 预览演完倒放回定格那一帧停住（10-26 用户：「大招停止后不断闪最后一帧」「张飞最后停这里了」——张飞最后一帧是挥矛中途的拖影） */, sx = (fi % m.cols) * m.w, sy = Math.floor(fi / m.cols) * m.h;
+  const f0 = Math.floor(Math.max(0, t - .06) * m.fps), hf = ULT_HOLD[k] ?? m.n - 1, fi = !center && hold != null && f0 >= m.n ? Math.max(hf, 2 * (m.n - 1) - f0) : Math.min(m.n - 1, f0) /* 预览演完倒放回定格那一帧停住（10-26 用户：「大招停止后不断闪最后一帧」「张飞最后停这里了」——张飞最后一帧是挥矛中途的拖影） */, uk = im.naturalWidth / (m.w * m.cols) || 1, sx = (fi % m.cols) * m.w * uk, sy = Math.floor(fi / m.cols) * m.h * uk;
   const dh = H * .82 * (1.06 - .06 * enter), dw = dh * m.w / m.h, x = W / 2 - dw / 2 - (center || hold != null ? 0 : dir * 18) + (1 - enter) * dir * -W * .7, y = H - dh - (hold != null ? 78 : 0);   /* 预览时整体往上，让出底下的退出钮（10-26 用户：「整体是不是可以往上？」） */
-  ctx.drawImage(im, sx, sy, m.w, m.h, x, y, dw, dh);                                                                    // 人从一侧冲进来
+  ctx.drawImage(im, sx, sy, m.w * uk, m.h * uk, x, y, dw, dh);                                                                    // 人从一侧冲进来
   const name = ULT_NAME[k], tx = dir > 0 ? 44 : W - 44, tu = clamp((t - .18) / .22, 0, 1), ts = 1.5 - .5 * ease(tu);   // 竖排招名，大字砸下来
   ctx.globalAlpha = a * tu; [...name].forEach((c, j) => { ctx.save(); ctx.translate(tx, 150 + j * 64); ctx.scale(ts, ts); uiText(c, 0, 0, 56, col, 'center', FONT, { glow: rgb + '.9)', glowR: 18, lw: 7 }); ctx.restore(); });
   if (!foe) { ctx.globalAlpha = a * tu * .8; uiText(label, tx, 150 + name.length * 64 + 10, 16, '#f6d27a', 'center', FONT, { lw: 4 }); }
@@ -2741,7 +2743,7 @@ function spTint(im, col) { const c = document.createElement('canvas'); c.width =
 const SPV = {}, SPIM = {}, SPDV = {}; for (const k of ['sigil_purple', 'arcs', 'face', 'dome', 'spears', 'sigil_gold']) { const im = SPIM[k] = new Image(); im.src = 'img/fx_sp_' + k + '.webp' + BUST; fetch('img/fx_sp_' + k + '.json' + BUST).then(r => r.ok ? r.json() : null).then(j => { if (j) SPV[k] = { m: j.anims.play, stand: j.stand, L: SP_LOOK[k] || {} }; }).catch(() => {}); }
 // 10-30 第四关重启：六套逐帧图连同染色副本原来开机就常驻约 74MB——改成这关用得到才加载（spWant 开打就叫），要染色的算好副本就把原图放掉
 function spImg(k) { if (SPDV[k]) return SPDV[k]; const im = SPIM[k], L = SP_LOOK[k] || {}; if (!ready(im)) return null; if (!SP_SOFT[k] && !L.tint) return im;
-  const c = SP_SOFT[k] ? spSoft(im, SP_SOFT[k]) : spTint(im, L.tint); if (c !== im) { SPDV[k] = c; im._lazy = im._url; im._rel = 0; im.removeAttribute('src'); WOKEN.delete(im); } return c; }
+  const c = SP_SOFT[k] ? spSoft(im, SP_SOFT[k]) : spTint(im, L.tint); if (c !== im) { SPDV[k] = c; relImg(im); } return c; }
 function spWant() { if (G.sim) return; if (!G.spW) { const js = JSON.stringify(G.lv), A = G.act || {}; G.spW = [...(js.includes('"zhangjiao"') ? ['sigil_purple', 'arcs'] : []), ...(js.includes('"seal"') ? ['face'] : []), ...(G.order && G.order.includes('liu') ? ['sigil_gold'] : []), ...(A.liu === 'hujin' || /"(boss|moves|duel)"/.test(js) ? ['dome'] : [])]; }
   for (const k of G.spW) spImg(k); if (G.st.nu > 0) spImg('spears'); }
 function spPlay(k, x, y, size, o = {}) { if (!G || G.sim || !SPV[k]) return; (G.spfx = G.spfx || []).push({ k, x, y, size, born: (G.vt || 0) + (o.delay || 0), fps: o.fps || 16, sy: o.sy || 1, fitW: o.fitW || 0, ground: !!o.ground, alpha: o.alpha ?? 1, follow: o.follow || null }); }
@@ -2767,7 +2769,9 @@ function drawFbs() {
 }
 // 11–30 关的地图还没画的先借相近的（汜水关、虎牢关借谷口，酸枣大营借黄巾大营）
 const MAP_ALIAS = { sishui: 'canyon', hulao: 'canyon', suanzao: 'camp', luoyang: 'plain', ruins: 'plain' };
-const mapKey = m => ready(IMG['bg_' + m]) ? m : (MAP_ALIAS[m] || m);
+const BGC = {};   // 场景底图降饱和的副本（按地图名）；算好就把原图放掉，换关只留这关的（10-30 第 4–30 关复现：原图和副本各 8MB 同时常驻）
+function bgOf(m) { if (BGC[m]) return BGC[m]; const im = IMG['bg_' + m]; if (!ready(im)) return null; const c = inkBg(im); if (c !== im) { BGC[m] = c; INKBG.delete(im); relImg(im); } return c; }
+const mapKey = m => BGC[m] || ready(IMG['bg_' + m]) ? m : (MAP_ALIAS[m] || m);
 // 配色收敛（10-29 用户：「感觉我们现在的颜色有些多有些乱」；又说「不需要接近水墨」）：场景图一律降一点饱和，
 // 第一次画时算一遍存起来（不每帧滤镜，手机不卡）；人物色只留在各自招式特效里
 const INKBG = new Map(), INK_SAT = .7;   // 10-29 用户：「不需要接近水墨」——只压掉刺眼的饱和，保留厚涂画风，不往宣纸色偏
@@ -2781,9 +2785,10 @@ function inkBg(im) {
   INKBG.set(im, c); return c;
 }
 function drawBg() {
-  const mb = G && IMG['bg_' + mapKey(G.lv.map)], bg = ready(mb) ? mb : IMG.bg;
-  if (!ready(bg)) { ctx.drawImage(BG || (BG = bakeBg()), 0, 0, W, H); return; }
-  ctx.drawImage(inkBg(bg), 0, 0, W, H);
+  const mc = G && bgOf(mapKey(G.lv.map));
+  if (mc) { if (BG || IMG.bg._rel) { BG = null; MAPL = {}; INKBG.delete(IMG.bg); relImg(IMG.bg); } }   // 真底图到了：垫底的主页背景、程序地形放掉
+  else if (!ready(IMG.bg)) { ctx.drawImage(BG || (BG = bakeBg()), 0, 0, W, H); return; }
+  ctx.drawImage(mc || inkBg(IMG.bg), 0, 0, W, H);
   const wg = ctx.createLinearGradient(0, TOP + 10, 0, TOP + 120); wg.addColorStop(0, 'rgba(236,228,210,0)'); wg.addColorStop(1, 'rgba(236,228,210,.32)');   // 战场中间再淡一层，小兵看得清；上沿渐变，不留横缝
   ctx.fillStyle = wg; ctx.fillRect(0, TOP + 10, W, WALL_Y - TOP - 10);
 }
@@ -5239,7 +5244,7 @@ function storyNext() { if (storyBusy()) return; const L = STORY[STP.key], ln = L
   const then = STP.then; STP = null; screen = 'menu'; if (then) then(); }
 function drawStoryImg(k, a) {
   const im = IMG[k]; if (!ready(im)) return; ctx.save(); ctx.globalAlpha = a;
-  if (STORY_GLOW[k]) { const sb = STP && STP.bg && IMG['bg_' + mapKey(STP.bg)]; if (ready(sb)) ctx.drawImage(inkBg(sb), 0, 0, W, H); else drawBg(); ctx.fillStyle = 'rgba(8,5,4,.55)'; ctx.fillRect(0, 0, W, H);     // 抠好的人物：战场底图压暗，身后一团人物色的光，人从下面站上来
+  if (STORY_GLOW[k]) { const sb = STP && STP.bg && bgOf(mapKey(STP.bg)); if (sb) ctx.drawImage(sb, 0, 0, W, H); else drawBg(); ctx.fillStyle = 'rgba(8,5,4,.55)'; ctx.fillRect(0, 0, W, H);     // 抠好的人物：战场底图压暗，身后一团人物色的光，人从下面站上来
     const g = ctx.createRadialGradient(W / 2, 250, 10, W / 2, 250, 260); g.addColorStop(0, `rgba(${STORY_GLOW[k]},.45)`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, 520);
     const h = k.startsWith('pt_') ? 400 : 470, w = h * im.width / im.height, sh = STP && STP.fx && STP.fx.k === 'thunder' ? THUNDER.reduce((m, [dt, v]) => Math.max(m, v * Math.max(0, 1 - (uiNow() - STP.fx.t0 - dt) / .6) * (uiNow() - STP.fx.t0 >= dt)), 0) * VR(-6, 6) : 0;   // 其他人的立绘画小一点（10-26 用户：「这个吕布白边明显，可以小一些」）
     ctx.drawImage(im, W / 2 - w / 2 + sh, 486 - h, w, h); }
@@ -5903,7 +5908,7 @@ function enterLevel(i) {
   PREP.sel = -1; G = null; screen = 'prep'; PREP.t0 = uiNow();
 }
 function prepBg(lv) {
-  const k = 'bg_' + mapKey(lv.map); if (ready(IMG[k])) ctx.drawImage(inkBg(IMG[k]), 0, 0, W, H); else drawBg();
+  const bc = bgOf(mapKey(lv.map)); if (bc) ctx.drawImage(bc, 0, 0, W, H); else drawBg();
   const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, 'rgba(8,5,4,.78)'); bg.addColorStop(1, 'rgba(6,4,3,.94)'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
 }
 function prepHead(lv, title) {

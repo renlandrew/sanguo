@@ -2,6 +2,7 @@
 原来游戏里先解码整张大原图、再按显示大小另画一份缩小的，两份都在内存里；现在文件本身就是显示大小，游戏直接用。
 - 兵种、敌将图集（含 _back）：目标站高 = 守关.html FOES 里用到这张图的最大 sh × 3.2（同 SHEET_PX）
 - 敌将华彩 fx_boss_*：× FX_BOSS；刘关张大招特写 ult_guan/zhang/liu：× ULT
+另：ult_<刘关张>_b.webp（打仗用，只含前 battleN 帧、再 ×0.8）和敌将 ult_zhangjiao/lvbu（×0.8，json 记 full0）是 10-30 手工切缩的，重切大招图后要照做。
 json 里的 stand、rects、anchor（ult 的 w、h）跟着缩。已经缩过的（比目标大不到 3%）跳过，重切图集后再跑一遍即可。
 用法：<media-venv>/bin/python 三国志/工具/shrink_sheets.py [--dry]
 """
