@@ -714,7 +714,7 @@ if (!INV.wpnSplit) { for (const h of ['guan', 'zhang', 'liu']) INV.up['wpn_' + h
 if (INV.it.神兵 != null) { INV.it.陨铁 = (INV.it.陨铁 || 0) + INV.it.神兵; delete INV.it.神兵; }        // 旧档：神兵材料 → 陨铁
 for (const k of Object.keys(INV.it)) if (!(k in ITEMS)) delete INV.it[k];           // 砍掉的物品（甲片、马鬃、温酒、符水）从旧存档里清掉
 const saveInv = () => { try { localStorage.setItem(IKEY, JSON.stringify(INV)); } catch (e) {} };
-// 官阶（10-29 方案 设计/成长方案_Claude_20261029.md 第 1 节）：打节点关之前要晋阶；晋阶要资历 20 点（日常军令、探访、杂务各 +1），全队共享
+// 官阶（10-29 方案 设计/成长方案_Claude_20261029.md 第 1 节）：打节点关之前要晋阶；晋阶要资历（20、20、36、48、52、56 点，日常军令、探访、杂务各 +1），全队共享
 const RANKS = [
   { name: '乡勇', node: 0, gets: ['三人各一招'] },
   { name: '义勇头领', node: 5, gets: ['换上第一套新甲', '招式二阶资格'] },
@@ -724,12 +724,12 @@ const RANKS = [
   { name: '讨贼正尉', node: 25, gets: ['换上第三套新甲', '被动第二格', '招式三阶资格'] },
   { name: '校尉', node: 30, gets: ['第一章成长上限'] },
 ];
-const PREP_NEED = 20;
+const PREP_NEEDS = [20, 20, 36, 48, 52, 56], prepNeed = () => PREP_NEEDS[Math.min(rankNow(), PREP_NEEDS.length - 1)];   // 10-29 逐日推演：陨铁放开后一天晋一阶、8 天通关；用户「加码到 16 天」——前两阶不变保头两天的爽感，后面逐阶加码
 INV.rank = INV.rank || 0; INV.prep = INV.prep || 0;
 const rankNow = () => INV.rank || 0, nextRank = () => RANKS[rankNow() + 1] || null;
 const syncRankArt = () => { INV.officeRank = Math.min(6, rankNow() + 1); };   // 关羽官阶头像那套（另一会话做的）按 1–6 编号
-const addPrep = n => { if (nextRank()) { INV.prep = Math.min(PREP_NEED, (INV.prep || 0) + n); saveInv(); } };
-function promote() { const R = nextRank(); if (!R || INV.prep < PREP_NEED) return false; INV.rank++; INV.prep = 0; syncRankArt(); saveInv(); RANKFX.t0 = uiNow(); RANKFX.on = true; RANKFX.name = R.name; RANKFX.gets = R.gets; sfx('gong'); return true; }
+const addPrep = n => { if (nextRank()) { INV.prep = Math.min(prepNeed(), (INV.prep || 0) + n); saveInv(); } };
+function promote() { const R = nextRank(); if (!R || INV.prep < prepNeed()) return false; INV.rank++; INV.prep = 0; syncRankArt(); saveInv(); RANKFX.t0 = uiNow(); RANKFX.on = true; RANKFX.name = R.name; RANKFX.gets = R.gets; sfx('gong'); return true; }
 const RANKFX = { t0: -99 };
 // 功绩簿（10-29 方案第 5 节，按星数能查的条件先做）：逐关首通、节点功绩（每次晋阶前两项，另给资历 4 点）、累计星绩；每项固定 ID 只领一次
 const ACH_NODE = { 5: [[3, 3, '第三关三星'], [4, 2, '第四关两星以上']], 10: [[7, 3, '第七关三星'], [9, 2, '第九关两星以上']], 15: [[12, 3, '第十二关三星'], [14, 2, '第十四关两星以上']],
@@ -5031,9 +5031,9 @@ function drawCamp() {
   { const n = achClaimable().length; plaque3(W - 104, 14, 94, 26, '功绩簿', () => { screen = 'ach'; }, n > 0); if (n) uiSeal(W - 10, 14, 16, String(n), UIC.red, true);   /* 牌匾按原图比例，宽 128 时正好 26 高，字在中间（10-29 用户：「字要居中」） */ }
   const gl = campGoal(), TOPY = gl ? 0 : -66;   // 没东西要备时顶上只放一块矮的官阶卡（10-29 用户：「这4个框的大小应该如蓝框」）
   plate(14, 58, W - 28, gl ? 166 : 100, !!gl);
-  if (!gl) { const N = nextRank(); if (N) { uiText('下一阶 · ' + N.name, W / 2, 84, 18, UIC.gold2, 'center', FONT, { lw: 4 }); uiText(`资历 ${INV.prep || 0}/${PREP_NEED}`, 30, 120, 13, UIC.cream, 'left', PLAIN, { stroke: false });
-      uiBar('cprep', 100, 114, W - 230, 12, Math.min(1, (INV.prep || 0) / PREP_NEED), '#8a5a14', '#ffd76e'); 
-      pill(W - 112, 104, 90, 28, (INV.prep || 0) >= PREP_NEED ? '去晋阶' : '看官阶', () => { screen = 'rank'; }, (INV.prep || 0) >= PREP_NEED); }
+  if (!gl) { const N = nextRank(); if (N) { uiText('下一阶 · ' + N.name, W / 2, 84, 18, UIC.gold2, 'center', FONT, { lw: 4 }); uiText(`资历 ${INV.prep || 0}/${prepNeed()}`, 30, 120, 13, UIC.cream, 'left', PLAIN, { stroke: false });
+      uiBar('cprep', 100, 114, W - 230, 12, Math.min(1, (INV.prep || 0) / prepNeed()), '#8a5a14', '#ffd76e'); 
+      pill(W - 112, 104, 90, 28, (INV.prep || 0) >= prepNeed() ? '去晋阶' : '看官阶', () => { screen = 'rank'; }, (INV.prep || 0) >= prepNeed()); }
     else uiText('已是第一章最高官阶', W / 2, 140, 18, UIC.gold2, 'center', FONT); }   // 军帐顶上改放官阶资历（兵器不在这里：10-29 用户）
   else {
     const { ng, key, U, tot, d } = gl, lv = LEVELS.find(l => l.id === ng), lvl = INV.up[key] || 0;
@@ -5390,8 +5390,8 @@ function drawRank() {                                                           
     const n = N.gets.length, tw = 78; N.gets.forEach((g2, i) => { const ic = unlockIcon(g2, r + 1), x = W / 2 + (i - (n - 1) / 2) * (tw + 12), y = 318;
       ctx.save(); rr(x - tw / 2, y - tw / 2, tw, tw, 9); ctx.fillStyle = '#2a1208'; ctx.fill(); rr(x - tw / 2, y - tw / 2, tw, tw, 9); ctx.clip(); if (ic.im && ready(ic.im)) { const f = ic.fit ? Math.min(tw / ic.im.width, tw / ic.im.height) * .78 : tw / Math.min(ic.im.width, ic.im.height); ctx.drawImage(ic.im, x - ic.im.width * f / 2, y - ic.im.height * f / 2, ic.im.width * f, ic.im.height * f); } else uiSeal(x, y, 36, ic.ch, UIC.red, true); ctx.restore();
       if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, x - tw / 2 - 2, y - tw / 2 - 2, tw + 4, tw + 4, 60, 60, 60, 60, .1); uiText(ic.label, x, y + tw / 2 + 14, 12, '#fff', 'center', FONT, { lw: 3 }); });
-    const fr = Math.min(1, (INV.prep || 0) / PREP_NEED), py = 410; plate(14, py, W - 28, 110, fr >= 1);
-    uiText(`资历 ${INV.prep || 0}/${PREP_NEED}`, 30, py + 26, 14, UIC.gold2, 'left', FONT, { stroke: false }); uiBar('prep', 130, py + 20, W - 160, 12, fr, '#8a5a14', '#ffd76e');
+    const fr = Math.min(1, (INV.prep || 0) / prepNeed()), py = 410; plate(14, py, W - 28, 110, fr >= 1);
+    uiText(`资历 ${INV.prep || 0}/${prepNeed()}`, 30, py + 26, 14, UIC.gold2, 'left', FONT, { stroke: false }); uiBar('prep', 130, py + 20, W - 160, 12, fr, '#8a5a14', '#ffd76e');
     if (fr >= 1) pill(W / 2 - 70, py + 50, 140, 40, '晋阶', () => promote(), true); else pill(W / 2 - 70, py + 50, 140, 40, '去做军务', () => { screen = 'camp'; }, false); }
   if (t - RANKMSG.t0 < 3) { const a = Math.min(1, (3 - (t - RANKMSG.t0)) / .5); ctx.save(); ctx.globalAlpha = a; plate(30, 470, W - 60, 40, true); uiText(RANKMSG.text, W / 2, 490, fitSize(RANKMSG.text, 13, W - 80, 99, PLAIN), '#ffe39a', 'center', PLAIN, { lw: 3 }); ctx.restore(); }
   plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; }, false);
@@ -5632,7 +5632,7 @@ function drawMenu() {
     drawItemIcon(k, x, 43, 15); uiText(String(n || 0), x + 9, 43, 11, k === '体力' ? '#9be0a0' : UIC.cream, 'left', PLAIN, { stroke: false }); hov(x - 9, 33, 30, 20, ITEM_TIP[k]); });
   hov(12, 33, 34, 20, `战功星\n各关征战所得，共 ${stars} 颗`);
   hit(8, 10, 176, 22, () => { screen = 'rank'; });   // 点资料卡上的官阶进官阶页
-  if (nextRank() && INV.prep >= PREP_NEED) { const pu = .6 + .4 * Math.sin(t * 6); uiSeal(176, 14, 16, '升', UIC.red, true); ctx.save(); ctx.globalAlpha = pu; uiText('可晋阶', 176, 32, 9, '#ffe39a', 'center', PLAIN, { lw: 2 }); ctx.restore(); }
+  if (nextRank() && INV.prep >= prepNeed()) { const pu = .6 + .4 * Math.sin(t * 6); uiSeal(176, 14, 16, '升', UIC.red, true); ctx.save(); ctx.globalAlpha = pu; uiText('可晋阶', 176, 32, 9, '#ffe39a', 'center', PLAIN, { lw: 2 }); ctx.restore(); }
   hit(8, 10, 176, 46, () => { screen = 'camp'; CAMP.t0 = uiNow(); });
   // 当前目标卡：下一关、门槛还差什么、出征
   const ni = frontier(), lv = LEVELS[ni], duel = lv.kind === 'duel', cy0 = 440, cw = W - 20;

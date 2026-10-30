@@ -16,6 +16,7 @@ def wpn_cost(k):                        # 三人各升到 k 级合计
 MAT_NEED = {6: 2, 7: 2, 8: 3, 9: 3, 10: 4}   # 10-29 专属材料（三人各一种，这里合成一池）：每人每级要几份
 MAT_SRC_OPEN = 8                                # 三种材料最早的刷点第 3、5、7、8 关，过了第 8 关三种都能刷；每种一天最多 2 → 合计 6   # 10-29 用户「只改陨铁」：这一级谁先打造谁出一块
 SKILL = {'liu2': (9, 6), 'guan2': (11, 12), 'zhang2': (22, 18), 'liu3': (27, 18)}   # 门槛关、残页
+PREP_NEEDS = [20, 20, 36, 48, 52, 56]                                         # 10-29 用户「加码到 16 天」
 NODES = {5: 1, 10: 2, 15: 3, 20: 4, 25: 5, 30: 6}                                     # 打这关前要几阶
 ACH_NODE = {5: [3, 4], 10: [7, 9], 15: [12, 14], 20: [17, 19], 25: [22, 24], 30: [27, 29]}   # 每阶两项（三星／两星）：精铁 2、残页 1、资历 4
 FEATS = dict(资历=4 * 4, 残页=5 * 4, 陨铁=3, 专属=6 * 3)   # 10-29 六项功绩各给某人专属材料 3                                           # 十五项战功里给物品的部分
@@ -28,8 +29,11 @@ def run(feat_share=1.0, days=16, verbose=True):
     rank, wpn, skills, cleared = 0, 0, set(), 0
     log = []
     feat_left = {k: v * feat_share for k, v in FEATS.items()}
+    def cap():                                                                # 游戏里资历攒满这一阶就不再涨（addPrep）
+        if rank < len(PREP_NEEDS): inv['资历'] = min(inv['资历'], PREP_NEEDS[rank])
     for d in range(1, days + 1):
         for k, v in DAILY.items(): inv[k] += v
+        cap()
         fort += 2 * FORT_PER_VISIT; inv['残页'] += fort // FORT_FULL; fort %= FORT_FULL
         if d % 7 == 4 or d == 4: pass
         if d >= 4 and (d - 4) % 7 == 0: inv['将印'] += 1                         # 每周十道军务：每天三道，第四天满
@@ -42,7 +46,7 @@ def run(feat_share=1.0, days=16, verbose=True):
             nxt = cleared + 1
             if nxt > 30: break
             need_rank = max([r for lv, r in NODES.items() if lv <= nxt] or [0])
-            if rank < need_rank and inv['资历'] >= 20: inv['资历'] -= 20; rank += 1
+            if rank < len(PREP_NEEDS) and inv['资历'] >= PREP_NEEDS[rank]: inv['资历'] = 0; rank += 1   # 攒满就晋阶（游戏里不必等到节点关），晋阶后清零
             for sk, (lv, cost) in SKILL.items():
                 if sk not in skills and nxt >= lv and inv['残页'] >= cost: inv['残页'] -= cost; skills.add(sk)
             need_w = WIN_WPN.get(nxt, 0)
@@ -65,6 +69,7 @@ def run(feat_share=1.0, days=16, verbose=True):
                 if nxt in lvs and rank + 1 == list(NODES).index(lv) + 1: inv['精铁'] += 2; inv['残页'] += 1; inv['资历'] += 4
             if 5 <= nxt <= 25:
                 for k in feat_left: inv[k] += FEATS[k] * feat_share / 21
+            cap()
             for s in (5, 15, 30, 50, 75):
                 if (nxt - 1) * 2.3 < s <= nxt * 2.3: inv['残页'] += 5
         else: why = ''
