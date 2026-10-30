@@ -1291,6 +1291,7 @@ function step(dt) {
   stepParts(dt);
   if (G.shake > 0) G.shake -= dt;
   if (G.freeze > 0) { G.freeze -= dt; return; }
+  if (G.cart && G.cart.brkT != null) { G.cart.brkT += dt; if (G.cart.brkT >= RAM_BREAK_T) end(false, RU0().cart.lose || '冲车被毁'); return; }   // 冲车散架：战场停住演完再结算，特效、粒子、烟照常动（模拟推演不走这里）
   G.t += dt;
   while (G.tips.length && G.tips[0][0] <= G.t) G.tip = { text: G.tips.shift()[1], t0: G.t };
   while (G.joins.length && G.joins[0][0] <= G.t) {
@@ -1417,7 +1418,7 @@ function step(dt) {
   G.foes = G.foes.filter(e => !e.dead);
   // 胜负
   if (G.wall <= 0) { G.wall = 0; end(false); }
-  else if (G.cart && G.cart.hp <= 0 && !RU0().cart.optional) { G.cart.hp = 0; end(false, RU0().cart.lose || '车驾被毁'); }
+  else if (G.cart && G.cart.hp <= 0 && !RU0().cart.optional) { G.cart.hp = 0; if (G.cart.kind === 'ram' && !G.sim && ready(RAM.dead) && RAM.push.every(ready)) G.cart.brkT = 0; else end(false, RU0().cart.lose || '车驾被毁'); }
   else if (G.ally && G.ally.hp <= 0 && G.ally.must) { end(false, G.ally.name + '阵亡'); }
   else if (G.qi >= G.queue.length && G.foes.length && G.foes.every(e => FOES[e.kind].taunt || FOES[e.kind].invuln)) { for (const e of G.foes) routFoe(e, true); }   // 只剩叫阵的华雄、打不死的吕布：撤了
   else if (G.qi >= G.queue.length && !G.foes.length) { G.endT += dt; if (G.endT > 1.2) end(true); }
@@ -2312,7 +2313,7 @@ const PROPS = {}; IMG.props = new Image(); IMG.props.src = 'img/props.png' + BUS
 const CART_WALK = Array.from({ length: 8 }, (_, i) => { const im = new Image(); im.src = 'img/cart_blender_frames/' + String(i).padStart(2, '0') + '.png' + BUST; return im; });
 // 冲车（第 26 关）：10-29 用户嫌 Blender 版「太三D模型了」，换成 ChatGPT 画的 2D 冲车（Codex 用网格形变做成 8 帧推车）+ 一张被毁；车尾朝镜头、往远处推。
 // 撞门没有单独的帧：快到关门那段，整辆车隔一会儿往前一冲再退回（代码做）
-const RAM = { push: [], dead: new Image() };
+const RAM = { push: [], dead: new Image() }, RAM_BREAK_T = 1.6;
 for (let i = 0; i < 8; i++) { const im = new Image(); im.src = 'img/ram_2d/walk_' + String(i).padStart(2, '0') + '.png' + BUST; RAM.push.push(im); }
 RAM.dead.src = 'img/ram_2d/broken.png' + BUST;
 const hasProp = k => !!(PROPS[k] && ready(IMG.props));
@@ -2603,16 +2604,38 @@ function drawFieldThings() {
     txt(A.name, A.x, A.y - 82 * ps, 14, '#1f4f6e', 'center'); bar(A.x - 20, A.y - 72 * ps, 40, 4, A.hp / A.max, '#2f7a5a');
   }
 }
+// 冲车散架（10-29 用户：「你接手 codex 做到自然散架吧」）：Codex 的散架帧是推车图和残骸图交叉淡入（两张车型不一样，中间露馅），没用。改成：
+// 挨最后一下猛一抖、闪白 → 一团大尘烟（墨流层的烟）＋一小团火爆开、木片四溅 → 尘烟最浓时换成残骸，残骸先高、压扁、弹回（塌下来）→ 落地再起一圈尘 → 烟散后停在残骸上，再结算。
+// 推车的兵在烟里散了（残骸那张没有兵）
+function drawRamBreak(C, x, y, ps, S) {
+  const t = C.brkT, live = RAM.push[Math.floor((C.walk || 0) * 1.2) % 8], dead = RAM.dead;
+  if (!C.brk1) { C.brk1 = true; const cy = y - S * .45;
+    fbPlay('hit_gold', x, cy, 80 * ps, null, { delay: .04, glow: .4 }); punch(x, cy, .05);   // 只一小下金光（爆13 太大太红、还会闪第二下） G.shake = Math.max(G.shake || 0, .35);
+    burst('splinter', x, cy, 16, 300 * ps, { s: 5 * ps, life: 1.1, g: 520, drag: .7, c: '#8a5a2e' });
+    burst('dust', x, y - 6, 9, 100 * ps, { s: 12 * ps, life: 1.3, g: -14, drag: 1.7, c: '#a8916f' });
+    if (ML) for (let q = 0; q < 14; q++) ML.splat(x + VR(-34, 34) * ps, y - S * VR(.15, .75), VR(-90, 90), VR(-160, -40), VR(12, 18) * ps, [0, 0, VR(.55, .8), 0]); }
+  if (t > .32 && !C.brk2) { C.brk2 = true; burst('dust', x, y - 2, 7, 130 * ps, { s: 10 * ps, life: 1.1, g: -8, drag: 1.9, c: '#a8916f' });   // 塌到地上再起一圈尘
+    if (ML) for (let q = 0; q < 6; q++) ML.splat(x + VR(-44, 44) * ps, y - 4, VR(-120, 120), VR(-60, -20), VR(10, 14) * ps, [0, 0, .6, 0]); }
+  ctx.fillStyle = 'rgba(29,26,23,.22)'; ctx.beginPath(); ctx.ellipse(x, y + 2, 40 * ps, 8 * ps, 0, 0, 6.283); ctx.fill();
+  const fade = clamp((t - .1) / .2, 0, 1);                                                  // 0.1–0.3 秒：烟最浓时换成残骸
+  if (fade < 1 && ready(live)) { const j = t < .14 ? Math.sin(t * 95) * 3 * ps * (1 - t / .14) : 0;     // 最后一下：猛一抖、闪白
+    ctx.save(); ctx.globalAlpha = 1 - fade; ctx.drawImage(live, x - S / 2 + j, y + 4 - S * 367 / 384, S, S);
+    if (t < .16) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = (1 - fade) * .75 * (1 - t / .16); ctx.drawImage(live, x - S / 2 + j, y + 4 - S * 367 / 384, S, S); } ctx.restore(); }
+  if (fade > 0 && ready(dead)) { const u = clamp((t - .1) / .35, 0, 1), sy = u < .45 ? 1.14 - .26 * (u / .45) : u < .75 ? .88 + .16 * ((u - .45) / .3) : 1.04 - .04 * ((u - .75) / .25);   // 塌下来：先高、压扁、弹回
+    ctx.save(); ctx.globalAlpha = fade; ctx.translate(x, y + 4); ctx.scale(1 + (1 - sy) * .4, sy); ctx.drawImage(dead, -S / 2, -S * 334 / 384, S, S); ctx.restore(); }
+}
 function drawCart() {
   const C = G.cart; if (!C) return;
   const x = C.x, y = C.y;
   if (C.kind === 'ram' && RAM.push.every(ready)) {                               // Blender 冲车：越往远处越小；快到关门那一段换撞门动作，被毁换残骸
     const R0 = G.RU.cart, near = Math.abs(y - R0.y1) < 26, dead = C.hp <= 0, ps = persp(y) / .6, S = 96 * ps;
-    const im = dead ? RAM.dead : RAM.push[Math.floor((C.walk || 0) * 1.2) % 8];
+    if (dead && C.brkT == null && G.state === 'play') { const lv = RAM.push[Math.floor((C.walk || 0) * 1.2) % 8]; if (ready(lv)) ctx.drawImage(lv, x - S / 2, y + 4 - S * 367 / 384, S, S); return; }   // 血刚打空、下一帧才开始散架
+    if (dead) { if (C.brkT != null) drawRamBreak(C, x, y, ps, S); else if (ready(RAM.dead)) ctx.drawImage(RAM.dead, x - S / 2, y + 4 - S * 334 / 384, S, S); return; }
+    const im = RAM.push[Math.floor((C.walk || 0) * 1.2) % 8];
     const ph = near && !dead ? (G.t % .9) / .9 : 1, lunge = ph < .18 ? Math.sin(ph / .18 * Math.PI / 2) : ph < .5 ? 1 - (ph - .18) / .32 : 0;   // 撞门：猛冲 0.16 秒、慢慢退回
     const yy = y - lunge * 7 * ps;
     ctx.fillStyle = 'rgba(29,26,23,.22)'; ctx.beginPath(); ctx.ellipse(x, y + 2, 38 * ps, 8 * ps, 0, 0, 6.283); ctx.fill();
-    if (ready(im)) ctx.drawImage(im, x - S / 2, yy + 4 - S * (dead ? 334 : 367) / 384, S, S);       // 帧里脚底（被毁那张是车轮）落在第 367／334 行
+    if (ready(im)) ctx.drawImage(im, x - S / 2, yy + 4 - S * 367 / 384, S, S);       // 帧里脚底落在第 367 行（残骸那张车轮在 334）
     if (near && !dead && ph < .05 && !G.sim) fbPlay('hit_gold', x, yy - S * .7, 60 * ps, null, { glow: .5 });   // 撞到门那一下火星
     if (!dead) bar(x - 24 * ps, yy - S * .98, 48 * ps, 4, C.hp / C.max, CINNABAR); return;   // 血条在车顶上方
   }
@@ -2868,6 +2891,8 @@ function drawParts() {
       } else if (p.kind === 'shard') {                                 // 玉屑：小三角，深色细边
         ctx.fillStyle = p.c || JADE_HI; ctx.beginPath(); ctx.moveTo(s, 0); ctx.lineTo(-s * .6, s * .55); ctx.lineTo(-s * .35, -s * .6); ctx.closePath(); ctx.fill();
         ctx.strokeStyle = JADE_DK; ctx.lineWidth = .6; ctx.stroke();
+      } else if (p.kind === 'splinter') {                              // 木片：一根细长木条翻着飞，深色边
+        ctx.rotate(p.rot); ctx.fillStyle = p.c || '#8a5a2e'; ctx.fillRect(-s * 1.4, -s * .28, s * 2.8, s * .56); ctx.strokeStyle = '#3a2412'; ctx.lineWidth = .7; ctx.strokeRect(-s * 1.4, -s * .28, s * 2.8, s * .56);
       } else if (p.kind === 'dust') {                                  // 扬尘：一团慢慢胀开变淡
         ctx.globalAlpha = al * .42; ctx.fillStyle = p.c || '#a8937a'; const r = s * (1 + u * 1.6); ctx.beginPath(); ctx.ellipse(0, 0, r, r * .7, 0, 0, 6.283); ctx.fill();
       }
