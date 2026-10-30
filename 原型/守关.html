@@ -5373,8 +5373,8 @@ function drawResult() {
   ctx.save(); ctx.globalAlpha = la;   // 10-30 用户圈着斩敌、城防、用时那块牌：「其实没必要」——去掉，城防剩多少写在二星那行
   const sandSub = PREP && PREP.li === G.li && PREP.last ? `沙盘推演预计 ${PREP.last.stars.toFixed(1)} 星 · 实际 ${r.stars} 星` : null;
   const sub = sandSub || (r.first && G.lv.reward ? G.lv.reward : '');
-  { const gs = r.goals || [], gy = sub ? 298 : 278;   // 三颗星各一行：几颗星 + 条件，做到的金字，没做到的朱红带「未达成」（10-30 用户：「看不出来3颗星对应的哪个完成了，或者哪个没完成」；原来只写一行）
-    gs.forEach((g, k) => { const y = gy + k * 14, ln = g.text + (g.ok ? '' : ' · 未达成'), sz = fitSize(ln, 11, W - 60 - 44, 99, FONT, 3), x0 = 30 + 44;
+  { const gs = r.goals || [], gy = sub ? 312 : 292;   // 10-30 用户：「padding大一些，和上面的3星的margin也大一点」   // 三颗星各一行：几颗星 + 条件，做到的金字，没做到的朱红带「未达成」（10-30 用户：「看不出来3颗星对应的哪个完成了，或者哪个没完成」；原来只写一行）
+    gs.forEach((g, k) => { const y = gy + k * 18, ln = g.text + (g.ok ? '' : ' · 未达成'), sz = fitSize(ln, 12, W - 60 - 44, 99, FONT, 3), x0 = 30 + 44;
       for (let q = 0; q <= k; q++) uiStar(x0 - 8 - (k - q) * 13, y, 5.5, g.ok);
       uiText(ln, x0, y, sz, g.ok ? '#ffe08a' : '#ff8a6a', 'left', FONT, { lw: 3 }); }); }
   const lootR = !!(G.advLog || []).some(a => a.bad) && r.loot && r.loot.length;          // 军师认错占了下面那格时，战利品缩小放到这一行右边
@@ -5383,7 +5383,7 @@ function drawResult() {
     uiText(sub, cx + (first ? 8 : 0), 280, sz, sandSub || r.first ? UIC.gold2 : 'rgba(244,230,196,.6)', 'center', FONT, { lw: 3 }); }
   ctx.restore();
   // 出战武将一张张滑出来
-  const t1 = 1.05, gap = .22, ch = 44, y0 = 296 + 28 + (PREP && PREP.li === G.li && PREP.last || r.first && G.lv.reward ? 18 : 0), top = Math.max(0, ...gains.map(g => g.dmg));
+  const t1 = 1.05, gap = .22, ch = 44, y0 = 296 + 52 + (PREP && PREP.li === G.li && PREP.last || r.first && G.lv.reward ? 18 : 0), top = Math.max(0, ...gains.map(g => g.dmg));
   gains.forEach((g, k) => drawGainCard(g, 14, y0 + k * (ch + 4), W - 28, ch, t - (t1 + k * gap), win, top));
   // 下面一格：听了军师荐错的卡，军师自己认错（10-25 夜用户：「低智军师常常犯错……事后会以逗比方式告诉用户，这是军师的问题」）；没有就摆战利品
   const tb = t1 + gains.length * gap + (gains.length ? 1.4 : .2), ba = clamp((t - (tb - .4)) / .3, 0, 1), armed = t >= tb, al = ba * (armed ? 1 : .5);
