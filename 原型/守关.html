@@ -2184,9 +2184,10 @@ function renderScreen() {
   drawBg();
   { const mk = mapKey(G.lv.map); if (MAPL[mk] && !ready(IMG['bg_' + mk])) ctx.drawImage(MAPL[mk], 0, 0, W, H); }
   drawScorch();
-  for (const d of G.decals) { const a = .22 * clamp(1 - d.t / 30, 0, 1); if (a <= 0) continue; ctx.globalAlpha = a; const sz = 40 * d.s; ctx.drawImage(BLOTS[d.i], d.x - sz / 2, d.y - sz * .35, sz, sz * .7); }
+  for (const d of G.decals) { const a = .22 * clamp(1 - d.t / 14, 0, 1); if (a <= 0) continue;   /* 10-30 手机卡：血迹 30 → 14 秒淡完，满场时每帧从约 140 张降到几十张 */ ctx.globalAlpha = a; const sz = 40 * d.s; ctx.drawImage(BLOTS[d.i], d.x - sz / 2, d.y - sz * .35, sz, sz * .7); }
   ctx.globalAlpha = 1;
   if (G.st.jum) drawJum();
+  if (G.st.trip) drawBanma();
   for (const L of G.logs) drawLog(L);
   drawHuts();
   drawDim();
@@ -2367,7 +2368,7 @@ const MOVE_ANIM = { heavy: ['heavy'], combo: ['combo', 'heavy'], rush: ['rush', 
 // 这一关拿到的军械、城防战法（滚木、连弩、拒马、绊马索、破阵弩……）和自动的赤帻、火把、举盾。画在敌人底下，敌人走过来会盖住它们；用掉了（滚木、连弩一关一次）变灰
 function drawWallProps() {
   const items = []; G.propRects = [];
-  for (const p of PERKS) if (G.perks[p.id] && !p.gen && !p.combo && ready(IMG['ui_ico_' + p.id])) items.push({ im: IMG['ui_ico_' + p.id], n: G.perks[p.id], used: (p.id === 'log' && G.logUsed) || (p.id === 'nu' && G.nuUsed), name: p.name, desc: p.desc });
+  for (const p of PERKS) if (G.perks[p.id] && !p.gen && !p.combo && p.id !== 'banma' && ready(IMG['ui_ico_' + p.id])) items.push({ im: IMG['ui_ico_' + p.id], n: G.perks[p.id], used: (p.id === 'log' && G.logUsed) || (p.id === 'nu' && G.nuUsed), name: p.name, desc: p.desc });
   if (G.st.logs > 0 && !G.perks.log && ready(IMG.ui_ico_log)) items.push({ im: IMG.ui_ico_log, n: G.st.logs, used: G.logUsed, name: '滚木', desc: '敌人挤成一堆时自己滚下去，那一列碾平（一关一次）' });   // 关卡送的（第一关开局送一层滚木）
   if (G.st.nu > 0 && !G.perks.nu && ready(IMG.ui_ico_nu)) items.push({ im: IMG.ui_ico_nu, n: G.st.nu, used: G.nuUsed, name: '连弩', desc: '敌人最密时自己放，一列万箭齐发（一关一次）' });
   if (G.RU.night) items.push({ im: IMG.ui_ico_fire, n: G.lightN, used: G.lightN <= 0, name: '火把', desc: '自己插到敌人多的地方，照亮一片 20 秒' });
@@ -2518,6 +2519,9 @@ function drawProp(k, x, y, w, alpha = 1, rot = 0) {
   const r = PROPS[k], h = w * r[3] / r[2];
   ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(rot); ctx.drawImage(IMG.props, r[0], r[1], r[2], r[3], -w / 2, -h, w, h); ctx.restore(); ctx.globalAlpha = 1;
 }
+// 10-30 用户：「马绳要放在关前啊」——绊马索画在骑兵绊倒的那条线上（离城 130），原来只在城垛上一个小图标
+function drawBanma() { const im = IMG.ui_ico_banma; if (!ready(im)) return; const y = WALL_Y - 122, ps = persp(y), w = 140 * ps, h = w * im.height / im.width;
+  ctx.save(); ctx.globalAlpha = .95; for (let k = 0; k < 4; k++) { const x = W * (k + .5) / 4; ctx.drawImage(im, x - w / 2, y - h * .8, w, h); } ctx.restore(); }
 function drawJum() {
   if (hasProp('jum')) { for (let x = 4; x < W + 40; x += 46) drawProp('jum', x, WALL_Y - 50, 52); return; }
   const y = WALL_Y - 64;
