@@ -1026,7 +1026,7 @@ let ML = null;
 // 换成第二层墨流（黑墨调色，和青龙斩的青金墨分开）画在敌人后面：从他身上往外、往上冒一缕缕墨烟，约一秒淡掉
 let MLB = null;
 function startLevel(i) {
-  if (ML) ML.clear(); if (MLB) MLB.clear();
+  sheetPrune(i); if (ML) ML.clear(); if (MLB) MLB.clear();
   const lv = LEVELS[i], RU = lv.rules || {};
   rnd = mulberry(lv.id * 7919 + (window.__sg.seed || 0));
   const queue = buildQueue(lv), chg = {}; for (const it of queue) if (it.ch != null) (chg[it.ch] ??= { total: 0, n: 0, last: 0, state: 'mark' }).total++;
@@ -1225,7 +1225,7 @@ function availPerks() {
   return PERKS.filter(p => !p.trap && (G.perks[p.id] || 0) < p.max && !(p.id === 'log' && G.logUsed) && !(p.id === 'nu' && G.nuUsed) && (!p.gift || G.perks[p.id]) && (!p.gen || has(p.gen)) && (!p.combo || p.combo.every(has)) && (!p.sk || p.sk.every(knows)) && (!p.anySk || G.order.some(id => id && knows(id))) && unlocked(p) && (p.id !== 'mend' || G.wall < G.wallMax * .8));
 }
 function choose3() {
-  const out = [], heroes = (G.fighters || []).filter(id => SKILLS[id] && G.act && G.act[id] && (G.shi[id] || 0) < SHI_MAX), ok = availPerks();
+  const out = [], heroes = (G.fighters || []).filter(id => SKILLS[id] && G.act && G.act[id] && knows(id) && (G.shi[id] || 0) < SHI_MAX), ok = availPerks();   // 10-30 用户：「确保没学到技能时，不要出现该技能的军功」——还没学会招的人不出势卡
   const gear = ok.filter(p => GEAR.includes(p.id)), cc = G.lv.id >= UNC_FROM ? gear.filter(p => COUNTER_OF[p.id] && traitOpen(COUNTER_OF[p.id])) : [];
   const mendNow = G.wall < G.wallMax * .5 && gear.find(p => p.id === 'mend');
   const trap = PERKS.find(p => p.trap), zj = counselNow()[0] === 'zoujing' && (G.perks[trap.id] || 0) < trap.max;
@@ -2058,7 +2058,7 @@ function drawAmbushBtn() {
   hit(bx - r, by - r, r * 2, r * 2 + 18, fireAmbush);
 }
 function end(win, why) {
-  G.state = 'over'; sfx(win ? 'win' : 'lose');
+  G.state = 'over'; sfx(win ? 'win' : 'lose'); const achOk0 = G.sim ? null : new Set(achList().filter(a => a.ok).map(a => a.id));   // 这局之前已达成的功绩（结算页只报新达成的）
   const frac = Math.min(G.wall / G.wallMax, G.cart && !G.RU.cart.optional ? G.cart.hp / G.cart.max : 1);
   let stars = win ? 1 + (frac >= .5) : 0; const s3 = star3(G.lv, G.amb), ok3 = win && !!s3.check({ win, frac }, G);
   if (stars === 2 && ok3) stars = 3;   // 三星：这关自己的条件（star3）
@@ -2070,6 +2070,7 @@ function end(win, why) {
   if (win && !G.sim) { BEST[G.lv.id] = Math.max(BEST[G.lv.id] || 0, stars); saveBest(); }
   if (!G.sim && G.cnt) { INV.comboSeen = INV.comboSeen || {}; for (const k of ['cYun', 'cHeng', 'cHe', 'cShuang', 'cRen', 'cTao']) if (G.cnt[k]) INV.comboSeen[k] = 1; saveInv(); }   // 10-29：六个连携跨局累计，输了的那局打出来的也算，当场存盘
   G.feats = win && G.cnt ? featCheck(stars) : []; if (!G.sim && G.feats.length) { INV.feat = INV.feat || {}; for (const f of G.feats) INV.feat[f] = 1; saveInv(); }
+  if (!G.sim) G.result.ach = achList().filter(a => a.ok && !a.got && !achOk0.has(a.id)).map(a => a.sec === '首通' ? '首通 · ' + a.name : a.name);   // 10-30 用户：「结算时如果完成任何功绩，都在结算页提示」
   if (!G.sim) { awardExp(win, stars); settleLoot(win); G.fx = G.fx.filter(f => !['wave', 'banner', 'txt', 'leak'].includes(f.k)); }   // 战场上的横幅、飘字别透过结算页露出来
 }
 // 结算经验（10-25）：出战的每人拿全份，升级时记下五维涨了几点（显示整数，涨过整数线才算涨 1）
@@ -2186,7 +2187,7 @@ function renderScreen() {
   else for (const f of G.fx) { if (f.k === 'hdl') drawHdlTop(f); else if (f.k === 'dragon') drawDragon(f); }
   for (const f of G.fx) if (f.k === 'cutin') drawCutIn(f);   // 黄天当立：光带、光瓣、飘带
   drawShards();
-  if (ML) { const dt = clamp((G.vt || 0) - (ML.vt0 ?? (G.vt || 0)), 0, 1 / 20); ML.vt0 = G.vt || 0; ML.step(dt); if (ML.render(cv.width, cv.height)) ctx.drawImage(ML.canvas, 0, 0, W, H); ML.drawParts(ctx); }
+  if (ML) { const dt = clamp((G.vt || 0) - (ML.vt0 ?? (G.vt || 0)), 0, 1 / 20); ML.vt0 = G.vt || 0; ML.step(dt); if (ML.render(Math.ceil(cv.width / 2), Math.ceil(cv.height / 2))) ctx.drawImage(ML.canvas, 0, 0, W, H); ML.drawParts(ctx); }   // 10-30 卡顿：墨流半分辨率渲染（烟火本来就糊，像素少四分之三）
   drawWash();
   for (const f of G.fx) drawFx(f);
   drawNums();
@@ -2268,6 +2269,19 @@ function makeCleanGuanIdle(image, sheet) {
 }
 
 let GUAN_IDLE_CLEAN;
+// 10-30 用户：「玩到第三关似乎有些卡？」——桌面实测：图集一张三千多像素、解码后二三十 MB，几张轮流挤显存，被挤掉的下次画要重新上传（单次 20–50 毫秒）；
+// 调色（ctx.filter）还要每画一次滤整张。改成：这一关第一次画到的图集，按屏幕上实际要的大小缩小（小兵四成左右、敌将七成），连调色一起画进一张小画布，之后都贴它；
+// 换关时把上一关没用到的放掉。只管画面
+const SHEET_PX = {}; for (const T of Object.values(FOES)) for (const k of [T.sheet, T.alt, T.sheet && T.sheet + '_back']) if (k) SHEET_PX[k] = Math.max(SHEET_PX[k] || 0, T.sh * 3.2);   // 显示最大约 sh × 透视 1.3 × 两倍屏，再留点余量
+const SHEET_C = {}; let SHEET_LV = -1;
+function sheetImg(name) {
+  const f = ctx.filter && ctx.filter !== 'none' ? ctx.filter : '', key = name + '|' + f, e = SHEET_C[key]; if (e) { e.lv = SHEET_LV; return e; }
+  const im = IMG[name], S0 = SHEETS[name]; if (!ready(im)) return { c: im, s: 1 };
+  const s = SHEET_PX[name] && S0 && S0.stand ? clamp(SHEET_PX[name] / S0.stand, .3, 1) : 1, w = Math.ceil((im.naturalWidth || im.width) * s), h = Math.ceil((im.naturalHeight || im.height) * s);
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; if (f) g.filter = f; g.drawImage(im, 0, 0, w, h);
+  return SHEET_C[key] = { c, s, lv: SHEET_LV };
+}
+function sheetPrune(li) { for (const [k, e] of Object.entries(SHEET_C)) if (e.lv !== SHEET_LV) { e.c.width = e.c.height = 0; delete SHEET_C[k]; } SHEET_LV = li; }
 function drawSheet(name, anim, f, x, y, k, alpha = 1) {
   const S = SHEETS[name], A = S.anims[anim], r = A.rects[clamp(Math.floor(f), 0, A.rects.length - 1)];
   // 原图待机的灰色横线是在透明图集里，先缓存清理后的每一帧，保留原动作。
@@ -2276,7 +2290,8 @@ function drawSheet(name, anim, f, x, y, k, alpha = 1) {
     const clean = GUAN_IDLE_CLEAN && GUAN_IDLE_CLEAN[clamp(Math.floor(f), 0, A.rects.length - 1)];
     if (clean) { ctx.globalAlpha = alpha; ctx.drawImage(clean, x - A.anchor[0] * k, y - A.anchor[1] * k, r[2] * k, r[3] * k); ctx.globalAlpha = 1; return; }
   }
-  ctx.globalAlpha = alpha; ctx.drawImage(IMG[name], r[0], r[1], r[2], r[3], x - A.anchor[0] * k, y - A.anchor[1] * k, r[2] * k, r[3] * k); ctx.globalAlpha = 1;
+  const f0 = ctx.filter, { c: im, s: q } = sheetImg(name); ctx.filter = 'none';
+  ctx.globalAlpha = alpha; ctx.drawImage(im, r[0] * q, r[1] * q, r[2] * q, r[3] * q, x - A.anchor[0] * k, y - A.anchor[1] * k, r[2] * k, r[3] * k); ctx.globalAlpha = 1; ctx.filter = f0;
 }
 // 专属图集还没做的兵种先借一张（alt）：张角借术士（同是黄袍道士），骑兵借黄巾兵
 const sheetOf = T => [T.sheet, T.alt].find(k => k && SHEETS[k] && ready(IMG[k]));
@@ -2305,7 +2320,7 @@ function drawAura(fs) {
       const a = VR(0, 6.283), px = e.x + Math.cos(a) * h * VR(.3, .42), py = cy + Math.sin(a) * h * VR(.42, .5);                  // 身子外沿外面一点往外、往上冒（墨画在他后面，冒在身子里的看不见）
       MLB.splat(px, py, Math.cos(a) * h * VR(.6, 1.2), Math.sin(a) * h * .3 - h * VR(.4, .8), h * VR(.05, .08), [VR(1.8, 2.8), 0, 0, 0]); }   // 都按他画出来多高算，远近一样
   }
-  MLB.step(dt); if (MLB.render(cv.width, cv.height)) ctx.drawImage(MLB.canvas, 0, 0, W, H);
+  MLB.step(dt); if (MLB.render(Math.ceil(cv.width / 2), Math.ceil(cv.height / 2))) ctx.drawImage(MLB.canvas, 0, 0, W, H);
 }
 function drawCorpse(f) {
   const T = FOES[f.kind]; if (!hasSheet(T)) return;
@@ -2504,9 +2519,7 @@ const BURST = { jade: ['#bff7de', '#3fae9e', '#f2c14e'], fire: ['#ffe2a8', '#e05
 function hitBurst(x, y, prof, size, delay = 0, n = 4) {   // 10-30 改名：原来和下面粒子版的 burst 同名，被它盖掉，命中炸开从没生效过
   if (!G || G.sim) return; const born = (G.vt || 0) + delay, C = BURST[prof] || BURST.gold; (G.shards = G.shards || []).push({ k: 'flash', x, y, size: size * .9, born, life: .14, c: C[0] });
   G.hbLog = (G.hbLog || []).filter(v => born - v < .15); if (G.hbLog.length >= 4) return; G.hbLog.push(born);   // 10-30 限流：0.15 秒内最多 4 个完整爆点，多的只闪一下（修好后关羽刀气一扫同屏爆十几个）
-  fbPlay('hit_' + prof, x, y, size, null, { delay, glow: .45 });
-  for (let i = 0; i < n; i++) { const a = VR(0, 6.283), sp = VR(140, 260) * size / 50; G.shards.push({ k: 'shard', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60, rot: a, spin: VR(-14, 14), s: VR(3.5, 6) * size / 50, born, life: VR(.32, .5), c: C[1 + (i % 2)] }); }
-  if (G.shards.length > 90) G.shards.splice(0, G.shards.length - 90);
+  if (G.shards.length > 90) G.shards.splice(0, G.shards.length - 90);   // 10-30 用户：「打到敌人身上时，其实不需要那个小烟花，一律去掉」——爆花帧动画和迸出的碎片去掉，只留一下闪光
 }
 // ---------- 敌将重招的大范围华彩（10-27 用户：「敌人的首领将领的法术还不够绚丽，要范围很大，绚丽」） ----------
 // 主体都是 GPT 画稿（刀风 blade、刀气 dao2、火矛 spear，按每员敌将的颜色重新上色），配真流体（墨流层的火、烟）和爆13 帧动画；
@@ -2666,7 +2679,9 @@ function drawShards() {
   ctx.globalAlpha = 1;
 }
 // 播一段：size 是一帧画多大；ang 是要它朝哪个方向（画里的「朝前」转过去），不给就随便转；glow 是再用「变亮」叠一遍的强度（压暗时更亮）
+const FB_OFF = /^(hit_|bao$)/;                                                      // 10-30 用户：命中的小烟花一律去掉——命中爆花（hit_*）和爆13（bao）不再放
 function fbPlay(k, x, y, size, ang, o = {}) {
+  if (FB_OFF.test(k)) return true;
   if (!G || G.sim || !hasFb(k)) return false; const M = FBM[k];
   (G.fbs = G.fbs || []).push({ k, x, y, size, rot: ang == null ? (o.rot ?? VR(0, 6.283)) : ang - M.fwd, born: (G.vt || 0) + (o.delay || 0), dur: o.dur || M.dur, alpha: o.alpha ?? 1, glow: o.glow ?? .3, flip: o.flip ? -1 : 1 });
   return true;
@@ -5368,6 +5383,13 @@ function drawResult() {
       drawCounselSay(blame.ck, COUNSEL[blame.ck], blame.text, by - 4, 1, blame.retort); ctx.restore(); }
     by += 70; if (ents.length) drawLoot(26, W - 22 - (ents.length - 1) * 17, 320); }
   else if (ents.length) { drawLoot(40, W / 2, by + 22); by += 50; }
+  const AC = r.ach || [];                                                               // 10-30 这局新达成的功绩：盖「功」印、写几项，下一行列名字（在战利品下、按钮上）
+  if (AC.length) { const u = clamp((t - (tb - .2)) / .3, 0, 1), yb0 = H - 52; if (u > 0) { const two = by + 40 <= yb0 - 4, ay = Math.min(by + 14, yb0 - (two ? 34 : 14));
+      const head = `达成功绩 ${AC.length} 项 · 去功绩簿领奖`, names = AC.join('、'); ctx.save(); ctx.globalAlpha = u; ctx.translate(0, (1 - ease(u)) * 12);
+      if (two) { ctx.font = `13px ${FONT}`; const hw = ctx.measureText(head).width; uiSeal(W / 2 - hw / 2 - 6, ay, 18, '功', UIC.red); uiText(head, W / 2 + 8, ay, 13, '#ffe08a', 'center', FONT, { lw: 3, glow: 'rgba(255,200,90,.6)', glowR: 8 });
+        uiText(names, W / 2, ay + 20, fitSize(names, 12, W - 40, 99, PLAIN, 3), UIC.cream, 'center', PLAIN, { lw: 3 }); }
+      else { const one = `达成功绩：${names}`, fz = fitSize(one, 12, W - 70, 99, FONT, 3); ctx.font = `${fz}px ${FONT}`; const ow = ctx.measureText(one).width; uiSeal(W / 2 - ow / 2 - 4, ay, 16, '功', UIC.red); uiText(one, W / 2 + 8, ay, fz, '#ffe08a', 'center', FONT, { lw: 3 }); }
+      ctx.restore(); } }
   // 牌匾按钮一排放在最下面：经验条涨完才能点
   const go = fn => () => { const k = r.story; if (k && !storySeen(k)) { G = null; playStory(k, fn); } else fn(); };   // 有剧情先演完再去
   const back = go(() => { screen = 'levels'; G = null; }), yb = H - 52;
@@ -6323,7 +6345,7 @@ function bgMirror() { const wide = innerWidth > W * S + 2; if (BGV.style.display
 function boot() { fit(); addEventListener('resize', fit); if (new URLSearchParams(location.search).has('story')) playStory('open', () => { screen = 'menu'; }, true);   /* 网址带 ?story：直接从序章开始翻看第一章全部剧情（10-26 用户：「你专门开个故事我看看，可以来回翻动的」） */
   requestAnimationFrame(frame); }
 function fit() {
-  S = Math.min(innerWidth / W, innerHeight / H) || 1; if (S <= 0) S = 1; const dpr = Math.min(3, devicePixelRatio || 1); RS = S * dpr;
+  S = Math.min(innerWidth / W, innerHeight / H) || 1; if (S <= 0) S = 1; const dpr = Math.min(2, devicePixelRatio || 1); RS = S * dpr;   // 10-30 上限 3 → 2：三倍屏手机像素少一半多，看不出差别
   cv.width = Math.round(W * RS); cv.height = Math.round(H * RS); cv.style.width = W * S + 'px'; cv.style.height = H * S + 'px';
   cv.style.marginTop = Math.max(0, (innerHeight - H * S) / 2) + 'px'; bakeAll(); spxInit();
   if (ML === null && window.Moliu) ML = Moliu.create({ W, H, pw: cv.width, ph: cv.height }) || false;
