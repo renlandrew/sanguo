@@ -1599,6 +1599,7 @@ function stepDuel(e, dt) {
     e.mv = { k, t: 0, dur, uns, bot: hv && !uns ? dur - .35 : -1 };   // 10-28 用户：「同时喝断和举盾我觉得比较难控制，举盾是自动如何？」——普通重招一律自动举盾挡下；无双挡不住，只能一喝喝断
     e.castT = dur; if (k === 'heavy' && ULT_FOE.has(e.kind)) playUlt(e.kind, true); if (uns) teach('uns');
     G.fx.push({ k: hv ? 'warn' : 'txt', t: 0, x: e.x, y: e.y - 100, text: uns ? '无双·喝断它' : NM[k] || k, size: 24, color: hv ? CINNABAR : INK, dur, boss: e.kind });
+    if (k === 'summon' && e.kind === 'zhangjiao' && !G.sim) { G.fx.push({ k: 'hdl', t: 0, dur: 2.6, x: e.x, y: e.y - 6, seed: VR(0, 1) }); G.shake = Math.max(G.shake || 0, .15); punch(e.x, e.y - 20, .04); }   // 黄天当立：天裂旋涡（10-29）
     if (hv && e.kind === 'zhangjiao') { spPlay('sigil_purple', e.x, e.y + 4, 230, { ground: true, sy: .42, fps: 20 }); spPlay('arcs', e.x, -40, 150, { follow: e, fps: 20 }); }   /* 张角蓄天雷：脚下紫色符文法阵、手上电弧（魔兽风，Veo） */
   }
 }
@@ -2101,6 +2102,7 @@ function renderScreen() {
   drawDim();
   drawGroundFx(); drawSpfx(true);
   spxPass('ground');
+  for (const f of G.fx) if (f.k === 'hdl') { if (!SPX.ok || !SPX.vortexP) drawHdlFallback(f); drawHdlBits(f); }
   for (const f of G.fx) if (f.k === 'corpse') drawCorpse(f);
   const fs = G.foes.slice().sort((a, b) => a.y - b.y);
   drawAura(fs);
@@ -3309,6 +3311,28 @@ const FS_FLARE = `precision mediump float; uniform sampler2D uAtlas; varying vec
 void main(){ float a = texture2D(uAtlas, vUv).a * vCol.a; vec3 c = mix(vCol.rgb, vec3(1.), vExt.y * a * a); gl_FragColor = vec4(c * a, a * vExt.x); }`;
 const FS_PAINT = `precision mediump float; uniform sampler2D uAtlas; varying vec2 vUv; varying vec4 vCol; varying vec2 vExt;
 void main(){ vec4 t = texture2D(uAtlas, vUv); float a = t.a * vCol.a; gl_FragColor = vec4(t.rgb * vCol.rgb * a * (1. + vExt.y), a * vExt.x); }`;
+// 张角「黄天当立」的天裂旋涡（10-29 用户发了一张黑洞特效图：「先给张角的『黄天当立』做一版我看看」）：
+// 暗核 + 一圈被噪声打碎的亮环（不画工整圆环）+ 转着往里卷的土黄云盘 + 外圈散雾；斜躺的椭圆（uSq 压扁）。只用土黄一个主色，亮处发白。
+// WebGL1 写法（以后搬 App、小游戏都能跑）；uOpen 管裂开／合拢，uFlash 管落雷时亮环一闪
+const FS_VORTEX = `precision mediump float; varying vec2 vUv;
+uniform sampler2D uNoise; uniform vec2 uC, uR; uniform float uT, uOpen, uFade, uFlash, uSeed;
+void main(){
+  vec2 p = (vUv - .5) * 2.8; p /= max(uOpen, .02);
+  float r = length(p), a = atan(p.y, p.x);
+  float sw = a + uT * 1.4 + 1.9 / (r + .3);
+  float n = texture2D(uNoise, vec2(sw * .4774 + uSeed, r * .9 - uT * .35)).r;
+  float n2 = texture2D(uNoise, vec2(sw * .955 - uT * .1, r * 2.3 + uSeed)).g;
+  float disk = smoothstep(1.25, .55, r) * smoothstep(.22, .42, r);
+  float streak = .35 + .9 * smoothstep(.35, .75, n) + .35 * n2;
+  float rw = .06 + .05 * n2, ring = exp(-pow((r - .36 - (n - .5) * .08) / rw, 2.)) * (.55 + .75 * n);
+  float core = 1. - smoothstep(.2, .34, r);
+  float mist = smoothstep(1.6, .9, r) * (1. - disk) * n * .45;
+  vec3 dark = vec3(.10, .06, .02), earth = vec3(.42, .26, .08), gold = vec3(.93, .70, .28), hot = vec3(1., .96, .82);
+  vec3 c = mix(earth, gold, clamp(n * 1.2 - r * .3, 0., 1.)) * disk * streak + hot * ring * (1. + 1.6 * uFlash) + gold * mist;
+  float al = clamp(disk * streak * .85 + ring + mist, 0., 1.);
+  c = mix(c, dark, core); al = max(al, core * .9);
+  al *= uFade; gl_FragColor = vec4(c * al, al);
+}`;
 // 画稿（10-25 用户：「需要的话就先用gpt 画剑气刀气」）：ChatGPT 在黑底上画的刀气、剑气、矛气，工具/vfx/cut_paint.py 转成光；没有时用光带
 const PAINT = {}; fetch('img/fx_paint.json' + BUST).then(r => r.json()).then(j => Object.assign(PAINT, j)).catch(() => {});
 function spxInit() {
@@ -3325,6 +3349,7 @@ function spxInit() {
   SPX.fa = loc(SPX.flareP, ['aPos', 'aUv', 'aCol', 'aExt'], 'a');
   SPX.fu = loc(SPX.flareP, ['uView', 'uAtlas']);
   SPX.pa = loc(SPX.paintP, ['aPos', 'aUv', 'aCol', 'aExt'], 'a'); SPX.pu = loc(SPX.paintP, ['uView', 'uAtlas']);
+  try { SPX.vortexP = prog(VS_SWEEP, FS_VORTEX); SPX.vu = loc(SPX.vortexP, ['uView', 'uNoise', 'uC', 'uR', 'uT', 'uOpen', 'uFade', 'uFlash', 'uSeed']); SPX.va = loc(SPX.vortexP, ['aPos', 'aUv'], 'a'); } catch (e) { console.error('旋涡着色器', e); SPX.vortexP = null; }   // 旋涡坏了只少这一个，别的照常
   { const im = new Image(); im.onload = () => { SPX.tex.paint = spxTex(im, false); }; im.src = 'img/fx_paint.png' + BUST; }
   SPX.buf = gl.createBuffer();
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -3428,6 +3453,30 @@ function spxDraw(b, t) {
   gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uDissolve, dissolve); gl.uniform1f(U.uAlpha, alpha); gl.uniform1f(U.uIntensity, inten); gl.uniform1f(U.uGlow, glow); gl.uniform1f(U.uHead, head);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, n * 2);
 }
+// 黄天当立的节奏（f.dur 2.6 秒）：0–0.5 裂开（带回弹）、转着往里卷、0.8 张角施法落成那一下亮环一闪（召来的黄巾落地）、2.0–2.6 合拢消失
+const HDL_RX = 200, HDL_SQ = .36;   // 平躺在张角身后的地上（像参考图悬在地面上），召来的黄巾从里面涌出
+function hdlState(f) { const t = f.t, open = t < .5 ? 1 - Math.pow(1 - t / .5, 3) * Math.cos(t / .5 * 2.2) : t > 2 ? Math.max(0, 1 - (t - 2) / .6) : 1;
+  return { open: Math.max(.02, open), fade: t > 2.3 ? Math.max(0, 1 - (t - 2.3) / .3) : 1, flash: Math.exp(-Math.pow((t - .8) / .08, 2)) + .6 * Math.exp(-Math.pow((t - 1.5) / .07, 2)) }; }
+function spxVortex(f) {
+  const gl = SPX.gl, S = hdlState(f), rx = HDL_RX, ry = HDL_RX * HDL_SQ, x0 = f.x - rx, x1 = f.x + rx, y0 = f.y - ry, y1 = f.y + ry;
+  gl.useProgram(SPX.vortexP); gl.uniform2f(SPX.vu.uView, W, H);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, SPX.tex.noise); gl.uniform1i(SPX.vu.uNoise, 1);
+  gl.uniform1f(SPX.vu.uT, f.t * (1 + .6 * Math.min(1, f.t))); gl.uniform1f(SPX.vu.uOpen, S.open); gl.uniform1f(SPX.vu.uFade, S.fade); gl.uniform1f(SPX.vu.uFlash, S.flash); gl.uniform1f(SPX.vu.uSeed, f.seed);
+  gl.bindBuffer(gl.ARRAY_BUFFER, SPX.buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x0, y0, 0, 0, x1, y0, 1, 0, x0, y1, 0, 1, x1, y1, 1, 1]), gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(SPX.va.aPos); gl.vertexAttribPointer(SPX.va.aPos, 2, gl.FLOAT, false, 16, 0); gl.enableVertexAttribArray(SPX.va.aUv); gl.vertexAttribPointer(SPX.va.aUv, 2, gl.FLOAT, false, 16, 8);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.useProgram(SPX.sweep); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, SPX.tex.matter);   // 还原给后面的光带
+}
+function drawHdlFallback(f) {                                                  // 没有 WebGL 时：一团暗核加土黄光晕
+  const S = hdlState(f), rx = HDL_RX * S.open, ry = rx * HDL_SQ; if (rx < 2) return; ctx.save(); ctx.globalAlpha = S.fade; ctx.translate(f.x, f.y); ctx.scale(1, HDL_SQ);
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx); g.addColorStop(0, 'rgba(26,14,4,.9)'); g.addColorStop(.28, 'rgba(26,14,4,.85)'); g.addColorStop(.36, `rgba(255,240,200,${.8 + .2 * S.flash})`); g.addColorStop(.6, 'rgba(220,160,60,.5)'); g.addColorStop(1, 'rgba(120,80,20,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx, 0, 6.283); ctx.fill(); ctx.restore(); }
+function drawHdlBits(f) {                                                      // 被卷进去的黄符纸：少而大，转着往中心缩
+  const S = hdlState(f); if (f.t > 2.2) return; f.bits = f.bits || Array.from({ length: 7 }, (_, k) => ({ a: k / 7 * 6.283 + VR(-.3, .3), r0: VR(1.05, 1.5), sp: VR(.8, 1.3), d: VR(0, .5), rot: VR(0, 6.28) }));
+  for (const b of f.bits) { const u = clamp((f.t - b.d) / 1.6, 0, 1); if (u <= 0 || u >= 1) continue; const r = b.r0 * (1 - u * u) * HDL_RX * S.open, a = b.a + u * 4 * b.sp;
+    const x = f.x + Math.cos(a) * r, y = f.y + Math.sin(a) * r * HDL_SQ, sz = 9 * (1 - u * .6);
+    ctx.save(); ctx.globalAlpha = S.fade * (u < .15 ? u / .15 : 1); ctx.translate(x, y); ctx.rotate(b.rot + u * 9); ctx.fillStyle = '#e9c860'; ctx.fillRect(-sz * .35, -sz, sz * .7, sz * 2); ctx.fillStyle = '#a8301f'; ctx.fillRect(-sz * .12, -sz * .7, sz * .24, sz * 1.2); ctx.restore(); }
+}
 function spxPass(layer) {
   if (!SPX.ok || !G) return;
   const gl = SPX.gl, vt = G.vt || 0;
@@ -3437,6 +3486,7 @@ function spxPass(layer) {
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, SPX.tex.noise); gl.uniform1i(SPX.su.uNoise, 1); gl.uniform1i(SPX.su.uRamp, 2);
   let drew = 0;
   for (const b of SPX.bodies) { if (b.burst || b.paint || b.layer !== layer) continue; const t = vt - b.born; if (t < 0) continue; spxDraw(b, t); drew++; }
+  if (layer === 'ground' && SPX.vortexP) for (const f of G.fx) if (f.k === 'hdl') { spxVortex(f); drew++; }   // 黄天当立的天裂旋涡（在敌将身后）
   for (const b of SPX.bodies) {                                                  // 有生命的画稿：撑开（带回弹）、从后面掠到前面、淡掉
     if (!b.paint || b.layer !== layer) continue; const t = vt - b.born; if (t < 0) continue; const u = t / b.life, e = 1 - Math.pow(1 - Math.min(1, u * 2.5), 3);
     const sc = b.pop + (1.06 - b.pop) * e - .06 * clamp((u - .4) / .6, 0, 1), a = u < .5 ? 1 : 1 - (u - .5) / .5;
