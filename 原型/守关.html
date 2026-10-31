@@ -325,7 +325,7 @@ const statOf = (id, lv) => GROW[id].base.map((b, k) => Math.min(100, b + GROW[id
 const needLv = lv => 40 + 20 * lv;                                                  // 从 lv 升到 lv+1 要的经验
 // 一关的经验：出战的每人都拿全份（不平分）；赢了按星数 0.75/1/1.25 倍，首通再 ×1.5；输了也给三成。
 // 照每关首通两星算，差不多一关升一级，第一章打完约 25 级（推荐等级表见 第一章设定.md）
-const expGain = (lv, win, stars, first) => Math.round((40 + 8 * lv.id) * (win ? (.5 + .25 * stars) * (first ? 1.5 : 1) : .3));
+const expGain = (lv, win, stars, first) => win ? Math.round((40 + 8 * lv.id) * (.5 + .25 * stars) * (first ? 1.5 : 1)) : 0;   // 11-01 用户：「如果失败，没有经验，也不扣体力」——打输不给经验（原来给三成）；打仗本来就不花体力
 const fighters = lv => [...new Set([...lv.slots.filter(Boolean), ...lv.join.map(j => j[1])])];
 const addExp = (r, n) => { r.exp += n; while (r.lv < LV_CAP && r.exp >= needLv(r.lv)) { r.exp -= needLv(r.lv); r.lv++; } if (r.lv >= LV_CAP) r.exp = 0; return r; };
 const freshStats = () => ({ n: { guan: 0, zhang: 0, liu: 0 }, spd: { guan: 1, zhang: 1, liu: 1 }, reach: { guan: 0, zhang: 0, liu: 0 }, atkMul: 1, burn: 0, logs: 0, jum: false, cdMul: 1,
@@ -548,7 +548,7 @@ const LEVELS = [
   { id: 5, name: '邓茂', sub: '拦路将 · 大兴山下，邓茂挺枪拦路', kind: 'duel', boss: 'dengmao', hpMul: 2.024,   /* 10-28 用户：「第五关太难，主将血减2/3」6.073 → 2.024 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'canyon', reward: '镔铁 · 兵书残卷',
     moves: ['heavy', 'summon', 'heavy', 'buff', 'heavy', 'summon'], gap: 3.2, heavy: 14, adds: [['bing', 6], ['lishi', 1]],
     tips: [[1, '斗将：邓茂站在场中出招，城防就是你们的血'], [4, '「挺枪突刺」会自动举盾挡下，挡下来还能反击'], [14, '「无双·喝断它」举盾挡不住！留着张飞的一喝，看到它再喝']] },
-  { id: 6, name: '火烧长社', sub: '黄巾屯兵草营，皇甫嵩火攻', hpMul: 4.9,   /* 11-01 旗倒改乱阵、不再跑掉一半，用户嫌关羽一刀一批：4.396 → 4.9，机器人 8 种子 2.25 星 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'grass', reward: '硫磺',
+  { id: 6, name: '火烧长社', sub: '黄巾屯兵草营，皇甫嵩火攻', hpMul: 5.1,   /* 11-01 旗倒改乱阵、不再跑掉一半，用户嫌关羽一刀一批：4.396 → 4.9；同日草棚改成一直烧 → 5.1，机器人 8 种子 2.13 星、赢 7 局 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'grass', reward: '硫磺',
     rules: { fire: true, huts: [[60, 210], [135, 240], [215, 225], [295, 245], [95, 315], [175, 335], [255, 320], [325, 345], [55, 395], [140, 410], [225, 405], [310, 395]] },
     waves: [[2, 'bing', 24, 8, 'rand'], [6, 'qishou', 2, 4, 'rand'], [12, 'bing', 22, 0, 'wedge'], [18, 'lishi', 6, 4, 'rand'], [20, 'qishou', 3, 6, 'rand'], [24, 'bing', 34, 10, 'rand'], [34, 'gong', 8, 4, 'line'], [38, 'bing', 28, 0, 'line'], [42, 'qishou', 4, 4, 'rand'], [48, 'bing', 44, 12, 'rand'], [56, 'lishi', 10, 5, 'rand'], [62, 'qishou', 4, 4, 'rand'], [64, 'bing', 36, 10, 'rand']],
     tips: [[1, '开局送「火油」：普攻会点着敌人'], [5, '着火的敌人走过草棚会把草棚点着，火顺着草棚一路烧过去'], [9, '旗手举着「苍天已死」，旗下的兵撞城更狠；砍倒他，旗下的兵乱阵、挨打多五成']] },
@@ -1071,7 +1071,7 @@ function startLevel(i) {
   G = { li: i, lv, RU, t: 0, foes: [], shots: [], fx: [], decals: [], logs: [], st: freshStats(), wall: 100, wallMax: 100, exp: 0, rank: 0, perks: {},
     castN: 0, advLog: [], queue, chg, qi: 0, total: queue.filter(q => !FOES[q.kind].civ).length, saved: 0, civLost: 0, misfire: 0, civTotal: queue.filter(q => FOES[q.kind].civ).length, wave: -1, waveT0: 0, waveClear: null, nWaves: queue.nWaves || 0, killed: 0, leaked: 0, routed: 0, order: [...lv.slots, null, null].slice(0, NS), ready: Array(NS).fill(0), turn: 0, cast: null, atkT: [.5, .8, 1.1, 1.4, 1.7], anim: Array(NS).fill(null), lastAtk: [], parts: [], vt: 0, logT: 0, nuT: 0, freeze: 0, shake: 0,
     tips: lv.tips.map(([t, s]) => [t * TIMEX.v, s]), tip: null, joins: lv.join.map(([t, id]) => [t * TIMEX.v, id]), state: 'play', pick: null, sel: -1, focus: null, endT: 0, result: null,
-    seal: Array(NS).fill(0), windT: 0, shieldT: 0, shieldCd: 0, counterT: 0, casts: RU.casts || 0, autoCast: lv.id <= 3 || !!INV.autoCast, volT: RU.volley ? 4 : 0, stabs: 0, rageT: 0, wanN: 0, seq: [], jiNext: false, roarT: -9, huts: (RU.huts || []).map(([x, y]) => ({ x, y, fire: 0, burnt: false, spread: false })) };
+    seal: Array(NS).fill(0), windT: 0, shieldT: 0, shieldCd: 0, counterT: 0, casts: RU.casts || 0, autoCast: lv.id <= 3 || !!INV.autoCast, volT: RU.volley ? 4 : 0, stabs: 0, rageT: 0, wanN: 0, seq: [], jiNext: false, roarT: -9, huts: (RU.huts || []).map(([x, y]) => ({ x, y, lit: false, age: 0, burnt: false, spread: false })) };
   // 五维（10-25）：只看比一级多出来的那部分，一级时和原来一样
   const sim = !!window.__sg.simming, team = fighters(lv); G.fighters = team; G.lvs = {}; G.pow = {}; G.lead = {}; G.cdg = {}; G.dmgBy = { guan: 0, zhang: 0, liu: 0 }; G.dmgSk = { guan: 0, zhang: 0, liu: 0 };
   let pol = 0, cha = 0;
@@ -1624,12 +1624,12 @@ function stepRules(dt) {
     if ((G.sim || window.__sg.auto) && (n >= G.amb.need + 4 || (G.qi >= G.queue.length && n >= 6))) fireAmbush();
   }
   for (const h of G.huts) {                                    // 草营：着火的敌人点着草棚，火顺着草棚烧
-    if (h.burnt) continue;
-    if (h.fire <= 0) { if (G.foes.some(e => !e.dead && e.burnT > 0 && Math.hypot(e.x - h.x, e.y - h.y) < 28)) { h.fire = 6; h.tick = 0; } continue; }
-    h.fire -= dt; h.tick -= dt;
-    if (h.tick <= 0) { h.tick = .5; for (const e of alive()) if (Math.hypot(e.x - h.x, e.y - 8 - h.y) < 46) { hurt(e, 7 * HPX, 'burn'); if (!e.dead) { e.burnT = 3; e.burnDps = 14 * HPX / 3; } } }
-    if (!h.spread && h.fire < 4.8) { h.spread = true; for (const o of G.huts) if (o !== h && !o.burnt && o.fire <= 0 && Math.hypot(o.x - h.x, o.y - h.y) < 100) { o.fire = 6; o.tick = .2; } }
-    if (h.fire <= 0) h.burnt = true;
+    // 11-01 用户：「为什么烧了一下就不烧了，一直烧吧」——原来烧 6 秒就灭；现在点着就一直烧到打完，6 秒后草棚烧黑（算烧掉，功绩照旧），火小一点接着烧
+    if (!h.lit) { if (G.foes.some(e => !e.dead && e.burnT > 0 && Math.hypot(e.x - h.x, e.y - h.y) < 28)) { h.lit = true; h.age = 0; h.tick = 0; } continue; }
+    h.age += dt; h.tick -= dt;
+    if (h.tick <= 0) { const old = h.age >= 6; h.tick = old ? 1 : .5; for (const e of alive()) if (Math.hypot(e.x - h.x, e.y - 8 - h.y) < (old ? 30 : 46)) { hurt(e, (old ? 2 : 7) * HPX, 'burn'); if (!e.dead && !old) { e.burnT = 3; e.burnDps = 14 * HPX / 3; } } }   // 烧黑后火小：每秒烫一下、范围小、不再点着人（一直猛烧整片地都是火墙，机器人血量翻倍也三星）
+    if (!h.spread && h.age > 1.2) { h.spread = true; for (const o of G.huts) if (o !== h && !o.lit && Math.hypot(o.x - h.x, o.y - h.y) < 100) { o.lit = true; o.age = 0; o.tick = .2; } }
+    if (h.age >= 6) h.burnt = true;
   }
   if (G.cart && !G.cart.done) {                                // 护送董卓的车驾
     const C = RU.cart, sg = Math.sign(C.y1 - C.y0); if (G.cart.hp > 0) { G.cart.y += (C.y1 - C.y0) / (C.dur * TIMEX.v) * dt; G.cart.walk += dt * 6 / TIMEX.v; }
@@ -2253,7 +2253,7 @@ function renderScreen() {
   if (SPX.ok) spxParts(); else drawParts();
   spxPass('top');
   drawFbs(); drawSpfx(false);
-  if (texOK()) { const hf = G.huts.filter(h => h.fire > 0), ff = G.foes.filter(e => !e.dead && e.burnT > 0 && seen(e)).slice(0, 40);   // 11-01 草棚的火、身上的火：纹理＋泛光
+  if (texOK()) { const hf = G.huts.filter(h => h.lit), ff = G.foes.filter(e => !e.dead && e.burnT > 0 && seen(e)).slice(0, 40);   // 11-01 草棚的火、身上的火：纹理＋泛光
     if (hf.length || ff.length) glowPass(g => { for (const e of ff) foeFireTex(g, e); for (const h of hf) hutFireTex(g, h); }, .45);
     if (G.fx.some(f => f.k === 'hdl' || f.k === 'dragon' || f.k === 'fireline' || f.k === 'firearc')) glowPass(g => { for (const f of G.fx) { if (f.t < 0) continue; if (f.k === 'hdl') hdlTopTex(g, f); else if (f.k === 'dragon') dragonTex(g, f); else if (f.k === 'fireline') fireTex(g, f); else if (f.k === 'firearc') fireArcTex(g, f); } }); }   // 10-30 纹理版＋泛光
   else for (const f of G.fx) { if (f.k === 'hdl') drawHdlTop(f); else if (f.k === 'dragon') drawDragon(f); }
@@ -2862,22 +2862,22 @@ function drawHuts() {
     const burnt = h.burnt;
     if (hasProp('hut')) {
       // 11-01 用户：「第六关这个火要做真火效果」——烧的时候草棚慢慢烧黑（两张图交叉淡），地上一圈火光；火苗本身在 hutFireTex（火焰纹理＋泛光），烟和火舌在墨流层
-      const c = h.fire > 0 ? clamp((6 - h.fire) / 5, 0, 1) : burnt ? 1 : 0, env = hutEnv(h);
+      const c = h.lit ? clamp(h.age / 5, 0, 1) : 0, env = hutEnv(h);
       if (env > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(h.x, h.y - 2, 0, h.x, h.y - 2, 58); g.addColorStop(0, `rgba(255,150,50,${.45 * env})`); g.addColorStop(1, 'rgba(255,90,20,0)'); ctx.fillStyle = g; ctx.fillRect(h.x - 58, h.y - 60, 116, 120); ctx.restore(); }
       if (c < 1 || !hasProp('hutburnt')) drawProp('hut', h.x, h.y + 4, 44, hasProp('hutburnt') ? 1 - c * c : 1);
       if (c > 0 && hasProp('hutburnt')) drawProp('hutburnt', h.x, h.y + 4, 44, Math.min(1, c * 1.4));
-      if (h.fire > 0 && !texOK()) for (let k = 0; k < 5; k++) { const fx = h.x + (k - 2) * 7, fl = 12 + Math.sin(G.t * 14 + k * 1.7) * 4; brush(ctx, [[fx, h.y - 4], [fx + Math.sin(G.t * 9 + k) * 3, h.y - 12 - fl * 1.6]], 7, k % 2 ? CINNABAR : '#e8a63a', .8, u => 1 - u, .3, vr); }
+      if (h.lit && !texOK()) for (let k = 0; k < 5; k++) { const fx = h.x + (k - 2) * 7, fl = 12 + Math.sin(G.t * 14 + k * 1.7) * 4; brush(ctx, [[fx, h.y - 4], [fx + Math.sin(G.t * 9 + k) * 3, h.y - 12 - fl * 1.6]], 7, k % 2 ? CINNABAR : '#e8a63a', .8, u => 1 - u, .3, vr); }
       continue;
     }
     ctx.globalAlpha = burnt ? .55 : .9; ctx.fillStyle = burnt ? '#2a2420' : '#b49b6e';
     ctx.beginPath(); ctx.moveTo(h.x - 17, h.y); ctx.lineTo(h.x, h.y - 18); ctx.lineTo(h.x + 17, h.y); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
     brush(ctx, [[h.x - 18, h.y], [h.x, h.y - 19], [h.x + 18, h.y]], 1.6, INK, .8, () => 1, .3, vr);
     if (!burnt) for (let k = -2; k <= 2; k++) brush(ctx, [[h.x + k * 6, h.y - 2], [h.x + k * 3, h.y - 14]], .8, '#6b5a3c', .5, () => 1, .3, vr);
-    if (h.fire > 0) for (let k = 0; k < 5; k++) { const fx = h.x + (k - 2) * 6, fl = 10 + Math.sin(G.t * 14 + k * 1.7) * 4; brush(ctx, [[fx, h.y - 2], [fx + Math.sin(G.t * 9 + k) * 3, h.y - 8 - fl * 1.6]], 6, k % 2 ? CINNABAR : '#e8a63a', .8, u => 1 - u, .3, vr); }
-    if (h.fire > 0) blot(ctx, h.x + Math.sin(G.t) * 6, h.y - 36 - (G.t * 20 % 20), 8, '#4a4540', .25, vr, 8);
+    if (h.lit) for (let k = 0; k < 5; k++) { const fx = h.x + (k - 2) * 6, fl = 10 + Math.sin(G.t * 14 + k * 1.7) * 4; brush(ctx, [[fx, h.y - 2], [fx + Math.sin(G.t * 9 + k) * 3, h.y - 8 - fl * 1.6]], 6, k % 2 ? CINNABAR : '#e8a63a', .8, u => 1 - u, .3, vr); }
+    if (h.lit) blot(ctx, h.x + Math.sin(G.t) * 6, h.y - 36 - (G.t * 20 % 20), 8, '#4a4540', .25, vr, 8);
   }
 }
-const hutEnv = h => h.fire > 0 ? Math.min(1, (6 - h.fire) / .5) * (h.fire < 2 ? .25 + .75 * h.fire / 2 : 1) : 0;   // 点着 0.5 秒窜满，最后 2 秒塌成余烬
+const hutEnv = h => h.lit ? Math.min(1, h.age / .5) * (h.age < 4 ? 1 : Math.max(.7, 1 - (h.age - 4) * .15)) * (.92 + .08 * Math.sin(h.age * 1.7 + h.x)) : 0;   // 点着 0.5 秒窜满，烧黑后火小到七成，一直烧
 function hutFireTex(g, h) {                                                    // 草棚的火：火焰纹理切竖条，中间高两边低，每条按自己的波动窜；两层错开
   const env = hutEnv(h); if (env <= 0) return; const im = IMG.tex_flame, n = 14, wd = 50, sw = wd / n, cw = im.width / 12, t = G.vt || 0, ph = h.x * .37;
   for (const [hk, off, al] of [[.7, 0, .5], [1, .5, .8]]) for (let i = 0; i < n; i++) {
