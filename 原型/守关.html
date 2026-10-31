@@ -880,6 +880,9 @@ function achList() {
   return L.map(a => ({ ...a, got: !!(INV.ach || {})[a.id] }));
 }
 const achClaimable = () => achList().filter(a => a.ok && !a.got);
+const achPrepOf = list => list.reduce((n, a) => n + (a.prep || 0) + a.pay.reduce((m, [k, v]) => m + (k === '资历' ? v : 0), 0), 0);
+function achAutoClaim() { const A = achClaimable(); if (!A.length) return; const prep = achPrepOf(A), got = claimAch(A);   // 旧档里攒着没领的功绩：进主页时一次发掉
+  const nm = A.map(a => a.sec === '首通' ? '首通 · ' + a.name : a.name); showReward('功绩奖励', [nm.join('、').length > 16 ? `${nm[0]} 等 ${nm.length} 项` : nm.join('、'), ...(prep ? [`资历 +${prep}`] : [])], ['guan', 'zhang', 'liu'], true, got); }
 function claimAch(list) { INV.ach = INV.ach || {}; const got = {}; for (const a of list) { if (INV.ach[a.id] || !a.ok) continue; INV.ach[a.id] = 1; for (const [k, n] of a.pay) { if (k === '资历') { addPrep(n); continue; } INV.it[k] = (INV.it[k] || 0) + n; got[k] = (got[k] || 0) + n; } if (a.prep) addPrep(a.prep); if (a.perk) { INV.bonus = INV.bonus || {}; INV.bonus[a.perk[1]] = 1; } } saveInv(); return Object.entries(got); }
 const rankNeedFor = lvId => RANKS.findIndex(R => R.node === lvId);          // 打这关要几阶（不是节点关返回 -1）
 // 上阵顺序（10-26 用户：「这里应该有一个上阵武将选择，当然目前只有刘关张，军师也放这里，没必要放主页」）：武将页排的出手顺序，
@@ -1255,7 +1258,8 @@ function availPerks() {
   return PERKS.filter(p => !p.trap && (G.perks[p.id] || 0) < p.max && !(p.id === 'log' && G.logUsed) && !(p.id === 'nu' && G.nuUsed) && (!p.gift || G.perks[p.id]) && (!p.gen || has(p.gen)) && (!p.combo || p.combo.every(has)) && (!p.sk || p.sk.every(knows)) && (!p.anySk || G.order.some(id => id && knows(id))) && unlocked(p) && (p.id !== 'mend' || G.wall < G.wallMax * .8));
 }
 function choose3() {
-  const out = [], heroes = (G.fighters || []).filter(id => SKILLS[id] && G.act && G.act[id] && knows(id) && (G.shi[id] || 0) < SHI_MAX), ok = availPerks();   // 10-30 用户：「确保没学到技能时，不要出现该技能的军功」——还没学会招的人不出势卡
+  const here = id => G.order.includes(id);   // 10-30 用户：「没出现人物，不准出现他的战法」——第一关刘备、张飞半路才上城，没上来以前不出他们的卡
+  const out = [], heroes = (G.fighters || []).filter(id => here(id) && SKILLS[id] && G.act && G.act[id] && knows(id) && (G.shi[id] || 0) < SHI_MAX), ok = availPerks().filter(p => (!p.gen || here(p.gen)) && (!p.combo || p.combo.every(here)));   // 10-30 用户：「确保没学到技能时，不要出现该技能的军功」——还没学会招的人不出势卡
   const gear = ok.filter(p => GEAR.includes(p.id)), cc = G.lv.id >= UNC_FROM ? gear.filter(p => COUNTER_OF[p.id] && traitOpen(COUNTER_OF[p.id])) : [];
   const mendNow = G.wall < G.wallMax * .5 && gear.find(p => p.id === 'mend');
   const trap = PERKS.find(p => p.trap), zj = counselNow()[0] === 'zoujing' && (G.perks[trap.id] || 0) < trap.max;
@@ -2104,7 +2108,7 @@ function end(win, why) {
   if (!G.sim && G.lv.id >= 4) { INV.lowStar = !win || stars < 2; saveInv(); }   // 10-30 换军师提醒：第四关起这一局没打到两星
   if (!G.sim && G.cnt) { INV.comboSeen = INV.comboSeen || {}; for (const k of ['cYun', 'cHeng', 'cHe', 'cShuang', 'cRen', 'cTao']) if (G.cnt[k]) INV.comboSeen[k] = 1; saveInv(); }   // 10-29：六个连携跨局累计，输了的那局打出来的也算，当场存盘
   G.feats = win && G.cnt ? featCheck(stars) : []; if (!G.sim && G.feats.length) { INV.feat = INV.feat || {}; for (const f of G.feats) INV.feat[f] = 1; saveInv(); }
-  if (!G.sim) G.result.ach = achList().filter(a => a.ok && !a.got && !achOk0.has(a.id)).map(a => a.sec === '首通' ? '首通 · ' + a.name : a.name);   // 10-30 用户：「结算时如果完成任何功绩，都在结算页提示」
+  if (!G.sim) { const A = achClaimable(); G.result.ach = A.map(a => a.sec === '首通' ? '首通 · ' + a.name : a.name); G.result.achPrep = achPrepOf(A); G.result.achGot = claimAch(A); }   // 10-30 用户：「结算时如果完成任何功绩，都在结算页提示」；又：「完成了……还是要我去点成就完成才给我」——达成就直接发，连以前没领的一起
   if (!G.sim) { awardExp(win, stars); settleLoot(win); G.fx = G.fx.filter(f => !['wave', 'banner', 'txt', 'leak'].includes(f.k)); }   // 战场上的横幅、飘字别透过结算页露出来
 }
 // 结算经验（10-25）：出战的每人拿全份，升级时记下五维涨了几点（显示整数，涨过整数线才算涨 1）
@@ -4835,7 +4839,7 @@ function drawPick() {
   const br = .5 + .5 * Math.sin(t * 2.2), gl = ctx.createRadialGradient(W / 2, 300, 0, W / 2, 300, 230); gl.addColorStop(0, `rgba(255,190,90,${.22 + .1 * br})`); gl.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gl; ctx.fillRect(0, 60, W, 500);
   if (ready(IMG.ui_rays)) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .28 * Math.min(1, t * 2); ctx.translate(W / 2, 300); ctx.rotate(t * .05); ctx.drawImage(IMG.ui_rays, -230, -230, 460, 460); ctx.restore(); }
   const tu = ease(t / .25), ts = 1.35 - .35 * tu; ctx.save(); ctx.globalAlpha = tu; ctx.translate(W / 2, 118); ctx.scale(ts, ts);
-  uiText('军功晋升', 0, 0, 40, goldGrad(0, 40), 'center', FONT, { glow: 'rgba(255,200,90,.85)', glowR: 18, lw: 7 }); ctx.restore();
+  uiText('军功晋升', 0, 0, 40, goldGrad(0, 40), 'center', FONT, { lw: 7 });   /* 10-30 用户：「这个黄色去掉」——字后面那团黄光糊到下面两行小字 */ ctx.restore();
   uiText(`第 ${G.rank + 1} 次晋升 · 选一个战法，只在这一关有效`, W / 2, 152, 12, UIC.cream, 'center', PLAIN, { stroke: false });
   uiText('两个人的战法线都对上了，会出连携', W / 2, 170, 10, 'rgba(244,230,196,.55)', 'center', PLAIN, { stroke: false });
   const w = 106, h = 200, gap = 8, x0 = (W - 3 * w - 2 * gap) / 2, y0 = 196;
@@ -5435,7 +5439,7 @@ function drawResult() {
   const tb = t1 + gains.length * gap + (gains.length ? 1.4 : .2), ba = clamp((t - (tb - .4)) / .3, 0, 1), armed = t >= tb, al = ba * (armed ? 1 : .5);
   let by = y0 + Math.max(2, gains.length) * (ch + 4) + 6; const li = G.li, next = win && li + 1 < LEVELS.length;
   const blame = r.blame !== undefined ? r.blame : (r.blame = counselBlame(r));
-  const tot = {}; if (r.loot) { for (const o of r.loot) if (o.n) tot[o.k] = (tot[o.k] || 0) + o.n; if (r.tasks.length) tot.残页 = (tot.残页 || 0) + r.tasks.length * TASK_PAY; }
+  const tot = {}; if (r.loot) { for (const o of r.loot) if (o.n) tot[o.k] = (tot[o.k] || 0) + o.n; if (r.tasks.length) tot.残页 = (tot.残页 || 0) + r.tasks.length * TASK_PAY; } for (const [k, n] of r.achGot || []) tot[k] = (tot[k] || 0) + n;
   const caps = (r.loot || []).filter(o => o.capped && !tot[o.k]).map(o => o.k), ents = [...Object.entries(tot), ...caps.map(k => [k, 0])];
   const drawLoot = (sz, cxm, cy0) => { const gp = 8, x0 = cxm - (ents.length * sz + (ents.length - 1) * gp) / 2;
     ents.forEach(([k, n], j) => { const u = clamp((t - (tb - .7) - j * .12) / .25, 0, 1); if (u <= 0) return; const sc = u < 1 ? 1.4 - .4 * ease(u) : 1, x = x0 + j * (sz + gp) + sz / 2;
@@ -5449,7 +5453,7 @@ function drawResult() {
   else if (ents.length) { const sm = !!(r.ach && r.ach.length); drawLoot(sm ? 32 : 40, W / 2, by + (sm ? 18 : 22)); by += sm ? 40 : 50; }   // 下面还有功绩一行时图标小一点
   const AC = r.ach || [];                                                               // 10-30 这局新达成的功绩：盖「功」印、写几项，下一行列名字（在战利品下、按钮上）
   if (AC.length) { const u = clamp((t - (tb - .2)) / .3, 0, 1), yb0 = H - 54; if (u > 0) { const two = by + 40 <= yb0 - 4, ay = Math.min(by + 16, yb0 - (two ? 34 : 14));
-      const head = `达成功绩 ${AC.length} 项 · 去功绩簿领奖`, names = AC.join('、'); ctx.save(); ctx.globalAlpha = u; ctx.translate(0, (1 - ease(u)) * 12);
+      const head = `达成功绩 ${AC.length} 项` + (r.achPrep ? ` · 资历 +${r.achPrep}` : ' · 奖励已发'), names = AC.join('、'); ctx.save(); ctx.globalAlpha = u; ctx.translate(0, (1 - ease(u)) * 12);
       if (two) { ctx.font = `13px ${FONT}`; const hw = ctx.measureText(head).width; uiSeal(W / 2 - hw / 2 - 6, ay, 18, '功', UIC.red); uiText(head, W / 2 + 8, ay, 13, '#ffe08a', 'center', FONT, { lw: 3, glow: 'rgba(255,200,90,.6)', glowR: 8 });
         uiText(names, W / 2, ay + 20, fitSize(names, 12, W - 40, 99, PLAIN, 3), UIC.cream, 'center', PLAIN, { lw: 3 }); }
       else { const one = `达成功绩：${names}`, fz = fitSize(one, 12, W - 70, 99, FONT, 3); ctx.font = `${fpx(fz)}px ${FONT}`; const ow = ctx.measureText(one).width; uiSeal(W / 2 - ow / 2 - 4, ay, 16, '功', UIC.red); uiText(one, W / 2 + 8, ay, fz, '#ffe08a', 'center', FONT, { lw: 3 }); }
@@ -5641,7 +5645,7 @@ function drawQimou() {
   if (QM.sel) { ctx.fillStyle = 'rgba(8,5,3,.82)'; ctx.fillRect(0, 0, W, H); const bw = 240; drawQmCard(QM.sel, (W - bw) / 2, 70, bw, true); hit(0, 0, W, H, () => { QM.sel = null; }); }
 }
 function drawCamp() {
-  campBg('军帐'); dailyTick();
+  campBg('军帐'); dailyTick(); if (!REWARD) achAutoClaim();   // 以前攒着没领的功绩：进军帐一次发掉
   plaque3(10, 14, 80, 26, '奇谋', () => { screen = 'qimou'; QM.sel = null; QM.from = 'camp'; });   // 10-29 奇谋卡（大招、军师计、敌方计）
   { const n = achClaimable().length; plaque3(W - 104, 14, 94, 26, '功绩簿', () => { screen = 'ach'; }, n > 0); if (n) uiSeal(W - 10, 14, 16, String(n), UIC.red, true);   /* 牌匾按原图比例，宽 128 时正好 26 高，字在中间（10-29 用户：「字要居中」） */ }
   const gl = campGoal(), TOPY = gl ? 0 : -66;   // 没东西要备时顶上只放一块矮的官阶卡（10-29 用户：「这4个框的大小应该如蓝框」）
@@ -6226,7 +6230,7 @@ function navBtn(cx, label, draw, fn, badge, big) {
   const cy = H - 52; draw(cx, cy, big ? 50 : 40);   // 10-30 用户：「似乎没居中对齐」——战役原来往上提 6，图标中线和别的错开；六个图标同一条中线
   uiText(label, cx, H - 16, fitSize(label, big ? 15 : 13, 64), big ? UIC.gold2 : UIC.cream, 'center', FONT, { lw: 3 });
   if (badge) uiSeal(cx + 18, cy - 18, 14, '!', UIC.red);
-  hit(cx - 29, cy - 30, 58, H - cy + 30, fn);
+  hit(cx - 29, cy - 30, 58, H - cy + 30, () => { if (MENU.tip && MENU.tip.x === cx) tipDone(MENU.tip.k); fn(); });   // 点了提示指着的钮，那条提示就算看过
 }
 const navIco = k => (cx, cy, s) => { const im = IMG[k]; if (!ready(im)) return; const f = s / Math.max(im.width, im.height); ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); };
 const navCards = (cx, cy, s) => { [['foe_fire', -.32, -9], ['roar', .3, 9], ['qinglong', 0, 0]].forEach(([k, a, dx]) => { const im = IMG['card_' + k], w = s * .5, h = w * 1.5;   // 奇谋钮：三张奇谋卡扇开
@@ -6235,6 +6239,25 @@ const navCards = (cx, cy, s) => { [['foe_fire', -.32, -9], ['roar', .3, 9], ['qi
 const navFace = (k, fc) => (cx, cy, s) => { const im = IMG[k], r = s * .42; ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.clip(); ctx.fillStyle = '#2a1f16'; ctx.fill();
   if (ready(im)) { if (fc) ctx.drawImage(im, fc[0], fc[1], fc[2], fc[2], cx - r, cy - r, r * 2, r * 2); else ctx.drawImage(im, cx - r * 1.15, cy - r, r * 2.3, r * 2.3); } ctx.restore();
   if (ready(IMG.ui_avatar_ring)) ctx.drawImage(IMG.ui_avatar_ring, cx - r * 1.3, cy - r * 1.3, r * 2.6, r * 2.6); };
+// 主页教学提示（10-30 用户：「多些教学提示，比如可以换军师，可以升级武器，需要开被动战法等」）：随军军师在主页底栏上方说一句，箭头指着该点的钮；
+// 一次只说一条，点这句话或点箭头指的钮就算看过，每条只说一次（INV.tipSeen）
+const MENU_TIPS = [
+  { k: 'wpn', x: 90, ok: () => ['guan', 'zhang', 'liu'].some(h => canUp('wpn_' + h)), say: '精铁够了！去「神兵」给兵器精炼，普攻、招式伤害都往上涨' },
+  { k: 'rank', x: 270, ok: () => !!nextRank() && (INV.prep || 0) >= prepNeed(), say: '资历攒够了，去「军帐」点「去晋阶」。节点关要先晋阶才能打' },
+  { k: 'pas', x: 30, ok: () => pasSlots() > 0 && ['guan', 'zhang', 'liu'].some(id => !loadOf(id).pas.length), say: '被动战法格开了！去「武将」→ 配招，给三兄弟各配一个被动' },
+  { k: 'counsel', x: 30, ok: () => Object.keys(COUNSEL).some(k => k !== counselNow()[0] && counselOK(k)), say: '「武将」页里能换随军军师：各人荐战法、报敌情的本事不一样，打不顺就换一位' },
+  { k: 'daily', x: 270, ok: () => !!BEST[1], say: '「军帐」每天有军务：打法军令、出外探访、日常杂务，做了得材料和资历，晋阶就靠它' },
+  { k: 'qimou', x: 210, ok: () => !!BEST[2], say: '「奇谋」里能看三兄弟的大招和敌我两边的计谋，打之前看看敌人会用什么计' },
+];
+const tipNow = () => MENU_TIPS.find(T => !(INV.tipSeen || {})[T.k] && T.ok());
+const tipDone = k => { INV.tipSeen = INV.tipSeen || {}; INV.tipSeen[k] = 1; saveInv(); };
+function drawMenuTip(t) {
+  const T = tipNow(); MENU.tip = T || null; if (!T || REWARD || (MENU.note && t - MENU.note.t0 < 3.2)) return;
+  if (MENU.tipK !== T.k) { MENU.tipK = T.k; MENU.tipT = t; } const a = clamp((t - MENU.tipT - .4) / .3, 0, 1); if (a <= 0) return;
+  const [ck, C] = counselNow(), y = 364; drawCounselSay(ck, C, T.say, y, a); hit(6, y - 4, W - 12, 66, () => tipDone(T.k));
+  const by = H - 98 + 5 * Math.sin(t * 6); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#ffd76e'; ctx.shadowColor = 'rgba(255,190,80,.8)'; ctx.shadowBlur = 8;   // 往下指着该点的钮，一上一下地跳
+  ctx.beginPath(); ctx.moveTo(T.x - 9, by - 10); ctx.lineTo(T.x + 9, by - 10); ctx.lineTo(T.x, by); ctx.closePath(); ctx.fill(); ctx.restore();
+}
 function drawMenu() {
   drawBg(); const t = uiNow();
   if (!INV.rankMig) { INV.rankMig = 1; for (let k = 1; k < RANKS.length; k++) if (BEST[RANKS[k].node]) INV.rank = Math.max(INV.rank || 0, k); syncRankArt(); saveInv(); }   // 旧档：打过的节点关补认官阶
@@ -6290,6 +6313,7 @@ function drawMenu() {
   navBtn(210, '奇谋', navCards, () => { screen = 'qimou'; QM.sel = null; QM.from = 'menu'; }, false);
   navBtn(270, '军帐', navIco('ui_nav_camp'), () => { screen = 'camp'; CAMP.t0 = uiNow(); }, dailyTotal() > dailyDone());
   navBtn(330, '系统', navIco('ui_nav_sys'), () => { screen = 'system'; }, false);
+  drawMenuTip(t);
   // 右上角月卡
   { const im = IMG.ui_nav_month, cx = W - 26, cy = 28, br = .5 + .5 * Math.sin(t * 2.4); if (ready(im)) { const f = 28 / Math.max(im.width, im.height);   /* 10-25 夜用户：「这有点太大，小一点」 40 → 28 */ ctx.save(); ctx.shadowColor = `rgba(255,200,90,${.35 + .3 * br})`; ctx.shadowBlur = 10; ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); ctx.restore(); } else uiSeal(cx, cy, 22, '月', UIC.red);
     uiText('月卡', cx, cy + 21, 10, UIC.gold2, 'center', FONT, { lw: 3 }); hit(cx - 22, cy - 20, 44, 52, () => { screen = 'month'; MON.ask = false; }); }
