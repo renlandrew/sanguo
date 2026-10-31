@@ -2941,13 +2941,13 @@ function hutFireTex(g, h) {                                                    /
   if (ML && vr() < .3) ML.splat(h.x + VR(-10, 10), h.y - 54 * env - 10, VR(-20, 20), VR(-90, -50), VR(9, 13), [0, 0, VR(.45, .65), 0]);   // 顶上一股烟（墨流的火舌在亮草地上发粉，不用）
 }
 // 七星灯（11-01）：铜灯台＋一朵灯火，地上一圈暖光，相邻的灯之间一缕很淡的金线连成北斗；挨一下火苗矮一截（三下灭）
-const LAMP_H = 38, LAMP_WICK = 36;                                       // 灯台画多高；灯芯顶离地多高（画稿里灯芯在顶下约 6%）
+const LAMP_H = 22, LAMP_WICK = 21;                                       // 灯台画多高；灯芯顶离地多高（画稿里灯芯在顶下约 6%）
 function drawLamp(e) {
   const x = e.x, y = e.y, up = Math.min(1, (G.t - e.born) / .4), k = Math.max(.4, e.hits / G.RU.qixing.hits), t = G.vt || 0;
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
   const pr = G.foes.find(f => f.lamp && !f.dead && f.idx === e.idx - 1);
-  if (pr) { ctx.globalAlpha = .28 * up; ctx.strokeStyle = GOLD; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(pr.x, pr.y - 26); ctx.lineTo(x, y - 26); ctx.stroke(); ctx.globalAlpha = 1; }
-  const r = 40 * k * up; ctx.translate(x, y); ctx.scale(1, .4); const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, r); gr.addColorStop(0, `rgba(255,196,90,${.5 + .1 * Math.sin(t * 7 + e.idx)})`); gr.addColorStop(1, 'rgba(255,170,60,0)');
+  if (pr) { ctx.globalAlpha = .28 * up; ctx.strokeStyle = GOLD; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(pr.x, pr.y - 16); ctx.lineTo(x, y - 16); ctx.stroke(); ctx.globalAlpha = 1; }
+  const r = 26 * k * up; ctx.translate(x, y); ctx.scale(1, .4); const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, r); gr.addColorStop(0, `rgba(255,196,90,${.5 + .1 * Math.sin(t * 7 + e.idx)})`); gr.addColorStop(1, 'rgba(255,170,60,0)');
   ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.fill(); ctx.restore();
   const im = IMG.qixing_lamp;
   if (ready(im)) { const lh = LAMP_H * (.85 + .15 * up), lw = lh * im.width / im.height; ctx.globalAlpha = up; ctx.drawImage(im, x - lw / 2, y - lh, lw, lh); ctx.globalAlpha = 1; }
@@ -2959,12 +2959,12 @@ function drawLamp(e) {
   if (!texOK()) brush(ctx, [[x, y - LAMP_WICK], [x + Math.sin(t * 9 + e.idx) * 2, y - LAMP_WICK - 18 * k * up]], 7, '#ffd27a', .9, u => 1 - u, .2, vr);
   if (e.flash > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = e.flash / .15; blot(ctx, x, y - LAMP_WICK, 10, '#fff4d0', .8, vr, 9); ctx.restore(); }
   const all = G.focus === e, ids = G.order.filter(Boolean).filter(h => G.focusBy && G.focusBy[h] === e), cols = all ? [CINNABAR] : ids.map(h => HERO_COL[h] || CINNABAR);
-  cols.forEach((c, j) => { const mx = x + (j - (cols.length - 1) / 2) * 13, my = y - 70 - 3 * Math.abs(Math.sin(G.t * 4 + j)); ctx.save(); ctx.beginPath(); ctx.moveTo(mx - 6, my - 9); ctx.lineTo(mx + 6, my - 9); ctx.lineTo(mx, my); ctx.closePath();
+  cols.forEach((c, j) => { const mx = x + (j - (cols.length - 1) / 2) * 13, my = y - 48 - 3 * Math.abs(Math.sin(G.t * 4 + j)); ctx.save(); ctx.beginPath(); ctx.moveTo(mx - 6, my - 9); ctx.lineTo(mx + 6, my - 9); ctx.lineTo(mx, my); ctx.closePath();
     ctx.shadowColor = c; ctx.shadowBlur = 8; ctx.fillStyle = c; ctx.fill(); ctx.shadowBlur = 0; ctx.lineWidth = 1.4; ctx.strokeStyle = '#fff8e8'; ctx.stroke(); ctx.restore(); });
 }
 function lampFireTex(g, e) {                                                   // 灯火：火焰纹理切几条，窄而高
-  const im = IMG.tex_flame, cw = im.width / 14, t = G.vt || 0, k = Math.max(.4, e.hits / G.RU.qixing.hits) * Math.min(1, (G.t - e.born) / .4), n = 4, wd = 12, sw = wd / n;
-  for (let i = 0; i < n; i++) { const u = (i + .5) / n, hh = 30 * k * Math.sin(Math.PI * u) ** .5 * (.8 + .2 * Math.sin(t * 13 + u * 7 + e.idx)), sx = ((u * 2 + e.idx) * cw + t * 60) % (im.width - cw);
+  const im = IMG.tex_flame, cw = im.width / 14, t = G.vt || 0, k = Math.max(.4, e.hits / G.RU.qixing.hits) * Math.min(1, (G.t - e.born) / .4), n = 4, wd = 8, sw = wd / n;
+  for (let i = 0; i < n; i++) { const u = (i + .5) / n, hh = 18 * k * Math.sin(Math.PI * u) ** .5 * (.8 + .2 * Math.sin(t * 13 + u * 7 + e.idx)), sx = ((u * 2 + e.idx) * cw + t * 60) % (im.width - cw);
     g.globalAlpha = .95; g.drawImage(im, sx, 0, cw, im.height, e.x - wd / 2 + i * sw - .5, e.y - LAMP_WICK - hh, sw + 1, hh + 3); }
   g.globalAlpha = 1;
 }
