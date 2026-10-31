@@ -213,6 +213,7 @@ const FOES = {
   huaxiong:  { name: '华雄', hp: 3400, spd: 0, dps: 0, exp: 70, r: 24, box: [76, 96], s: 2, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'huaxiong', alt: 'cyz', sh: 100, title: '西凉骁将', tint: 'huaxiong', pt: 'huaxiong' },
   lijue:     { name: '李傕', hp: 3200, spd: 0, dps: 0, exp: 50, r: 22, box: [76, 96], s: 1.9, wpn: 'spear', bulk: 11, boss: true, duel: true, sheet: 'lijue', alt: 'dengmao', sh: 94, title: '西凉校尉', tint: 'lijue' },
   lvbu:      { name: '吕布', hp: 4600, spd: 0, dps: 0, exp: 100, r: 26, box: [76, 96], s: 2.1, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'lvbu', alt: 'cyz', sh: 110, title: '飞将', tint: 'lvbu', pt: 'lvbu' },
+  qixing: { name: '七星灯', hp: 1, spd: 0, dps: 0, exp: 0, r: 9, box: [22, 40], s: 1, lamp: true },   // 11-01 第十关张角拜北斗点的灯（见 stepQixing）
   zhangjiao: { name: '张角', hp: 2300, spd: 0, dps: 0, exp: 60, r: 26, box: [76, 96], s: 2.1, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'zhangjiao', alt: 'shushi', sh: 108, title: '天公将军', aura: true },   // 图集是 Veo 录的，高度连九节杖算
 };
 function soldier(g, ox, oy, f, T) {
@@ -567,9 +568,11 @@ const LEVELS = [
       [38, 'zhangbao', 1, 0, 'rand', { g: 'a', lead: true }], [38, 'bing', 30, 8, 'rand', { g: 'a' }], [46, 'shushi', 4, 4, 'rand', { g: 'a' }], [52, 'lishi', 10, 5, 'rand'],
       [58, 'zhangliang', 1, 0, 'rand', { g: 'b', lead: true }], [58, 'bing', 36, 10, 'rand', { g: 'b' }], [66, 'lishi', 8, 4, 'rand', { g: 'b' }]],
     tips: [[1, '夜战：城前一小条以外全是黑的，黑处普攻三成、招式五成才打得中，敌人还走得快'], [4, '「军功」里有三支火把：点一支全场亮 8 秒，命中回到八成五——趁亮集中放招'], [9, '张飞的一喝不用看准，黑处照样喝晕；喝晕的、着了火的敌人在黑处也打得中'], [7, '术士洒符水给身边的黄巾回血，先点他'], [37, '地公将军张宝会刮妖风：武将普攻几秒内减半'], [57, '人公将军张梁给身边的兵挡刀']] },
-  { id: 10, name: '张角', sub: '大战 · 天公将军张角', kind: 'duel', boss: 'zhangjiao', hpMul: 4.55, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'camp', reward: '太平要术 · 兵书',
-    moves: ['heavy', 'summon', 'heal', 'heavy', 'seal', 'summon', 'heavy', 'buff'], gap: 2.6, heavy: 16, adds: [['bing', 10], ['lishi', 2]], phase2: [['zhangbao', 120], ['zhangliang', 240]],   // 11-01 用户嫌太简单：出招 3.2 → 2.6 秒、天雷 11 → 16、召兵 4+1 → 10+2；血量再加就拖过 5 分钟（机器人 4.9 倍有三局打不完），所以不加
-    tips: [[1, '天公将军张角：天雷自动举盾挡，符水要用张飞喝断'], [10, '妖术迷魂会封住一位武将几秒'], [30, '张角血少一半时，张宝、张梁会上阵']] },
+  { id: 10, name: '张角', sub: '大战 · 天公将军张角', kind: 'duel', boss: 'zhangjiao', hpMul: 5, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'camp', reward: '太平要术 · 兵书',
+    moves: ['heavy', 'summon', 'heavy', 'heal', 'seal', 'buff', 'heavy', 'summon', 'heavy', 'heal'], gap: 2.6, heavy: 16, adds: [['bing', 10], ['lishi', 2]], phase2: [['zhangbao', 120], ['zhangliang', 240]],   // 11-01 用户「两样都做」：每第二记重招（无双）后面紧跟符水，一喝冷却 20 秒只救得了一个
+    rules: { qixing: { at: [40, 120, 200], p2gap: 60, t: 20, hits: 3, hit: 8, heal: .015, all: 50 } },   // 七星灯：拜斗 20 秒，每盏没灭的城防 -8、张角回 1.5%，七盏全亮天门大开 -50；血少一半后最多隔 60 秒再拜。
+    // 加灯后 hpMul 4.55 → 5（smart 8 种子：会点灯 2.25 星全胜 157–182 秒；不点灯 0.5 星 4 胜、最长 290 秒；按「自动」不点灯全输；一招不放全输）   // 11-01 用户嫌太简单：出招 3.2 → 2.6 秒、天雷 11 → 16、召兵 4+1 → 10+2；血量再加就拖过 5 分钟（机器人 4.9 倍有三局打不完），所以不加
+    tips: [[1, '天公将军张角：天雷自动举盾挡，无双和符水都要张飞喝断——一喝只够救一个'], [10, '妖术迷魂会封住一位武将几秒'], [30, '张角会拜北斗点七星灯：点一盏灯，三人一盏盏打过去'], [60, '张角血少一半时，张宝、张梁会上阵，七星灯也拜得更勤']] },
   // ---------- 二 · 诸侯讨董（11–20，10-25） ----------
   { id: 11, name: '孟德献刀', sub: '洛阳城门 · 夜，掩护曹操出城', hpMul: 3.634, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'luoyang', reward: '七星宝刀（法宝）',
     rules: { night: { vis: 250, torches: [[80, 300], [280, 260]] }, timed: { t: 60, label: '曹操出城', text: '曹操出城了', sub: '刘关张且战且退' } },
@@ -1108,6 +1111,7 @@ function startLevel(i) {
   for (const id of RU.give || []) { const p = PERKS.find(p => p.id === id); p.fn(G.st); G.perks[id] = (G.perks[id] || 0) + 1; }      // 开局送的战法（连弩）
   if (RU.wall) G.wall = RU.wall / 100 * G.wallMax;
   if (RU.decoy) G.decoyN = RU.decoy.uses;
+  G.qx = RU.qixing ? { next: RU.qixing.at[0], k: 0, T: 0, t0: 0 } : null;
   if (RU.flags) G.flags = RU.flags.map(([x, y, name]) => ({ x, y, name, up: true }));
   if (RU.wells) { const k = Math.floor(rnd() * RU.wells.length); G.wells = RU.wells.map(([x, y], i) => ({ x, y, n: 0, seal: i === k })); }
   if (RU.ally) { const A = RU.ally; G.ally = { ...A, hp: A.hp, max: A.hp, x: A.x ?? HX, y: A.y ?? WALL_Y - 40, home: A.y ?? WALL_Y - 40, st: 'idle', cd: (A.first ?? 4) * TIMEX.v, swing: 0 }; }
@@ -1173,6 +1177,7 @@ const COUNTER_OF = { banma: 'cav', pozhen: 'shield', liuQi: 'ranged', jinshu: 'h
 function hitP(e, src) { const N = night(), B = N && N.blind; if (!B || !WHO[src] || src === 'roar' || G.dmgName) return 1; if (e.y > WALL_Y - N.vis) return 1; return litOf(e) ? B.lit : BIGSRC.has(src) ? B.sk : B.atk; }
 function hurt(e, d, src) {
   if (e.dead || e.rout) return;
+  if (e.lamp) { if (!BIGSRC.has(src) && !lampHunt()) return; if ((e.hits -= BIGSRC.has(src) ? 2 : 1) <= 0) lampOut(e); else e.flash = .15; return; }   // 七星灯：点了灯才打（普攻三下），招式扫到算两下
   { const p = hitP(e, src); if (p < 1 && rnd() >= p) { G.missN = (G.missN || 0) + 1; if (!G.sim && (G.vt || 0) - (G.missT || -9) > .25) { G.missT = G.vt || 0; G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 30, text: '落空', size: 12, color: '#8a8f9c' }); } return; } }
   if (e.shield > 0 && src !== 'burn') { e.shield--; G.fx.push({ k: 'guard', t: 0, x: e.x, y: e.y - 20 }); return; }     // 张梁给的挡刀
   if (e.duel && G.counterT > 0 && (src === 'slash' || src === 'sword' || src === 'roar')) d *= 1.5;                      // 举盾挡下以后的反击
@@ -1251,7 +1256,7 @@ function die(e, src) {
   e.dead = true; if (FOES[e.kind].civ) return; G.killed++; G.exp += FOES[e.kind].exp; if (G.focus === e) G.focus = null; if (G.focusBy) for (const h in G.focusBy) if (G.focusBy[h] === e) delete G.focusBy[h];
   if (e.lead || FOES[e.kind].flag) routGroup(e);
   if ((e.lead || FOES[e.kind].boss) && hasPas('guan', 'zhanjiang')) { for (const f of alive()) if (f !== e && !FOES[f.kind].boss) f.stun = Math.max(f.stun || 0, 1.5); if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: W / 2, y: 300, text: '斩将威名', size: 22, color: CINNABAR }); }
-  if (e.duel) { for (const f of G.foes) if (f !== e) routFoe(f, true); G.qi = G.queue.length; G.boss = null; }
+  if (e.duel) { for (const f of G.foes) if (f.lamp) f.dead = true; if (G.qx) G.qx.T = 0; for (const f of G.foes) if (f !== e) routFoe(f, true); G.qi = G.queue.length; G.boss = null; }
   if (G.st.ren) { const big = e.lead || FOES[e.kind].boss, heal = (big ? 6 : 0) + (G.killed % 25 === 0 ? 3 : 0); if (heal) { G.wall = Math.min(G.wallMax, G.wall + heal * G.st.ren); G.fx.push({ k: 'txt', t: 0, x: 90, y: WALL_Y - 30, text: '仁德 +' + heal * G.st.ren, size: 15, color: AZURE }); } }
   if (G.st.huodao && e.burnT > 0) { const o = alive().filter(f => f !== e && f.burnT <= 0 && Math.hypot(f.x - e.x, f.y - e.y) < 40)[0]; if (o) { o.burnT = 3; o.burnDps = e.burnDps; } }
   const s = FOES[e.kind].s, ps = persp(e.y);
@@ -1399,6 +1404,7 @@ const TEACH = {
   manual: ['从这关起，招式要自己点', '牌亮了，点它就出招。右边「自动」只会好了就放——接不住冲阵，别指望它。'],
   charge: ['冲阵！', '头顶挂「冲」字小旗的那队要冲城了。地上亮红光的地方是张飞一喝够得着的范围：等他们冲进红光再点张飞，喝住了马上点关羽。'],
   duel:   ['斗将', '敌将站在场中出招，城防就是你们的血。他普通的重招，会自动举盾挡下。'],
+  qixing: ['七星灯', '张角拜北斗，场上亮起七盏灯。20 秒内没灭的，每盏扣城防、给张角回血；七盏全亮就天门大开。点一盏灯，三人就一盏盏打过去（普攻三下灭一盏）；招式扫到的算两下。'],
   uns:    ['无双！', '这一招举盾挡不住。现在就点张飞，一喝喝断它！'],
   ambush: ['伏兵（简雍的计）', '两侧河沟里藏着乡勇。敌人大队走进河沟这一段时，点左边的「伏兵」令旗——扫到的人越多越好，人少了这关最多两星。'],
 };
@@ -1424,7 +1430,7 @@ function teach(key) {
 }
 function closeTeach() { if (!G.teach || uiNow() - G.teach.t0 < .5) return; if (G.teach.key) { INV.taught = { ...(INV.taught || {}), [G.teach.key]: true }; saveInv(); } G.teach = null; sfx('tap'); }
 function drawTeach() {
-  const T = G.teach, u = ease(Math.min(1, (uiNow() - T.t0) / .25)), low = T.key === 'charge' || T.key === 'uns';   // 冲阵、无双：框放低一点、遮罩淡一点，露出说的那队敌人、那员敌将
+  const T = G.teach, u = ease(Math.min(1, (uiNow() - T.t0) / .25)), low = T.key === 'charge' || T.key === 'uns' || T.key === 'qixing';   // 冲阵、无双：框放低一点、遮罩淡一点，露出说的那队敌人、那员敌将
   ctx.save(); ctx.fillStyle = `rgba(8,5,3,${(low ? .3 : .55) * u})`; ctx.fillRect(0, 0, W, H);
   const gi = T.goals && !T.plain, lines = T.goals ? T.goals.flatMap(([st, tx]) => fitLines(tx, gi ? W - 150 : W - 96, 15, PLAIN).map((ln, i) => [i ? '' : st, ln])) : fitLines(T.text, W - 96, 15, PLAIN).map(ln => ['', ln]), bh = 92 + lines.length * 22, bx = 24, bw = W - 48, by = H * (low ? .6 : .36) - bh / 2 + (1 - u) * 20;
   ctx.globalAlpha = u; plate(bx, by, bw, bh);
@@ -1465,6 +1471,7 @@ function step(dt) {
   for (const e of G.foes) {
     if (e.dead) continue;
     const T = FOES[e.kind];
+    if (T.lamp) { if (e.flash > 0) e.flash -= dt; continue; }   // 七星灯不走不动，喝不退
     if (e.hitT > 0) e.hitT -= dt;
     if (e.flashDelay > 0) { e.flashDelay -= dt; if (e.flashDelay <= 0 && e.kickPend) { e.kick = Math.min(10, (e.kick || 0) + e.kickPend); e.kickPend = 0; } }   // 刀还没扫到
     else if (e.flash > 0) e.flash -= dt;
@@ -1557,7 +1564,7 @@ function step(dt) {
   // 互相挤开一点，别叠成一团
   const al = alive();
   for (let i = 0; i < al.length; i++) for (let j = i + 1; j < al.length; j++) {
-    const a = al[i], b = al[j], dx = b.x - a.x, dy = b.y - a.y, m = (FOES[a.kind].r + FOES[b.kind].r) * 1.5 * persp((a.y + b.y) / 2);
+    const a = al[i], b = al[j]; if (a.lamp || b.lamp) continue; const dx = b.x - a.x, dy = b.y - a.y, m = (FOES[a.kind].r + FOES[b.kind].r) * 1.5 * persp((a.y + b.y) / 2);
     if (Math.abs(dy) < m * .7 && Math.abs(dx) < m) { const p = (m - Math.abs(dx)) * .5 * (dx < 0 ? -1 : 1) * .15; a.x = clamp(a.x - p, 16, W - 16); b.x = clamp(b.x + p, 16, W - 16); }
   }
   // 城头武将各自普攻
@@ -1589,6 +1596,7 @@ const RU0 = () => G.RU;
 // ---------- 各关的规则（10-24，见 ../设计/第一章设定.md 第四节） ----------
 function stepRules(dt) {
   const RU = G.RU;
+  if (G.qx && G.duel && !G.duel.dead) stepQixing(dt);
   for (let i = 0; i < NS; i++) if (G.seal[i] > 0) G.seal[i] -= dt;
   if (G.shieldT > 0) G.shieldT -= dt; if (G.shieldCd > 0) G.shieldCd -= dt; if (G.counterT > 0) G.counterT -= dt; if (G.rageT > 0) G.rageT -= dt;
   if (RU.volley) {                                             // 城头乡勇齐射
@@ -1709,6 +1717,35 @@ function stepDuel(e, dt) {
 // 10-28 斗将的「无双」（用户：「我希望是自动一般打不过，必须是在准确时间按下关键的技能才能打过」）：敌将每第 UNS_EVERY 记重招举盾挡不住，
 // 只有张飞的一喝能在它蓄力时喝断；没喝断至少扣 UNS_HIT 城防（漏一次四成，漏两次就守不住）。自动出招一喝好了就放，到无双时多半在冷却；留着一喝等「无双·喝断它」才喝的接得住
 const UNS_EVERY = 2, UNS_HIT = 40;
+// 七星灯（11-01 用户：「第十关还是太简单？」→ 方案「两样都做」）：张角按 rules.qixing.at 的时刻拜北斗，战场中段撒七盏灯（北斗勺形，随机左右翻），t 秒倒数。
+// 灯在召来的黄巾后面，普攻不会自己去打；点一盏灯（或先点武将再点灯），够得着的人就一盏盏打过去，三下灭一盏，灭了标记自动跳到最近的下一盏，灭完回到张角；
+// 青龙斩、双股剑、一喝扫到的一下就灭。倒数完：每盏没灭的城防 -hit、张角回 heal；七盏全亮「天门大开」城防 -all。血少一半后下一次最迟隔 p2gap 秒。
+// 推演：__sg.lampPol = 'smart'（默认，开拜 0.8 秒后点最近的灯）| 'none'（不点灯）
+const QX_POS = [[52, 286], [58, 322], [110, 326], [106, 290], [162, 284], [216, 294], [272, 282]];   // 天枢、天璇、天玑、天权、玉衡、开阳、摇光
+const lampHunt = () => !!((G.focus && G.focus.lamp) || (G.focusBy && Object.values(G.focusBy).some(f => f && f.lamp)));
+function stepQixing(dt) {
+  const Q = G.RU.qixing, X = G.qx, b = G.duel;
+  if (X.T > 0) {
+    X.T -= dt; const lit = G.foes.filter(e => e.lamp && !e.dead);
+    if (G.sim && (window.__sg.lampPol || 'smart') === 'smart' && G.t - X.t0 > .8 && lit.length && !lampHunt()) G.focus = lit.sort((a, c) => Math.abs(a.x - HX) - Math.abs(c.x - HX))[0];
+    if (!lit.length) { X.T = 0; X.after(); if (!G.sim) G.fx.push({ k: 'banner', t: 0, text: '七星尽灭', sub: '张角拜斗不成' }); return; }
+    if (X.T <= 0) { const n = lit.length, dw = n >= QX_POS.length ? Q.all : Q.hit * n; for (const e of lit) e.dead = true; if (lampHunt()) { G.focus = b; G.focusBy = {}; }
+      G.wall -= dw; b.hp = Math.min(b.max, b.hp + b.max * Q.heal * n); G.shake = .5; X.after();
+      if (!G.sim) { G.fx.push({ k: 'banner', t: 0, text: n >= QX_POS.length ? '天门大开' : '七星灯余 ' + n + ' 盏', sub: '城防 -' + dw + '，张角回血 ' + Math.round(Q.heal * n * 100) + '%' }); for (const e of lit) G.fx.push({ k: 'bolt', t: 0, x: clamp(e.x, 40, 320), bx: e.x, by: e.y }); } }
+    return;
+  }
+  if (G.t < X.next || b.mv) return;
+  X.T = Q.t; X.t0 = G.t; X.k++; X.after = () => { X.next = Math.min(Q.at[X.k] ?? 1e9, b.hp < b.max * .5 ? X.t0 + Q.p2gap : 1e9); };
+  const mir = rnd() < .5; QX_POS.forEach(([x, y], i) => { const f = spawn({ kind: 'qixing', x: mir ? W - x : x, lane: false }, y); f.lamp = true; f.hits = Q.hits; f.idx = i; f.born = G.t; });
+  b.moveT = Math.max(b.moveT, 2); b.castT = 2; teach('qixing');
+  if (!G.sim) { G.fx.push({ k: 'banner', t: 0, text: '张角拜北斗', sub: Q.t + ' 秒内点灭七星灯' }); foeCutIn(b, '拜斗'); }
+}
+function lampOut(e) {
+  e.dead = true; const rest = G.foes.filter(f => f.lamp && !f.dead), nx = () => rest.slice().sort((a, c) => Math.hypot(a.x - e.x, a.y - e.y) - Math.hypot(c.x - e.x, c.y - e.y))[0];
+  if (G.focus === e) G.focus = rest.length ? nx() : G.duel && !G.duel.dead ? G.duel : null;
+  if (G.focusBy) for (const h in G.focusBy) if (G.focusBy[h] === e) { if (rest.length) G.focusBy[h] = nx(); else delete G.focusBy[h]; }
+  if (!G.sim) { burst('ember', e.x, e.y - 22, 4, 110, { life: .6, s: 3, g: -40 }); G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 44, text: '灭', size: 18, color: INK }); if (ML) ML.splat(e.x, e.y - 30, 0, -70, 10, [0, 0, .5, 0]); }   // 灭了冒一缕烟
+}
 function resolveMove(e, k) {
   const L = G.lv;
   if (k === 'combo') {                                              // 连斩：先砍一下，0.7 秒后再一下（第二下要再举一次盾）
@@ -1736,11 +1773,11 @@ function stepAttacks(dt, al) {
     const rage = id === 'zhang' && G.rageT > 0;
     G.atkT[i] -= dt * G.st.spd[id] * (rage ? 2 : 1) * (id === 'zhang' && G.t < (G.mengT || 0) ? 2 : 1) * (G.tauntT > 0 ? .5 : 1) * Math.pow(.9, G.flagsDown || 0); if (G.atkT[i] > 0) continue;
     const A0 = GEN[id].atk, A = { ...A0, range: A0.range + G.st.reach[id] + (rage ? 40 : 0), n: rage ? 3 : A0.n }, gx = genX(i), gy = GY - 40;
-    const inR = al.filter(e => e.y > TOP - 4 && !FOES[e.kind].civ && !FOES[e.kind].invuln && Math.hypot(e.x - gx, e.y - 14 - gy) < A.range && seen(e));   // 夜里黑处的打不到
+    const fo = (G.focusBy && G.focusBy[id]) || G.focus, hunt = fo && fo.lamp;    // 各人自己的标记优先，没有就跟全体标记；标的是七星灯就先打灯
+    const inR = al.filter(e => e.y > TOP - 4 && !FOES[e.kind].civ && !FOES[e.kind].invuln && (!e.lamp || hunt) && Math.hypot(e.x - gx, e.y - 14 - gy) < A.range && seen(e));   // 夜里黑处的打不到；没点灯不打灯
     if (!inR.length) { G.atkT[i] = .1; continue; }
     // 先打点过的，再打离城最近的，再打离自己近的
-    const fo = (G.focusBy && G.focusBy[id]) || G.focus;                          // 各人自己的标记优先，没有就跟全体标记
-    inR.sort((a, b) => ((b === fo) - (a === fo)) || (!!b.onCart - !!a.onCart) || (b.y - a.y) || (Math.abs(a.x - gx) - Math.abs(b.x - gx)));
+    inR.sort((a, b) => ((b === fo) - (a === fo)) || (hunt ? !!b.lamp - !!a.lamp : 0) || (!!b.onCart - !!a.onCart) || (b.y - a.y) || (Math.abs(a.x - gx) - Math.abs(b.x - gx)));
     G.atkT[i] = A.cd;
     const dmg = A.dmg * G.st.atkMul * (TUNE.atk || 1) * (G.windT > 0 ? .5 : 1), n = 1 + G.st.n[id], tg = inR[0], ang = Math.atan2(tg.y - 14 - gy, tg.x - gx);
     G.anim[i] = { t: 0, ang, v: pickAtk(id, i) };
@@ -1843,7 +1880,7 @@ const manualOn = () => G && !G.sim && !window.__sg.auto && !G.RU.casts && !G.aut
 // 张飞一时好不了才单放：关羽等刀下够一堆，刘备等有大将或晕住的。反应留 0.3 秒左右（敌将蓄招 0.5 秒后才喝），不是神仙手速
 function smartCast(al) {
   const slot = id => G.order.indexOf(id), ok = i => i >= 0 && knows(G.order[i]) && G.t >= G.ready[i] && G.seal[i] <= 0 && !flareHold(G.order[i]);
-  const zi = slot('zhang'), gi = slot('guan'), li = slot('liu'), R0 = G.st.zhangR, foes = al.filter(e => !FOES[e.kind].civ && !FOES[e.kind].invuln && seen(e));
+  const zi = slot('zhang'), gi = slot('guan'), li = slot('liu'), R0 = G.st.zhangR, foes = al.filter(e => !FOES[e.kind].civ && !FOES[e.kind].invuln && !e.lamp && seen(e));
   const d = e => WALL_Y - e.y, boss = foes.find(e => FOES[e.kind].boss), duel = G.duel && !G.duel.dead ? G.duel : null;
   const stunned = foes.filter(e => e.stun > .3), sinceRoar = G.t - (G.roarT ?? -99), zSoon = zi >= 0 && knows('zhang') && G.seal[zi] <= 0 ? G.ready[zi] - G.t : 99;
   const pend = Object.entries(G.chg || {}).some(([id, c]) => c.state === 'warn' || (c.state === 'mark' && foes.some(e => e.ch == id && d(e) < CHARGE.stage + 90))), run = foes.filter(e => e.chargeT > 0), runIn = run.filter(e => d(e) < R0 * .9);
@@ -2253,7 +2290,7 @@ function renderScreen() {
   drawWallProps();
   for (const e of fs) drawFoe(e);
   for (const f of G.fx) if (f.k === 'ambush') drawAmbushTroops(f);
-  drawFieldThings(); drawCart(); drawNight();
+  drawFieldThings(); drawCart(); drawNight(); drawQixingHud();
   if (G.windT > 0) { const a = Math.min(1, G.windT / .6); for (let k = 0; k < 9; k++) { const y = TOP + 40 + k * 44, x = ((G.t * 420 + k * 137) % (W + 200)) - 100; brush(ctx, [[x - 90, y], [x - 30, y - 6], [x + 40, y + 2]], 5, '#6e675d', .35 * a, u => Math.sin(Math.PI * u), .3, vr); } }
   if (ready(IMG.wall)) ctx.drawImage(IMG.wall, 0, WALL_Y - 12, W, 78); else ctx.drawImage(WALL, 0, WALL_Y - 14, WALL.lw, WALL.lh);
   drawGenerals(); drawAdviser();
@@ -2261,8 +2298,8 @@ function renderScreen() {
   if (SPX.ok) spxParts(); else drawParts();
   spxPass('top');
   drawFbs(); drawSpfx(false);
-  if (texOK()) { const hf = G.huts.filter(h => h.lit), ff = G.foes.filter(e => !e.dead && e.burnT > 0 && seen(e)).slice(0, 40);   // 11-01 草棚的火、身上的火：纹理＋泛光
-    if (hf.length || ff.length) glowPass(g => { for (const e of ff) foeFireTex(g, e); for (const h of hf) hutFireTex(g, h); }, .45);
+  if (texOK()) { const hf = G.huts.filter(h => h.lit), ff = G.foes.filter(e => !e.dead && !e.lamp && e.burnT > 0 && seen(e)).slice(0, 40), lf = G.foes.filter(e => e.lamp && !e.dead);   // 11-01 草棚的火、身上的火、七星灯：纹理＋泛光
+    if (hf.length || ff.length || lf.length) glowPass(g => { for (const e of ff) foeFireTex(g, e); for (const h of hf) hutFireTex(g, h); for (const e of lf) lampFireTex(g, e); }, .45);
     if (G.fx.some(f => f.k === 'hdl' || f.k === 'dragon' || f.k === 'fireline' || f.k === 'firearc')) glowPass(g => { for (const f of G.fx) { if (f.t < 0) continue; if (f.k === 'hdl') hdlTopTex(g, f); else if (f.k === 'dragon') dragonTex(g, f); else if (f.k === 'fireline') fireTex(g, f); else if (f.k === 'firearc') fireArcTex(g, f); } }); }   // 10-30 纹理版＋泛光
   else for (const f of G.fx) { if (f.k === 'hdl') drawHdlTop(f); else if (f.k === 'dragon') drawDragon(f); }
   for (const f of G.fx) if (f.k === 'cutin') drawCutIn(f);   // 黄天当立：光带、光瓣、飘带
@@ -2467,6 +2504,7 @@ function cavalrySheet(e, T, base) {
   return SHEETS[key] && ready(IMG[key]) ? key : base;
 }
 function drawFoe(e) {
+  if (e.lamp) return drawLamp(e);
   const T = FOES[e.kind], ps = persp(e.y), w = T.box[0] * ps, h = T.box[1] * ps, f = Math.floor(e.f) % 4;
   let x = e.x, y = e.y - (e.kick || 0) * ps;
   if (T.pt && !ownSheet(T) && ready(IMG['pt_' + T.pt])) drawPortrait(e, T, x, y, ps);
@@ -2900,6 +2938,34 @@ function hutFireTex(g, h) {                                                    /
   g.globalAlpha = 1;
   if (vr() < .35 * env) (G.shards = G.shards || []).push({ k: 'ember', x: h.x + VR(-20, 20), y: h.y - VR(20, 50) * env, vx: VR(-20, 20), vy: VR(-70, -35), born: t, life: VR(.5, .9), s: VR(2, 3.2), c: '#ffb070' });
   if (ML && vr() < .3) ML.splat(h.x + VR(-10, 10), h.y - 54 * env - 10, VR(-20, 20), VR(-90, -50), VR(9, 13), [0, 0, VR(.45, .65), 0]);   // 顶上一股烟（墨流的火舌在亮草地上发粉，不用）
+}
+// 七星灯（11-01）：铜灯台＋一朵灯火，地上一圈暖光，相邻的灯之间一缕很淡的金线连成北斗；挨一下火苗矮一截（三下灭）
+function drawLamp(e) {
+  const x = e.x, y = e.y, up = Math.min(1, (G.t - e.born) / .4), k = Math.max(.4, e.hits / G.RU.qixing.hits), t = G.vt || 0;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const pr = G.foes.find(f => f.lamp && !f.dead && f.idx === e.idx - 1);
+  if (pr) { ctx.globalAlpha = .28 * up; ctx.strokeStyle = GOLD; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(pr.x, pr.y - 30); ctx.lineTo(x, y - 30); ctx.stroke(); ctx.globalAlpha = 1; }
+  const r = 40 * k * up; ctx.translate(x, y); ctx.scale(1, .4); const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, r); gr.addColorStop(0, `rgba(255,196,90,${.5 + .1 * Math.sin(t * 7 + e.idx)})`); gr.addColorStop(1, 'rgba(255,170,60,0)');
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.fill(); ctx.restore();
+  brush(ctx, [[x - 7, y], [x + 7, y]], 3.2, '#4a3418', .9 * up, () => 1, .2, vr);            // 灯座
+  brush(ctx, [[x, y - 1], [x, y - 20]], 2.4, '#6b4c22', .95 * up, () => 1, .1, vr);           // 灯柱
+  brush(ctx, [[x - 8, y - 22], [x, y - 19], [x + 8, y - 22]], 3.6, '#9a7032', .95 * up, () => 1, .1, vr);   // 灯盏
+  if (!texOK()) brush(ctx, [[x, y - 22], [x + Math.sin(t * 9 + e.idx) * 2, y - 22 - 18 * k * up]], 7, '#ffd27a', .9, u => 1 - u, .2, vr);
+  if (e.flash > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = e.flash / .15; blot(ctx, x, y - 28, 10, '#fff4d0', .8, vr, 9); ctx.restore(); }
+  const all = G.focus === e, ids = G.order.filter(Boolean).filter(h => G.focusBy && G.focusBy[h] === e), cols = all ? [CINNABAR] : ids.map(h => HERO_COL[h] || CINNABAR);
+  cols.forEach((c, j) => { const mx = x + (j - (cols.length - 1) / 2) * 13, my = y - 42 - 3 * Math.abs(Math.sin(G.t * 4 + j)); ctx.save(); ctx.beginPath(); ctx.moveTo(mx - 6, my - 9); ctx.lineTo(mx + 6, my - 9); ctx.lineTo(mx, my); ctx.closePath();
+    ctx.shadowColor = c; ctx.shadowBlur = 8; ctx.fillStyle = c; ctx.fill(); ctx.shadowBlur = 0; ctx.lineWidth = 1.4; ctx.strokeStyle = '#fff8e8'; ctx.stroke(); ctx.restore(); });
+}
+function lampFireTex(g, e) {                                                   // 灯火：火焰纹理切几条，窄而高
+  const im = IMG.tex_flame, cw = im.width / 14, t = G.vt || 0, k = Math.max(.4, e.hits / G.RU.qixing.hits) * Math.min(1, (G.t - e.born) / .4), n = 4, wd = 12, sw = wd / n;
+  for (let i = 0; i < n; i++) { const u = (i + .5) / n, hh = 30 * k * Math.sin(Math.PI * u) ** .5 * (.8 + .2 * Math.sin(t * 13 + u * 7 + e.idx)), sx = ((u * 2 + e.idx) * cw + t * 60) % (im.width - cw);
+    g.globalAlpha = .95; g.drawImage(im, sx, 0, cw, im.height, e.x - wd / 2 + i * sw - .5, e.y - 20 - hh, sw + 1, hh + 3); }
+  g.globalAlpha = 1;
+}
+// 七星灯倒数：灯阵下面一行（上方会被提示条、张角的名字挡住）
+function drawQixingHud() {
+  const X = G.qx; if (!X || !(X.T > 0)) return; const n = G.foes.filter(e => e.lamp && !e.dead).length, urgent = X.T < 5;
+  uiText('七星灯 ' + n + ' / ' + QX_POS.length + '　' + Math.ceil(X.T) + ' 秒', W / 2, 352, urgent ? 19 : 17, urgent ? '#ff7a5a' : GOLD_HI, 'center', FONT, { lw: 4, glow: 'rgba(255,190,80,.5)', glowR: 6 });
 }
 function foeFireTex(g, e) {                                                    // 身上着火：一小簇火焰纹理贴在人身上
   const ps = persp(e.y), im = IMG.tex_flame, cw = im.width / 14, t = G.vt || 0, ph = e.jit || 0, n = 6, wd = 20 * ps, sw = wd / n;
