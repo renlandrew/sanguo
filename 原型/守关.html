@@ -561,12 +561,12 @@ const LEVELS = [
     rules: { rage: 24 },
     waves: [[2, 'yayi', 10, 6, 'rand'], [10, 'yayi', 14, 3, 'wedge'], [20, 'yayi', 16, 6, 'rand'], [28, 'yayi', 18, 3, 'line'], [38, 'yayi', 20, 6, 'rand'], [44, 'yayi', 16, 3, 'wedge'], [52, 'duyou', 1, 0, 'rand', { g: 'd', lead: true }], [53, 'yayi', 16, 6, 'rand', { g: 'd' }]],   // 11-01 用户：「第八关什么都不按都可以3*过」——原来一波 8–16 个陆续走来，张飞普攻＋怒鞭就清完，一招不放也三星；改成更多更密、三队成楔形／横排冲阵，要掐着一喝
     tips: [[1, '单将关：只有张飞上场'], [4, '张飞每刺满 24 下就「怒鞭督邮」：6 秒里刺得快一倍、一下刺三个'], [47, '督邮出来了，把他打倒！']] },
-  { id: 9, name: '广宗城下', sub: '夜战 · 张宝、张梁守广宗', hpMul: 1.968, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'night', reward: '符水葫芦',
-    rules: { night: { vis: 250, torches: [[78, 300], [282, 250]] } },
+  { id: 9, name: '广宗城下', sub: '夜战 · 张宝、张梁守广宗', hpMul: .9,   /* 11-01 改全黑（黑处难打中、火把全场亮 8 秒）后 1.968 → .9：机器人 8 种子会掐火把 2.4–2.75 星、一支不点 1.4 星输两局 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'night', reward: '符水葫芦',
+    rules: { night: { vis: 70, torches: [], blind: { atk: .3, sk: .5, lit: .85, n: 3, dur: 8 } } },   // 11-01 用户：「第九关也是超级简单……除了城墙和往外一点点的范围，整个战斗地图都是黑的」——黑处打得到但难打中，火把放进军功面板、点了全场亮 8 秒
     waves: [[2, 'bing', 24, 8, 'rand'], [8, 'shushi', 3, 4, 'rand'], [12, 'lishi', 6, 4, 'rand'], [16, 'bing', 28, 0, 'wedge'], [24, 'shushi', 4, 4, 'rand'], [26, 'bing', 34, 10, 'rand'], [34, 'gong', 8, 4, 'line'],
       [38, 'zhangbao', 1, 0, 'rand', { g: 'a', lead: true }], [38, 'bing', 30, 8, 'rand', { g: 'a' }], [46, 'shushi', 4, 4, 'rand', { g: 'a' }], [52, 'lishi', 10, 5, 'rand'],
       [58, 'zhangliang', 1, 0, 'rand', { g: 'b', lead: true }], [58, 'bing', 36, 10, 'rand', { g: 'b' }], [66, 'lishi', 8, 4, 'rand', { g: 'b' }]],
-    tips: [[1, '夜战：只看得见城前和火光里的敌人，黑处的打不到，还走得快'], [4, '三支火把会自己插到敌人多的地方，照亮一片 20 秒；着了火的敌人自己会亮'], [7, '术士洒符水给身边的黄巾回血，先点他'], [37, '地公将军张宝会刮妖风：武将普攻几秒内减半'], [57, '人公将军张梁给身边的兵挡刀']] },
+    tips: [[1, '夜战：城前一小条以外全是黑的，黑处普攻三成、招式五成才打得中，敌人还走得快'], [4, '「军功」里有三支火把：点一支全场亮 8 秒，命中回到八成五——趁亮集中放招'], [9, '张飞的一喝不用看准，黑处照样喝晕；喝晕的、着了火的敌人在黑处也打得中'], [7, '术士洒符水给身边的黄巾回血，先点他'], [37, '地公将军张宝会刮妖风：武将普攻几秒内减半'], [57, '人公将军张梁给身边的兵挡刀']] },
   { id: 10, name: '张角', sub: '大战 · 天公将军张角', kind: 'duel', boss: 'zhangjiao', hpMul: 4.55, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'camp', reward: '太平要术 · 兵书',
     moves: ['heavy', 'summon', 'heal', 'heavy', 'seal', 'summon', 'heavy', 'buff'], gap: 3.2, heavy: 11, adds: [['bing', 4], ['lishi', 1]], phase2: [['zhangbao', 120], ['zhangliang', 240]],
     tips: [[1, '天公将军张角：天雷自动举盾挡，符水要用张飞喝断'], [10, '妖术迷魂会封住一位武将几秒'], [30, '张角血少一半时，张宝、张梁会上阵']] },
@@ -1083,7 +1083,7 @@ function startLevel(i) {
   if (sim && window.__sg.upOver) Object.assign(exp, window.__sg.upOver(exp, lv.id) || {});   // 推演：按某天手里的东西覆盖（逐日推演用）
   G.up = sim ? (window.__sg.noUp ? {} : exp) : window.__sg.all ? Object.fromEntries([...new Set([...Object.keys(own), ...Object.keys(exp)])].map(k => [k, Math.max(own[k] || 0, exp[k] || 0)])) : { ...own };
   G.upMul = 1; G.wpnLv = {}; for (const h of ['guan', 'zhang', 'liu']) G.wpnLv[h] = G.up['wpn_' + h] ?? G.up.wpn ?? 0; G.awake = G.up.awake ? (!sim && INV.awake) || 'guan' : null;
-  G.blocks = 0; G.trenchT = 0; G.trenchFire = true; G.logUsed = false; G.nuUsed = false; G.logArm = false; G.nuArm = false; G.lights = []; G.lightN = RU.night ? 3 : 0; G.lightArm = false; G.lightChk = 0;
+  G.blocks = 0; G.trenchT = 0; G.trenchFire = true; G.logUsed = false; G.nuUsed = false; G.logArm = false; G.nuArm = false; G.lights = []; G.flareT = 0; G.lightN = RU.night ? (RU.night.blind ? RU.night.blind.n : 3) : 0; G.lightArm = false; G.lightChk = 0;
   if (G.up.liu3) G.st.liuSwords += 2;
   G.wpnNeed = (GATES[lv.id] || {}).wpn || 0;
   if (!window.__sg.simming && GATES[lv.id] && gateLack(lv.id).length) { const [, C] = counselNow(); G.tips = [[.5, `${C.name}：${GATE_SAY[lv.id]}`], ...(G.tips || [])]; }   // 缺推荐的东西：开战时军师提一句（10-26 不再拦关）
@@ -1167,8 +1167,11 @@ function uncountered(T) {
   return false;
 }
 const COUNTER_OF = { banma: 'cav', pozhen: 'shield', liuQi: 'ranged', jinshu: 'healer' };
+// 全黑的夜（第九关）：黑处普攻三成、招式五成打得中；火把亮着、喝晕的、着火的八成五；城前亮处全中。一喝是吼出去的，不用看准
+function hitP(e, src) { const N = night(), B = N && N.blind; if (!B || !WHO[src] || src === 'roar' || G.dmgName) return 1; if (e.y > WALL_Y - N.vis) return 1; return litOf(e) ? B.lit : BIGSRC.has(src) ? B.sk : B.atk; }
 function hurt(e, d, src) {
   if (e.dead || e.rout) return;
+  { const p = hitP(e, src); if (p < 1 && rnd() >= p) { G.missN = (G.missN || 0) + 1; if (!G.sim && (G.vt || 0) - (G.missT || -9) > .25) { G.missT = G.vt || 0; G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 30, text: '落空', size: 12, color: '#8a8f9c' }); } return; } }
   if (e.shield > 0 && src !== 'burn') { e.shield--; G.fx.push({ k: 'guard', t: 0, x: e.x, y: e.y - 20 }); return; }     // 张梁给的挡刀
   if (e.duel && G.counterT > 0 && (src === 'slash' || src === 'sword' || src === 'roar')) d *= 1.5;                      // 举盾挡下以后的反击
   const T0 = FOES[e.kind];
@@ -1527,7 +1530,7 @@ function step(dt) {
     e.onCart = false;
     const stopY = T.stopY ? T.stopY + e.jit : WALL_Y - 3;
     if (e.y < stopY) {
-      const v = T.spd * SPD_X * WALK(e) * 1.04 * depth(e.y) * (TUNE.spd || 1) * (G.st.jum && e.y > WALL_Y - 74 ? .5 : 1) * (e.hasteT > 0 ? 1.3 : 1) * (G.st.foeSpd || 1) * (e.chargeT > 0 ? CHARGE.spd : 1) * (G.slowT > 0 ? .15 : 1) * (e.inTrench ? .5 : 1) * (G.RU.night && !seen(e) ? 1.3 : 1), ny = Math.min(stopY, e.y + v * dt);
+      const v = T.spd * SPD_X * WALK(e) * 1.04 * depth(e.y) * (TUNE.spd || 1) * (G.st.jum && e.y > WALL_Y - 74 ? .5 : 1) * (e.hasteT > 0 ? 1.3 : 1) * (G.st.foeSpd || 1) * (e.chargeT > 0 ? CHARGE.spd : 1) * (G.slowT > 0 ? .15 : 1) * (e.inTrench ? .5 : 1) * (G.RU.night && !litOf(e) ? 1.3 : 1), ny = Math.min(stopY, e.y + v * dt);
       fan(e, ny - e.y); e.y = ny; e.f = (e.f + dt * v * .16) % 4; e.atk = false;
       if (T.zig) e.x = clamp(e.x + Math.sin(G.t * 3 + e.ph) * 55 * dt, 16, W - 16);          // 衙役乱跑
     } else if (T.shoot) {
@@ -1614,7 +1617,9 @@ function stepRules(dt) {
   if (G.slowT > 0) G.slowT -= dt;
   if (G.trenchT > 0) G.trenchT -= dt;
   if (G.lights.length) { for (const L of G.lights) L.t -= dt; G.lights = G.lights.filter(L => L.t > 0); }
-  if (G.lightN > 0 && (G.lightChk -= dt) <= 0) {   // 夜战火把也自动插（10-28）
+  if (G.flareT > 0) G.flareT -= dt;
+  if (G.RU.night && G.RU.night.blind) { if ((G.sim || window.__sg.auto) && G.lightN > 0) botFlare(); }   // 全黑关：火把玩家在军功面板里点，机器人按 flarePol 点
+  else if (G.lightN > 0 && (G.lightChk -= dt) <= 0) {   // 夜战火把也自动插（10-28）
     G.lightChk = 1; botLight(alive()); }
   stepFoeTac();                                                                // 敌方军师的计（10-29 随机）
   if (G.lz && !G.lz.used && (G.sim || window.__sg.auto) && alive().filter(e => !FOES[e.kind].boss && !FOES[e.kind].civ && e.y > LZ_Y - 90 && e.y < LZ_Y + 10).length >= 8) fireDitch();   // 机器人：堑前挤了 8 个以上才挖
@@ -1835,7 +1840,7 @@ const manualOn = () => G && !G.sim && !window.__sg.auto && !G.RU.casts && !G.aut
 // 张飞的一喝留到城前圈里压了一片、有兵快撞城、或敌将蓄重招时（喝断）才放；关羽、刘备趁喝晕的那一阵接上（砍晕的多受伤、双剑专砍晕的），
 // 张飞一时好不了才单放：关羽等刀下够一堆，刘备等有大将或晕住的。反应留 0.3 秒左右（敌将蓄招 0.5 秒后才喝），不是神仙手速
 function smartCast(al) {
-  const slot = id => G.order.indexOf(id), ok = i => i >= 0 && knows(G.order[i]) && G.t >= G.ready[i] && G.seal[i] <= 0;
+  const slot = id => G.order.indexOf(id), ok = i => i >= 0 && knows(G.order[i]) && G.t >= G.ready[i] && G.seal[i] <= 0 && !flareHold(G.order[i]);
   const zi = slot('zhang'), gi = slot('guan'), li = slot('liu'), R0 = G.st.zhangR, foes = al.filter(e => !FOES[e.kind].civ && !FOES[e.kind].invuln && seen(e));
   const d = e => WALL_Y - e.y, boss = foes.find(e => FOES[e.kind].boss), duel = G.duel && !G.duel.dead ? G.duel : null;
   const stunned = foes.filter(e => e.stun > .3), sinceRoar = G.t - (G.roarT ?? -99), zSoon = zi >= 0 && knows('zhang') && G.seal[zi] <= 0 ? G.ready[zi] - G.t : 99;
@@ -2416,7 +2421,7 @@ function drawWallProps() {
   for (const p of PERKS) if (G.perks[p.id] && !p.gen && !p.combo && p.id !== 'banma' && ready(IMG['ui_ico_' + p.id])) items.push({ im: IMG['ui_ico_' + p.id], n: G.perks[p.id], used: (p.id === 'log' && G.logUsed) || (p.id === 'nu' && G.nuUsed), name: p.name, desc: p.desc });
   if (G.st.logs > 0 && !G.perks.log && ready(IMG.ui_ico_log)) items.push({ im: IMG.ui_ico_log, n: G.st.logs, used: G.logUsed, name: '滚木', desc: '敌人挤成一堆时自己滚下去，那一列碾平（一关一次）' });   // 关卡送的（第一关开局送一层滚木）
   if (G.st.nu > 0 && !G.perks.nu && ready(IMG.ui_ico_nu)) items.push({ im: IMG.ui_ico_nu, n: G.st.nu, used: G.nuUsed, name: '连弩', desc: '敌人最密时自己放，一列万箭齐发（一关一次）' });
-  if (G.RU.night) items.push({ im: IMG.ui_ico_fire, n: G.lightN, used: G.lightN <= 0, name: '火把', desc: '自己插到敌人多的地方，照亮一片 20 秒' });
+  if (G.RU.night) items.push({ im: IMG.ui_ico_fire, n: G.lightN, used: G.lightN <= 0, name: '火把', desc: G.RU.night.blind ? '在「军功」里点：全场亮 8 秒，命中回到八成五' : '自己插到敌人多的地方，照亮一片 20 秒' });
   if (G.RU.decoy) items.push({ cloth: true, n: G.decoyN || 0, used: !G.decoyN, name: '赤帻', desc: '城前压了一片时自己扔下去，附近敌人 5 秒都冲它去' });
   if (G.duel) items.push({ shield: true, on: G.shieldT > 0, name: '自动举盾', desc: '敌将普通的重招自动挡下；无双挡不住，要一喝喝断' });
   const sz = 22, gap = 4, y = WALL_Y - 20 - sz; let x = W - 50 - sz;   // 贴在城垛正上方、暂停钮左边（10-28 用户框的位置，又往下挪了一截）
@@ -2837,8 +2842,18 @@ const night = () => G && G.RU.night;
 // 夜战（10-25 用户：「确实要有夜战。夜战不只是图变了，战斗特点也要变」）：看得见的才打得到——城前一段、营里的火光、自己扔的火把、身上着火的、火沟边上；
 // 黑处的敌人走得快三成；每关三支火把（底栏空格里，点它再点战场，照亮一圈 20 秒）——火油、火矛、怒雷火沟夜里更值钱
 const LIGHT_R = 90, LIGHT_T = 20;
-const seen = e => { const N = night(); if (!N) return true; if (e.y > WALL_Y - N.vis || e.burnT > 0) return true; if (G.trenchT > 0 && Math.abs(e.y - G.trenchY) < 50) return true;
+const seen = e => { const N = night(); if (!N || N.blind) return true; return litOf(e); };   // 打得到打不到（全黑关黑处也打得到，只是难打中：见 hitP）
+const litOf = e => { const N = night(); if (!N) return true; if (e.y > WALL_Y - N.vis || e.burnT > 0) return true; if (N.blind && (G.flareT > 0 || e.stun > 0)) return true; if (G.trenchT > 0 && Math.abs(e.y - G.trenchY) < 50) return true;
   return N.torches.some(([x, y]) => Math.hypot(e.x - x, e.y - y) < 80) || (G.lights || []).some(L => Math.hypot(e.x - L.x, e.y - L.y) < LIGHT_R); };
+function lightFlare() { const B = night() && night().blind; if (!B || !(G.lightN > 0) || G.flareT > 0 || G.state !== 'play') return; G.lightN--; G.flareT = B.dur; G.events && G.events.push([G.t, '火']);
+  if (!G.sim) { G.fx.push({ k: 'txt', t: 0, x: W / 2, y: 300, text: '举火！', size: 26, color: '#ffb04a' }); sfx('horn'); } }
+// 机器人点火把（__sg.flarePol）：smart 等场上压了一大片、至少两人招式好了再点；naive 第 8、30、55 秒随手点；none 一支不点
+function botFlare() { const pol = window.__sg.flarePol || 'smart'; if (pol === 'none' || G.flareT > 0) return;
+  if (pol === 'naive') { if ([8, 30, 55].some(t => G.t >= t && G.t < t + .05)) lightFlare(); return; }
+  const near = alive().filter(e => !FOES[e.kind].civ && e.y > WALL_Y - 260).length, rdy = G.order.filter((id, i) => id && G.t >= G.ready[i]).length;
+  if ((near >= 22 && rdy >= 2) || (G.wall < G.wallMax * .45 && near >= 8)) lightFlare(); }
+// 机器人（smart）在全黑关攒招：还有火把、火把没亮时，关羽、刘备的招先不放，等点了火把一起放；张飞的一喝不用看准，照放；城防掉到四成就不攒了
+const flareHold = id => { const B = night() && night().blind; return !!B && G.sim && (window.__sg.flarePol || 'smart') === 'smart' && G.lightN > 0 && !(G.flareT > 0) && id !== 'zhang' && G.wall > G.wallMax * .4; };
 function placeLight(x, y) { if (!(G.lightN > 0)) return; G.lightN--; G.lightArm = false; G.lights.push({ x: clamp(x, 20, W - 20), y: clamp(y, HZ + 40, WALL_Y - 60), t: LIGHT_T }); }
 // 机器人试跑时替玩家扔火把：黑处压过来六个以上，扔在他们中间
 function botLight(al) { const dark = al.filter(e => !seen(e) && e.y > HZ + 30 && !FOES[e.kind].civ); if (dark.length < 6) return; placeLight(dark.reduce((a, e) => a + e.x, 0) / dark.length, Math.max(...dark.map(e => e.y)) + 20); }
@@ -2846,14 +2861,17 @@ function drawNight() {
   const N = night(); if (!N) return;
   if (!NIGHTC) { NIGHTC = document.createElement('canvas'); NIGHTC.width = Math.ceil(W * RS); NIGHTC.height = Math.ceil(H * RS); }   // 夜战才建
   const g = NIGHTC.getContext('2d'); g.setTransform(RS, 0, 0, RS, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, W, H);
-  g.fillStyle = 'rgba(10,12,22,.84)'; g.fillRect(0, 0, W, WALL_Y + 20);
+  const B = N.blind, fa = B && G.flareT > 0 ? Math.min(1, (B.dur - G.flareT) / .25, G.flareT / .6) : 0;   // 举火：全场亮到五成黑（不如白天），进出各有一点渐变
+  g.fillStyle = B ? `rgba(14,10,18,${.8 - .3 * fa})` : 'rgba(10,12,22,.84)'; g.fillRect(0, 0, W, WALL_Y + 20);
   g.globalCompositeOperation = 'destination-out';
   const lg = g.createLinearGradient(0, WALL_Y - N.vis - 30, 0, WALL_Y - N.vis + 70); lg.addColorStop(0, 'rgba(0,0,0,0)'); lg.addColorStop(1, 'rgba(0,0,0,1)'); g.fillStyle = lg; g.fillRect(0, WALL_Y - N.vis - 30, W, H);
   for (const [x, y] of N.torches) { const fl = 80 + Math.sin(G.t * 9 + x) * 4, rg = g.createRadialGradient(x, y, 10, x, y, fl); rg.addColorStop(0, 'rgba(0,0,0,1)'); rg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = rg; g.beginPath(); g.arc(x, y, fl, 0, 6.283); g.fill(); }
   for (const L of G.lights) { const fl = LIGHT_R * Math.min(1, L.t / 1.5, (LIGHT_T - L.t) / .3 + .3) + Math.sin(G.t * 9 + L.x) * 4; if (fl <= 11) continue; const rg = g.createRadialGradient(L.x, L.y, 10, L.x, L.y, fl); rg.addColorStop(0, 'rgba(0,0,0,1)'); rg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = rg; g.beginPath(); g.arc(L.x, L.y, fl, 0, 6.283); g.fill(); }
   for (const e of G.foes) if (!e.dead && e.burnT > 0) { const rg = g.createRadialGradient(e.x, e.y - 14, 4, e.x, e.y - 14, 34); rg.addColorStop(0, 'rgba(0,0,0,.9)'); rg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = rg; g.beginPath(); g.arc(e.x, e.y - 14, 34, 0, 6.283); g.fill(); }
   if (G.trenchT > 0) { const tg = g.createLinearGradient(0, G.trenchY - 50, 0, G.trenchY + 50); tg.addColorStop(0, 'rgba(0,0,0,0)'); tg.addColorStop(.5, 'rgba(0,0,0,1)'); tg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = tg; g.fillRect(0, G.trenchY - 50, W, 100); }
+  for (const e of G.foes) if (B && !e.dead && e.stun > 0 && !e.burnT) { const rg = g.createRadialGradient(e.x, e.y - 14, 4, e.x, e.y - 14, 26); rg.addColorStop(0, 'rgba(0,0,0,.75)'); rg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = rg; g.beginPath(); g.arc(e.x, e.y - 14, 26, 0, 6.283); g.fill(); }   // 喝晕的在黑处也看得见
   ctx.drawImage(NIGHTC, 0, 0, W, H);
+  if (B && fa > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,130,40,${.13 * fa})`; ctx.fillRect(0, 0, W, WALL_Y); ctx.restore(); }   // 火光的暖色
   if (!ML) for (const L of G.lights) { const rg = ctx.createRadialGradient(L.x, L.y - 6, 2, L.x, L.y - 6, 22); rg.addColorStop(0, 'rgba(255,200,110,.85)'); rg.addColorStop(1, 'rgba(255,120,40,0)'); ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(L.x, L.y - 6, 22, 0, 6.283); ctx.fill(); }
   // 火把（10-25 用户指着代码画的黑杆子锥形火苗：「这些都要去掉」）：不画杆子和火苗，营里的火只照亮；自己扔的火把用墨流层烧一小团真火
   if (ML) for (const L of G.lights) if (vr() < .5) ML.splat(L.x + VR(-6, 6), L.y, VR(-15, 15), VR(-70, -40), VR(4, 6), [0, VR(.5, .8), .08, 0]);
@@ -4972,6 +4990,9 @@ function drawBattleBtns() {
   if (G.propTip && (G.propTip.hover || uiNow() - G.propTip.t0 < 2.2)) { const T = G.propTip, lines = fitLines(T.desc, 150, 11, PLAIN), bw = 170, bh = 26 + lines.length * 14, bx = clamp(T.x - bw / 2, 6, W - bw - 6), by = T.y - bh - 8;   // 军械小图标的说明（点一下 / 鼠标停住）
     uiPanel(bx, by, bw, bh, { r: 6, alpha: .95 }); uiText(T.name, bx + 10, by + 13, 13, UIC.gold2, 'left', FONT, { stroke: false }); lines.forEach((ln, i) => uiText(ln, bx + 10, by + 30 + i * 14, 11, UIC.cream, 'left', PLAIN, { stroke: false })); }
   ctx.save(); if (over) ctx.globalAlpha = .22; roundBtn(32, 402, 20, '功', '军功', () => { G.panel = true; G.panelAdv = null; MENU.panelT = uiNow(); }, false); ctx.restore();
+  if (G.RU.night && G.RU.night.blind && (G.lightN > 0 || G.flareT > 0)) { const ic = IMG.ui_ico_fire, bx = 50, by = 386;   // 「功」右上角挂火把：还剩几支、亮着还剩几秒
+    ctx.save(); if (G.flareT <= 0) { ctx.shadowColor = `rgba(255,150,60,${.5 + .3 * Math.sin(uiNow() * 4)})`; ctx.shadowBlur = 10; } if (ready(ic)) ctx.drawImage(ic, bx - 10, by - 10, 20, 20); ctx.restore();
+    uiText(G.flareT > 0 ? Math.ceil(G.flareT) + '秒' : '×' + G.lightN, bx + 12, by + 2, 11, '#ffb04a', 'left', PLAIN, { lw: 3 }); }
 }
 function drawPause() {
   ctx.fillStyle = 'rgba(8,5,4,.7)'; ctx.fillRect(0, 0, W, H);
@@ -4999,7 +5020,10 @@ function drawMerit() {
   uiText(fitText(intel.length ? '后面还有：' + intel.join('、') : '后面没什么特别的兵了', 11, W - 36), 18, y2 + 20, 11, UIC.cream, 'left', PLAIN, { stroke: false });
   if (!G.panelAdv && !maxed) { const av = availPerks(); G.panelAdv = av.length ? counselAdvise(av) : null; G.panelAdv && (G.panelAdv.list = av); }
   const A = G.panelAdv; drawCounselSay(ck, C, maxed ? '这关的战法定了，照这套打到底' : A ? `下次晋升先拿「${A.list[A.i].name}」：${A.why}` : '战法都拿全了', y2 + 32);
-  pill(110, 596, 140, 32, '继续', () => { G.panel = false; });
+  if (G.RU.night && G.RU.night.blind) { const ok = G.lightN > 0 && !(G.flareT > 0); ctx.save(); if (!ok) ctx.globalAlpha = .45;
+    pill(18, 596, 156, 32, G.flareT > 0 ? '火把还亮着' : G.lightN > 0 ? `点火把（剩 ${G.lightN}）` : '火把用完了', () => { if (!ok) return; G.panel = false; lightFlare(); }, true); ctx.restore();
+    pill(186, 596, 156, 32, '继续', () => { G.panel = false; }); }
+  else pill(110, 596, 140, 32, '继续', () => { G.panel = false; });
 }
 // 军师页：三位军师的智力、专长、偏好、盲点；选一位随军
 // ---------- 声音（10-25 夜用户：「这里还要加个系统，声音，声效，月卡等」「声乐声效模仿光荣的三国志系列」） ----------
