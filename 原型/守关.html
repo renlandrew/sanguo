@@ -5642,7 +5642,7 @@ function drawQimou() {
 }
 function drawCamp() {
   campBg('军帐'); dailyTick();
-  plaque3(10, 14, 80, 26, '奇谋', () => { screen = 'qimou'; QM.sel = null; });   // 10-29 奇谋卡（大招、军师计、敌方计）
+  plaque3(10, 14, 80, 26, '奇谋', () => { screen = 'qimou'; QM.sel = null; QM.from = 'camp'; });   // 10-29 奇谋卡（大招、军师计、敌方计）
   { const n = achClaimable().length; plaque3(W - 104, 14, 94, 26, '功绩簿', () => { screen = 'ach'; }, n > 0); if (n) uiSeal(W - 10, 14, 16, String(n), UIC.red, true);   /* 牌匾按原图比例，宽 128 时正好 26 高，字在中间（10-29 用户：「字要居中」） */ }
   const gl = campGoal(), TOPY = gl ? 0 : -66;   // 没东西要备时顶上只放一块矮的官阶卡（10-29 用户：「这4个框的大小应该如蓝框」）
   plate(14, 58, W - 28, gl ? 166 : 100, !!gl);
@@ -6229,6 +6229,9 @@ function navBtn(cx, label, draw, fn, badge, big) {
   hit(cx - 29, cy - 30, 58, H - cy + 30, fn);
 }
 const navIco = k => (cx, cy, s) => { const im = IMG[k]; if (!ready(im)) return; const f = s / Math.max(im.width, im.height); ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); };
+const navCards = (cx, cy, s) => { [['foe_fire', -.32, -9], ['roar', .3, 9], ['qinglong', 0, 0]].forEach(([k, a, dx]) => { const im = IMG['card_' + k], w = s * .5, h = w * 1.5;   // 奇谋钮：三张奇谋卡扇开
+    ctx.save(); ctx.translate(cx + dx, cy + 4); ctx.rotate(a); ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 4; ctx.fillStyle = '#c9a25a'; ctx.fillRect(-w / 2 - 1.5, -h / 2 - 1.5, w + 3, h + 3); ctx.shadowBlur = 0;
+    if (ready(im)) ctx.drawImage(im, -w / 2, -h / 2, w, h); else { ctx.fillStyle = '#3a2b1f'; ctx.fillRect(-w / 2, -h / 2, w, h); } ctx.restore(); }); };
 const navFace = (k, fc) => (cx, cy, s) => { const im = IMG[k], r = s * .42; ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.clip(); ctx.fillStyle = '#2a1f16'; ctx.fill();
   if (ready(im)) { if (fc) ctx.drawImage(im, fc[0], fc[1], fc[2], fc[2], cx - r, cy - r, r * 2, r * 2); else ctx.drawImage(im, cx - r * 1.15, cy - r, r * 2.3, r * 2.3); } ctx.restore();
   if (ready(IMG.ui_avatar_ring)) ctx.drawImage(IMG.ui_avatar_ring, cx - r * 1.3, cy - r * 1.3, r * 2.6, r * 2.6); };
@@ -6280,11 +6283,13 @@ function drawMenu() {
   else { ctx.fillStyle = 'rgba(14,10,7,.92)'; ctx.fillRect(0, H - 88, W, 88); }
   const [ck] = counselNow();
   const newC = Object.keys(COUNSEL).some(k => counselOK(k) && !(INV.seenC || []).includes(k) && k !== 'zoujing');   // 军师挪进武将页（10-26），有新军师时武将钮上亮
-  navBtn(36, '武将', navFace('liu', FACE.liu), () => { screen = 'roster'; MENU.rosterT = uiNow(); }, newC || cHint() || loadNew());
-  navBtn(108, '神兵', navIco('ui_nav_armory'), () => { screen = 'armory'; ARM.t0 = uiNow(); }, canUp('wpn'));
-  navBtn(180, '战役', navIco('ui_nav_map'), () => { screen = 'levels'; MENU.seg = Math.floor(frontier() / 10); }, false, true);
-  navBtn(252, '军帐', navIco('ui_nav_camp'), () => { screen = 'camp'; CAMP.t0 = uiNow(); }, dailyTotal() > dailyDone());
-  navBtn(324, '系统', navIco('ui_nav_sys'), () => { screen = 'system'; }, false);
+  // 10-30 用户：奇谋「放这里吧」——底栏六个钮，战役仍居中偏大（第三格）
+  navBtn(30, '武将', navFace('liu', FACE.liu), () => { screen = 'roster'; MENU.rosterT = uiNow(); }, newC || cHint() || loadNew());
+  navBtn(90, '神兵', navIco('ui_nav_armory'), () => { screen = 'armory'; ARM.t0 = uiNow(); }, canUp('wpn'));
+  navBtn(150, '战役', navIco('ui_nav_map'), () => { screen = 'levels'; MENU.seg = Math.floor(frontier() / 10); }, false, true);
+  navBtn(210, '奇谋', navCards, () => { screen = 'qimou'; QM.sel = null; QM.from = 'menu'; }, false);
+  navBtn(270, '军帐', navIco('ui_nav_camp'), () => { screen = 'camp'; CAMP.t0 = uiNow(); }, dailyTotal() > dailyDone());
+  navBtn(330, '系统', navIco('ui_nav_sys'), () => { screen = 'system'; }, false);
   // 右上角月卡
   { const im = IMG.ui_nav_month, cx = W - 26, cy = 28, br = .5 + .5 * Math.sin(t * 2.4); if (ready(im)) { const f = 28 / Math.max(im.width, im.height);   /* 10-25 夜用户：「这有点太大，小一点」 40 → 28 */ ctx.save(); ctx.shadowColor = `rgba(255,200,90,${.35 + .3 * br})`; ctx.shadowBlur = 10; ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); ctx.restore(); } else uiSeal(cx, cy, 22, '月', UIC.red);
     uiText('月卡', cx, cy + 21, 10, UIC.gold2, 'center', FONT, { lw: 3 }); hit(cx - 22, cy - 20, 44, 52, () => { screen = 'month'; MON.ask = false; }); }
