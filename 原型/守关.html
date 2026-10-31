@@ -936,19 +936,25 @@ function genTasks(day, n) {                                                     
   while (out.length < n && pool.length) { const j = Math.floor(rn() * pool.length), c = pool.splice(j, 1)[0]; if (out.filter(o => o.lv === c.lv).length < 2) out.push({ ...c, done: false }); }   // 同一关最多两道
   return out;
 }
+// 10-30 用户：「第一关的2个成就都已经完成了，但没有自动发放，一定要我从这里出去去做，这不合理」——今天每打赢一关，记下这一局满足了哪些军务条件（DAILY.met），
+// 之后才出的军务（打过第一关才补的题）若今天已经做到，直接算完成、发残页和资历，不用再打一遍
+const TASK_AUTO = [];
+function payTask(t) { t.done = true; INV.it.残页 += TASK_PAY; DAILY.weekN++; addPrep(1); if (DAILY.weekN >= WEEK_N && !DAILY.weekSeal) { DAILY.weekSeal = true; INV.it.将印++; } }
+function autoTasks() { const M = DAILY.met || {}; let n = 0; for (const t of DAILY.tasks) if (!t.done && (M[t.lv] || []).includes(t.k)) { payTask(t); TASK_AUTO.push(t); n++; } if (n) { saveInv(); saveDaily(); } }
 // 每天第一次进来：点卯（漏掉的最多补两天）、出今天的军务、掉落上限清零、换周
 function dailyTick() {
   const td = dayStr(); let note = null;
+  if (DAILY.day === td && !DAILY.met) { DAILY.met = {}; for (const lv of LEVELS) if (BEST[lv.id]) DAILY.met[lv.id] = ['mat', ...(BEST[lv.id] >= 3 ? ['star3'] : []), ...(lv.id === 1 ? ['guanTop'] : [])]; autoTasks(); }   // 10-30 加记录以前的档：今天的题按已有星数补认（三星、打赢；第一关关羽伤害第一机器人 8/8）
   if (DAILY.tasks && DAILY.tasks.some(t => TASKS[t.k].gone && !t.done)) { DAILY.tasks = DAILY.tasks.filter(t => !TASKS[t.k].gone || t.done); saveDaily(); }   // 撤掉的题（张飞、刘备伤害第一）从今天的军务里拿掉，下面按打过的关补一道
   if (DAILY.day !== td) {
     const gap = DAILY.day ? Math.max(1, dayNum(td) - dayNum(DAILY.day)) : 1, packs = 1 + Math.min(monthLeft() > 0 ? 6 : 2, gap - 1), got = { 精铁: 2 * packs };   // 月卡：补领七天
     INV.it.精铁 += 2 * packs;
-    DAILY.day = td; DAILY.taskN = 3 * packs; DAILY.tasks = genTasks(td, DAILY.taskN); DAILY.caps = { 精铁: 0 }; DAILY.visits = 0; DAILY.visitN = 2 * packs; DAILY.chores = false; DAILY.cd = CHORES.map(() => false);
+    DAILY.day = td; DAILY.met = {}; DAILY.taskN = 3 * packs; DAILY.tasks = genTasks(td, DAILY.taskN); DAILY.caps = { 精铁: 0 }; DAILY.visits = 0; DAILY.visitN = 2 * packs; DAILY.chores = false; DAILY.cd = CHORES.map(() => false);
     if (DAILY.week !== weekKey(td)) { DAILY.week = weekKey(td); DAILY.weekN = 0; DAILY.weekSeal = false; }
     if (monthLeft() > 0) doChores();                                             // 月卡：日常杂务一上线就做完
     note = { packs, got }; saveInv(); saveDaily();
   } else if (DAILY.tasks.length < DAILY.taskN && LEVELS.some(lv => BEST[lv.id])) {   // 早上还一关没打过、出不了题：打过一关以后补上
-    const have = new Set(DAILY.tasks.map(t => t.k + t.lv)); for (const t of genTasks(td, DAILY.taskN)) if (DAILY.tasks.length < DAILY.taskN && !have.has(t.k + t.lv)) DAILY.tasks.push(t); saveDaily();
+    const have = new Set(DAILY.tasks.map(t => t.k + t.lv)); for (const t of genTasks(td, DAILY.taskN)) if (DAILY.tasks.length < DAILY.taskN && !have.has(t.k + t.lv)) DAILY.tasks.push(t); saveDaily(); autoTasks();
   }
   return note;
 }
@@ -1036,9 +1042,9 @@ function settleLoot(win) {
   }
   r.tasks = [];
   for (const t of DAILY.tasks) if (!t.done && t.lv === lv.id && TASKS[t.k].check(r, G)) {
-    t.done = true; INV.it.残页 += TASK_PAY; DAILY.weekN++; r.tasks.push(t); addPrep(1);
-    if (DAILY.weekN >= WEEK_N && !DAILY.weekSeal) { DAILY.weekSeal = true; INV.it.将印++; loot.push({ k: '将印', n: 1, week: true }); }
+    const s0 = DAILY.weekSeal; payTask(t); r.tasks.push(t); if (DAILY.weekSeal && !s0) loot.push({ k: '将印', n: 1, week: true });
   }
+  if (win) { const M = DAILY.met = DAILY.met || {}, have = new Set(M[lv.id] || []); for (const [k, T] of Object.entries(TASKS)) { try { if (!T.gone && T.ok(lv) && T.check(r, G)) have.add(k); } catch (e) {} } M[lv.id] = [...have]; }   // 今天这关做到过哪些军务条件
   saveInv(); saveDaily();
 }
 // 这一关上阵时各人按几级算：机器人按推荐等级；玩家按存档；网址带 ?all 跳关试玩时，低于推荐的按推荐算（不然跳到后面会打不过）
@@ -5647,7 +5653,8 @@ function drawQimou() {
   if (QM.sel) { ctx.fillStyle = 'rgba(8,5,3,.82)'; ctx.fillRect(0, 0, W, H); const bw = 240; drawQmCard(QM.sel, (W - bw) / 2, 70, bw, true); hit(0, 0, W, H, () => { QM.sel = null; }); }
 }
 function drawCamp() {
-  campBg('军帐'); dailyTick(); if (!REWARD) achAutoClaim();   // 以前攒着没领的功绩：进军帐一次发掉
+  campBg('军帐'); dailyTick(); if (!REWARD && TASK_AUTO.length) { const A = TASK_AUTO.splice(0); showReward('军务已完成', [`${A.length} 道今天已经做到过 · 资历 +${A.length}`], ['guan', 'zhang', 'liu'], true, [['残页', A.length * TASK_PAY]]); }
+  if (!REWARD) achAutoClaim();   // 以前攒着没领的功绩：进军帐一次发掉
   plaque3(10, 14, 80, 26, '奇谋', () => { screen = 'qimou'; QM.sel = null; QM.from = 'camp'; });   // 10-29 奇谋卡（大招、军师计、敌方计）
   { const n = achClaimable().length; plaque3(W - 104, 14, 94, 26, '功绩簿', () => { screen = 'ach'; }, n > 0); if (n) uiSeal(W - 10, 14, 16, String(n), UIC.red, true);   /* 牌匾按原图比例，宽 128 时正好 26 高，字在中间（10-29 用户：「字要居中」） */ }
   const gl = campGoal(), TOPY = gl ? 0 : -66;   // 没东西要备时顶上只放一块矮的官阶卡（10-29 用户：「这4个框的大小应该如蓝框」）
