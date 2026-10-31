@@ -557,9 +557,9 @@ const LEVELS = [
     waves: [[2, 'bing', 16, 6, 'rand'], [6, 'qibing', 6, 4, 'rand'], [14, 'qibing', 8, 6, 'rand'], [20, 'bing', 24, 8, 'rand'], [26, 'qushuai', 1, 0, 'rand', { g: 'a', lead: true }], [26, 'qibing', 10, 0, 'line', { g: 'a' }],
       [36, 'bing', 30, 10, 'rand'], [44, 'qibing', 12, 6, 'rand'], [52, 'lishi', 6, 4, 'rand'], [56, 'bing', 30, 10, 'rand'], [62, 'qibing', 14, 6, 'rand', { g: 'b' }], [63, 'qushuai', 1, 0, 'rand', { g: 'b', lead: true }]],
     tips: [[1, '护送：董卓的车驾慢慢退向城下，车毁了就输'], [6, '追到车边的敌人会砍车——先打他们']] },
-  { id: 8, name: '鞭打督邮', sub: '安喜县驿馆 · 督邮索贿，张飞大怒', hpMul: 4.606, slots: ['zhang', null, null, null], join: [], map: 'yamen', reward: '县尉印', solo: true,
+  { id: 8, name: '鞭打督邮', sub: '安喜县驿馆 · 督邮索贿，张飞大怒', hpMul: 8,   /* 11-01 波次加密后 4.606 → 8：一招不放 8 局都两星（冲阵撞城），掐一喝的三星 */ slots: ['zhang', null, null, null], join: [], map: 'yamen', reward: '县尉印', solo: true,
     rules: { rage: 24 },
-    waves: [[2, 'yayi', 8, 8, 'rand'], [10, 'yayi', 10, 8, 'rand'], [20, 'yayi', 12, 6, 'rand'], [28, 'yayi', 14, 8, 'rand'], [38, 'yayi', 16, 8, 'rand'], [48, 'duyou', 1, 0, 'rand', { g: 'd', lead: true }], [49, 'yayi', 12, 6, 'rand', { g: 'd' }]],
+    waves: [[2, 'yayi', 10, 6, 'rand'], [10, 'yayi', 14, 3, 'wedge'], [20, 'yayi', 16, 6, 'rand'], [28, 'yayi', 18, 3, 'line'], [38, 'yayi', 20, 6, 'rand'], [44, 'yayi', 16, 3, 'wedge'], [52, 'duyou', 1, 0, 'rand', { g: 'd', lead: true }], [53, 'yayi', 16, 6, 'rand', { g: 'd' }]],   // 11-01 用户：「第八关什么都不按都可以3*过」——原来一波 8–16 个陆续走来，张飞普攻＋怒鞭就清完，一招不放也三星；改成更多更密、三队成楔形／横排冲阵，要掐着一喝
     tips: [[1, '单将关：只有张飞上场'], [4, '张飞每刺满 24 下就「怒鞭督邮」：6 秒里刺得快一倍、一下刺三个'], [47, '督邮出来了，把他打倒！']] },
   { id: 9, name: '广宗城下', sub: '夜战 · 张宝、张梁守广宗', hpMul: 1.968, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'night', reward: '符水葫芦',
     rules: { night: { vis: 250, torches: [[78, 300], [282, 250]] } },
@@ -1815,6 +1815,7 @@ function stepGenerals(dt, al) {
     return;
   }
   if (!al.some(e => e.y > HZ + 16)) return;
+  if (G.sim && window.__sg.noCast) return;                                                    // 推演：一招不放（量「什么都不按」能拿几星）
   if (G.sim && window.__sg.policy && !(G.RU.casts && G.casts <= 0)) { if (window.__sg.policy === 'smart') smartCast(al); else { const i = nextCaster(); if (i >= 0 && G.t >= G.ready[i]) startCast(i); } return; }   // 推演：policy='auto' 照玩家按「自动」打，'smart' 照会掐时机的玩家打
   if (playerAuto()) { const i = nextCaster(); if (i >= 0 && G.t >= G.ready[i]) startCast(i); return; }   // 玩家按「自动」：谁先好谁先放
   for (let k = 0; k < NS; k++) { const i = (G.turn + k) % NS; if (G.order[i]) { G.turn = i; break; } }
