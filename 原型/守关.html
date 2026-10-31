@@ -3056,11 +3056,13 @@ function uiBar(key, x, y, w, h, frac, c1, c2, o = {}) {
 }
 // 字放进框里（10-25 夜用户：「很多字都超出btn……你检查所有btn，确保字不要超出来」）：给出框里能写字的宽、高，字号先按高、再按宽缩（描边也算进宽）
 function fitSize(s, size, maxW, maxH = Infinity, font = FONT, lw = 0) { size = Math.min(size, maxH); ctx.font = `${fpx(size)}px ${font}`; const w = ctx.measureText(s).width + lw; return w > maxW ? Math.max(8, size * maxW / w) : size; }
+// 10-30 用户（晋升标题、教学卡「守城」后面那团）：「这些黄色全部去掉」——字后面的黄、金色光晕一律不画；红、蓝、白的光留着
+const yellowGlow = c => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c); return !!m && +m[1] >= 220 && +m[2] >= 140 && +m[3] <= 140; };   // 不缓存：有的光晕颜色每帧带不同透明度
 function uiText(s, x, y, size, color, align = 'left', font = FONT, o = {}) {
   if (SC.on) SC.bot = Math.max(SC.bot, y + size * .6);
   ctx.font = `${fpx(size)}px ${font}`; ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
   if (o.stroke !== false) { ctx.lineWidth = o.lw || Math.max(2.5, size * .16); ctx.strokeStyle = o.stroke || 'rgba(12,8,5,.9)'; ctx.strokeText(s, x, y); }
-  if (o.glow) { ctx.shadowColor = o.glow; ctx.shadowBlur = o.glowR || 10; }
+  if (o.glow && !yellowGlow(o.glow)) { ctx.shadowColor = o.glow; ctx.shadowBlur = o.glowR || 10; }
   ctx.fillStyle = color; ctx.fillText(s, x, y); ctx.shadowBlur = 0;
 }
 function uiButton(x, y, w, h, label, fn, kind = 'main') {
