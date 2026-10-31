@@ -2747,7 +2747,7 @@ function drawBossUlt(f) {
       else { brush(ctx, pts, 26, C.col, .35 * al, () => 1, 0, vr); brush(ctx, pts, 10, C.glow, .9 * al, () => 1, 0, vr); brush(ctx, pts, 3.5, '#ffffff', al, () => 1, 0, vr); }
       bossGlow(x, WALL_Y - 20, 90, C.col, .6 * al); }
     bossBursts(f, C, 5, .05, .1);
-    for (let i = 0; i < 5; i++) at1(f, 'g' + i, .1 + i * .1, () => gnd({ mode: 0, x: 36 + i * 72 + Math.sin(i * 7.3) * 14, y: WALL_Y - 64, rx: 86, sq: .38, dur: 1.1, open: .1, col: C.col, n: 7 }));   // 每道雷落地一片焦裂
+    for (let i = 0; i < 5; i++) at1(f, 'g' + i, .1 + i * .1, () => gnd({ mode: 0, top: true, x: 36 + i * 72 + Math.sin(i * 7.3) * 14, y: WALL_Y + 4, rx: 62, sq: .3, dur: 1.1, open: .1, col: C.col, n: 7 }));   // 每道雷在城头焦一片（11-01 用户：「这个雷扫在城墙上」，原来焦在城前地上）
   } else if (f.boss === 'huzhen') {                                                 // 两道赤红巨刀从两边交叉斩下
     if (!veo) for (const side of [-1, 1]) { const p = Math.min(1, t / .22), a0 = side < 0 ? -1.2 : 1.2, rot = a0 - side * 2.4 * p, x = W / 2 + side * (170 - 120 * p), y = cy - 70 + 40 * p;   // 画得够大，交叉时两头伸到屏幕边上
       drawTint('blade', C.col, x, y, 420, rot, A * fade * .85, .5, .45); }   // 压扁成细长的刀光，不要两大块红
@@ -4119,7 +4119,7 @@ function spxPass(layer) {
   let drew = 0;
   for (const b of SPX.bodies) { if (b.burst || b.paint || b.layer !== layer) continue; const t = vt - b.born; if (t < 0) continue; spxDraw(b, t); drew++; }
   if (layer === 'ground' && SPX.vortexP && !texOK()) for (const f of G.fx) if (f.k === 'hdl') { spxVortex(f); drew++; }   // 有纹理时改用星云盘
-  if (layer === 'ground' && SPX.groundP) for (const f of G.fx) if (f.k === 'gnd' && f.t >= 0) { spxGround(f); drew++; }   // 贴地法阵
+  if (SPX.groundP) for (const f of G.fx) if (f.k === 'gnd' && f.t >= 0 && !!f.top === (layer === 'top')) { spxGround(f); drew++; }   // 贴地法阵；top 的画在城墙之上（张角天雷焦在城头）
   if (layer === 'top' && SPX.shoutP) for (const f of G.fx) if (f.k === 'shout' && f.t >= 0 && f.t < f.dur) { spxShout(f); drew++; }   // 张飞声浪（实时生成）
   if (layer === 'top' && SPX.fireP && !texOK()) for (const f of G.fx) if (f.k === 'fireline' && f.t >= 0) { spxFire(f); drew++; }   // 华雄地火（实时生成）   // 黄天当立的天裂旋涡（在敌将身后）
   for (const b of SPX.bodies) {                                                  // 有生命的画稿：撑开（带回弹）、从后面掠到前面、淡掉
