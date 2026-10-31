@@ -6223,14 +6223,14 @@ const SEGS = ['黄巾之乱', '诸侯讨董', '虎牢关'];
 const frontier = () => { const i = LEVELS.findIndex(lv => !BEST[lv.id]); return i < 0 ? LEVELS.length - 1 : i; };   // 还没打过的第一关
 // 底栏一个图标钮：画的图标（或头像套金圈）、下面一行金字、有事没做时角上一枚朱砂小方印
 function navBtn(cx, label, draw, fn, badge, big) {
-  const cy = H - 52 - (big ? 6 : 0); draw(cx, cy, big ? 50 : 40);
+  const cy = H - 52; draw(cx, cy, big ? 50 : 40);   // 10-30 用户：「似乎没居中对齐」——战役原来往上提 6，图标中线和别的错开；六个图标同一条中线
   uiText(label, cx, H - 16, fitSize(label, big ? 15 : 13, 64), big ? UIC.gold2 : UIC.cream, 'center', FONT, { lw: 3 });
   if (badge) uiSeal(cx + 18, cy - 18, 14, '!', UIC.red);
   hit(cx - 29, cy - 30, 58, H - cy + 30, fn);
 }
 const navIco = k => (cx, cy, s) => { const im = IMG[k]; if (!ready(im)) return; const f = s / Math.max(im.width, im.height); ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); };
 const navCards = (cx, cy, s) => { [['foe_fire', -.32, -9], ['roar', .3, 9], ['qinglong', 0, 0]].forEach(([k, a, dx]) => { const im = IMG['card_' + k], w = s * .5, h = w * 1.5;   // 奇谋钮：三张奇谋卡扇开
-    ctx.save(); ctx.translate(cx + dx, cy + 4); ctx.rotate(a); ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 4; ctx.fillStyle = '#c9a25a'; ctx.fillRect(-w / 2 - 1.5, -h / 2 - 1.5, w + 3, h + 3); ctx.shadowBlur = 0;
+    ctx.save(); ctx.translate(cx + dx, cy); ctx.rotate(a); ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 4; ctx.fillStyle = '#c9a25a'; ctx.fillRect(-w / 2 - 1.5, -h / 2 - 1.5, w + 3, h + 3); ctx.shadowBlur = 0;
     if (ready(im)) ctx.drawImage(im, -w / 2, -h / 2, w, h); else { ctx.fillStyle = '#3a2b1f'; ctx.fillRect(-w / 2, -h / 2, w, h); } ctx.restore(); }); };
 const navFace = (k, fc) => (cx, cy, s) => { const im = IMG[k], r = s * .42; ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.clip(); ctx.fillStyle = '#2a1f16'; ctx.fill();
   if (ready(im)) { if (fc) ctx.drawImage(im, fc[0], fc[1], fc[2], fc[2], cx - r, cy - r, r * 2, r * 2); else ctx.drawImage(im, cx - r * 1.15, cy - r, r * 2.3, r * 2.3); } ctx.restore();
