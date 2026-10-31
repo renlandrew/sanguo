@@ -2134,7 +2134,10 @@ function drawHoverTip() {
   ctx.fillStyle = 'rgba(217,166,64,.35)'; ctx.fillRect(bx + 10, by + 26, tw - 20, 1);
   rows.forEach((r, i) => uiText(r.t, bx + 11, by + 38 + i * 16, 11, r.dim ? 'rgba(244,230,196,.6)' : UIC.cream, 'left', PLAIN, { stroke: false })); ctx.restore();
 }
-function txt(s, x, y, size, color = INK, align = 'left', font = FONT, alpha = 1) { ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.font = `${size}px ${font}`; ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillText(s, x, y); ctx.globalAlpha = 1; }
+// 10-30 iPhone 13 第四关第 25 秒被杀：头顶「冲」「帅」、伤害数字的字号按透视／动画算成连续小数，每帧每人一个新字号，苹果的浏览器给每个字号建一套中文字体缓存，
+// 冲阵队一出来网页内存从 230MB 冲到约 1.5GB（模拟器实测）。字号一律取到 0.5px，种类有限、缓存复用
+function fpx(v) { return Math.round(v * 2) / 2; }
+function txt(s, x, y, size, color = INK, align = 'left', font = FONT, alpha = 1) { ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.font = `${fpx(size)}px ${font}`; ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillText(s, x, y); ctx.globalAlpha = 1; }
 function inkRect(x, y, w, h, fill = 'rgba(244,238,226,.92)', line = INK, lw = 1.5) {
   ctx.fillStyle = fill; ctx.fillRect(x, y, w, h);
   ctx.strokeStyle = line; ctx.lineWidth = lw; ctx.globalAlpha = .85; ctx.strokeRect(x, y, w, h);
@@ -3054,9 +3057,9 @@ function uiBar(key, x, y, w, h, frac, c1, c2, o = {}) {
   ctx.restore(); ctx.lineWidth = 1; ctx.strokeStyle = o.edge || UIC.gold; rr(x + .5, y + .5, w - 1, h - 1, h / 2); ctx.stroke();
 }
 // 字放进框里（10-25 夜用户：「很多字都超出btn……你检查所有btn，确保字不要超出来」）：给出框里能写字的宽、高，字号先按高、再按宽缩（描边也算进宽）
-function fitSize(s, size, maxW, maxH = Infinity, font = FONT, lw = 0) { size = Math.min(size, maxH); ctx.font = `${size}px ${font}`; const w = ctx.measureText(s).width + lw; return w > maxW ? Math.max(8, size * maxW / w) : size; }
+function fitSize(s, size, maxW, maxH = Infinity, font = FONT, lw = 0) { size = Math.min(size, maxH); ctx.font = `${fpx(size)}px ${font}`; const w = ctx.measureText(s).width + lw; return w > maxW ? Math.max(8, size * maxW / w) : size; }
 function uiText(s, x, y, size, color, align = 'left', font = FONT, o = {}) {
-  ctx.font = `${size}px ${font}`; ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  ctx.font = `${fpx(size)}px ${font}`; ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
   if (o.stroke !== false) { ctx.lineWidth = o.lw || Math.max(2.5, size * .16); ctx.strokeStyle = o.stroke || 'rgba(12,8,5,.9)'; ctx.strokeText(s, x, y); }
   if (o.glow) { ctx.shadowColor = o.glow; ctx.shadowBlur = o.glowR || 10; }
   ctx.fillStyle = color; ctx.fillText(s, x, y); ctx.shadowBlur = 0;
@@ -3106,7 +3109,7 @@ function sealBake(t, s, c, round) {
   return SEALC[key] = cv2;
 }
 function segText(segs, cx, y, size, font = PLAIN, o = { stroke: false }) {               // 一行里分段上色，整行居中（10-29 用户：「阶级那几个字标红」）
-  ctx.font = `${size}px ${font}`; const ws = segs.map(([t]) => ctx.measureText(t).width); let x = cx - ws.reduce((a, b) => a + b, 0) / 2;
+  ctx.font = `${fpx(size)}px ${font}`; const ws = segs.map(([t]) => ctx.measureText(t).width); let x = cx - ws.reduce((a, b) => a + b, 0) / 2;
   segs.forEach(([t, c], i) => { uiText(t, x, y, size, c, 'left', font, o); x += ws[i]; });
 }
 function uiSeal(x, y, s, txtS, c = UIC.red, round = false) {                         // 关号、斗将、胜败、选、升、令
@@ -4335,7 +4338,7 @@ function drawNums() {
     const t = now - n.born; if (t < 0) continue; const big = BIGSRC.has(n.src), [fill, edge] = n.crit ? ['#ffe27a', '#5a3a08'] : n.src === 'burn' ? ['#e8c9a8', '#3a1206'] : big ? (DMG_STYLE[WHO[n.src]] || ['#ffffff', INK]) : ['#fbf6ea', INK];   // 10-29 配色收敛：普攻白字墨边，只有招式用人物色
     const pop = t < .1 ? 1.5 - .5 * (t / .1) : 1, sz = (n.crit ? 21 : big ? (n.named ? 16 : 13) : n.src === 'burn' ? 10 : 12) * pop, y = n.y - 24 * ease(t / .9), a = t < .62 ? 1 : 1 - (t - .62) / .28;
     const label = (n.crit ? '破绽 ' : DMG_NAME[n.src] && n.named ? DMG_NAME[n.src] + ' ' : '') + '-' + Math.max(1, Math.round(n.v * SHOWX));
-    ctx.globalAlpha = a; ctx.font = `italic 900 ${sz}px ${PLAIN}`; ctx.lineWidth = Math.max(2.5, sz * .24); ctx.strokeStyle = edge; ctx.strokeText(label, n.x, y); ctx.fillStyle = fill; ctx.fillText(label, n.x, y);
+    ctx.globalAlpha = a; ctx.font = `italic 900 ${fpx(sz)}px ${PLAIN}`; ctx.lineWidth = Math.max(2.5, sz * .24); ctx.strokeStyle = edge; ctx.strokeText(label, n.x, y); ctx.fillStyle = fill; ctx.fillText(label, n.x, y);
   }
   ctx.globalAlpha = 1;
 }
@@ -4360,7 +4363,7 @@ function drawSkName(f) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .35 * a * grow; ctx.fillStyle = gl; ctx.fillRect(f.x - 16, ty0 - 6, 32, gh); ctx.restore(); }
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
   for (let i = 0; i < n; i++) { const t = f.t - .05 - i * .05; if (t < 0) continue; const p = t < .1 ? 1.25 - .25 * (t / .1) : 1, y = f.y - h / 2 + 18 + i * gap;
-    ctx.globalAlpha = a; ctx.font = `${fs * p}px ${FONT}`; ctx.lineWidth = 3; ctx.strokeStyle = edge; ctx.strokeText(f.text[i], f.x + 1, y); ctx.fillStyle = fill; ctx.fillText(f.text[i], f.x + 1, y); }
+    ctx.globalAlpha = a; ctx.font = `${fpx(fs * p)}px ${FONT}`; ctx.lineWidth = 3; ctx.strokeStyle = edge; ctx.strokeText(f.text[i], f.x + 1, y); ctx.fillStyle = fill; ctx.fillText(f.text[i], f.x + 1, y); }
   ctx.globalAlpha = 1;
 }
 // 青龙斩：偃月刀光从关羽身上飞出去，越飞越大，身后拖两道残影，到了正好砍下
@@ -4637,7 +4640,7 @@ function drawWaveBanner(f) {
   else {
   ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + 26, y - 26); ctx.lineTo(x0 + bw - 26, y - 26); ctx.lineTo(x0 + bw, y); ctx.lineTo(x0 + bw - 26, y + 26); ctx.lineTo(x0 + 26, y + 26); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = '#d9a640'; ctx.lineWidth = 1.4; for (const dy of [-20, 20]) { ctx.beginPath(); ctx.moveTo(x0 + 34, y + dy); ctx.lineTo(x0 + bw - 34, y + dy); ctx.stroke(); } }
-  const p = f.t < .22 ? 1.7 - .7 * ease(f.t / .22) : 1, fz = fitSize(f.text, 30, W - 20 - 2 * 54 - 16, 30, FONT, 6); ctx.font = `${fz * p}px ${FONT}`; /* 原来 42 号写在 40 高的漆面里，上下都出框 */ ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  const p = f.t < .22 ? 1.7 - .7 * ease(f.t / .22) : 1, fz = fitSize(f.text, 30, W - 20 - 2 * 54 - 16, 30, FONT, 6); ctx.font = `${fpx(fz * p)}px ${FONT}`; /* 原来 42 号写在 40 高的漆面里，上下都出框 */ ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
   ctx.lineWidth = 6; ctx.strokeStyle = '#1a0805'; ctx.strokeText(f.text, W / 2 + out * 90, y + 1); ctx.fillStyle = f.last ? '#ffd27a' : '#f4e3bd'; ctx.fillText(f.text, W / 2 + out * 90, y + 1);
   if (f.t < .3) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = (1 - f.t / .3) * .6; ctx.fillStyle = '#fff2c8'; ctx.fillText(f.text, W / 2, y + 1); }
   ctx.restore();
@@ -4682,7 +4685,7 @@ function drawHud() {
   // 10-29 用户：「反击出现在蓝框这里，如果有ready 的大招就提示一下」——反击倒计时挪到场中（城头上方那块空地），招式好了就点名催放
   if (G.counterT > 0 && G.state === 'play' /* 10-29 用户：盾上那行保留、盾下那行去掉 */) { const cy = WALL_Y - 192, pul = .5 + .5 * Math.sin(uiNow() * 10);
     const rd = []; for (let i = 0; i < NS; i++) { const id = G.order[i]; if (id && knows(id) && G.t >= G.ready[i] && !(G.seal[i] > 0) && (!G.RU.casts || G.casts > 0) && rd.indexOf(id) < 0) rd.push(id); }
-    const tag = (t, y, sz, fill) => { ctx.save(); ctx.font = `${sz}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(40,14,6,.8)'; ctx.strokeText(t, W / 2, y);
+    const tag = (t, y, sz, fill) => { ctx.save(); ctx.font = `${fpx(sz)}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(40,14,6,.8)'; ctx.strokeText(t, W / 2, y);
       ctx.lineWidth = 2; ctx.strokeStyle = UIC.gold2; ctx.strokeText(t, W / 2, y); ctx.fillStyle = fill; ctx.fillText(t, W / 2, y); ctx.restore(); };
     tag('反击 ' + G.counterT.toFixed(1) + ' 秒 · 招式伤害 +50%', cy, 17, '#e42a1c');
     if (rd.length) { ctx.globalAlpha = .75 + .25 * pul; tag(rd.map(id => SKILLS[id].act[G.act[id]].name).join('、') + ' 好了，快放！', cy + 26, 15, '#fff3d0'); ctx.globalAlpha = 1; } }
@@ -4802,7 +4805,7 @@ function swapSlots(a, i) {
   G.sel = -1;
 }
 function wrap(s, x, y, maxW, size, color, lh) {
-  ctx.font = `${size}px ${PLAIN}`; let line = '';
+  ctx.font = `${fpx(size)}px ${PLAIN}`; let line = '';
   for (const ch of s) { if (ctx.measureText(line + ch).width > maxW && line) { txt(line, x, y, size, color, 'left', PLAIN); y += lh; line = ''; } line += ch; }
   if (line) txt(line, x, y, size, color, 'left', PLAIN);
 }
@@ -5425,7 +5428,7 @@ function drawResult() {
       for (let q = 0; q <= k; q++) uiStar(x0 - 8 - (k - q) * 13, y, 5.5, g.ok);
       uiText(ln, x0, y, sz, g.ok ? '#ffe08a' : '#ff8a6a', 'left', FONT, { lw: 3 }); }); }
   const lootR = !!(G.advLog || []).some(a => a.bad) && r.loot && r.loot.length;          // 军师认错占了下面那格时，战利品缩小放到这一行右边
-  if (sub) { const mw = lootR ? W - 150 : W - 70, sz = fitSize(sub, 12, mw, 99, FONT, 3), cx = W / 2 - (lootR ? 36 : 0), first = r.first && !sandSub; ctx.font = `${sz}px ${FONT}`; const sw2 = ctx.measureText(sub).width;
+  if (sub) { const mw = lootR ? W - 150 : W - 70, sz = fitSize(sub, 12, mw, 99, FONT, 3), cx = W / 2 - (lootR ? 36 : 0), first = r.first && !sandSub; ctx.font = `${fpx(sz)}px ${FONT}`; const sw2 = ctx.measureText(sub).width;
     if (first) uiSeal(cx - sw2 / 2 - 4, 266, 18, '首', UIC.red);
     uiText(sub, cx + (first ? 8 : 0), 266, sz, sandSub || r.first ? UIC.gold2 : 'rgba(244,230,196,.6)', 'center', FONT, { lw: 3 }); }
   ctx.restore();
@@ -5453,7 +5456,7 @@ function drawResult() {
       const head = `达成功绩 ${AC.length} 项 · 去功绩簿领奖`, names = AC.join('、'); ctx.save(); ctx.globalAlpha = u; ctx.translate(0, (1 - ease(u)) * 12);
       if (two) { ctx.font = `13px ${FONT}`; const hw = ctx.measureText(head).width; uiSeal(W / 2 - hw / 2 - 6, ay, 18, '功', UIC.red); uiText(head, W / 2 + 8, ay, 13, '#ffe08a', 'center', FONT, { lw: 3, glow: 'rgba(255,200,90,.6)', glowR: 8 });
         uiText(names, W / 2, ay + 20, fitSize(names, 12, W - 40, 99, PLAIN, 3), UIC.cream, 'center', PLAIN, { lw: 3 }); }
-      else { const one = `达成功绩：${names}`, fz = fitSize(one, 12, W - 70, 99, FONT, 3); ctx.font = `${fz}px ${FONT}`; const ow = ctx.measureText(one).width; uiSeal(W / 2 - ow / 2 - 4, ay, 16, '功', UIC.red); uiText(one, W / 2 + 8, ay, fz, '#ffe08a', 'center', FONT, { lw: 3 }); }
+      else { const one = `达成功绩：${names}`, fz = fitSize(one, 12, W - 70, 99, FONT, 3); ctx.font = `${fpx(fz)}px ${FONT}`; const ow = ctx.measureText(one).width; uiSeal(W / 2 - ow / 2 - 4, ay, 16, '功', UIC.red); uiText(one, W / 2 + 8, ay, fz, '#ffe08a', 'center', FONT, { lw: 3 }); }
       ctx.restore(); } }
   // 牌匾按钮一排放在最下面：经验条涨完才能点
   const go = fn => () => { const k = r.story; if (k && !storySeen(k)) { G = null; playStory(k, fn); } else fn(); };   // 有剧情先演完再去
@@ -5556,7 +5559,7 @@ function drawItemIcon(k, cx, cy, s) {
 // 按实际字宽断行（10-28 用户截图：「练兵可以……我们在后面……」那行「……」超出对话框——原来按每行 19 个字数，标点不能放行首就硬塞在行尾）：
 // 放不下就换行；下一个字是不能放行首的标点（，。……」等）时，把这一行最后一个字带到下一行，不往行尾硬塞
 function fitLines(t, maxW, size, font) {
-  ctx.font = `${size}px ${font}`; const out = []; let cur = '';
+  ctx.font = `${fpx(size)}px ${font}`; const out = []; let cur = '';
   const noHead = ch => /[，。、；：%）」』！？…—\d]/.test(ch);   // 数字也不打头：「+15%」不拆成「+1」「5%」
   for (const ch of t) {
     if (cur && ctx.measureText(cur + ch).width > maxW) {
@@ -5575,7 +5578,7 @@ function cardLines(t, per, maxL) {
   for (const ch of t) { if (cur.length >= per && !/[，。、；：%）」』！？…]/.test(ch)) { out.push(cur); cur = ''; } cur += ch; }
   if (cur) out.push(cur); if (out.length > maxL) { out.length = maxL; out[maxL - 1] = out[maxL - 1].slice(0, -1) + '…'; } return out;
 }
-function fitText(t, size, maxW) { ctx.font = `${size}px ${PLAIN}`; if (ctx.measureText(t).width <= maxW) return t; while (t.length > 2 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1); return t + '…'; }
+function fitText(t, size, maxW) { ctx.font = `${fpx(size)}px ${PLAIN}`; if (ctx.measureText(t).width <= maxW) return t; while (t.length > 2 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1); return t + '…'; }
 function roundBtn(cx, cy, r, ch, label, fn, badge) {
   ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.clip();
   if (ready(IMG.ui2_tab_dark)) ctx.drawImage(IMG.ui2_tab_dark, 60, 24, 260, 140, cx - r * 1.4, cy - r, r * 2.8, r * 2); else { ctx.fillStyle = UIC.lac; ctx.fill(); } ctx.restore();   // 漆面借页签那张的纹理
@@ -6063,7 +6066,7 @@ function unlockIcon(text, r) {                                                  
 const SHIM = document.createElement('canvas'), SHX = SHIM.getContext('2d');
 function shimmerText(text, x, y, size, t) {                                         // 字上的流光：离屏画字，source-atop 叠一条斜着移动的亮带，再「变亮」贴回去
   const w = Math.ceil(size * text.length * 1.2) + 20, h = Math.ceil(size * 1.6), k = RS; SHIM.width = w * k; SHIM.height = h * k;
-  SHX.setTransform(k, 0, 0, k, 0, 0); SHX.clearRect(0, 0, w, h); SHX.font = `${size}px ${FONT}`; SHX.textAlign = 'center'; SHX.textBaseline = 'middle'; SHX.fillStyle = '#fff'; SHX.fillText(text, w / 2, h / 2);
+  SHX.setTransform(k, 0, 0, k, 0, 0); SHX.clearRect(0, 0, w, h); SHX.font = `${fpx(size)}px ${FONT}`; SHX.textAlign = 'center'; SHX.textBaseline = 'middle'; SHX.fillStyle = '#fff'; SHX.fillText(text, w / 2, h / 2);
   SHX.globalCompositeOperation = 'source-atop'; const p = ((t * .7) % 1.4) - .2, bx = p * w, g = SHX.createLinearGradient(bx - 40, 0, bx + 40, h); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,236,170,1)'); g.addColorStop(1, 'rgba(255,255,255,0)');
   SHX.fillStyle = 'rgba(0,0,0,0)'; SHX.fillRect(0, 0, w, h); SHX.globalCompositeOperation = 'destination-in'; SHX.fillStyle = g; SHX.fillRect(0, 0, w, h); SHX.globalCompositeOperation = 'source-over';
   const T = ctx.getTransform(); ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= .55; ctx.drawImage(SHIM, x - w / 2, y - h / 2, w, h); ctx.restore();   /* 跟着外层透明度：官名还没出来时流光也不出（10-29 用户：「这个阶段不需要出现字」） */
@@ -6271,7 +6274,7 @@ function drawMenu() {
     uiText('点卯', W / 2, ny + 26, 20, '#f6d27a', 'center', FONT, { glow: 'rgba(255,190,80,.7)', glowR: 10 });
     // 10-30 用户：「精铁那些用图标」——物品写成图标 + 数，后面接补领和今日军务
     const tail = (MENU.note.packs > 1 ? `（补领 ${MENU.note.packs - 1} 天）` : '') + ' · 今日军务 ' + DAILY.taskN + ' 道', ents = Object.entries(g), is = 20, fz = 12;
-    ctx.font = `${fz}px ${PLAIN}`; const segW = ents.map(([, n]) => is + 2 + ctx.measureText('+' + n).width), tw = ctx.measureText(tail).width, tot = segW.reduce((a, b) => a + b, 0) + (ents.length - 1) * 8 + tw, k0 = Math.min(1, (W - 16 - 2 * 92) / tot);
+    ctx.font = `${fpx(fz)}px ${PLAIN}`; const segW = ents.map(([, n]) => is + 2 + ctx.measureText('+' + n).width), tw = ctx.measureText(tail).width, tot = segW.reduce((a, b) => a + b, 0) + (ents.length - 1) * 8 + tw, k0 = Math.min(1, (W - 16 - 2 * 92) / tot);
     ctx.save(); ctx.translate(W / 2, ny + 53); ctx.scale(k0, k0); let x = -tot / 2;
     ents.forEach(([k, n], j) => { drawItemIcon(k, x + is / 2, 0, is); uiText('+' + n, x + is + 2, 0, fz, UIC.cream, 'left', PLAIN); x += segW[j] + 8; });
     uiText(tail, x - 8, 0, fz, UIC.cream, 'left', PLAIN); ctx.restore(); ctx.restore(); }   // 字只放横幅中间那块，不压两头的花饰（10-26 用户：「又超出了」）
