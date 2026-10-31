@@ -840,7 +840,7 @@ const RANKS = [
   { name: '讨贼正尉', node: 25, gets: ['换上第三套新甲', '被动第二格', '招式三阶资格'] },
   { name: '校尉', node: 30, gets: ['第一章成长上限'] },
 ];
-const PREP_NEEDS = [20, 20, 36, 48, 52, 56], prepNeed = () => PREP_NEEDS[Math.min(rankNow(), PREP_NEEDS.length - 1)];   // 10-29 逐日推演：陨铁放开后一天晋一阶、8 天通关；用户「加码到 16 天」——前两阶不变保头两天的爽感，后面逐阶加码
+const PREP_NEEDS = [16, 16, 36, 48, 52, 56], prepNeed = () => PREP_NEEDS[Math.min(rankNow(), PREP_NEEDS.length - 1)];   // 10-29 逐日推演：陨铁放开后一天晋一阶、8 天通关；用户「加码到 16 天」——前两阶不变保头两天的爽感，后面逐阶加码。10-30 用户：「我要打第五关，要升级，但我第一天似乎凑不够啊？」——一天军务十二道＋本阶两项功绩各 4 正好 20，一道没做成就晋不了；前两阶降到 16，留一项功绩或几道军务的余地
 INV.rank = INV.rank || 0; INV.prep = INV.prep || 0;
 const rankNow = () => INV.rank || 0, nextRank = () => RANKS[rankNow() + 1] || null;
 const syncRankArt = () => { INV.officeRank = Math.min(6, rankNow() + 1); };   // 关羽官阶头像那套（另一会话做的）按 1–6 编号
@@ -906,8 +906,9 @@ const TASKS = {
   noleak:  { ok: lv => lv.kind !== 'duel', text: n => `${n}漏兵不超过两个`, check: (r, G) => r.win && G.leaked <= 2 },
   wall90:  { ok: lv => lv.kind !== 'duel', text: n => `${n}城防剩九成以上`, check: (r, G) => r.win && r.frac >= .9 },
   guanTop: { ok: lv => fighters(lv).length > 1 && fighters(lv).includes('guan'), text: n => `${n}让关羽伤害第一`, check: (r, G) => r.win && topDmg(G) === 'guan' },
-  zhangTop:{ ok: lv => fighters(lv).length > 1 && fighters(lv).includes('zhang'), text: n => `${n}让张飞伤害第一`, check: (r, G) => r.win && topDmg(G) === 'zhang' },
-  liuTop:  { ok: lv => fighters(lv).length > 1 && fighters(lv).includes('liu'), text: n => `${n}让刘备伤害第一`, check: (r, G) => r.win && topDmg(G) === 'liu' },
+  // 10-30 用户：「刘备第二关第一，太难了」——机器人第 1–7 关各 8 局，伤害第一几乎全是关羽（张飞 0 次，刘备只有第二关 2 次），张飞、刘备伤害第一两道题撤掉
+  zhangTop:{ gone: true, ok: () => false, text: n => `${n}让张飞伤害第一`, check: (r, G) => r.win && topDmg(G) === 'zhang' },   // gone：不再出题；今天已经做完的留着显示
+  liuTop:  { gone: true, ok: () => false, text: n => `${n}让刘备伤害第一`, check: (r, G) => r.win && topDmg(G) === 'liu' },
   combo:   { ok: lv => lv.kind !== 'duel' && fighters(lv).length > 1, text: n => `${n}晋升时拿一个连携战法`, check: (r, G) => r.win && PERKS.some(p => p.combo && G.perks[p.id]) },
   huts:    { ok: lv => !!(lv.rules && lv.rules.huts), text: n => `${n}把草营全烧掉`, check: (r, G) => r.win && G.huts.length && G.huts.every(h => h.burnt) },
   civ:     { ok: lv => (lv.waves || []).some(w => FOES[w[1]].civ), text: n => `${n}救下九成百姓`, check: (r, G) => r.win && G.saved >= G.civTotal * .9 },
@@ -935,6 +936,7 @@ function genTasks(day, n) {                                                     
 // 每天第一次进来：点卯（漏掉的最多补两天）、出今天的军务、掉落上限清零、换周
 function dailyTick() {
   const td = dayStr(); let note = null;
+  if (DAILY.tasks && DAILY.tasks.some(t => TASKS[t.k].gone && !t.done)) { DAILY.tasks = DAILY.tasks.filter(t => !TASKS[t.k].gone || t.done); saveDaily(); }   // 撤掉的题（张飞、刘备伤害第一）从今天的军务里拿掉，下面按打过的关补一道
   if (DAILY.day !== td) {
     const gap = DAILY.day ? Math.max(1, dayNum(td) - dayNum(DAILY.day)) : 1, packs = 1 + Math.min(monthLeft() > 0 ? 6 : 2, gap - 1), got = { 精铁: 2 * packs };   // 月卡：补领七天
     INV.it.精铁 += 2 * packs;
@@ -2118,7 +2120,13 @@ function awardExp(win, stars) {
 
 // ---------- 画 ----------
 let HITS = [];
-const hit = (x, y, w, h, fn, long) => HITS.push({ x, y, w, h, fn, long });   // long：长按 0.45 秒才触发（底栏换位置，10-27 用户：「移动将领应该必须要长按，避免按成技能了」）
+const hit = (x, y, w, h, fn, long) => { if (SC.on) { SC.bot = Math.max(SC.bot, y + h); y -= SC.off; if (SC.max > 0) { const y1 = Math.min(y + h, SC.clip); if (y1 <= y) return; h = y1 - y; } } HITS.push({ x, y, w, h, fn, long, fixed: !SC.on }); };   // 拖动页里的按钮跟着内容走；fixed：底下「返回」、弹窗，按下就算
+// 页面上下拖（10-30 用户：「这些页面，需要可以上下scroll，返回的位置不变」）：campBg 的页标题、内容一起拖，底下「返回」和弹窗不动；各页记住拖到哪，回来还在原处
+const SCRL = {}, SCMAX = {}, SC = { on: false, off: 0, bot: 0, max: 0, clip: 588 };
+function scrollBegin() { if (SC.on) return; SC.max = SCMAX[screen] || 0; SC.off = Math.max(0, Math.min(SCRL[screen] || 0, SC.max)); SC.on = true; SC.bot = 0;
+  ctx.save(); if (SC.max > 0) { ctx.beginPath(); ctx.rect(0, 0, W, SC.clip); ctx.clip(); } ctx.translate(0, -SC.off); }
+function scrollEnd() { if (!SC.on) return; SC.on = false; ctx.restore(); const ov = Math.ceil(SC.bot + 10 - SC.clip); SCMAX[screen] = ov > 20 ? ov : 0;   // 本来就摆得下、只是贴着底的页（功绩簿、神兵）不拖、不裁
+  if (SCMAX[screen] > 0) { const k = SC.off / SCMAX[screen]; ctx.save(); ctx.fillStyle = 'rgba(224,168,58,.35)'; rr(W - 5, 60 + k * 470, 3, 56, 1.5); ctx.fill(); ctx.restore(); } }   // 右边一根细条：能拖、拖到哪了   // long：长按 0.45 秒才触发（底栏换位置，10-27 用户：「移动将领应该必须要长按，避免按成技能了」）
 let PRESS = null;
 // 悬停说明（10-26 用户：「鼠标移动上去会有字说明，游戏UI」）：画的时候登记一块区域和一句话，鼠标停在上面就弹一块漆面金边小牌
 let HOVERS = [], MOUSE = null;
@@ -2168,21 +2176,7 @@ function renderScreen() {
   ctx.setTransform(RS, 0, 0, RS, 0, 0);
   ctx.clearRect(0, 0, W, H);
   musicTick();
-  if (screen === 'story') { drawStory(); return; }
-  if (screen === 'system') { drawSystem(); return; }
-  if (screen === 'storylist') { drawStoryList(); return; }
-  if (screen === 'month') { drawMonth(); return; }
-  if (screen === 'roster') { drawRoster(); return; }
-  if (screen === 'camp') { drawCamp(); return; }
-  if (screen === 'rank') { drawRank(); return; }
-  if (screen === 'ach') { drawAch(); return; }
-  if (screen === 'armory') { drawArmory2(); return; }
-  if (screen === 'counsel') { drawCounsel(); return; }
-  if (screen === 'qimou') { drawQimou(); return; }
-  if (screen === 'gate') { drawGate(); return; }
-  if (screen === 'prep') { drawPrep(); return; }
-  if (screen === 'sand') { drawSand(); return; }
-  if (screen === 'levels') { drawLevels(); return; }
+  { const P = { story: drawStory, system: drawSystem, storylist: drawStoryList, month: drawMonth, roster: drawRoster, camp: drawCamp, rank: drawRank, ach: drawAch, armory: drawArmory2, counsel: drawCounsel, qimou: drawQimou, gate: drawGate, prep: drawPrep, sand: drawSand, levels: drawLevels }[screen]; if (P) { P(); scrollEnd(); return; } }   // scrollEnd：页里没有底下「返回」的，画完补收拖动
   if (screen === 'menu' || !G) { drawMenu(); return; }
   const sh = G.shake > 0 ? G.shake * (CALM ? 2 : 9) : 0;
   ctx.save(); if (sh) ctx.translate(VR(-sh, sh) * .5, VR(-sh, sh) * .5);
@@ -3059,6 +3053,7 @@ function uiBar(key, x, y, w, h, frac, c1, c2, o = {}) {
 // 字放进框里（10-25 夜用户：「很多字都超出btn……你检查所有btn，确保字不要超出来」）：给出框里能写字的宽、高，字号先按高、再按宽缩（描边也算进宽）
 function fitSize(s, size, maxW, maxH = Infinity, font = FONT, lw = 0) { size = Math.min(size, maxH); ctx.font = `${fpx(size)}px ${font}`; const w = ctx.measureText(s).width + lw; return w > maxW ? Math.max(8, size * maxW / w) : size; }
 function uiText(s, x, y, size, color, align = 'left', font = FONT, o = {}) {
+  if (SC.on) SC.bot = Math.max(SC.bot, y + size * .6);
   ctx.font = `${fpx(size)}px ${font}`; ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
   if (o.stroke !== false) { ctx.lineWidth = o.lw || Math.max(2.5, size * .16); ctx.strokeStyle = o.stroke || 'rgba(12,8,5,.9)'; ctx.strokeText(s, x, y); }
   if (o.glow) { ctx.shadowColor = o.glow; ctx.shadowBlur = o.glowR || 10; }
@@ -5332,6 +5327,7 @@ function plaque3(x, y, w, h, label, fn, red) {                                  
   uiText(label, x + w / 2, y + h / 2, fitSize(label, h * .5, w - cw * 1.6, 99, FONT, 4), red ? '#fff4dc' : UIC.gold2, 'center', FONT, { lw: 4 }); hit(x, y, w, h, fn);
 }
 function plaque(x, y, w, h, label, fn, red, alpha = 1) {
+  if (label === '返回' && y >= 580) scrollEnd();
   const im = IMG[red ? 'ui_plaque_red' : 'ui_plaque_dark'];
   ctx.save(); ctx.globalAlpha = alpha;
   let fs = Math.min(22, h * .44);
@@ -5597,6 +5593,7 @@ function pill(x, y, w, h, label, fn, red = true, on = true) {
   if (on && fn) hit(x, y, w, h, fn);
 }
 function plate(x, y, w, h, glow) {
+  if (SC.on) SC.bot = Math.max(SC.bot, y + h);
   if (glow) { ctx.shadowColor = `rgba(255,200,90,${.5 + .3 * Math.sin(uiNow() * 3)})`; ctx.shadowBlur = 12; }
   if (ready(IMG.ui2_plate)) draw9(IMG.ui2_plate, x, y, w, h, 40, 40, 40, 40, .25); else uiPanel(x, y, w, h, { r: 6 }); ctx.shadowBlur = 0;
 }
@@ -5606,7 +5603,7 @@ const etaColor = d => d <= 0 ? '#9be0a0' : d < 1 ? '#ffd76e' : d === 1 ? '#ffb07
 const ROOM_OF = [1, 2, 4, 6, 8, 10];
 for (let k = 1; k <= 10; k++) { IMG['room_' + k] = new Image(); IMG['room_' + k].src = 'img/room_' + k + '.jpg' + BUST; }
 function campBg(title) {
-  drawBg(); const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, 'rgba(8,5,4,.78)'); bg.addColorStop(1, 'rgba(6,4,3,.96)'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  drawBg(); const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, 'rgba(8,5,4,.78)'); bg.addColorStop(1, 'rgba(6,4,3,.96)'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H); scrollBegin();
   uiText(title, W / 2, 32, 28, goldGrad(32, 28), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 });
 }
 // 一页：上面一张大的「下一个目标」（还差多少、几天后够、够了就一键打造），下面今天的军务（10-25 用户看了两页军帐：「好复杂」）
@@ -5668,7 +5665,7 @@ function drawCamp() {
     if (MENU.flash && uiNow() - MENU.flash.t0 < 1.2) { const u = (uiNow() - MENU.flash.t0) / 1.2; ctx.save(); ctx.globalAlpha = 1 - u; uiSeal(W - 58, 108, 34 + 12 * u, UPS[MENU.flash.key].gen ? '悟' : '成', UIC.red); ctx.restore(); }
   }
   // 今天的军务十二道：打法军务一行一道（点「去打」直接进那一关）；出外探访、日常杂务各一行，一键做完
-  const ts = DAILY.tasks.slice().sort((a, b) => a.done - b.done), shown = ts.slice(0, 3);
+  const ts = DAILY.tasks.slice().sort((a, b) => a.done - b.done), shown = ts;   // 10-30 页面能拖了：补领的军令也一道道列出来
   uiText('今日军务', 18, 250 + TOPY, 16, UIC.gold2, 'left', FONT, { stroke: false });
   uiText(`${dailyDone()}/${dailyTotal()}`, W - 18, 250 + TOPY, 12, 'rgba(244,230,196,.6)', 'right', PLAIN, { stroke: false });
   if (!ts.length) { const y = 264 + TOPY; plate(14, y, W - 28, 80, false);                 // 10-29 用户：「不要用描述性文字，直接告诉玩家出征后得到什么」
@@ -5682,7 +5679,7 @@ function drawCamp() {
     uiText('残页 +' + TASK_PAY, 56, y + 30, 10, 'rgba(240,217,160,.6)', 'left', PLAIN, { stroke: false });
     if (t.done) uiSeal(W - 42, y + 20, 26, '毕', UIC.red, true); else pill(W - 92, y + 8, 64, 24, '去打', () => { screen = 'menu'; openLevel(li); });
   });
-  let y = 264 + TOPY + (ts.length ? shown.length * 44 : 92); if (ts.length > 3) { uiText(`还有 ${ts.length - 3} 道征战军令（补领的）`, W / 2, y + 2, 10, 'rgba(244,230,196,.5)', 'center', PLAIN, { stroke: false }); y += 12; }
+  let y = 264 + TOPY + (ts.length ? shown.length * 44 : 92);
   { const id = visitWho(), left = DAILY.visitN - DAILY.visits, vr0 = CAMP.visit && uiNow() - CAMP.visit.t0 < 2.6 ? CAMP.visit : null;   // 出外探访
     ctx.save(); if (!left) ctx.globalAlpha = .5; plate(14, y, W - 28, 58, !!(vr0 && vr0.god)); ctx.restore();
     ctx.save(); rr(22, y + 6, 32, 32, 6); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], 22, y + 6, 32, 32); ctx.restore();
@@ -6364,6 +6361,8 @@ cv.addEventListener('pointerdown', ev => {
   const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) / S, y = (ev.clientY - r.top) / S;
   sndInit();
   if (G && G.teach) { closeTeach(); return; }                                       // 教学说明：点哪都是继续
+  if (screen !== 'play' && SCMAX[screen] > 0) { const top = HITS.slice().reverse().find(h => x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
+    if (!top || !top.fixed) { DRAG = { x, y, off0: Math.min(SCRL[screen] || 0, SCMAX[screen]), moved: false }; return; } }   // 能拖的页：先不算点，松手时没拖过才算
   for (let i = HITS.length - 1; i >= 0; i--) { const h = HITS[i]; if (x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h) {
     if (h.long) { const P = PRESS = { h, tm: setTimeout(() => { if (PRESS === P) { PRESS = null; sfx('tap'); h.long(); } }, 450) }; return; }   // 有长按的：按住满 0.45 秒算长按，早松手算点
     sfx('tap'); h.fn(); return; } }
@@ -6379,6 +6378,12 @@ cv.addEventListener('pointerdown', ev => {
   }
 });
 
+let DRAG = null;
+cv.addEventListener('pointermove', ev => { if (!DRAG) return; const [, y] = cvPt(ev); if (Math.abs(y - DRAG.y) > 6) DRAG.moved = true; if (DRAG.moved) SCRL[screen] = Math.max(0, Math.min(SCMAX[screen] || 0, DRAG.off0 - (y - DRAG.y))); });
+for (const ev of ['pointerup', 'pointercancel']) cv.addEventListener(ev, e => { const D = DRAG; if (!D) return; DRAG = null; if (e.type !== 'pointerup' || D.moved) return;
+  for (let i = HITS.length - 1; i >= 0; i--) { const h = HITS[i]; if (D.x >= h.x && D.x <= h.x + h.w && D.y >= h.y && D.y <= h.y + h.h) { sfx('tap'); h.fn(); return; } } });
+cv.addEventListener('wheel', ev => { if (screen === 'play' || !(SCMAX[screen] > 0)) return; ev.preventDefault(); SCRL[screen] = Math.max(0, Math.min(SCMAX[screen], (SCRL[screen] || 0) + ev.deltaY / S)); }, { passive: false });   // 电脑上滚轮
+
 // ---------- 调试接口 ----------
 window.__sg = {
   auto: false, turbo: 1, all: new URLSearchParams(location.search).has('all'), seed: 0,   // 网址带 ?all 就十关全开（试玩用）
@@ -6390,7 +6395,7 @@ window.__sg = {
       while (G.state !== 'over' && G.t < 400 && n < 1e6) { if (G.state === 'pick') { const I = foeIntel(), tv = G.pick.map(p => perkEval(p, I).v), tb = tv.indexOf(Math.max(...tv));
           if (tv[tb] - Math.min(...tv) >= 100) for (const ck of Object.keys(COUNSEL)) { this.forceC = ck; const a = counselAdvise(G.pick), key = ck + (i < 10 ? '·黄巾' : '·董卓'); out[key] = out[key] || [0, 0]; out[key][1]++; if (tv[tb] - tv[a.i] >= 100) out[key][0]++; }   /* 只数有好坏之分的：荐了差 100 以上的算荐错 */
           this.forceC = null; takePerk(autoPick()); } else step(DT); n++; } }
-    this.seed = 0; this.auto = false; return Object.fromEntries(Object.entries(out).map(([k, [a, b]]) => [k, '荐错 ' + Math.round(a / b * 100) + '% (' + b + ')'])); }, ult: (k, foe) => playUlt(k, foe, true), get inv() { return INV; }, get daily() { return DAILY; }, dayOff: 0, tick: () => dailyTick(), gateLack: id => gateLack(id), nextGate: () => nextGate(), get scr() { return screen; }, set scr(v) { screen = v; },
+    this.seed = 0; this.auto = false; return Object.fromEntries(Object.entries(out).map(([k, [a, b]]) => [k, '荐错 ' + Math.round(a / b * 100) + '% (' + b + ')'])); }, ult: (k, foe) => playUlt(k, foe, true), get inv() { return INV; }, get daily() { return DAILY; }, dayOff: 0, tick: () => dailyTick(), gateLack: id => gateLack(id), nextGate: () => nextGate(), get scr() { return screen; }, set scr(v) { screen = v; }, get scmax() { return SCMAX; },
   // 不画面，直接跑：一直到这一关结束（auto 时自动选战法），返回结果
   sim(i, maxT = 300) { this.auto = true; this.simming = true; startLevel(i); this.simming = false; G.sim = true; let n = 0; while (G.state !== 'over' && G.t < maxT && n < 1e6) { if (G.state === 'pick') takePerk(autoPick()); if (this.hook) this.hook(G); step(DT); n++; } return { win: G.result && G.result.win, stars: G.result && G.result.stars, wall: Math.round(G.wall), t: Math.round(G.t), killed: G.killed, leaked: G.leaked, total: G.total, rank: G.rank, perks: G.perks }; },
   // 每关换 n 个种子各跑一遍：平均星数、胜场、城防、用时、撞城的兵、输的原因（调平衡用）
@@ -6412,7 +6417,7 @@ window.__sg = {
   pick: i => takePerk(i), step: n => { for (let k = 0; k < n; k++) { if (G.state === 'pick' && window.__sg.auto) takePerk(autoPick()); step(DT); } },
   // 一直跑到某种特效刚出来 at 秒（截图用）
   until(kind, at = .1, maxN = 20000) { const old = new Set(G.fx); for (let k = 0; k < maxN; k++) { if (G.state === 'pick') takePerk(autoPick()); step(DT); const f = G.fx.find(f => f.k === kind && !old.has(f)); if (f && f.t >= at) return true; } return false; }, get mem() { const r = [...ALLIMG].map(w => w.deref()).filter(im => im && im.complete && im.naturalWidth).map(im => [(im._url || '').split('/').pop().split('?')[0], im.naturalWidth * im.naturalHeight * 4 / 1e6]).concat(Object.entries(SHEET_C).map(([k, e]) => ['画布 ' + k, e.c.width * e.c.height * 4 / 1e6])).sort((a, b) => b[1] - a[1]); const cvs = ALLCV.map(w => w.deref()).filter(c => c && c.width * c.height > 1).map(c => c.width * c.height * 4 / 1e6); return { cvN: cvs.length, cvMB: Math.round(cvs.reduce((a, b) => a + b, 0)), cvTop: ALLCV.map(w => w.deref()).filter(c => c && c.width * c.height > 250000).map(c => c.width + 'x' + c.height + '@' + c._at), MB: Math.round(r.reduce((a, b) => a + b[1], 0)), top: r.slice(0, 25).map(([k, v]) => k + ' ' + v.toFixed(0)) }; }, get woken() { return [...WOKEN].map(im => (im._url || '').split('/').pop().split('?')[0]); },   // 调试：换关后留在内存里的大图
-  tap: (x, y) => cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: cv.getBoundingClientRect().left + x * S, clientY: cv.getBoundingClientRect().top + y * S })),
+  tap: (x, y) => { const o = { clientX: cv.getBoundingClientRect().left + x * S, clientY: cv.getBoundingClientRect().top + y * S }; cv.dispatchEvent(new PointerEvent('pointerdown', o)); cv.dispatchEvent(new PointerEvent('pointerup', o)); },
 };
 
 // ---------- 主循环 ----------
