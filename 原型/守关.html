@@ -5657,13 +5657,14 @@ function drawCamp() {
   if (!REWARD) achAutoClaim();   // 以前攒着没领的功绩：进军帐一次发掉
   plaque3(10, 14, 80, 26, '奇谋', () => { screen = 'qimou'; QM.sel = null; QM.from = 'camp'; });   // 10-29 奇谋卡（大招、军师计、敌方计）
   { const n = achClaimable().length; plaque3(W - 104, 14, 94, 26, '功绩簿', () => { screen = 'ach'; }, n > 0); if (n) uiSeal(W - 10, 14, 16, String(n), UIC.red, true);   /* 牌匾按原图比例，宽 128 时正好 26 高，字在中间（10-29 用户：「字要居中」） */ }
-  const gl = campGoal(), TOPY = gl ? 0 : -66;   // 没东西要备时顶上只放一块矮的官阶卡（10-29 用户：「这4个框的大小应该如蓝框」）
-  plate(14, 58, W - 28, gl ? 166 : 100, !!gl);
-  if (!gl) { const N = nextRank(); if (N) { uiText('下一阶 · ' + N.name, W / 2, 84, 18, UIC.gold2, 'center', FONT, { lw: 4 }); uiText(`资历 ${INV.prep || 0}/${prepNeed()}`, 30, 120, 13, UIC.cream, 'left', PLAIN, { stroke: false });
+  const gl = campGoal(), TOPY = gl ? 110 : -66;   // 没东西要备时顶上只放一块矮的官阶卡（10-29 用户：「这4个框的大小应该如蓝框」）
+  // 10-30 用户：「怎么找不到军阶晋级了」——原来有东西要备时，备料卡顶掉官阶卡；现在官阶卡一直在最上面，备料卡排在它下面（页面能拖）
+  plate(14, 58, W - 28, 100, false);
+  { const N = nextRank(); if (N) { uiText('下一阶 · ' + N.name, W / 2, 84, 18, UIC.gold2, 'center', FONT, { lw: 4 }); uiText(`资历 ${INV.prep || 0}/${prepNeed()}`, 30, 120, 13, UIC.cream, 'left', PLAIN, { stroke: false });
       uiBar('cprep', 100, 114, W - 230, 12, Math.min(1, (INV.prep || 0) / prepNeed()), '#8a5a14', '#ffd76e'); 
       pill(W - 112, 104, 90, 28, (INV.prep || 0) >= prepNeed() ? '去晋阶' : '看官阶', () => { screen = 'rank'; }, (INV.prep || 0) >= prepNeed()); }
-    else uiText('已是第一章最高官阶', W / 2, 140, 18, UIC.gold2, 'center', FONT); }   // 军帐顶上改放官阶资历（兵器不在这里：10-29 用户）
-  else {
+    else uiText('已是第一章最高官阶', W / 2, 108, 18, UIC.gold2, 'center', FONT); }   // 军帐顶上改放官阶资历（兵器不在这里：10-29 用户）
+  if (gl) { ctx.save(); ctx.translate(0, 110); SC.off -= 110; plate(14, 58, W - 28, 166, true);   // 备料卡整块往下挪 110：画面平移，按钮的点击位置跟着挪（借拖动的偏移）
     const { ng, key, U, tot, d } = gl, lv = LEVELS.find(l => l.id === ng), lvl = INV.up[key] || 0;
     if (key === 'wpn') { drawWeapon('guan', wpnVis(lvl + 1), 44, 140, 150, .2, uiNow(), false); hit(14, 58, W - 28, 120, () => { screen = 'armory'; ARM.t0 = uiNow(); }); }   // 要打兵器时左边放下一级的青龙偃月刀，点卡片进神兵页
     { const [, C] = counselNow(), s2 = `${C.name}：打${lvName(ng)}${lv.name}之前，最好先备上这个`; uiText(s2, W / 2, 80, fitSize(s2, 12, W - 60, 99, PLAIN), '#ff9a7a', 'center', PLAIN, { stroke: false }); }   // 军师的建议，不是门槛（10-26）
@@ -5676,7 +5677,7 @@ function drawCamp() {
       if (ok) showReward(U2.gen ? '研习成功' : '打造成功', [`${U2.name} ${U2.max > 1 ? '+' + INV.up[key] : '已学会'}`, ...(key === 'wpn' ? ['三兄弟的兵器一起精炼'] : []), U2.desc(INV.up[key])], U2.gen ? [U2.gen] : ['guan', 'zhang', 'liu']); else showReward('材料不够', ['还差：' + lackText(Object.entries(upCost(key)).filter(([i, n]) => (INV.it[i] || 0) < n))], U2.gen ? [U2.gen] : ['zhang'], false); } });
     else uiText(etaText(d, gl.lack) + (gl.lack.some(([i]) => i === '将印') && !INV.seal20 ? '，再首通第廿关' : ''), W / 2, 204, 17, etaColor(d), 'center', FONT);
     if (MENU.flash && uiNow() - MENU.flash.t0 < 1.2) { const u = (uiNow() - MENU.flash.t0) / 1.2; ctx.save(); ctx.globalAlpha = 1 - u; uiSeal(W - 58, 108, 34 + 12 * u, UPS[MENU.flash.key].gen ? '悟' : '成', UIC.red); ctx.restore(); }
-  }
+    SC.off += 110; ctx.restore(); SC.bot = Math.max(SC.bot, 58 + 166 + 110); }
   // 今天的军务十二道：打法军务一行一道（点「去打」直接进那一关）；出外探访、日常杂务各一行，一键做完
   const ts = DAILY.tasks.slice().sort((a, b) => a.done - b.done), shown = ts;   // 10-30 页面能拖了：补领的军令也一道道列出来
   uiText('今日军务', 18, 250 + TOPY, 16, UIC.gold2, 'left', FONT, { stroke: false });
