@@ -28,7 +28,7 @@ const REL_LIST = 'ult_|fx_boss_|fx_sp_|map_|bg\\.|story_|bg_|room|card_|enemy_|h
 const LAZY_RE = new RegExp('img/(fb/|' + REL_LIST + ')'), REL_RE = new RegExp('img/(' + REL_LIST + ')');   // 命中帧动画 fb/ 用到才加载但不释放；其余换关时放掉
 // 10-30 用户：「第五关又重启」——大招特写（ult_，每张约 60MB）原来学了就一直留着，前几关剧情学了三招就三张；改成也换关释放，开打前只叫起这关觉醒那人和敌将的，剧情学招前先叫起
 const SRC_SET = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src').set;
-const ALLCV = [], _ce = document.createElement.bind(document); document.createElement = function (t, ...a) { const el = _ce(t, ...a); if (String(t).toLowerCase() === 'canvas' && /[?&]memlog/.test(location.search)) { el._at = (new Error().stack.split('\n')[2] || '').replace(/.*守关.html[^:]*:/, '').trim(); ALLCV.push(new WeakRef(el)); } return el; };   // 调试 ?memlog：记下所有画布，看谁在涨
+const ALLCV = [], _ce = document.createElement.bind(document); document.createElement = function (t, ...a) { const el = _ce(t, ...a); if (String(t).toLowerCase() === 'canvas') { if (/[?&]memlog/.test(location.search)) el._at = (new Error().stack.split('\n')[2] || '').replace(/.*守关.html[^:]*:/, '').trim(); if (ALLCV.length > 1500) ALLCV.splice(0, ALLCV.length, ...ALLCV.filter(w => w.deref())); ALLCV.push(new WeakRef(el)); } return el; };   // 调试 ?memlog：记下所有画布，看谁在涨
 const LOADQ = [], ALLIMG = new Set(), _Img = window.Image; window.Image = function (...a) { const im = new _Img(...a); ALLIMG.add(new WeakRef(im));   // 弱引用：只给 __sg.mem 数，不拦着回收（10-30 原来强引用，用完的图收不掉）
   Object.defineProperty(im, 'src', { configurable: true, get() { return im._url || ''; }, set(u) { im._url = u; if (LAZY_RE.test(u)) { im._lazy = u; return; }
     if (!LOADED) { LOADQ.push(im); im.addEventListener('load', () => (im.decode ? im.decode() : Promise.resolve()).catch(() => {}).then(() => { im._ok = 1; })); im.addEventListener('error', () => { im._ok = 1; }); }
@@ -6240,8 +6240,10 @@ function drawMenu() {
   uiText('群雄逐鹿', W / 2, 96, 50, UIC.gold2, 'center', FONT, { glow: `rgba(255,190,80,${.5 + .2 * Math.sin(t * 2)})`, glowR: 20, lw: 7 });
   const nt = dailyTick(); if (nt) MENU.note = { ...nt, t0: t };
   if (CRASH && !CRASH.t0) CRASH.t0 = t;
-  if (CRASH && t - CRASH.t0 < 12) { const c = CRASH, msg = `上次${c.scr === 'play' && c.lv ? `第 ${c.lv} 关第 ${c.t} 秒` : '在' + ({ menu: '主页', levels: '选关' }[c.scr] || c.scr)}页面被手机关掉重开（图片约 ${c.mb}MB）`;   // 中断提示：截图发回来查
-    ctx.save(); ctx.globalAlpha = Math.min(1, (12 - (t - c.t0)) / .6); ctx.fillStyle = 'rgba(40,8,4,.82)'; rr(14, 124, W - 28, 24, 8); ctx.fill(); uiText(msg, W / 2, 136, fitSize(msg, 11, W - 40, 99, PLAIN, 3), '#ffd2b8', 'center', PLAIN, { lw: 3 }); ctx.restore(); }
+  if (CRASH && t - CRASH.t0 < 20) { const c = CRASH, msg = `上次${c.scr === 'play' && c.lv ? `第 ${c.lv} 关第 ${c.t} 秒` : '在' + ({ menu: '主页', levels: '选关' }[c.scr] || c.scr)}页面被手机关掉重开（图片约 ${c.mb}MB）`;   // 中断提示：截图发回来查
+    ctx.save(); ctx.globalAlpha = Math.min(1, (20 - (t - c.t0)) / .6); ctx.fillStyle = 'rgba(40,8,4,.82)'; rr(14, 124, W - 28, 24, 8); ctx.fill(); uiText(msg, W / 2, 136, fitSize(msg, 11, W - 40, 99, PLAIN, 3), '#ffd2b8', 'center', PLAIN, { lw: 3 });
+    if (c.cn != null) { const m2 = `画布 ${c.cn} 张约 ${c.cm}MB · ${c.rs} 倍${c.ev ? ' · 当时：' + c.ev : ''}`; ctx.fillStyle = 'rgba(40,8,4,.82)'; rr(14, 150, W - 28, 22, 8); ctx.fill(); uiText(m2, W / 2, 161, fitSize(m2, 10, W - 40, 99, PLAIN, 3), '#ffd2b8', 'center', PLAIN, { lw: 3 }); }
+    ctx.restore(); }
   // 左上角资料卡：过了几关、几颗星、精铁
   const done = LEVELS.filter(lv => BEST[lv.id]).length, stars = LEVELS.reduce((a, lv) => a + (BEST[lv.id] || 0), 0);
   { const mg = monthLeft() > 0; if (mg) { ctx.save(); ctx.shadowColor = 'rgba(255,205,100,.75)'; ctx.shadowBlur = 12; } plate(8, 10, 176, 46); if (mg) ctx.restore(); } uiText('第一章 · ' + RANKS[rankNow()].name, 18, 24, fitSize('第一章 · ' + RANKS[rankNow()].name, 13, 156), UIC.gold2, 'left', FONT, { stroke: false });   // 不写「几关、过了几关」这类设计上的数（10-25 夜用户）
@@ -6417,13 +6419,15 @@ function frame(now) {
   acc += d * (window.__sg.turbo ?? 1) * (G && screen === 'play' && G.state === 'play' && spdOpen() ? INV.spd || 1 : 1); let n = 0;   // 二倍速：每帧多推一倍       // turbo = 0 就停住（截图用）
   while (acc >= DT && n < 600) { if (G) step(DT); acc -= DT; n++; }
   render(); bgMirror(); requestAnimationFrame(frame);
-  if (now - aliveT > 2000) { aliveT = now; aliveMark(); }
+  if (now - aliveT > 1000) { aliveT = now; aliveMark(); }
 }
 // 中断记录（10-30 用户：「我第五关一直没能打完就自动刷新页面」）：每两秒记一下在哪关第几秒、图片占多少；正常关页面、切到后台会擦掉，
 // 剩下的就是被系统杀掉重开的——下次进主页提示一行，让用户截图回来
 let aliveT = 0; const CRASH = (() => { try { const j = JSON.parse(localStorage.getItem('sgz.alive') || 'null'); localStorage.removeItem('sgz.alive'); return j && Date.now() - j.at < 15 * 60e3 ? j : null; } catch (e) { return null; } })();
 function aliveMark() { if (document.hidden) return; try { let mb = 0; for (const w of ALLIMG) { const im = w.deref(); if (im && im.complete && im.naturalWidth) mb += im.naturalWidth * im.naturalHeight * 4e-6; }
-  localStorage.setItem('sgz.alive', JSON.stringify({ at: Date.now(), scr: screen, lv: G && G.lv ? G.lv.id : 0, t: G ? Math.round(G.t || 0) : 0, mb: Math.round(mb) })); } catch (e) {} }
+  let cn = 0, cm = 0; for (const w of ALLCV) { const c = w.deref(); if (c && c.width * c.height > 1) { cn++; cm += c.width * c.height * 4e-6; } }   // 10-30 第四关第 24 秒又被关（1.5 倍、图片 240MB）：多记画布和那一刻在演什么
+  const ev = G && screen === 'play' ? [...new Set([...(G.cast ? ['招' + G.cast.id] : []), ...(G.ult ? ['大招' + G.ult.k] : []), ...(G.fx || []).map(f => f.k).filter(k => !/^(txt|corpse|dust|splash|cut|stab|cleave|leak|wave|warn)$/.test(k))])].slice(0, 6).join(' ') : '';
+  localStorage.setItem('sgz.alive', JSON.stringify({ at: Date.now(), scr: screen, lv: G && G.lv ? G.lv.id : 0, t: G ? Math.round(G.t || 0) : 0, mb: Math.round(mb), cn, cm: Math.round(cm), rs: Math.round(RS * 100) / 100, ev })); } catch (e) {} }
 const aliveClear = () => { try { localStorage.removeItem('sgz.alive'); } catch (e) {} };
 addEventListener('pagehide', aliveClear); document.addEventListener('visibilitychange', () => { if (document.hidden) aliveClear(); });
 const BGV = document.getElementById('bgv'), BGX = BGV.getContext('2d'); let bgTick = 0;
