@@ -6001,10 +6001,10 @@ const RANKMSG = { t0: -99, text: '' };
 function drawRank() {                                                               // 10-29 用户：「这页有点难看，干巴巴的」——左边现在的装、右边下一阶的装，中间箭头；解锁做成奖励牌
   campBg('官阶'); const t = uiNow(), r = rankNow(), R = RANKS[r], N = nextRank();
   const col = (rk, x, lab, big) => { uiText(lab, x, 74, 11, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false }); uiText(RANKS[rk].name, x, 96, big ? 20 : 17, big ? goldGrad(96, 20) : UIC.cream, 'center', FONT, { lw: 4, glow: big ? 'rgba(255,200,90,.6)' : null, glowR: 10 });
-    ['guan', 'liu', 'zhang'].forEach((id, k) => { const sz = 46, xx = x + (k - 1) * (sz + 4) - sz / 2, yy = 112 + (k === 1 ? -4 : 0), im = heroRankPortrait(id, rk);
+    ['guan', 'liu', 'zhang'].forEach((id, k) => { const sz = 46, xx = x + (k - 1) * (sz + 4) - sz / 2, yy = 112, im = heroRankPortrait(id, rk);   /* 10-30 用户：「3个图标对齐，刘备不要凸起」 */
       ctx.save(); if (!big && N) ctx.globalAlpha = .75; rr(xx, yy, sz, sz, 6); ctx.clip(); if (ready(im)) ctx.drawImage(im, xx, yy, sz, sz); ctx.restore(); if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, xx - 1, yy - 1, sz + 2, sz + 2, 60, 60, 60, 60, .1); }); };
   plate(10, 60, W - 20, 176, true);
-  if (N) { col(r, 94, '现在', false); col(r + 1, W - 94, '下一阶', true); const pu = .6 + .4 * Math.sin(t * 4); ctx.save(); ctx.globalAlpha = pu; uiText('▶', W / 2, 140, 22, '#ffd76e', 'center', PLAIN, { glow: 'rgba(255,200,90,.9)', glowR: 10 }); ctx.restore();
+  if (N) { col(r, 94, '现在', false); col(r + 1, W - 94, '下一阶', true); const pu = .6 + .4 * Math.sin(t * 4); ctx.save(); ctx.globalAlpha = pu; uiText('▶', W / 2, 135, 13, '#ffd76e', 'center', PLAIN, { stroke: false });   /* 箭头小一些（10-30 用户），对着头像中线 */ ctx.restore();
     uiText(`打第${CNUM(N.node)}关之前晋阶`, W / 2, 210, 11, 'rgba(244,230,196,.65)', 'center', PLAIN, { stroke: false }); }
   else col(r, W / 2, '', true);
   if (N) { uiText('晋阶得到', 22, 262, 14, UIC.gold2, 'left', FONT, { stroke: false });
