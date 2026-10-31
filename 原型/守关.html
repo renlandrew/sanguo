@@ -568,7 +568,7 @@ const LEVELS = [
       [58, 'zhangliang', 1, 0, 'rand', { g: 'b', lead: true }], [58, 'bing', 36, 10, 'rand', { g: 'b' }], [66, 'lishi', 8, 4, 'rand', { g: 'b' }]],
     tips: [[1, '夜战：城前一小条以外全是黑的，黑处普攻三成、招式五成才打得中，敌人还走得快'], [4, '「军功」里有三支火把：点一支全场亮 8 秒，命中回到八成五——趁亮集中放招'], [9, '张飞的一喝不用看准，黑处照样喝晕；喝晕的、着了火的敌人在黑处也打得中'], [7, '术士洒符水给身边的黄巾回血，先点他'], [37, '地公将军张宝会刮妖风：武将普攻几秒内减半'], [57, '人公将军张梁给身边的兵挡刀']] },
   { id: 10, name: '张角', sub: '大战 · 天公将军张角', kind: 'duel', boss: 'zhangjiao', hpMul: 4.55, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'camp', reward: '太平要术 · 兵书',
-    moves: ['heavy', 'summon', 'heal', 'heavy', 'seal', 'summon', 'heavy', 'buff'], gap: 3.2, heavy: 11, adds: [['bing', 4], ['lishi', 1]], phase2: [['zhangbao', 120], ['zhangliang', 240]],
+    moves: ['heavy', 'summon', 'heal', 'heavy', 'seal', 'summon', 'heavy', 'buff'], gap: 2.6, heavy: 16, adds: [['bing', 10], ['lishi', 2]], phase2: [['zhangbao', 120], ['zhangliang', 240]],   // 11-01 用户嫌太简单：出招 3.2 → 2.6 秒、天雷 11 → 16、召兵 4+1 → 10+2；血量再加就拖过 5 分钟（机器人 4.9 倍有三局打不完），所以不加
     tips: [[1, '天公将军张角：天雷自动举盾挡，符水要用张飞喝断'], [10, '妖术迷魂会封住一位武将几秒'], [30, '张角血少一半时，张宝、张梁会上阵']] },
   // ---------- 二 · 诸侯讨董（11–20，10-25） ----------
   { id: 11, name: '孟德献刀', sub: '洛阳城门 · 夜，掩护曹操出城', hpMul: 3.634, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'luoyang', reward: '七星宝刀（法宝）',
@@ -845,7 +845,9 @@ INV.rank = INV.rank || 0; INV.prep = INV.prep || 0;
 const rankNow = () => INV.rank || 0, nextRank = () => RANKS[rankNow() + 1] || null;
 const syncRankArt = () => { INV.officeRank = Math.min(6, rankNow() + 1); };   // 关羽官阶头像那套（另一会话做的）按 1–6 编号
 const addPrep = n => { if (nextRank()) { INV.prep = Math.min(prepNeed(), (INV.prep || 0) + n); saveInv(); } };
-function promote() { const R = nextRank(); if (!R || INV.prep < prepNeed()) return false; INV.rank++; INV.prep = 0; syncRankArt(); saveInv(); RANKFX.t0 = uiNow(); RANKFX.on = true; RANKFX.name = R.name; RANKFX.gets = R.gets; sfx('gong'); return true; }
+// 11-01 用户：「第十关还是太简单？卡不住第一天？我第一天就过了第10关了？」——第一天打完 1–9 关，功绩自动发的资历加上军务，一天连晋两阶（第十关要第二阶）。改成一天只能晋一阶
+const promotedToday = () => INV.rankDay === dayStr(), canPromote = () => !!nextRank() && (INV.prep || 0) >= prepNeed() && !promotedToday();
+function promote() { const R = nextRank(); if (!R || INV.prep < prepNeed() || promotedToday()) return false; INV.rank++; INV.prep = 0; INV.rankDay = dayStr(); syncRankArt(); saveInv(); RANKFX.t0 = uiNow(); RANKFX.on = true; RANKFX.name = R.name; RANKFX.gets = R.gets; sfx('gong'); return true; }
 const RANKFX = { t0: -99 };
 // 功绩簿（10-29 方案第 5 节，按星数能查的条件先做）：逐关首通、节点功绩（每次晋阶前两项，另给资历 4 点）、累计星绩；每项固定 ID 只领一次
 const ACH_NODE = { 5: [[3, 3, '第三关三星'], [4, 2, '第四关两星以上']], 10: [[7, 3, '第七关三星'], [9, 2, '第九关两星以上']], 15: [[12, 3, '第十二关三星'], [14, 2, '第十四关两星以上']],
@@ -2821,15 +2823,7 @@ const mapKey = m => BGC[m] || ready(IMG['bg_' + m]) ? m : (MAP_ALIAS[m] || m);
 // 配色收敛（10-29 用户：「感觉我们现在的颜色有些多有些乱」；又说「不需要接近水墨」）：场景图一律降一点饱和，
 // 第一次画时算一遍存起来（不每帧滤镜，手机不卡）；人物色只留在各自招式特效里
 const INKBG = new Map(), INK_SAT = .7;   // 10-29 用户：「不需要接近水墨」——只压掉刺眼的饱和，保留厚涂画风，不往宣纸色偏
-function inkBg(im) {
-  let c = INKBG.get(im); if (c) return c;
-  c = document.createElement('canvas'); c.width = im.naturalWidth || im.width; c.height = im.naturalHeight || im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
-  try { const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
-    for (let i = 0; i < p.length; i += 4) { const l = .3 * p[i] + .59 * p[i + 1] + .11 * p[i + 2];
-      p[i] = l + (p[i] - l) * INK_SAT; p[i + 1] = l + (p[i + 1] - l) * INK_SAT; p[i + 2] = l + (p[i + 2] - l) * INK_SAT; }   // 留七成的色
-    g.putImageData(d, 0, 0); } catch (e) { return im; }                                   // 读不了像素（跨域）就用原图
-  INKBG.set(im, c); return c;
-}
+function inkBg(im) { return im; }   // 11-01 降饱和（INK_SAT 七成）已经烘进 bg_*.jpg、map_*.jpg 文件（原色存 美术/底图原色/）：原来每张场景图另开一张 8MB 的画布，手机第十关画布内存吃紧时地图画不出来，一片灰白
 function drawBg() {
   const mc = G && bgOf(mapKey(G.lv.map));
   if (mc) { if (BG || IMG.bg._rel) { BG = null; MAPL = {}; INKBG.delete(IMG.bg); relImg(IMG.bg); } }   // 真底图到了：垫底的主页背景、程序地形放掉
@@ -3833,7 +3827,7 @@ const hdlP = (f, X, Y) => [f.x + X * HDL_RX * .85, f.y + Y * HDL_RX * .85 * HDL_
 // ===== 法术纹理（10-30 用户照参考黑洞特效画的，美术/法术纹理_黑底；黑底、用 lighter 叠加，黑色等于透明）=====
 // 照参考的三件事：放招时把地面压暗偏冷（光才亮得起来）；泛光（特效先画在离屏画布上，缩小再放大糊一层光叠回去）；主体用画好的纹理转、流、弯，不用代码画线
 const TEXN = ['nebula', 'petal', 'ribbon', 'flame', 'dbody', 'dhead', 'stars'];
-for (const n of TEXN) { IMG['tex_' + n] = new Image(); IMG['tex_' + n].src = 'img/tex_' + n + '.jpg' + BUST; }
+for (const n of TEXN) { IMG['tex_' + n] = new Image(); IMG['tex_' + n].src = 'img/tex_' + n + '.webp' + BUST; }   // 11-01 用户（手机截图）：「雷怎么有阴影」——原来是黑底 jpg 靠「加亮」混合去黑，手机上有时按普通叠加画成一块块黑方块；改成透明底 webp（亮度当透明度），两种混合都一样
 const texOK = () => TEXN.every(n => ready(IMG['tex_' + n]));
 const GLW = { c: document.createElement('canvas'), s: document.createElement('canvas'), s2: document.createElement('canvas') };
 function glowPass(fn, bloom = .9) {                                              // fn(g)：g 是离屏画布（逻辑坐标、已设 lighter）
@@ -3862,8 +3856,9 @@ function tintTex(n, col) {
   const key = n + '|' + col; if (TEXTINT[key] !== undefined) return TEXTINT[key]; const im = IMG['tex_' + n]; if (!ready(im)) return null;
   const rgb = col[0] === '#' ? [1, 3, 5].map(i => parseInt(col.slice(i, i + 2), 16)) : col.split(',').map(Number), c = document.createElement('canvas'), k = Math.min(1, 512 / Math.max(im.width, im.height));
   c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); const g = c.getContext('2d'); g.drawImage(im, 0, 0, c.width, c.height);
-  try { const d = g.getImageData(0, 0, c.width, c.height), a = d.data; for (let i = 0; i < a.length; i += 4) { const l = Math.max(a[i], a[i + 1], a[i + 2]) / 255, w = l * l * l * .18;
-      for (let j = 0; j < 3; j++) a[i + j] = Math.min(255, rgb[j] * l * .9 + (255 - rgb[j]) * w); } g.putImageData(d, 0, 0); } catch (e) { return TEXTINT[key] = null; }
+  try { const d = g.getImageData(0, 0, c.width, c.height), a = d.data; for (let i = 0; i < a.length; i += 4) { const l = Math.max(a[i], a[i + 1], a[i + 2]) / 255 * a[i + 3] / 255, w = l * l * l * .18;   // 透明底纹理：亮度 = 颜色 × 透明度
+      let m = 0; for (let j = 0; j < 3; j++) { a[i + j] = Math.min(255, rgb[j] * l * .9 + (255 - rgb[j]) * w); m = Math.max(m, a[i + j]); }
+      if (m > 0) for (let j = 0; j < 3; j++) a[i + j] = a[i + j] * 255 / m; a[i + 3] = m; } g.putImageData(d, 0, 0); } catch (e) { return TEXTINT[key] = null; }   // 染完照样存成透明底
   return TEXTINT[key] = c;
 }
 function texBloom(x, y, t, dur, R, col, sq = 1, rot = 0) {                       // 光瓣绽放：快速撑开、慢慢转着淡掉（交点、落点用，代替一团圆形光）
@@ -5737,7 +5732,7 @@ function drawCamp() {
   plate(14, 58, W - 28, 100, false);
   { const N = nextRank(); if (N) { uiText('下一阶 · ' + N.name, W / 2, 84, 18, UIC.gold2, 'center', FONT, { lw: 4 }); uiText(`资历 ${INV.prep || 0}/${prepNeed()}`, 30, 120, 13, UIC.cream, 'left', PLAIN, { stroke: false });
       uiBar('cprep', 100, 114, W - 230, 12, Math.min(1, (INV.prep || 0) / prepNeed()), '#8a5a14', '#ffd76e'); 
-      pill(W - 112, 104, 90, 28, (INV.prep || 0) >= prepNeed() ? '去晋阶' : '看官阶', () => { screen = 'rank'; }, (INV.prep || 0) >= prepNeed()); }
+      pill(W - 112, 104, 90, 28, canPromote() ? '去晋阶' : '看官阶', () => { screen = 'rank'; }, canPromote()); }
     else uiText('已是第一章最高官阶', W / 2, 108, 18, UIC.gold2, 'center', FONT); }   // 军帐顶上改放官阶资历（兵器不在这里：10-29 用户）
   if (gl) { ctx.save(); ctx.translate(0, 110); SC.off -= 110; plate(14, 58, W - 28, 166, true);   // 备料卡整块往下挪 110：画面平移，按钮的点击位置跟着挪（借拖动的偏移）
     const { ng, key, U, tot, d } = gl, lv = LEVELS.find(l => l.id === ng), lvl = INV.up[key] || 0;
@@ -6096,7 +6091,8 @@ function drawRank() {                                                           
       if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, x - tw / 2 - 2, y - tw / 2 - 2, tw + 4, tw + 4, 60, 60, 60, 60, .1); uiText(ic.label, x, y + tw / 2 + 14, 12, '#fff', 'center', FONT, { lw: 3 }); });
     const fr = Math.min(1, (INV.prep || 0) / prepNeed()), py = 410; plate(14, py, W - 28, 110, fr >= 1);
     uiText(`资历 ${INV.prep || 0}/${prepNeed()}`, 30, py + 26, 14, UIC.gold2, 'left', FONT, { stroke: false }); uiBar('prep', 130, py + 20, W - 160, 12, fr, '#8a5a14', '#ffd76e');
-    if (fr >= 1) pill(W / 2 - 70, py + 50, 140, 40, '晋阶', () => promote(), true); else pill(W / 2 - 70, py + 50, 140, 40, '去做军务', () => { screen = 'camp'; }, false); }
+    if (fr >= 1 && promotedToday()) { ctx.save(); ctx.globalAlpha = .5; pill(W / 2 - 70, py + 50, 140, 40, '明天再晋阶', () => {}, false); ctx.restore(); uiText('一天只能晋一阶，今天已经晋过了', W / 2, py + 102, 11, 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false }); }
+    else if (fr >= 1) pill(W / 2 - 70, py + 50, 140, 40, '晋阶', () => promote(), true); else pill(W / 2 - 70, py + 50, 140, 40, '去做军务', () => { screen = 'camp'; }, false); }
   if (t - RANKMSG.t0 < 3) { const a = Math.min(1, (3 - (t - RANKMSG.t0)) / .5); ctx.save(); ctx.globalAlpha = a; plate(30, 470, W - 60, 40, true); uiText(RANKMSG.text, W / 2, 490, fitSize(RANKMSG.text, 13, W - 80, 99, PLAIN), '#ffe39a', 'center', PLAIN, { lw: 3 }); ctx.restore(); }
   plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; }, false);
   if (RANKFX.on) drawPromote(t - RANKFX.t0);
@@ -6328,7 +6324,7 @@ const navFace = (k, fc) => (cx, cy, s) => { const im = IMG[k], r = s * .42; ctx.
 // 一次只说一条，点这句话或点箭头指的钮就算看过，每条只说一次（INV.tipSeen）
 const MENU_TIPS = [
   { k: 'wpn', x: 90, ok: () => ['guan', 'zhang', 'liu'].some(h => canUp('wpn_' + h)), say: '精铁够了！去「神兵」给兵器精炼，普攻、招式伤害都往上涨' },
-  { k: 'rank', x: 270, ok: () => !!nextRank() && (INV.prep || 0) >= prepNeed(), say: '资历攒够了，去「军帐」点「去晋阶」。节点关要先晋阶才能打' },
+  { k: 'rank', x: 270, ok: () => canPromote(), say: '资历攒够了，去「军帐」点「去晋阶」。节点关要先晋阶才能打' },
   { k: 'pas', x: 30, ok: () => pasSlots() > 0 && ['guan', 'zhang', 'liu'].some(id => !loadOf(id).pas.length), say: '被动战法格开了！去「武将」→ 配招，给三兄弟各配一个被动' },
   { k: 'counsel', x: 30, ok: () => Object.keys(COUNSEL).some(k => k !== counselNow()[0] && counselOK(k)), say: '「武将」页里能换随军军师：各人荐战法、报敌情的本事不一样，打不顺就换一位' },
   { k: 'daily', x: 270, ok: () => !!BEST[1], say: '「军帐」每天有军务：打法军令、出外探访、日常杂务，做了得材料和资历，晋阶就靠它' },
@@ -6363,7 +6359,7 @@ function drawMenu() {
     drawItemIcon(k, x, 43, 15); uiText(String(n || 0), x + 9, 43, 11, k === '体力' ? '#9be0a0' : UIC.cream, 'left', PLAIN, { stroke: false }); hov(x - 9, 33, 30, 20, ITEM_TIP[k]); });
   hov(12, 33, 34, 20, `战功星\n各关征战所得，共 ${stars} 颗`);
   hit(8, 10, 176, 22, () => { screen = 'rank'; });   // 点资料卡上的官阶进官阶页
-  if (nextRank() && INV.prep >= prepNeed()) { const pu = .6 + .4 * Math.sin(t * 6); uiSeal(176, 14, 16, '升', UIC.red, true); ctx.save(); ctx.globalAlpha = pu; uiText('可晋阶', 176, 32, 9, '#ffe39a', 'center', PLAIN, { lw: 2 }); ctx.restore(); }
+  if (canPromote()) { const pu = .6 + .4 * Math.sin(t * 6); uiSeal(176, 14, 16, '升', UIC.red, true); ctx.save(); ctx.globalAlpha = pu; uiText('可晋阶', 176, 32, 9, '#ffe39a', 'center', PLAIN, { lw: 2 }); ctx.restore(); }
   hit(8, 10, 176, 46, () => { screen = 'camp'; CAMP.t0 = uiNow(); });
   // 当前目标卡：下一关、门槛还差什么、出征
   const ni = frontier(), lv = LEVELS[ni], duel = lv.kind === 'duel', cy0 = 440, cw = W - 20;
