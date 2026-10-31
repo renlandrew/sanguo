@@ -188,7 +188,7 @@ const FOES = {
   // 第一章新兵种（10-24，见 ../设计/第一章设定.md 3.1）
   qibing: { name: '黄巾骑兵', hp: 64, spd: 66, leak: 5, exp: 2, r: 11, box: [34, 52], s: 1.1, wpn: 'spear', sheet: 'qibing', alt: 'huangjin', sh: 60, mount: 'bing' },   // Rigify 马与独立黄巾骑手，八方向真光照图集          // 喝晕就落马，变成黄巾兵
   shushi: { name: '黄巾术士', hp: 48, spd: 26, leak: 2, exp: 3, r: 9, box: [34, 52], s: 1, wpn: 'bow', sheet: 'shushi', sh: 44, heal: { every: 5, r: 80, pct: .2 } },
-  qishou: { name: '黄巾旗手', hp: 80, spd: 26, leak: 3, exp: 3, r: 10, box: [34, 52], s: 1, wpn: 'spear', sheet: 'qishou', alt: 'huangjin', sh: 40, flag: 100 },           // 旗下撞城 ×1.5；砍倒旗手，旗下的兵溃散
+  qishou: { name: '黄巾旗手', hp: 80, spd: 26, leak: 3, exp: 3, r: 10, box: [34, 52], s: 1, wpn: 'spear', sheet: 'qishou', alt: 'huangjin', sh: 40, flag: 100 },           // 旗下撞城 ×1.5；砍倒旗手，旗下的兵乱阵（11-01 原来是溃散逃走）
   yayi:   { name: '衙役', hp: 22, spd: 40, leak: 1, exp: 1, r: 9, box: [34, 52], s: 1, wpn: 'club', sheet: 'yayi', sh: 40, zig: true },
   duyou:  { name: '督邮', hp: 520, spd: 12, dps: 6, exp: 10, r: 16, box: [48, 66], s: 1.3, wpn: 'club', bulk: 13, boss: true, sheet: 'duyou', alt: 'yayi', sh: 56, title: '安喜县督邮' },
   qushuai: { name: '黄巾渠帅', hp: 300, spd: 22, leak: 14, exp: 8, r: 13, box: [48, 66], s: 1.32, wpn: 'club', bulk: 12, sheet: 'qushuai', alt: 'lishi', sh: 62 },
@@ -548,10 +548,10 @@ const LEVELS = [
   { id: 5, name: '邓茂', sub: '拦路将 · 大兴山下，邓茂挺枪拦路', kind: 'duel', boss: 'dengmao', hpMul: 2.024,   /* 10-28 用户：「第五关太难，主将血减2/3」6.073 → 2.024 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'canyon', reward: '镔铁 · 兵书残卷',
     moves: ['heavy', 'summon', 'heavy', 'buff', 'heavy', 'summon'], gap: 3.2, heavy: 14, adds: [['bing', 6], ['lishi', 1]],
     tips: [[1, '斗将：邓茂站在场中出招，城防就是你们的血'], [4, '「挺枪突刺」会自动举盾挡下，挡下来还能反击'], [14, '「无双·喝断它」举盾挡不住！留着张飞的一喝，看到它再喝']] },
-  { id: 6, name: '火烧长社', sub: '黄巾屯兵草营，皇甫嵩火攻', hpMul: 4.396, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'grass', reward: '硫磺',
+  { id: 6, name: '火烧长社', sub: '黄巾屯兵草营，皇甫嵩火攻', hpMul: 4.9,   /* 11-01 旗倒改乱阵、不再跑掉一半，用户嫌关羽一刀一批：4.396 → 4.9，机器人 8 种子 2.25 星 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'grass', reward: '硫磺',
     rules: { fire: true, huts: [[60, 210], [135, 240], [215, 225], [295, 245], [95, 315], [175, 335], [255, 320], [325, 345], [55, 395], [140, 410], [225, 405], [310, 395]] },
     waves: [[2, 'bing', 24, 8, 'rand'], [6, 'qishou', 2, 4, 'rand'], [12, 'bing', 22, 0, 'wedge'], [18, 'lishi', 6, 4, 'rand'], [20, 'qishou', 3, 6, 'rand'], [24, 'bing', 34, 10, 'rand'], [34, 'gong', 8, 4, 'line'], [38, 'bing', 28, 0, 'line'], [42, 'qishou', 4, 4, 'rand'], [48, 'bing', 44, 12, 'rand'], [56, 'lishi', 10, 5, 'rand'], [62, 'qishou', 4, 4, 'rand'], [64, 'bing', 36, 10, 'rand']],
-    tips: [[1, '开局送「火油」：普攻会点着敌人'], [5, '着火的敌人走过草棚会把草棚点着，火顺着草棚一路烧过去'], [9, '旗手举着「苍天已死」，旗下的兵撞城更狠；砍倒他，旗下的兵溃散']] },
+    tips: [[1, '开局送「火油」：普攻会点着敌人'], [5, '着火的敌人走过草棚会把草棚点着，火顺着草棚一路烧过去'], [9, '旗手举着「苍天已死」，旗下的兵撞城更狠；砍倒他，旗下的兵乱阵、挨打多五成']] },
   { id: 7, name: '救董卓', sub: '演义第一回 · 黄巾追杀董卓，三兄弟出手相救', hpMul: 2.18, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'plain', reward: '西凉马鬃',
     rules: { cart: { hp: 120, y0: 250, y1: 452, dur: 66 } },
     waves: [[2, 'bing', 16, 6, 'rand'], [6, 'qibing', 6, 4, 'rand'], [14, 'qibing', 8, 6, 'rand'], [20, 'bing', 24, 8, 'rand'], [26, 'qushuai', 1, 0, 'rand', { g: 'a', lead: true }], [26, 'qibing', 10, 0, 'line', { g: 'a' }],
@@ -1149,7 +1149,7 @@ function popDmg(e, d, src, vd = 0) {
   const h = (T.sh || 40) * ps * (e.duel ? 2.2 : 1);
   if ((src === 'slash' || src === 'roar') && G.nums.filter(o => o.src === src && now - o.t0 < .3).length >= 5) return;   // 一刀砍一片：最多跳 5 个数
   G.named = G.named || {}; const named = !(src in G.named) || now - G.named[src] > .4; if (named) G.named[src] = now;   // 一招打一片：招名只跟第一个数，其余只跳数
-  const n = { e, src, v: d, born: now + (src === 'burn' ? .55 : 0), t0: now, crit, named, x: clamp(e.x + VR(-6, 6), 30, W - 30), y: e.y - h * .9 };
+  const n = { e, src, nm: G.dmgName, v: d, born: now + (src === 'burn' ? .55 : 0), t0: now, crit, named, x: clamp(e.x + VR(-6, 6), 30, W - 30), y: e.y - h * .9 };
   for (let k = 0; k < 4; k++) if (G.nums.some(o => o !== n && now - o.born < .35 && Math.abs(o.x - n.x) < 46 && Math.abs(o.y - n.y) < 15)) n.y -= 15;   // 挨着的往上错开一行，不叠成一团
   G.nums.push(n); if (G.nums.length > 14) G.nums.splice(0, G.nums.length - 14);                       // 满屏数字也不堆成一片
 }
@@ -1183,7 +1183,8 @@ function hurt(e, d, src) {
   if (e.chargeT > 0 && !BIGSRC.has(src)) d *= CHARGE.atk;                                                                // 冲阵：普攻打不动，要靠招式（一喝喝住、青龙斩、双股剑）
   if (e.duel && G.wpnNeed && WHO[src] && (G.wpnLv[WHO[src]] || 0) < G.wpnNeed && src !== 'burn') { d *= .22;   /* 斗将：兵器没到这关要的那级只打两成二（10-26 三成半；10-27 普攻加强后差一级也能赢，再压） */ if (!G.sim && (G.vt || 0) - (e.dullT || -9) > 1.5) { e.dullT = G.vt || 0; G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 110, text: '兵器不够利，砍不进去', size: 15, color: INK }); } }   // 门槛：兵器没精炼到这一关要的级别
   const who = WHO[src], big = FOES[e.kind].boss || e.lead;
-  if (e.stun > 0 && G.st.daze && src !== 'burn') d *= 1 + G.st.daze;                                                     // 威震
+  if (e.stun > 0 && G.st.daze && src !== 'burn') d *= 1 + G.st.daze;
+  if (e.panicT > 0 && src !== 'burn') d *= 1.5;                                                                          // 旗倒乱阵                                                     // 威震
   if (big && who === 'guan') d *= G.st.guanBoss;                                                                          // 斩将
   if (who && G.bonusAtk) d *= G.bonusAtk;
   if (who === 'guan' && !BIGSRC.has(src) && hasPas('guan', 'meiran') && G.wall < G.wallMax * .3) d *= 1.4;                  // 美髯公
@@ -1237,8 +1238,9 @@ function routFoe(f, all) { if (f.dead || f.rout || (FOES[f.kind].boss && !all)) 
 function routGroup(e) {
   let n = 0;
   if (e.g) for (const f of G.foes) if (f !== e && f.g === e.g && !f.dead && !f.rout && !f.atk) { routFoe(f); n++; }
-  if (FOES[e.kind].flag) for (const f of G.foes) if (f !== e && !f.dead && !f.rout && !f.atk && Math.hypot(f.x - e.x, f.y - e.y) < FOES[e.kind].flag) { routFoe(f); n++; }
-  if (n) G.fx.push({ k: 'txt', t: 0, x: clamp(e.x, 70, W - 70), y: e.y - 50, text: (e.lead ? '斩' + FOES[e.kind].name + '！' : '旗倒了！') + '溃散 ' + n, size: 22, color: CINNABAR });
+  // 11-01 用户：「为什么那些兵不是打死是逃跑？」——第六关 456 个兵约 200 个是旗倒跑掉的。旗倒改成乱阵：原地发懵 1.5 秒，之后 5 秒挨打多五成，要打死
+  if (FOES[e.kind].flag) for (const f of G.foes) if (f !== e && !f.dead && !f.rout && !FOES[f.kind].boss && Math.hypot(f.x - e.x, f.y - e.y) < FOES[e.kind].flag) { f.stun = Math.max(f.stun || 0, 1.5); f.knock = 0; f.atk = false; f.panicT = 5; n++; }
+  if (n) G.fx.push({ k: 'txt', t: 0, x: clamp(e.x, 70, W - 70), y: e.y - 50, text: (e.lead ? '斩' + FOES[e.kind].name + '！溃散 ' : '旗倒了！乱阵 ') + n, size: 22, color: CINNABAR });
 }
 function die(e, src) {
   e.dead = true; if (FOES[e.kind].civ) return; G.killed++; G.exp += FOES[e.kind].exp; if (G.focus === e) G.focus = null; if (G.focusBy) for (const h in G.focusBy) if (G.focusBy[h] === e) delete G.focusBy[h];
@@ -1470,6 +1472,7 @@ function step(dt) {
     if (e.burnT > 0) { e.burnT -= dt; hurt(e, e.burnDps * dt, 'burn'); if (e.dead) continue; }
     if (e.knock > 0) { const k = Math.min(e.knock, 300 * dt), ny = Math.max(HZ, e.y - k); fan(e, ny - e.y); e.y = ny; e.knock -= k; }
     if (e.hasteT > 0) e.hasteT -= dt;
+    if (e.panicT > 0) e.panicT -= dt;
     if (e.breakT > 0) e.breakT -= dt;
     const rooted = e.rootT > 0; if (rooted) e.rootT -= dt;                         // 剑印：定在原地，放不了箭、施不了法
     e.inTrench = G.trenchT > 0 && !T.civ && !T.boss && Math.abs(e.y - G.trenchY) < (G.trenchFire === false ? 30 : 14);   // 卢植的堑宽一些、不着火   // 怒雷火沟：走进去着火、慢一半，骑兵落马
@@ -1615,6 +1618,7 @@ function stepRules(dt) {
     G.lightChk = 1; botLight(alive()); }
   stepFoeTac();                                                                // 敌方军师的计（10-29 随机）
   if (G.lz && !G.lz.used && (G.sim || window.__sg.auto) && alive().filter(e => !FOES[e.kind].boss && !FOES[e.kind].civ && e.y > LZ_Y - 90 && e.y < LZ_Y + 10).length >= 8) fireDitch();   // 机器人：堑前挤了 8 个以上才挖
+  if (G.ambHit && G.t >= G.ambHit.t) { G.dmgName = '伏兵'; for (const e of G.ambHit.list) if (!e.dead && !e.rout) hurt(e, 400 * HPX, 'slash'); G.dmgName = null; if (!G.sim && G.ambHit.banner) { G.fx.push(G.ambHit.banner); G.shake = .3; } G.ambHit = null; }   // 乡勇的枪扎到了
   if (G.amb && !G.ambushed) {                                // 伏兵：玩家点令旗放（drawAmbushBtn）；河沟那段第一次挤进一堆人时教一次；机器人等人够多才放
     const n = ambushCount(); if (n >= 8) teach('ambush');
     if ((G.sim || window.__sg.auto) && (n >= G.amb.need + 4 || (G.qi >= G.queue.length && n >= 6))) fireAmbush();
@@ -2068,11 +2072,20 @@ const AMBUSH_MAP = new Set(['plain', 'grass', 'canyon', 'ruins']);   // 平原�
 const AMBUSH_NEED = { 6: 55, 7: 43, 18: 45, 27: 60, 28: 48 };   // 各关门槛：按推演里河沟那一段的人数高峰定
 function ambushFor(lv) { const [ck] = counselNow(); return ck === 'jianyong' && lv.kind !== 'duel' && AMBUSH_MAP.has(lv.map) && AMBUSH_NEED[lv.id] ? { y0: 180, y1: 340, need: AMBUSH_NEED[lv.id] } : null; }
 const ambushCount = () => alive().filter(e => !FOES[e.kind].boss && e.y > G.amb.y0 && e.y < G.amb.y1).length;
+// 11-01 用户：「伏兵也不能画个阴影就算」——原来是两排墨笔横扫。改成两侧草丛里真的冲出蓝甲乡勇（借俞涉的图集缩小），跑到敌人身边一枪扎下，扎到那一刻（AMB_HIT 秒后）才结算
+const AMB_HIT = .32;
 function fireAmbush() {                                          // 伏兵从两侧杀出：河沟那一段的兵各吃一记重伤
-  if (!G.amb || G.ambushed || G.state !== 'play') return; G.ambushed = true; let n = 0;
-  for (const e of alive()) if (!FOES[e.kind].boss && e.y > G.amb.y0 && e.y < G.amb.y1) { hurt(e, 400 * HPX, 'slash'); n++; }
+  if (!G.amb || G.ambushed || G.state !== 'play') return; G.ambushed = true;
+  const list = alive().filter(e => !FOES[e.kind].boss && e.y > G.amb.y0 && e.y < G.amb.y1), n = list.length;
+  G.ambHit = { t: G.t + AMB_HIT, list };
   G.ambushN = n; const ok = n >= G.amb.need;
-  G.fx.push({ k: 'ambush', t: 0 }); G.fx.push({ k: 'banner', t: 0, text: ok ? '伏兵杀出！' : '伏兵杀出', sub: '扫掉 ' + n + ' 人' + (ok ? ' · 时机正好' : ' · 人少了，这关最多两星') }); G.shake = .3; sfx('horn');
+  if (!G.sim) { const A = G.amb, troops = [], by = k => A.y0 + 30 + k * (A.y1 - A.y0 - 60) / 2;
+    for (const sd of [-1, 1]) { const mine = list.filter(e => sd < 0 ? e.x < W / 2 : e.x >= W / 2).sort((a, b) => Math.abs(a.x - (sd < 0 ? 0 : W)) - Math.abs(b.x - (sd < 0 ? 0 : W)));
+      for (let i = 0; i < 12; i++) { const k = i % 3, e = mine.length ? mine[Math.floor(i * mine.length / 12)] : null, x0 = sd < 0 ? 22 : W - 22, y0 = by(k) + VR(-6, 6);
+        troops.push({ sd, x0, y0, e, tx: e ? e.x : W / 2 + sd * VR(-120, -30), ty: e ? e.y : y0 + VR(-20, 20), d: (i >> 2) * .05 + VR(0, .04), ph: VR(0, 12) }); } }
+    G.fx.push({ k: 'ambush', t: 0, dur: 1.7, troops });
+    for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) G.fx.push({ k: 'dust', t: 0, x: sd < 0 ? 24 : W - 24, y: A.y0 + 40 + k * (A.y1 - A.y0 - 60) / 2 });
+    for (const sd of [-1, 1]) G.fx.push({ k: 'txt', t: 0, x: sd < 0 ? 60 : W - 60, y: A.y0 - 8, text: '杀！', size: 22, color: '#2f5f9a' }); } G.ambHit.banner = { k: 'banner', t: 0, text: ok ? '伏兵杀出！' : '伏兵杀出', sub: '扫掉 ' + n + ' 人' + (ok ? ' · 时机正好' : ' · 人少了，这关最多两星') }; sfx('horn');   // 横幅等枪扎下去再出，不挡住冲出来的人
 }
 // 河沟那一段：两边草里露出乡勇的枪尖和小旗（还没放时）；左边一面大令旗按钮「伏兵」，放过就收起
 // 卢植的凿堑（10-29）：城前挖一道深堑 8 秒，过堑的慢一半、骑兵落马（不着火，和张飞的怒雷火沟分开）；玩家点令旗，机器人等城前挤满了才挖
@@ -2085,8 +2098,24 @@ function drawDitchBtn() {
   if (ready(btn)) ctx.drawImage(btn, bx - r, by - r, r * 2, r * 2); else { ctx.fillStyle = '#2a1a10'; ctx.beginPath(); ctx.arc(bx, by, r, 0, 6.283); ctx.fill(); }
   ctx.restore(); uiText('凿堑', bx, by + r + 11, 12, UIC.gold2, 'center', FONT, { lw: 3 }); hit(bx - r, by - r, r * 2, r * 2 + 18, fireDitch);
 }
+function drawAmbushTroops(f) {                                  // 冲出来的乡勇：先从草丛里窜出、跑到敌人身边（AMB_HIT 秒），扎一枪，站一下，再跑回草丛淡掉
+  const S = SHEETS.yushe, im = IMG.yushe; if (!S || !ready(im)) return; const nRun = S.anims.run.rects.length, t0 = f.t;
+  const hide = IMG.ui_ambush_hide, A = G.amb; if (A && ready(hide) && t0 < .7) for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) { const w = 40, h = w * hide.height / hide.width, y = A.y0 + 30 + k * (A.y1 - A.y0 - 60) / 2;   // 草丛抖一下再淡掉
+    ctx.save(); ctx.globalAlpha = 1 - t0 / .7; ctx.translate(sd < 0 ? 4 + w / 2 : W - 4 - w / 2, y); ctx.rotate(Math.sin(t0 * 40 + k) * .06 * (1 - t0 / .7)); ctx.scale(sd < 0 ? 1 : -1, 1); ctx.drawImage(hide, -w / 2, -h / 2, w, h); ctx.restore(); }
+  const ts = f.troops.map(p => { const t = t0 - p.d, e = p.e, tx = e && !e.dead ? e.x : p.tx, ty = e && !e.dead ? e.y : p.ty, ax = tx - p.sd * 16, ay = ty + 4; let x, y, fr, anim = 'run', a = 1;
+    if (t < 0) return null;
+    if (t < AMB_HIT) { const u = ease(t / AMB_HIT); x = p.x0 + (ax - p.x0) * u; y = p.y0 + (ay - p.y0) * u - Math.sin(Math.PI * u) * 10; fr = (t * 22 + p.ph) % nRun; }
+    else if (t < AMB_HIT + .35) { const u = (t - AMB_HIT) / .35, lunge = Math.sin(Math.PI * Math.min(1, u * 2)) * 7; x = ax + p.sd * lunge; y = ay; fr = 2 + Math.min(u * 6, 3); }
+    else { const u = (t - AMB_HIT - .35) / .9; x = ax + (p.x0 - ax) * ease(Math.min(1, u)); y = ay + (p.y0 - ay) * ease(Math.min(1, u)); fr = (t * 18 + p.ph) % nRun; a = clamp(1 - u, 0, 1); }
+    if (a <= 0) return null; return { p, t, x, y, fr, anim, a }; }).filter(Boolean).sort((a, b) => a.y - b.y);
+  for (const q of ts) { const ps = persp(q.y), k = 38 / S.stand * ps * 1.3;
+    ctx.save(); ctx.globalAlpha = .28 * q.a; ctx.fillStyle = '#1d1a17'; ctx.beginPath(); ctx.ellipse(q.x, q.y + 2, 11 * ps * 1.3, 3 * ps * 1.3, 0, 0, 6.283); ctx.fill(); ctx.restore();   // 脚下影子
+    ctx.save(); ctx.translate(q.x, q.y); ctx.scale(q.p.sd < 0 ? -1 : 1, 1); ctx.translate(-q.x, -q.y); drawSheet('yushe', q.anim, q.fr, q.x, q.y, k, q.a); ctx.restore();
+    if (!q.p.hit && q.t >= AMB_HIT && q.p.e) { q.p.hit = true; hitBurst(q.x + q.p.sd * 14, q.y - 18 * ps, 'azure', 46 * ps); } }
+}
 function drawAmbushBtn() {
   const A = G.amb; if (!A || G.ambushed || G.state !== 'play') return;
+  ready(IMG.yushe);                                              // 冲出来的乡勇用俞涉的图集：令旗一亮就先下载
   const cy = (A.y0 + A.y1) / 2, t = uiNow();
   // 10-28 用户：「哪些是伏兵啊」——两侧各四丛草，草里露出乡勇的蓝头巾、枪尖和小蓝旗；河沟那一段地上铺一层淡金色，扫的就是这一块
   ctx.save(); const g = ctx.createLinearGradient(0, A.y0, 0, A.y1); g.addColorStop(0, 'rgba(255,215,120,0)'); g.addColorStop(.5, `rgba(255,215,120,${.08 + .04 * Math.sin(t * 3)})`); g.addColorStop(1, 'rgba(255,215,120,0)'); ctx.fillStyle = g; ctx.fillRect(0, A.y0, W, A.y1 - A.y0); ctx.restore();
@@ -2215,6 +2244,7 @@ function renderScreen() {
   drawRoarLine();
   drawWallProps();
   for (const e of fs) drawFoe(e);
+  for (const f of G.fx) if (f.k === 'ambush') drawAmbushTroops(f);
   drawFieldThings(); drawCart(); drawNight();
   if (G.windT > 0) { const a = Math.min(1, G.windT / .6); for (let k = 0; k < 9; k++) { const y = TOP + 40 + k * 44, x = ((G.t * 420 + k * 137) % (W + 200)) - 100; brush(ctx, [[x - 90, y], [x - 30, y - 6], [x + 40, y + 2]], 5, '#6e675d', .35 * a, u => Math.sin(Math.PI * u), .3, vr); } }
   if (ready(IMG.wall)) ctx.drawImage(IMG.wall, 0, WALL_Y - 12, W, 78); else ctx.drawImage(WALL, 0, WALL_Y - 14, WALL.lw, WALL.lh);
@@ -2223,7 +2253,9 @@ function renderScreen() {
   if (SPX.ok) spxParts(); else drawParts();
   spxPass('top');
   drawFbs(); drawSpfx(false);
-  if (texOK()) { if (G.fx.some(f => f.k === 'hdl' || f.k === 'dragon' || f.k === 'fireline' || f.k === 'firearc')) glowPass(g => { for (const f of G.fx) { if (f.t < 0) continue; if (f.k === 'hdl') hdlTopTex(g, f); else if (f.k === 'dragon') dragonTex(g, f); else if (f.k === 'fireline') fireTex(g, f); else if (f.k === 'firearc') fireArcTex(g, f); } }); }   // 10-30 纹理版＋泛光
+  if (texOK()) { const hf = G.huts.filter(h => h.fire > 0), ff = G.foes.filter(e => !e.dead && e.burnT > 0 && seen(e)).slice(0, 40);   // 11-01 草棚的火、身上的火：纹理＋泛光
+    if (hf.length || ff.length) glowPass(g => { for (const e of ff) foeFireTex(g, e); for (const h of hf) hutFireTex(g, h); }, .45);
+    if (G.fx.some(f => f.k === 'hdl' || f.k === 'dragon' || f.k === 'fireline' || f.k === 'firearc')) glowPass(g => { for (const f of G.fx) { if (f.t < 0) continue; if (f.k === 'hdl') hdlTopTex(g, f); else if (f.k === 'dragon') dragonTex(g, f); else if (f.k === 'fireline') fireTex(g, f); else if (f.k === 'firearc') fireArcTex(g, f); } }); }   // 10-30 纹理版＋泛光
   else for (const f of G.fx) { if (f.k === 'hdl') drawHdlTop(f); else if (f.k === 'dragon') drawDragon(f); }
   for (const f of G.fx) if (f.k === 'cutin') drawCutIn(f);   // 黄天当立：光带、光瓣、飘带
   drawShards();
@@ -2472,8 +2504,9 @@ function drawFoe(e) {
   if (!SPR[e.kind]) bakeFoe(e.kind); const img = e.hitT > 0 ? SPRHIT[e.kind][f] : SPR[e.kind][f];
   ctx.globalAlpha = clamp((y - HZ) / 16, .1, 1); ctx.drawImage(img, x - w / 2, y - h + 5 * ps, w, h); ctx.globalAlpha = 1;
   }
-  if (e.burnT > 0) for (let k = 0; k < 3; k++) { const fx = x + (k - 1) * 4 * ps, fl = (Math.sin(G.t * 18 + k * 2) + 1.4) * 3 * ps; brush(ctx, [[fx, y - 6 * ps], [fx + 1, y - 6 * ps - fl * 2.4]], 3.2 * ps, k === 1 ? CINNABAR : OCHRE, .75, u => 1 - u, 0, vr); }
+  if (e.burnT > 0 && !texOK()) for (let k = 0; k < 3; k++) { const fx = x + (k - 1) * 4 * ps, fl = (Math.sin(G.t * 18 + k * 2) + 1.4) * 3 * ps; brush(ctx, [[fx, y - 6 * ps], [fx + 1, y - 6 * ps - fl * 2.4]], 3.2 * ps, k === 1 ? CINNABAR : OCHRE, .75, u => 1 - u, 0, vr); }
   const top = (hasSheet(T) ? T.sh * ps : 34 * T.s * ps) * (e.duel ? 2.2 : 1);   // 头顶离脚底多高
+  if (e.panicT > 3.5) txt('乱', x, y - top - 8, 12, CINNABAR, 'center', FONT, Math.min(1, (e.panicT - 3.5) * 2));
   if (e.rout) { if ((e.ra || 0) < 1.2) txt('逃', x, y - top - 8, 12, INK2, 'center', FONT, 1 - (e.ra || 0) / 1.2); return; }
   if (T.flag && sheetOf(T) !== 'qishou') {                                     // 旗手：高高一面黄旗「黄天」（有自己的图集时画里就扛着大黄旗，不再画）
     const px = x + 8 * ps, py = y - top - 30 * ps; brush(ctx, [[px, y - 6 * ps], [px, py]], 1.6, INK, .95, () => 1, 0, vr);
@@ -2828,8 +2861,12 @@ function drawHuts() {
   for (const h of G.huts) {
     const burnt = h.burnt;
     if (hasProp('hut')) {
-      drawProp(burnt && hasProp('hutburnt') ? 'hutburnt' : 'hut', h.x, h.y + 4, 44);
-      if (h.fire > 0) for (let k = 0; k < 5; k++) { const fx = h.x + (k - 2) * 7, fl = 12 + Math.sin(G.t * 14 + k * 1.7) * 4; brush(ctx, [[fx, h.y - 4], [fx + Math.sin(G.t * 9 + k) * 3, h.y - 12 - fl * 1.6]], 7, k % 2 ? CINNABAR : '#e8a63a', .8, u => 1 - u, .3, vr); }
+      // 11-01 用户：「第六关这个火要做真火效果」——烧的时候草棚慢慢烧黑（两张图交叉淡），地上一圈火光；火苗本身在 hutFireTex（火焰纹理＋泛光），烟和火舌在墨流层
+      const c = h.fire > 0 ? clamp((6 - h.fire) / 5, 0, 1) : burnt ? 1 : 0, env = hutEnv(h);
+      if (env > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(h.x, h.y - 2, 0, h.x, h.y - 2, 58); g.addColorStop(0, `rgba(255,150,50,${.45 * env})`); g.addColorStop(1, 'rgba(255,90,20,0)'); ctx.fillStyle = g; ctx.fillRect(h.x - 58, h.y - 60, 116, 120); ctx.restore(); }
+      if (c < 1 || !hasProp('hutburnt')) drawProp('hut', h.x, h.y + 4, 44, hasProp('hutburnt') ? 1 - c * c : 1);
+      if (c > 0 && hasProp('hutburnt')) drawProp('hutburnt', h.x, h.y + 4, 44, Math.min(1, c * 1.4));
+      if (h.fire > 0 && !texOK()) for (let k = 0; k < 5; k++) { const fx = h.x + (k - 2) * 7, fl = 12 + Math.sin(G.t * 14 + k * 1.7) * 4; brush(ctx, [[fx, h.y - 4], [fx + Math.sin(G.t * 9 + k) * 3, h.y - 12 - fl * 1.6]], 7, k % 2 ? CINNABAR : '#e8a63a', .8, u => 1 - u, .3, vr); }
       continue;
     }
     ctx.globalAlpha = burnt ? .55 : .9; ctx.fillStyle = burnt ? '#2a2420' : '#b49b6e';
@@ -2839,6 +2876,23 @@ function drawHuts() {
     if (h.fire > 0) for (let k = 0; k < 5; k++) { const fx = h.x + (k - 2) * 6, fl = 10 + Math.sin(G.t * 14 + k * 1.7) * 4; brush(ctx, [[fx, h.y - 2], [fx + Math.sin(G.t * 9 + k) * 3, h.y - 8 - fl * 1.6]], 6, k % 2 ? CINNABAR : '#e8a63a', .8, u => 1 - u, .3, vr); }
     if (h.fire > 0) blot(ctx, h.x + Math.sin(G.t) * 6, h.y - 36 - (G.t * 20 % 20), 8, '#4a4540', .25, vr, 8);
   }
+}
+const hutEnv = h => h.fire > 0 ? Math.min(1, (6 - h.fire) / .5) * (h.fire < 2 ? .25 + .75 * h.fire / 2 : 1) : 0;   // 点着 0.5 秒窜满，最后 2 秒塌成余烬
+function hutFireTex(g, h) {                                                    // 草棚的火：火焰纹理切竖条，中间高两边低，每条按自己的波动窜；两层错开
+  const env = hutEnv(h); if (env <= 0) return; const im = IMG.tex_flame, n = 14, wd = 50, sw = wd / n, cw = im.width / 12, t = G.vt || 0, ph = h.x * .37;
+  for (const [hk, off, al] of [[.7, 0, .5], [1, .5, .8]]) for (let i = 0; i < n; i++) {
+    const u = (i + .5) / n, bell = Math.sin(Math.PI * u) ** .7, x = h.x - wd / 2 + i * sw, fl = .72 + .2 * Math.sin(u * 9 + t * 11 + ph + off * 3) + .14 * Math.sin(u * 23 - t * 17 + ph), hh = 74 * hk * env * bell * fl;
+    const sx = ((u + off) * 4 * cw + t * 70 + ph * 40) % (im.width - cw);
+    g.globalAlpha = al * Math.min(1, env * 1.4); g.drawImage(im, sx, 0, cw, im.height, x - .5, h.y + 2 - hh, sw + 1, hh + 4); }
+  g.globalAlpha = 1;
+  if (vr() < .35 * env) (G.shards = G.shards || []).push({ k: 'ember', x: h.x + VR(-20, 20), y: h.y - VR(20, 50) * env, vx: VR(-20, 20), vy: VR(-70, -35), born: t, life: VR(.5, .9), s: VR(2, 3.2), c: '#ffb070' });
+  if (ML && vr() < .3) ML.splat(h.x + VR(-10, 10), h.y - 54 * env - 10, VR(-20, 20), VR(-90, -50), VR(9, 13), [0, 0, VR(.45, .65), 0]);   // 顶上一股烟（墨流的火舌在亮草地上发粉，不用）
+}
+function foeFireTex(g, e) {                                                    // 身上着火：一小簇火焰纹理贴在人身上
+  const ps = persp(e.y), im = IMG.tex_flame, cw = im.width / 14, t = G.vt || 0, ph = e.jit || 0, n = 6, wd = 20 * ps, sw = wd / n;
+  for (let i = 0; i < n; i++) { const u = (i + .5) / n, hh = 34 * ps * Math.sin(Math.PI * u) ** .6 * (.7 + .3 * Math.sin(t * 15 + u * 8 + ph)), sx = ((u * 3 + ph) * cw + t * 90) % (im.width - cw);
+    g.globalAlpha = .9; g.drawImage(im, sx, 0, cw, im.height, e.x - wd / 2 + i * sw - .5, e.y - 4 * ps - hh, sw + 1, hh + 3); }
+  g.globalAlpha = 1;
 }
 // 场上的友方和东西（11–30）：友军将旗、井、赤帻、友军（潘凤、武安国）
 function drawFieldThings() {
@@ -4344,7 +4398,7 @@ function drawNums() {
   for (const n of G.nums) {
     const t = now - n.born; if (t < 0) continue; const big = BIGSRC.has(n.src), [fill, edge] = n.crit ? ['#ffe27a', '#5a3a08'] : n.src === 'burn' ? ['#e8c9a8', '#3a1206'] : big ? (DMG_STYLE[WHO[n.src]] || ['#ffffff', INK]) : ['#fbf6ea', INK];   // 10-29 配色收敛：普攻白字墨边，只有招式用人物色
     const pop = t < .1 ? 1.5 - .5 * (t / .1) : 1, sz = (n.crit ? 21 : big ? (n.named ? 16 : 13) : n.src === 'burn' ? 10 : 12) * pop, y = n.y - 24 * ease(t / .9), a = t < .62 ? 1 : 1 - (t - .62) / .28;
-    const label = (n.crit ? '破绽 ' : DMG_NAME[n.src] && n.named ? DMG_NAME[n.src] + ' ' : '') + '-' + Math.max(1, Math.round(n.v * SHOWX));
+    const label = (n.crit ? '破绽 ' : (n.nm || DMG_NAME[n.src]) && n.named ? (n.nm || DMG_NAME[n.src]) + ' ' : '') + '-' + Math.max(1, Math.round(n.v * SHOWX));
     ctx.globalAlpha = a; ctx.font = `italic 900 ${fpx(sz)}px ${PLAIN}`; ctx.lineWidth = Math.max(2.5, sz * .24); ctx.strokeStyle = edge; ctx.strokeText(label, n.x, y); ctx.fillStyle = fill; ctx.fillText(label, n.x, y);
   }
   ctx.globalAlpha = 1;
@@ -4574,11 +4628,7 @@ function drawFx(f) {
   } else if (f.k === 'wisp') { const u = f.t / 1.2; if (u > 1) return;            // 术士洒符水：一圈碧绿的水点往外溅，再往上飘
     for (let k = 0; k < 14; k++) { const a = k * 2.4 + f.x, d = f.r * (.25 + .75 * Math.min(1, u * 2)) * (.6 + .4 * Math.sin(k * 1.7)); blot(ctx, f.x + Math.cos(a) * d, f.y + Math.sin(a) * d * .45 - u * 14, 2.4 * (1 - u * .5), k % 3 ? JADE : '#9cc9a8', .7 * (1 - u), vr, 7); }
     txt('符水', f.x, f.y - 30 - u * 10, 14, JADE, 'center', FONT, 1 - u);
-  } else if (f.k === 'ambush') { const u = f.t / 1.2; if (u > 1) return;          // 伏兵从两侧山后杀出：两排墨笔横扫过半场
-    const p = Math.min(1, u / .35), fade = u < .5 ? 1 : (1 - u) / .5, RU = G.amb;
-    for (const sd of [-1, 1]) for (let k = 0; k < 9; k++) { const y = RU.y0 + 20 + k * (RU.y1 - RU.y0 - 40) / 8, x0 = sd < 0 ? -10 : W + 10, x1 = W / 2 + sd * (20 + (k % 3) * 18);
-      const xe = x0 + (x1 - x0) * p; brush(ctx, [[x0, y], [(x0 + xe) / 2, y - 6], [xe, y + 3]], 9, INK, .75 * fade, u2 => Math.pow(u2, .5) * (1 - u2 * .2), .3, vr);
-      brush(ctx, [[xe, y - 2], [xe - sd * 6, y - 26]], 1.6, INK, .9 * fade, () => 1, 0, vr); brush(ctx, quad([xe - sd * 6, y - 26], [xe - sd * 14, y - 23], [xe - sd * 18, y - 18]), 5, CINNABAR, .85 * fade, u2 => 1 - u2 * .5, .2, vr); }
+  } else if (f.k === 'ambush') {                                                   // 冲出来的乡勇在敌人那一层画（drawAmbushTroops），不盖住大招特写
   } else if (f.k === 'warn') {                                                       // 敌将要放重击：名字闪红，城上落点画红叉，底下一条蓄力条
     bossCharge(f);
     const u = f.t / f.dur, fl = .55 + .45 * Math.sin(f.t * 22);
@@ -5913,7 +5963,7 @@ const KITS = ['jum', 'log', 'fire', 'order', 'zhangRoar', 'guanBlade'];
 const FOE_NOTE = {
   xiliang: ['盾', '正面举盾：刀气、剑气减半，张飞矛刺照常'], xiaowei: ['盾', '头目：斩了他，他带的兵溃散'], tieqi: ['骑', '冲得快、撞城重；喝晕就落马'],
   gongqi: ['骑远', '边跑边射，来回骚扰'], langqi: ['骑', '最快，成群冲'], feixiong: ['甲', '重甲：伤害 -30%，晕的时间减半'], xianzhen: ['甲', '甲 -15%'],
-  bing: ['', '黄巾兵'], lishi: ['', '血厚、撞城重'], gong: ['远', '停在远处放箭'], qibing: ['骑', '冲得快；喝晕落马'], shushi: ['术', '给身边的兵回血加速'], qishou: ['旗', '砍倒旗手，旗下的兵溃散'],
+  bing: ['', '黄巾兵'], lishi: ['', '血厚、撞城重'], gong: ['远', '停在远处放箭'], qibing: ['骑', '冲得快；喝晕落马'], shushi: ['术', '给身边的兵回血加速'], qishou: ['旗', '砍倒旗手，旗下的兵乱阵、挨打多五成'],
 };
 function openLevel(i) {
   const id = LEVELS[i].id;
