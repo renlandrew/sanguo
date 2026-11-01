@@ -797,7 +797,7 @@ const ITEM_TIP = {                                                              
   青龙鳞: '青龙鳞\n青龙偃月刀 +6 起锻造所需\n来源：第三关、第十七关打赢（每天最多两片），功绩「喝而斩之」「温酒斩将」',
   蛇纹镔铁: '蛇纹镔铁\n丈八蛇矛 +6 起锻造所需\n来源：第五关、第八关打赢（每天最多两块），功绩「丈八破阵」「喝断无双」',
   雌雄剑胚: '雌雄剑胚\n双股剑 +6 起锻造所需\n来源：第七关、第廿四关打赢（每天最多两块），功绩「桃园同心」「仁德护阵」',
-  体力: '体力\n打赢一关、扫荡、日常杂务各花十点\n每天点卯补满一百二十；十一到十六点、十八到二十三点各能在军帐领六十' };
+  体力: '体力\n打赢一关、扫荡、日常杂务各花十点\n每天点卯补满一百二十；十二到十四点、十九到二十一点各能在军帐领二十' };
 const ITEM_C = { 精铁: '#c9cdd2', 残页: '#f0d9a0', 将印: '#e2563a', 陨铁: '#8fe8ff', 体力: '#9be0a0', 青龙鳞: '#7fe0b8', 蛇纹镔铁: '#ff9a5a', 雌雄剑胚: '#9cc8ff' };
 // 专属材料（10-29 用户：「陨铁再给多些，不要卡，但第三等级开始，每个人的武器都有专属材料，材料必须是在特定关卡里刷或者完成特定成就」）：
 // 兵器第三档（+6）起每人要自己的材料；指定关打赢掉 1、三星掉 2，每种一天最多 2；两项功绩各给 3；三块陨铁可换一份（保底）
@@ -972,8 +972,8 @@ const CHORES = ['操练兵马', '巡视城防', '犒赏三军', '整理军械', 
 const CHORE_PAY = [['精铁', 1], ['精铁', 1], ['残页', 1], ['精铁', 1], ['残页', 1], ['机缘', 6], ['残页', 1]], CHORE_STA = 10;
 // 体力：上限 120，每 5 分钟回 1 点（一天回满还有富余）；现在只有杂务花体力
 // 11-02 用户：「不要限制物品掉落，通过控制体力来达到目的，一天只给120+2次领取机会，一共120+60+60」「时间是11点到4点，6点到11点，让玩家有时间随时上线」：
-// 不再每 5 分钟回 1 点；每天点卯补满到 120，11–16 点、18–23 点各能在军帐领一次 60（领了可超过 120，最多 240）；打赢一关花 10，打输、退军不扣；扫荡、杂务各 10
-const STA_MAX = 120, STA_CAP = 240, STA_GIFT = 60, STA_WIN = [[11, 16], [18, 23]], BATTLE_STA = 10;
+// 不再每 5 分钟回 1 点；每天点卯补满到 120，12–14 点、19–21 点各能在军帐领一次 20（领了可超过 120，最多 160）；打赢一关花 10，打输、退军不扣；扫荡、杂务各 10
+const STA_MAX = 120, STA_CAP = 160, STA_GIFT = 20, STA_WIN = [[12, 14], [19, 21]], BATTLE_STA = 10;   // 11-02 用户又改：「给 120，领取 20+20，时间只持续 2 小时，重度玩家才会上线」——12–14 点、19–21 点各领 20
 function staNow() { const S0 = INV.sta || (INV.sta = { v: STA_MAX, t: nowMs() }); return S0.v; }
 const staHour = () => new Date(nowMs()).getHours();
 const staClaimable = () => { const h = staHour(), got = DAILY.staGot || []; return STA_WIN.findIndex(([a, b], k) => h >= a && h < b && !got[k]); };   // 现在能领哪一段（-1：不能）
@@ -5928,7 +5928,7 @@ function drawCamp() {
   const ts = DAILY.tasks.slice().sort((a, b) => a.done - b.done), shown = ts;   // 10-30 页面能拖了：补领的军令也一道道列出来
   uiText('今日军务', 18, 250 + TOPY, 16, UIC.gold2, 'left', FONT, { stroke: false });
   uiText(`${dailyDone()}/${dailyTotal()}`, W - 18, 250 + TOPY, 12, 'rgba(244,230,196,.6)', 'right', PLAIN, { stroke: false });
-  { const sta = staNow(), k = staClaimable(), y = 250 + TOPY;   // 11-02 体力：标题这行中间写现有多少；11–16 点、18–23 点各能领一次 60（能领时出「领 60」钮，不能领时写下一段几点开）
+  { const sta = staNow(), k = staClaimable(), y = 250 + TOPY;   // 11-02 体力：标题这行中间写现有多少；12–14 点、19–21 点各能领一次 20（能领时出「领 60」钮，不能领时写下一段几点开）
     drawItemIcon('体力', 112, y, 16); uiText(String(sta), 122, y, 13, sta >= BATTLE_STA ? '#9be0a0' : UIC.red2, 'left', FONT, { lw: 3 });
     if (k >= 0) pill(160, y - 12, 76, 24, `领体力 ${STA_GIFT}`, () => { if (claimSta()) { campFw(198, y, 3); campGain([['体力', STA_GIFT]], 198, y); } }, true);
     else { const h = staHour(), got = DAILY.staGot || [], nx = STA_WIN.find(([a], j) => !got[j] && h < a); uiText(nx ? `${nx[0]}点可领体力` : '今天体力已领完', 160, y, 10, 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false }); } }
@@ -6167,7 +6167,7 @@ const FOE_NOTE = {
 };
 function openLevel(i) {
   const id = LEVELS[i].id;
-  if (!window.__sg.all && staNow() < BATTLE_STA) { G = null; screen = 'camp'; CAMP.t0 = uiNow(); showReward('体力不够', [`打一关要 ${BATTLE_STA} 体力`, '11–16 点、18–23 点可在军帐领 60'], ['zhang'], false); return; }   // 11-02 体力控制
+  if (!window.__sg.all && staNow() < BATTLE_STA) { G = null; screen = 'camp'; CAMP.t0 = uiNow(); showReward('体力不够', [`打一关要 ${BATTLE_STA} 体力`, '12–14 点、19–21 点可在军帐领 20'], ['zhang'], false); return; }   // 11-02 体力控制
   if (i === 0 && !storySeen('open')) { playStory('open', () => openLevel(0)); return; }   // 第一次进第一关：先演序章（桃园、雷劈、醒来）
   /* 10-26 用户：「不需要任何破题门槛，不要在地图提示，可以让军师提示」——不再拦着不让打；缺的东西开战时军师提一句（见 counselGateTip） */
   enterLevel(i);
