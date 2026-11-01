@@ -1934,7 +1934,18 @@ function startCast(i) {
 function castSlot(i) { if (G.state !== 'play' || G.cast || !G.order[i] || !knows(G.order[i]) || G.t < G.ready[i] || G.seal[i] > 0 || G.casts <= 0) return; startCast(i); }
 // 机器人试玩时替玩家点：城前压了一片才放
 // 底栏金色小三角标的「下一个出招的」：从轮到的位置往后找第一个学会了招式、没被封的（10-26 用户：「这2个箭头乱闪」——没学招的每帧被跳过，G.turn 在几张牌间来回跳）；没人能出招就不标
-const nextCaster = () => { if (playerAuto()) { let b = -1; for (let k = 0; k < NS; k++) { const i = (G.turn + k) % NS; if (G.order[i] && knows(G.order[i]) && G.seal[i] <= 0 && (b < 0 || G.ready[i] < G.ready[b])) b = i; } return b; }   // 自动：冷却最快好的那位
+// 11-02 用户：「晕而斩之在第三关只出现一次，之后张飞大喝+关羽斩就没有了？」——玩家的「自动」是谁先好谁先放，关羽常在一喝之前就把刀砍掉，凑不上喝后 5 秒；
+// 机器人推演（smart）会等。改成：配招成了连携（晕而斩之／喝而斩之／横竖斩、双剑破阵），接招的那位若张飞 3 秒内就能出招、又不在上一下的窗口里，先等张飞，出完马上接
+const comboWait = i => { const id = G.order[i], C = G.combos || [], zi = G.order.indexOf('zhang'); if (zi < 0 || zi === i || !knows('zhang') || G.seal[zi] > 0 || !G.act) return false;
+  const za = G.act.zhang, want = id === 'guan' ? ((C.includes('cYun') || C.includes('cHe')) && za === 'roar') || (C.includes('cHeng') && za === 'pojian') : id === 'liu' && C.includes('cShuang') && za === 'roar';
+  if (!want) return false; const since = za === 'pojian' ? G.t - (G.pojT ?? -9) : G.t - (G.roarT ?? -9), win = za === 'pojian' ? WIN_POJ : WIN_ROAR;
+  return since > win - .6 && G.ready[zi] - G.t < 3; };
+const roarWait = i => {                                                         // 自动时张飞的一喝：城前喝得到人才喝（三个以上进了一喝的圈、有人快撞城、或在斗将），不然开场一好就喝、喝了个空，后面的连携也接不上
+  if (G.order[i] !== 'zhang' || !G.act || G.act.zhang !== 'roar') return false; const R0 = G.st.zhangR, al = alive().filter(e => !FOES[e.kind].civ && seen(e));
+  return !(G.duel && !G.duel.dead) && al.filter(e => WALL_Y - e.y < R0).length < 3 && !al.some(e => WALL_Y - e.y < 60); };
+const nextCaster = () => { if (playerAuto()) { const gi = G.order.indexOf('guan'), C = G.combos || [];
+    if (gi >= 0 && G.act && G.seal[gi] <= 0 && G.t >= G.ready[gi] && G.t - (G.roarT ?? -9) < WIN_ROAR && ((C.includes('cYun') && G.act.guan === 'qinglong') || (C.includes('cHe') && G.act.guan === 'wenjiu'))) return gi;   // 喝后窗口里关羽先接（不然刘备先把喝晕的砍死了）
+    let b = -1; for (let k = 0; k < NS; k++) { const i = (G.turn + k) % NS; if (G.order[i] && knows(G.order[i]) && G.seal[i] <= 0 && !comboWait(i) && !roarWait(i) && (b < 0 || G.ready[i] < G.ready[b])) b = i; } return b; }   // 自动：冷却最快好的那位（等连携的先让一让）
   for (let k = 0; k < NS; k++) { const i = (G.turn + k) % NS; if (G.order[i] && knows(G.order[i]) && G.seal[i] <= 0) return i; } return -1; };
 function botCast(al) {
   const near = al.filter(e => e.y > WALL_Y - 190).length, close = al.some(e => e.y > WALL_Y - 40);
@@ -2071,7 +2082,8 @@ function guanAim(al) {
   const civ = al.filter(e => FOES[e.kind].civ); al = al.filter(e => !FOES[e.kind].civ && !FOES[e.kind].invuln && seen(e));   // 不朝百姓堆砍；砍到边上的百姓扣分
   let best = null, bn = -1; const r = G.st.guanR * ((G.st.yunzhan && G.t - (G.roarT ?? -9) < WIN_ROAR) || (G.combos && G.combos.includes('cHeng') && G.t - (G.pojT ?? -9) < WIN_POJ) ? 1.3 : 1);
   const far = al.every(e => e.y < HZ + 70);                    // 都还在远处时才砍远处
-  for (const c of al) { if (c.y < (far ? HZ + 8 : HZ + 70)) continue; let n = 0; for (const e of al) if (Math.hypot(e.x - c.x, (e.y - c.y) * 1.3) < r) n += 1 + 2 * Math.pow(e.y / WALL_Y, 2) + (e.stun > 0 ? .5 : 0); if (n > bn) { bn = n; best = c; } }
+  const yz = !G.sim && G.st.yunzhan && G.t - (G.roarT ?? -9) < WIN_ROAR;   // 11-02：玩家这边（推演不动）晕而斩之的窗口里，刚被喝过的敌人加重分，关羽这刀就落在那片上
+  for (const c of al) { if (c.y < (far ? HZ + 8 : HZ + 70)) continue; let n = 0; for (const e of al) if (Math.hypot(e.x - c.x, (e.y - c.y) * 1.3) < r) n += 1 + 2 * Math.pow(e.y / WALL_Y, 2) + (e.stun > 0 ? .5 : 0) + (yz && G.t - (e.roaredT ?? -9) < WIN_ROAR ? 3 : 0); if (n > bn) { bn = n; best = c; } }
   return best ? { cx: best.x, cy: best.y - 14, r } : null;
 }
 const LOG_RUN = 170;
