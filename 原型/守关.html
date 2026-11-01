@@ -6431,17 +6431,18 @@ const tipDone = k => { INV.tipSeen = INV.tipSeen || {}; INV.tipSeen[k] = 1; save
 function drawMenuTip(t) {
   const T = tipNow(); MENU.tip = T || null; if (!T || REWARD || (MENU.note && t - MENU.note.t0 < 3.2)) return;
   if (MENU.tipK !== T.k) { MENU.tipK = T.k; MENU.tipT = t; } const a = clamp((t - MENU.tipT - .4) / .3, 0, 1); if (a <= 0) return;
-  const [ck, C] = counselNow(), y = 364; drawCounselSay(ck, C, T.say, y, a); hit(6, y - 4, W - 12, 66, () => tipDone(T.k));
+  const [ck, C] = counselNow(), y = 194; drawCounselSay(ck, C, T.say, y, a);   // 11-02 三兄弟挪到城头后，提示放到关卡牌下面那片天上，不横在人身上 hit(6, y - 4, W - 12, 66, () => tipDone(T.k));
   const by = H - 98 + 5 * Math.sin(t * 6); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#ffd76e'; ctx.shadowColor = 'rgba(255,190,80,.8)'; ctx.shadowBlur = 8;   // 往下指着该点的钮，一上一下地跳
   ctx.beginPath(); ctx.moveTo(T.x - 9, by - 10); ctx.lineTo(T.x + 9, by - 10); ctx.lineTo(T.x, by); ctx.closePath(); ctx.fill(); ctx.restore();
 }
+const TRIO_H = 300, TRIO_FOOT = 542;                                            // 主页三兄弟：画多高、脚在哪（城头步道）
 function drawMenu() {
   const open1 = open1st();
   if (!BEST[1] && !MENU.autoGo && !window.__sg.all) { MENU.autoGo = true; openLevel(0); if (screen !== 'menu') return; }   // 11-02 用户：「新玩家直接开始第一关，不存在先看到界面」——第一关没过，开页就进（序章 → 第一关）；退军回来才看到主页，一次开页只自动进一次
   drawBg(); const t = uiNow();
   if (!INV.rankMig) { INV.rankMig = 1; for (let k = 1; k < RANKS.length; k++) if (BEST[RANKS[k].node]) INV.rank = Math.max(INV.rank || 0, k); syncRankArt(); saveInv(); }   // 旧档：打过的节点关补认官阶
   const vg = ctx.createLinearGradient(0, 0, 0, H); vg.addColorStop(0, 'rgba(10,6,4,.35)'); vg.addColorStop(.25, 'rgba(10,6,4,0)'); vg.addColorStop(.62, 'rgba(10,6,4,.05)'); vg.addColorStop(1, 'rgba(10,6,4,.8)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-  if (ready(IMG.trio)) { const im = IMG.trio, wide = im.width > im.height, h = wide ? W * im.height / im.width : 318, w = h * im.width / im.height; ctx.drawImage(im, W / 2 - w / 2, wide ? 150 : 138, w, h); }   // 横图铺满一屏宽；10-27 换成 Codex 画的竖版三人（灰底抠图），按高度画、居中，脚落在关卡牌上面
+  if (ready(IMG.trio)) { const im = IMG.trio, wide = im.width > im.height, h = wide ? W * im.height / im.width : TRIO_H, w = h * im.width / im.height; ctx.drawImage(im, W / 2 - w / 2, wide ? 150 : TRIO_FOOT - TRIO_H, w, h); }   // 11-02 用户改了首页图（城头步道在下面）：「让他们站城墙上」——脚落在城头步道上   // 横图铺满一屏宽；10-27 换成 Codex 画的竖版三人（灰底抠图），按高度画、居中，脚落在关卡牌上面
   uiText('群雄逐鹿', W / 2, 96, 50, UIC.gold2, 'center', FONT, { glow: `rgba(255,190,80,${.5 + .2 * Math.sin(t * 2)})`, glowR: 20, lw: 7 });
   const nt = dailyTick(); if (nt) MENU.note = { ...nt, t0: t };
   if (CRASH && !CRASH.t0) CRASH.t0 = t;
@@ -6460,19 +6461,19 @@ function drawMenu() {
   if (canPromote()) { const pu = .6 + .4 * Math.sin(t * 6); uiSeal(176, 14, 16, '升', UIC.red, true); ctx.save(); ctx.globalAlpha = pu; uiText('可晋阶', 176, 32, 9, '#ffe39a', 'center', PLAIN, { lw: 2 }); ctx.restore(); }
   hit(8, 10, 176, 46, () => { screen = 'camp'; CAMP.t0 = uiNow(); });
   // 当前目标卡：下一关、门槛还差什么、出征
-  const ni = frontier(), lv = LEVELS[ni], duel = lv.kind === 'duel', cy0 = 440, cw = W - 20;
-  plate(10, cy0, cw, 84, true);
-  uiSeal(42, cy0 + 42, 38, CNUM(lv.id), duel ? '#8a1c10' : UIC.red);
-  uiText(`${SEGS[Math.floor(ni / 10)]} · ${levelTag(lv)}`, 70, cy0 + 20, 11, 'rgba(246,210,122,.85)', 'left', PLAIN, { stroke: false });
-  uiText(lv.name, 70, cy0 + 42, fitSize(lv.name, 22, cw - 70 - 96, 99, FONT, 3), UIC.cream, 'left', FONT, { lw: 3 });
-  uiText(fitText(lv.sub, 11, cw - 70 - 104), 70, cy0 + 66, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });   // 下面写这一关的一句话剧情
-  hit(10, cy0, cw - 96, 84, () => { if (!open1) { MENU.lockT = uiNow(); return; } screen = 'levels'; MENU.seg = Math.floor(ni / 10); });
-  { const bx = W - 108, by = cy0 + 20, bw = 90, bh = 44, br = .5 + .5 * Math.sin(t * 3);   // 出征：红漆钮（页签那张画的漆面），一呼一吸的金光
+  // 11-02 用户：「把这个弄小」——关卡牌缩成一条（84 → 52 高、两边收窄），挪到标题下面，不挡站在城头的三兄弟
+  const ni = frontier(), lv = LEVELS[ni], duel = lv.kind === 'duel', cy0 = 132, cx0 = 26, cw = W - 52, chh = 52;
+  plate(cx0, cy0, cw, chh, true);
+  uiSeal(cx0 + 26, cy0 + chh / 2, 30, CNUM(lv.id), duel ? '#8a1c10' : UIC.red);
+  uiText(`${SEGS[Math.floor(ni / 10)]} · ${levelTag(lv)}`, cx0 + 50, cy0 + 16, 10, 'rgba(246,210,122,.85)', 'left', PLAIN, { stroke: false });
+  uiText(lv.name, cx0 + 50, cy0 + 35, fitSize(lv.name, 18, cw - 50 - 84, 99, FONT, 3), UIC.cream, 'left', FONT, { lw: 3 });
+  hit(cx0, cy0, cw - 84, chh, () => { if (!open1) { MENU.lockT = uiNow(); return; } screen = 'levels'; MENU.seg = Math.floor(ni / 10); });
+  { const bw = 72, bh = 36, bx = cx0 + cw - bw - 8, by = cy0 + (chh - bh) / 2, br = .5 + .5 * Math.sin(t * 3);   // 出征：红漆钮（页签那张画的漆面），一呼一吸的金光
     ctx.save(); ctx.shadowColor = `rgba(255,190,90,${.45 + .3 * br})`; ctx.shadowBlur = 14; if (ready(IMG.ui2_tab_red)) draw9(IMG.ui2_tab_red, bx, by, bw, bh, 90, 90, 0, 0, bh / 189); else uiPanel(bx, by, bw, bh, { r: bh / 2, top: '#c0402a', bot: '#6e140c' }); ctx.restore();
     uiText('出征', bx + bw / 2, by + bh / 2 + 1, fitSize('出征', 22, bw - bh * .95), '#fff2dc', 'center', FONT, { lw: 4, glow: 'rgba(255,200,90,.5)', glowR: 8 }); hit(bx, by, bw, bh, () => openLevel(ni)); }
   // 点卯横幅
   if (MENU.note && t - MENU.note.t0 < 3.2) { const u = (t - MENU.note.t0) / 3.2, a = u < .1 ? u / .1 : u > .8 ? (1 - u) / .2 : 1, g = MENU.note.got;
-    const ny = cy0 - 92; ctx.save(); ctx.globalAlpha = a; if (ready(IMG.ui_banner)) draw9(IMG.ui_banner, 8, ny, W - 16, 80, 90, 90, 0, 0, 80 / 89);   // 挪到关卡牌上面，别挡住三兄弟的脸（10-26 试玩）
+    const ny = 330; ctx.save(); ctx.globalAlpha = a; if (ready(IMG.ui_banner)) draw9(IMG.ui_banner, 8, ny, W - 16, 80, 90, 90, 0, 0, 80 / 89);   // 挪到关卡牌上面，别挡住三兄弟的脸（10-26 试玩）
     uiText('点卯', W / 2, ny + 26, 20, '#f6d27a', 'center', FONT, { glow: 'rgba(255,190,80,.7)', glowR: 10 });
     // 10-30 用户：「精铁那些用图标」——物品写成图标 + 数，后面接补领和今日军务
     const tail = (MENU.note.packs > 1 ? `（补领 ${MENU.note.packs - 1} 天）` : '') + ' · 今日军务 ' + DAILY.taskN + ' 道', ents = Object.entries(g), is = 20, fz = 12;
