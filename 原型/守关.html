@@ -547,8 +547,8 @@ const LEVELS = [
     waves: [[2, 'bing', 20, 8, 'rand'], [8, 'qibing', 4, 4, 'rand'], [14, 'bing', 18, 0, 'wedge', { g: 'a' }], [15, 'qushuai', 1, 0, 'rand', { g: 'a', lead: true }], [22, 'qibing', 6, 5, 'rand'], [26, 'bing', 30, 6, 'rand'],
       [36, 'lishi', 6, 4, 'rand'], [40, 'bing', 26, 0, 'line', { g: 'b' }], [41, 'qushuai', 1, 0, 'rand', { g: 'b', lead: true }], [48, 'qibing', 6, 6, 'rand'], [55, 'bing', 24, 12, 'rand'], [62, 'lishi', 4, 4, 'rand'], [66, 'qibing', 6, 6, 'rand', { g: 'c' }], [67, 'qushuai', 1, 0, 'rand', { g: 'c', lead: true }]],
     tips: [[1, '张飞学会了当阳一喝！骑兵冲得快，喝晕就落马'], [6, '从这关起招式要自己点：牌亮了就点它出招；右边「自动」只会好了就放，接不住冲阵'], [12, '头顶挂「冲」字小旗的那队会冲阵：留着张飞的一喝，等他们冲过地上的红线再喝，再接青龙斩'], [40, '渠帅也是头目，斩了他溃散一片']] },
-  { id: 5, name: '邓茂', sub: '拦路将 · 大兴山下，邓茂挺枪拦路', kind: 'duel', boss: 'dengmao', hpMul: 2.024,   /* 10-28 用户：「第五关太难，主将血减2/3」6.073 → 2.024 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'canyon', reward: '镔铁 · 兵书残卷',
-    moves: ['heavy', 'summon', 'heavy', 'buff', 'heavy', 'summon'], gap: 3.2, heavy: 14, adds: [['bing', 6], ['lishi', 1]],
+  { id: 5, name: '邓茂', sub: '拦路将 · 大兴山下，邓茂挺枪拦路', kind: 'duel', boss: 'dengmao', hpMul: 3.036,   /* 10-28 用户：「第五关太难，主将血减2/3」6.073 → 2.024；11-02 用户：「邓茂血太少了，增加到1.5倍，然后要有骑兵和弓箭手」→ 3.036，召兵加骑兵、弓手 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'canyon', reward: '镔铁 · 兵书残卷',
+    moves: ['heavy', 'summon', 'heavy', 'buff', 'heavy', 'summon'], gap: 3.2, heavy: 14, adds: [['bing', 6], ['lishi', 1], ['qibing', 2], ['gong', 2]],
     tips: [[1, '斗将：邓茂站在场中出招，城防就是你们的血'], [4, '「挺枪突刺」会自动举盾挡下，挡下来还能反击'], [14, '「无双·喝断它」举盾挡不住！留着张飞的一喝，看到它再喝']] },
   { id: 6, name: '火烧长社', sub: '黄巾屯兵草营，皇甫嵩火攻', hpMul: 5.1,   /* 11-01 旗倒改乱阵、不再跑掉一半，用户嫌关羽一刀一批：4.396 → 4.9；同日草棚改成一直烧 → 5.1，机器人 8 种子 2.13 星、赢 7 局 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'grass', reward: '硫磺',
     rules: { fire: true, huts: [[60, 210], [135, 240], [215, 225], [295, 245], [95, 315], [175, 335], [255, 320], [325, 345], [55, 395], [140, 410], [225, 405], [310, 395]] },
@@ -4839,13 +4839,15 @@ function faceCrop(SK) {                                                         
 function drawFocusChip(by) {
   const T0 = G.tapped; if (!T0) return false; const e = T0.e, held = !e.dead && !e.rout && (G.focus === e || Object.values(G.focusBy || {}).includes(e));
   if (!held && uiNow() - T0.t0 > 2) { G.tapped = null; return false; }
-  const F = FOES[e.kind] || {}, nm = F.name || '敌人', y = by + 4, r = 12; ctx.font = `12px ${FONT}`; const w = 22 + 2 * r + ctx.measureText(nm).width, x = W - 8 - w;
+  const F = FOES[e.kind] || {}, nm = F.name || '敌人', y = by + 4, r = 12; ctx.font = `12px ${FONT}`; const w = Math.max(96, 22 + 2 * r + ctx.measureText(nm).width), x = W - 8 - w;
   uiPanel(x, y, w, 28, { r: 14, single: true, lw: 1, alpha: .88, edge: held ? UIC.red2 : UIC.gold });
   const cx = x + 4 + r, cy = y + 14; ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.clip(); ctx.fillStyle = '#3a2b1f'; ctx.fillRect(cx - r, cy - r, 2 * r, 2 * r);
   if (e.lamp && ready(IMG.qixing_lamp)) { const im = IMG.qixing_lamp, h = 2 * r + 4; ctx.drawImage(im, cx - h * im.width / im.height / 2, cy - r - 2, h * im.width / im.height, h); }
   else { const SK = sheetOf(F); if (SK && SHEETS[SK]) { const C = faceCrop(SK); if (C) { ctx.filter = tintOf(F); ctx.drawImage(IMG[SK], C[0], C[1], C[2], C[2], cx - r, cy - r, 2 * r, 2 * r); ctx.filter = 'none'; } } }   // 头和上身
   ctx.restore(); ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(cx, cy, r + .5, 0, 6.283); ctx.stroke();
-  uiText(nm, x + 8 + 2 * r + 6, cy + 1, 12, held ? '#ffd2b8' : UIC.cream, 'left', FONT, { lw: 3 });
+  uiText(nm, x + 8 + 2 * r + 6, cy - 4, 12, held ? '#ffd2b8' : UIC.cream, 'left', FONT, { lw: 3 });
+  { const bx = x + 8 + 2 * r + 6, bw = x + w - 10 - bx, f = e.dead ? 0 : clamp(e.hp / (e.max || 1), 0, 1);   // 11-02 用户：「右上角敌人头像要有血量同步显示」——名字下面一条血
+    ctx.fillStyle = 'rgba(0,0,0,.6)'; rr(bx, cy + 5, bw, 4, 2); ctx.fill(); if (f > 0) { ctx.fillStyle = f > .5 ? '#e2563a' : f > .25 ? '#ff8a3a' : '#ffcf4a'; rr(bx, cy + 5, Math.max(2, bw * f), 4, 2); ctx.fill(); } }
   return true;
 }
 function drawHud() {
