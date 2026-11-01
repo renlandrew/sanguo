@@ -6430,12 +6430,20 @@ const tipNow = () => MENU_TIPS.find(T => !(INV.tipSeen || {})[T.k] && T.ok() && 
 const tipDone = k => { INV.tipSeen = INV.tipSeen || {}; INV.tipSeen[k] = 1; saveInv(); };
 function drawMenuTip(t) {
   const T = tipNow(); MENU.tip = T || null; if (!T || REWARD || (MENU.note && t - MENU.note.t0 < 3.2)) return;
-  if (MENU.tipK !== T.k) { MENU.tipK = T.k; MENU.tipT = t; } const a = clamp((t - MENU.tipT - .4) / .3, 0, 1); if (a <= 0) return;
-  const [ck, C] = counselNow(), y = TIP_Y, ks = .78; ctx.save(); ctx.translate(W * (1 - ks) / 2, y); ctx.scale(ks, ks); drawCounselSay(ck, C, T.say, 0, a); ctx.restore();   // 11-02 用户：「军师可以再小」——整块缩到 0.78   // 11-02 军师提示在三兄弟脚下、关卡牌上面 hit(W * (1 - ks) / 2, y - 4, W * ks, 56, () => tipDone(T.k));
+  if (MENU.tipK !== T.k) { MENU.tipK = T.k; MENU.tipT = t; MENU.tipOpen = false; } const a = clamp((t - MENU.tipT - .4) / .3, 0, 1); if (a <= 0) return;
+  // 11-02 用户：「军师提示感觉不好放」→「收成小头像点开看」：平时只在关卡牌左上角露军师小头像（一跳一跳、挂「!」），点开才说那句话；点话算看过
+  const [ck, C] = counselNow(), im = IMG['p_' + ck], hx = 40, hy = CARD_Y - 24 - (MENU.tipOpen ? 0 : 3 * Math.abs(Math.sin(t * 3))), hr = 15;
+  if (!MENU.tipOpen) {   // 点开后卷轴自带头像，小头像先藏起来
+  ctx.save(); ctx.globalAlpha = a; ctx.beginPath(); ctx.arc(hx, hy, hr, 0, 6.283); ctx.clip(); if (ready(im)) ctx.drawImage(im, hx - hr * 1.2, hy - hr, hr * 2.4, hr * 2.4); else { ctx.fillStyle = '#3a2b1f'; ctx.fill(); } ctx.restore();
+  ctx.save(); ctx.globalAlpha = a; if (ready(IMG.ui_avatar_ring)) ctx.drawImage(IMG.ui_avatar_ring, hx - hr * 1.3, hy - hr * 1.3, hr * 2.6, hr * 2.6); else { ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(hx, hy, hr + 1, 0, 6.283); ctx.stroke(); }
+  uiSeal(hx + 12, hy - 12, 13, '!', UIC.red); ctx.restore(); }
+  hit(hx - 20, hy - 20, 40, 40, () => { MENU.tipOpen = !MENU.tipOpen; });
+  if (MENU.tipOpen) { const ks = .78, y = CARD_Y - 112; ctx.save(); ctx.translate(W * (1 - ks) / 2, y); ctx.scale(ks, ks); drawCounselSay(ck, C, T.say, 0, a); ctx.restore();   // 点开：话浮在头像上面，三兄弟腿前，看完点一下就收
+    hit(W * (1 - ks) / 2, y - 4, W * ks, 60, () => { MENU.tipOpen = false; tipDone(T.k); }); }
   const by = H - 90 + 3 * Math.sin(t * 6); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#ffd76e'; ctx.shadowColor = 'rgba(255,190,80,.8)'; ctx.shadowBlur = 8;   // 往下指着该点的钮，一上一下地跳
   ctx.beginPath(); ctx.moveTo(T.x - 9, by - 10); ctx.lineTo(T.x + 9, by - 10); ctx.lineTo(T.x, by); ctx.closePath(); ctx.fill(); ctx.restore();
 }
-const TRIO_H = 292, TRIO_FOOT = 498, CARD_Y = 518, TIP_Y = 136, BG_UP = 86;   // 11-02 用户：「三人往上，军师提示条和关卡牌放脚下」                                            // 主页三兄弟：画多高、脚在哪（城头步道）
+const TRIO_H = 292, TRIO_FOOT = 498, CARD_Y = 518, TIP_Y = 136, BG_UP = 86;   // 主页三兄弟画多高、脚在哪（城头步道）；关卡牌在脚下；TIP_Y 现在只给点卯横幅用
 function drawMenu() {
   const open1 = open1st();
   if (!BEST[1] && !MENU.autoGo && !window.__sg.all) { MENU.autoGo = true; openLevel(0); if (screen !== 'menu') return; }   // 11-02 用户：「新玩家直接开始第一关，不存在先看到界面」——第一关没过，开页就进（序章 → 第一关）；退军回来才看到主页，一次开页只自动进一次
