@@ -911,7 +911,7 @@ const weekKey = s => { const n = dayNum(s); return n - ((n + 3) % 7); };        
 // 军务题库：挑你打过的关，加一个打法条件；条件只用你手里有的
 const unsNeed = id => id <= 5 ? 1 : 2;   // 10-30 用户：「你一次怎么能喝断两次无双？」——第五关邓茂一场只打 40 秒上下，整场多半只出一两次无双、一喝冷却 20 秒，两次几乎做不到；第五关只要一次
 const TASKS = {
-  star3:   { ok: lv => true, text: n => `${n}拿三星`, check: (r, G) => r.stars >= 3 },
+  star3:   { ok: lv => (BEST[lv.id] || 0) < 3, text: n => `${n}拿三星`,   /* 11-02 用户：「第二关已经打过3*了，为什么还不自动领取」——已经三星的关不再出这道题 */ check: (r, G) => r.stars >= 3 },
   noleak:  { ok: lv => lv.kind !== 'duel', text: n => `${n}漏兵不超过两个`, check: (r, G) => r.win && G.leaked <= 2 },
   wall90:  { ok: lv => lv.kind !== 'duel', text: n => `${n}城防剩九成以上`, check: (r, G) => r.win && r.frac >= .9 },
   guanTop: { ok: lv => fighters(lv).length > 1 && fighters(lv).includes('guan'), text: n => `${n}让关羽伤害第一`, check: (r, G) => r.win && topDmg(G) === 'guan' },
@@ -946,7 +946,7 @@ function genTasks(day, n) {                                                     
 // 之后才出的军务（打过第一关才补的题）若今天已经做到，直接算完成、发残页和资历，不用再打一遍
 const TASK_AUTO = [];
 function payTask(t) { t.done = true; INV.it.残页 += TASK_PAY; DAILY.weekN++; addPrep(1); if (DAILY.weekN >= WEEK_N && !DAILY.weekSeal) { DAILY.weekSeal = true; INV.it.将印++; } }
-function autoTasks() { const M = DAILY.met || {}; let n = 0; for (const t of DAILY.tasks) if (!t.done && (M[t.lv] || []).includes(t.k)) { payTask(t); TASK_AUTO.push(t); n++; } if (n) { saveInv(); saveDaily(); } }
+function autoTasks() { const M = DAILY.met || {}; let n = 0; for (const t of DAILY.tasks) if (!t.done && ((M[t.lv] || []).includes(t.k) || (t.k === 'star3' && (BEST[t.lv] || 0) >= 3))) {   /* 三星是一辈子的记录：哪天拿的都算 */ payTask(t); TASK_AUTO.push(t); n++; } if (n) { saveInv(); saveDaily(); } }
 // 每天第一次进来：点卯（漏掉的最多补两天）、出今天的军务、掉落上限清零、换周
 function dailyTick() {
   const td = dayStr(); let note = null;
@@ -961,7 +961,7 @@ function dailyTick() {
     note = { packs, got }; saveInv(); saveDaily();
   } else if (DAILY.tasks.length < DAILY.taskN && LEVELS.some(lv => BEST[lv.id])) {   // 早上还一关没打过、出不了题：打过一关以后补上
     const have = new Set(DAILY.tasks.map(t => t.k + t.lv)); for (const t of genTasks(td, DAILY.taskN)) if (DAILY.tasks.length < DAILY.taskN && !have.has(t.k + t.lv)) DAILY.tasks.push(t); saveDaily(); autoTasks();
-  }
+  } else autoTasks();   // 11-02：已经出了的题（比如早上出的「第二关拿三星」，后来或以前已三星）每次进来都核一遍
   return note;
 }
 // 每日军务十二道（10-25 用户：「每日军务可以增加 1）出外探访（政治高效果好），一定带回材料，有时会带回神兵材料 2）消耗60体力之类等无聊任务……都可以一键完成，每日军务设置12个吧」）：
@@ -5845,7 +5845,7 @@ function drawQimou() {
   if (QM.sel) { ctx.fillStyle = 'rgba(8,5,3,.82)'; ctx.fillRect(0, 0, W, H); const bw = 240; drawQmCard(QM.sel, (W - bw) / 2, 70, bw, true); hit(0, 0, W, H, () => { QM.sel = null; }); }
 }
 function drawCamp() {
-  campBg('军帐'); dailyTick(); if (!REWARD && TASK_AUTO.length) { const A = TASK_AUTO.splice(0); showReward('军务已完成', [`${A.length} 道今天已经做到过 · 资历 +${A.length}`], ['guan', 'zhang', 'liu'], true, [['残页', A.length * TASK_PAY]]); }
+  campBg('军帐'); dailyTick(); if (!REWARD && TASK_AUTO.length) { const A = TASK_AUTO.splice(0); showReward('军务已完成', [`${A.length} 道已经做到过 · 资历 +${A.length}`], ['guan', 'zhang', 'liu'], true, [['残页', A.length * TASK_PAY]]); }
   if (!REWARD) achAutoClaim();   // 以前攒着没领的功绩：进军帐一次发掉
   plaque3(10, 14, 80, 26, '奇谋', () => { screen = 'qimou'; QM.sel = null; QM.from = 'camp'; });   // 10-29 奇谋卡（大招、军师计、敌方计）
   { const n = achClaimable().length; plaque3(W - 104, 14, 94, 26, '功绩簿', () => { screen = 'ach'; }, n > 0); if (n) uiSeal(W - 10, 14, 16, String(n), UIC.red, true);   /* 牌匾按原图比例，宽 128 时正好 26 高，字在中间（10-29 用户：「字要居中」） */ }
