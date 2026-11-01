@@ -5693,7 +5693,8 @@ function drawResult() {
       ctx.save(); ctx.translate(x, cy0); ctx.scale(sc, sc); ctx.globalAlpha = u * (n ? 1 : .5);
       ctx.fillStyle = 'rgba(12,8,6,.75)'; rr(-sz / 2, -sz / 2, sz, sz, 6); ctx.fill(); drawItemIcon(k, 0, 0, sz - 8);
       if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, -sz / 2 - 1, -sz / 2 - 1, sz + 2, sz + 2, 60, 60, 60, 60, .1);
-      uiText(n ? '×' + n : '满', sz / 2 - 3, sz / 2 - 6, 11, n ? '#fff2dc' : UIC.red2, 'right', PLAIN, { lw: 3 }); ctx.restore(); }); };
+      uiText(n ? '×' + n : '满', sz / 2 - 3, sz / 2 - 6, 11, n ? '#fff2dc' : UIC.red2, 'right', PLAIN, { lw: 3 }); ctx.restore(); });
+    if (caps.length && sz >= 32 && t > tb - .2) uiText(`今天${caps.join('、')}已领满，明天再掉`, cxm, cy0 + sz / 2 + 9, 9, 'rgba(255,170,140,.85)', 'center', PLAIN, { lw: 2.5 }); };   // 11-02 用户问重打显示「铁满」什么意思——每天掉落有上限，满了写一句
   if (blame) { const u = clamp((t - (tb - .5)) / .35, 0, 1); if (u > 0) { ctx.save(); ctx.globalAlpha = u; ctx.translate(0, (1 - ease(u)) * 20);
       drawBlameLine(blame, by); ctx.restore(); }   // 11-02 用户：「这个卷轴太占地方了」——不用卷轴，一条细牌：小头像 + 两行小字 + 兄弟一句
     by += blameH(blame) + 8; if (ents.length) drawLoot(26, W - 22 - (ents.length - 1) * 17, 266); }
@@ -6645,7 +6646,9 @@ function drawLvPop(t) {                                                         
   // 11-02 用户：「还要出现关卡可能掉落的东西」——精铁、这关专属材料，首通还没拿的写「首通」
   { const D = [['精铁', '']]; for (const m of matOfLv(lv.id)) D.push([m.name, '']); if (lv.kind === 'duel' && lv.id < 30 && !(INV.duelMet || {})[lv.id]) D.push(['陨铁', '首通']); if (lv.id === 20 && !INV.seal20) D.push(['将印', '首通']);
     uiText('可能掉落', px + 14, py + 98, 11, 'rgba(246,210,122,.85)', 'left', PLAIN, { stroke: false });
-    D.forEach(([k, tag], j) => { const ix = px + 84 + j * 34; drawItemIcon(k, ix, py + 98, 22); if (tag) uiText(tag, ix, py + 115, 8, '#ffd76e', 'center', PLAIN, { lw: 2 }); hov(ix - 12, py + 86, 24, 24, ITEM_TIP[k] || k); }); }
+    const full = k => k === '精铁' ? (DAILY.caps.精铁 || 0) >= DROP_CAP : matOfLv(lv.id).some(m => m.name === k) && (DAILY.caps[k] || 0) >= MAT_CAP;   // 11-02 用户：「这里也要显示，免得玩家浪费体力刷」——今天已领满的变淡、标「满」
+    D.forEach(([k, tag], j) => { const ix = px + 84 + j * 34, f = !tag && full(k); ctx.save(); if (f) ctx.globalAlpha = .4; drawItemIcon(k, ix, py + 98, 22); ctx.restore(); if (f) uiText('满', ix + 9, py + 106, 10, UIC.red2, 'center', PLAIN, { lw: 2.5 }); if (tag) uiText(tag, ix, py + 115, 8, '#ffd76e', 'center', PLAIN, { lw: 2 }); hov(ix - 12, py + 86, 24, 24, ITEM_TIP[k] || k); });
+    const F = D.filter(([k, tag]) => !tag && full(k)).map(([k]) => k); if (F.length) uiText(`今天${F.join('、')}已领满`, px + 84 + D.length * 34 - 8, py + 98, 10, 'rgba(255,170,140,.85)', 'left', PLAIN, { stroke: false }); }
   const bw = 90, bh = 30, by = py + 128, ax = px + pw / 2 - bw - 10, sx = px + pw / 2 + 10;   // 11-02 用户：「2个btn 太大了」——112×38 → 90×30
   { ctx.save(); if (ready(IMG.ui2_tab_red)) draw9(IMG.ui2_tab_red, ax, by, bw, bh, 90, 90, 0, 0, bh / 189); else uiPanel(ax, by, bw, bh, { r: bh / 2, top: '#c0402a', bot: '#6e140c' }); ctx.restore();
     uiText('攻打', ax + bw / 2, by + bh / 2 + 1, 15, '#fff2dc', 'center', FONT, { lw: 4 }); hit(ax, by, bw, bh, () => { MENU.lvPop = null; openLevel(i); }); }
