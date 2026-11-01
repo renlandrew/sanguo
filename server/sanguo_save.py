@@ -164,6 +164,7 @@ class Store:
 
 
 # ---- 合理性检查（数值照 守关.html 10-30：每天资历最多约 12＋节点功绩 8、精铁约 11、残页约 10、机缘 30→陨铁 0.3、专属材料每种 2；斗将首通各给陨铁 1）----
+# 11-02 掉落不设每日上限、改靠体力（一天最多 240，打赢一关 10）：一天最多约 24 场 → 精铁约 24＋点卯、探访、杂务约 11，专属材料每种约 24
 WPN_IRON = [4, 4, 10, 10, 15, 15, 20, 20, 25, 25]
 PREP_CUM = [20, 40, 76, 124, 176, 232]                 # 晋到第 1…6 阶累计要的资历
 SKILL_PAGES = {'liu2': 6, 'guan2': 12, 'zhang2': 18, 'liu3': 18}
@@ -183,7 +184,7 @@ def plausible(data, days):
         lv = {h: int(num(up.get('wpn_' + h))) for h in ('guan', 'zhang', 'liu')}
         if any(v < 0 or v > 10 for v in lv.values()): return False, '兵器等级不对'
         iron_spent = sum(sum(-(-WPN_IRON[k] // 3) for k in range(v)) for v in lv.values())
-        if num(it.get('精铁')) + iron_spent > 18 * days + 160: return False, '精铁比天数多太多'
+        if num(it.get('精铁')) + iron_spent > 40 * days + 160: return False, '精铁比天数多太多'
         pages_spent = sum(c for k, c in SKILL_PAGES.items() if num(up.get(k)) > 0)
         if num(it.get('残页')) + pages_spent > 16 * days + 120: return False, '残页比天数多太多'
         met_spent = sum(1 for k in (4, 6, 8, 10) if max(lv.values()) >= k)
@@ -192,7 +193,7 @@ def plausible(data, days):
         h_of = dict(zip(MATS, ('guan', 'zhang', 'liu')))
         for m in MATS:
             spent = sum(MAT_NEED.get(k, 0) for k in range(1, lv[h_of[m]] + 1))
-            if num(it.get(m)) + spent > 3 * days + 8 + met_cap / 3: return False, '%s比天数多太多' % m
+            if num(it.get(m)) + spent > 30 * days + 8 + met_cap / 3: return False, '%s比天数多太多' % m
         if num(it.get('将印')) > days // 7 + 4: return False, '将印比天数多太多'
     return True, ''
 

@@ -797,7 +797,7 @@ const ITEM_TIP = {                                                              
   青龙鳞: '青龙鳞\n青龙偃月刀 +6 起锻造所需\n来源：第三关、第十七关打赢（每天最多两片），功绩「喝而斩之」「温酒斩将」',
   蛇纹镔铁: '蛇纹镔铁\n丈八蛇矛 +6 起锻造所需\n来源：第五关、第八关打赢（每天最多两块），功绩「丈八破阵」「喝断无双」',
   雌雄剑胚: '雌雄剑胚\n双股剑 +6 起锻造所需\n来源：第七关、第廿四关打赢（每天最多两块），功绩「桃园同心」「仁德护阵」',
-  体力: '体力\n日常杂务每项消耗十点\n每五分钟恢复一点，上限一百二十' };
+  体力: '体力\n打赢一关、扫荡、日常杂务各花十点\n每天点卯补满一百二十；十一到十六点、十八到二十三点各能在军帐领六十' };
 const ITEM_C = { 精铁: '#c9cdd2', 残页: '#f0d9a0', 将印: '#e2563a', 陨铁: '#8fe8ff', 体力: '#9be0a0', 青龙鳞: '#7fe0b8', 蛇纹镔铁: '#ff9a5a', 雌雄剑胚: '#9cc8ff' };
 // 专属材料（10-29 用户：「陨铁再给多些，不要卡，但第三等级开始，每个人的武器都有专属材料，材料必须是在特定关卡里刷或者完成特定成就」）：
 // 兵器第三档（+6）起每人要自己的材料；指定关打赢掉 1、三星掉 2，每种一天最多 2；两项功绩各给 3；三块陨铁可换一份（保底）
@@ -955,6 +955,7 @@ function dailyTick() {
   if (DAILY.day !== td) {
     const gap = DAILY.day ? Math.max(1, dayNum(td) - dayNum(DAILY.day)) : 1, packs = 1 + Math.min(monthLeft() > 0 ? 6 : 2, gap - 1), got = { 精铁: 2 * packs };   // 月卡：补领七天
     INV.it.精铁 += 2 * packs;
+    staNow(); INV.sta.v = Math.max(INV.sta.v, STA_MAX); DAILY.staGot = [];   // 点卯：体力补满到 120（领多了的不扣）
     DAILY.day = td; DAILY.met = {}; DAILY.taskN = 3 * packs; DAILY.tasks = genTasks(td, DAILY.taskN); DAILY.caps = { 精铁: 0 }; DAILY.visits = 0; DAILY.visitN = 2 * packs; DAILY.chores = false; DAILY.cd = CHORES.map(() => false);
     if (DAILY.week !== weekKey(td)) { DAILY.week = weekKey(td); DAILY.weekN = 0; DAILY.weekSeal = false; }
     if (monthLeft() > 0) doChores();                                             // 月卡：日常杂务一上线就做完
@@ -970,9 +971,13 @@ const CHORES = ['操练兵马', '巡视城防', '犒赏三军', '整理军械', 
 // 杂务各给一样东西（10-25 夜用户：「这些不是得到经验，是得到物品奖励……一键完成要消耗体力的」）：一项花体力 10，一天七项共花 70
 const CHORE_PAY = [['精铁', 1], ['精铁', 1], ['残页', 1], ['精铁', 1], ['残页', 1], ['机缘', 6], ['残页', 1]], CHORE_STA = 10;
 // 体力：上限 120，每 5 分钟回 1 点（一天回满还有富余）；现在只有杂务花体力
-const STA_MAX = 120, STA_MS = 5 * 60 * 1000;
-function staNow() { const now = nowMs(), S0 = INV.sta || (INV.sta = { v: STA_MAX, t: now }); if (S0.v >= STA_MAX) { S0.t = now; return STA_MAX; }
-  const n = Math.floor((now - S0.t) / STA_MS); if (n > 0) { S0.v = Math.min(STA_MAX, S0.v + n); S0.t += n * STA_MS; } return S0.v; }
+// 11-02 用户：「不要限制物品掉落，通过控制体力来达到目的，一天只给120+2次领取机会，一共120+60+60」「时间是11点到4点，6点到11点，让玩家有时间随时上线」：
+// 不再每 5 分钟回 1 点；每天点卯补满到 120，11–16 点、18–23 点各能在军帐领一次 60（领了可超过 120，最多 240）；打赢一关花 10，打输、退军不扣；扫荡、杂务各 10
+const STA_MAX = 120, STA_CAP = 240, STA_GIFT = 60, STA_WIN = [[11, 16], [18, 23]], BATTLE_STA = 10;
+function staNow() { const S0 = INV.sta || (INV.sta = { v: STA_MAX, t: nowMs() }); return S0.v; }
+const staHour = () => new Date(nowMs()).getHours();
+const staClaimable = () => { const h = staHour(), got = DAILY.staGot || []; return STA_WIN.findIndex(([a, b], k) => h >= a && h < b && !got[k]); };   // 现在能领哪一段（-1：不能）
+function claimSta() { const k = staClaimable(); if (k < 0) return 0; DAILY.staGot = DAILY.staGot || []; DAILY.staGot[k] = true; staNow(); INV.sta.v = Math.min(STA_CAP, INV.sta.v + STA_GIFT); saveInv(); saveDaily(); return STA_GIFT; }
 const bestPol = () => ['guan', 'zhang', 'liu'].map(id => [id, Math.floor(statOf(id, ROSTER[id].lv)[3])]).sort((a, b) => b[1] - a[1])[0];
 // 出外探访派谁（10-26 用户：「这里可以选武将，政治越高，机缘增长越快，魅力越高，运气越好，武力越高……但不要告诉用户，只是推荐魅力/政治」）：
 // 点头像换人；界面上只写「宜派政治、魅力高的」，具体怎么算不露出来。政治 → 机缘（5 + 政治×0.1，刘备 72 → 12）；武力 → 精铁（武力 60 起 2 块、85 起 3 块，路上顺手收拾山贼）；
@@ -1040,11 +1045,11 @@ const lackText = lack => lack.map(([k, n]) => `${k} ${n}`).join('、');
 function settleLoot(win) {
   const r = G.result, loot = r.loot = [], lv = G.lv;
   if (win) {
-    const give = (k, n, cap) => { if (cap && (DAILY.caps[k] || 0) >= DROP_CAP) { loot.push({ k, n: 0, capped: true }); return; } INV.it[k] += n; if (cap) DAILY.caps[k] = (DAILY.caps[k] || 0) + n; loot.push({ k, n }); };
-    give('精铁', 1, true);
+    const give = (k, n) => { INV.it[k] += n; loot.push({ k, n }); };   // 11-02 掉落不再设每日上限，改靠体力控制
+    give('精铁', 1);
     if (lv.id === 20 && !INV.seal20) { INV.seal20 = true; give('将印', 1); }
     if (lv.kind === 'duel' && lv.id < 30 && !(INV.duelMet || (INV.duelMet = {}))[lv.id]) { INV.duelMet[lv.id] = 1; give('陨铁', 1); }   // 10-29 陨铁多给：斗将关首通各一块
-    for (const m of matOfLv(lv.id)) { const n = Math.min(r.stars >= 3 ? 2 : 1, MAT_CAP - (DAILY.caps[m.name] || 0)); if (n > 0) { INV.it[m.name] += n; DAILY.caps[m.name] = (DAILY.caps[m.name] || 0) + n; loot.push({ k: m.name, n }); } else loot.push({ k: m.name, n: 0, capped: true }); }   // 专属材料：赢了必掉，三星掉 2，每种一天最多 2
+    for (const m of matOfLv(lv.id)) give(m.name, 1);   // 专属材料：赢了掉 1 个（不设上限后三星不再给 2 个，不然一天就把兵器升满）
   }
   r.tasks = [];
   for (const t of DAILY.tasks) if (!t.done && t.lv === lv.id && TASKS[t.k].check(r, G)) {
@@ -2213,6 +2218,7 @@ function end(win, why) {
   if (!G.sim && G.cnt) { INV.comboSeen = INV.comboSeen || {}; for (const k of ['cYun', 'cHeng', 'cHe', 'cShuang', 'cRen', 'cTao']) if (G.cnt[k]) INV.comboSeen[k] = 1; saveInv(); }   // 10-29：六个连携跨局累计，输了的那局打出来的也算，当场存盘
   G.feats = win && G.cnt ? featCheck(stars) : []; if (!G.sim && G.feats.length) { INV.feat = INV.feat || {}; for (const f of G.feats) INV.feat[f] = 1; saveInv(); }
   if (!G.sim) { const A = achClaimable(); G.result.ach = A.map(a => a.sec === '首通' ? '首通 · ' + a.name : a.name); G.result.achPrep = achPrepOf(A); G.result.achGot = claimAch(A); }   // 10-30 用户：「结算时如果完成任何功绩，都在结算页提示」；又：「完成了……还是要我去点成就完成才给我」——达成就直接发，连以前没领的一起
+  if (!G.sim && win) { staNow(); INV.sta.v = Math.max(0, INV.sta.v - BATTLE_STA); }   // 打赢花 10 体力（输了、退军不扣）
   if (!G.sim) { awardExp(win, stars); settleLoot(win); G.fx = G.fx.filter(f => !['wave', 'banner', 'txt', 'leak'].includes(f.k)); }   // 战场上的横幅、飘字别透过结算页露出来
 }
 // 结算经验（10-25）：出战的每人拿全份，升级时记下五维涨了几点（显示整数，涨过整数线才算涨 1）
@@ -5922,6 +5928,10 @@ function drawCamp() {
   const ts = DAILY.tasks.slice().sort((a, b) => a.done - b.done), shown = ts;   // 10-30 页面能拖了：补领的军令也一道道列出来
   uiText('今日军务', 18, 250 + TOPY, 16, UIC.gold2, 'left', FONT, { stroke: false });
   uiText(`${dailyDone()}/${dailyTotal()}`, W - 18, 250 + TOPY, 12, 'rgba(244,230,196,.6)', 'right', PLAIN, { stroke: false });
+  { const sta = staNow(), k = staClaimable(), y = 250 + TOPY;   // 11-02 体力：标题这行中间写现有多少；11–16 点、18–23 点各能领一次 60（能领时出「领 60」钮，不能领时写下一段几点开）
+    drawItemIcon('体力', 112, y, 16); uiText(String(sta), 122, y, 13, sta >= BATTLE_STA ? '#9be0a0' : UIC.red2, 'left', FONT, { lw: 3 });
+    if (k >= 0) pill(160, y - 12, 76, 24, `领体力 ${STA_GIFT}`, () => { if (claimSta()) { campFw(198, y, 3); campGain([['体力', STA_GIFT]], 198, y); } }, true);
+    else { const h = staHour(), got = DAILY.staGot || [], nx = STA_WIN.find(([a], j) => !got[j] && h < a); uiText(nx ? `${nx[0]}点可领体力` : '今天体力已领完', 160, y, 10, 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false }); } }
   if (!ts.length) { const y = 264 + TOPY; plate(14, y, W - 28, 80, false);                 // 10-29 用户：「不要用描述性文字，直接告诉玩家出征后得到什么」
     uiSeal(40, y + 30, 28, '令', UIC.red); uiText('征战军令 ×3', 64, y + 22, 15, UIC.gold2, 'left', FONT, { lw: 3 }); uiText('全部完成得', 168, y + 22, 11, 'rgba(244,230,196,.65)', 'left', PLAIN, { stroke: false });   /* 奖励是完成三道军令才有，不是出征就有（10-29 用户问） */
     [['残页', TASK_PAY * 3], ['资历', 3]].forEach(([k, n], i) => { const x = 74 + i * 86; if (k === '资历') uiSeal(x, y + 52, 18, '资', '#6a4a14', true); else drawItemIcon(k, x, y + 52, 24); uiText(`${k} +${n}`, x + 16, y + 52, 13, UIC.cream, 'left', PLAIN, { stroke: false }); });
@@ -5947,7 +5957,7 @@ function drawCamp() {
     plate(14, y0, W - 28, hh, false);
     const sta = staNow(), can = Math.min(left, Math.floor(sta / CHORE_STA));
     uiText(`日常杂务 ${CHORES.length - left}/${CHORES.length}`, 24, y + 15, 13, UIC.cream, 'left', PLAIN, { stroke: false });
-    uiText(`体力 ${sta}/${STA_MAX}`, 112, y + 15, 11, sta >= CHORE_STA ? '#9be0a0' : UIC.red2, 'left', PLAIN, { stroke: false });
+    uiText(`体力 ${sta}`, 112, y + 15, 11, sta >= CHORE_STA ? '#9be0a0' : UIC.red2, 'left', PLAIN, { stroke: false });
     if (left) { pill(W - 112, y + 5, 88, 22, can ? `一键完成` : '体力不够', () => { const b0 = itemSnap(), l0 = choresLeft(); doChores(); const done = l0 - choresLeft(); if (done) { campFw(W / 2, 640 * .62, 7); campGain(itemDiff(b0, itemSnap()), W / 2, 640 * .62); } else showReward('体力不够', ['明天再来'], ['zhang'], false); }, true, can > 0); if (can) uiText(`体力 -${can * CHORE_STA}`, W - 68, y + 34, 10, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false }); }
     else uiSeal(W - 40, y + 15, 22, '毕', UIC.red, true);
     CHORES.forEach((c, k) => { const cx = 24 + (k % 2) * ((W - 48) / 2), cy = y + 48 + Math.floor(k / 2) * 27, on = choreOn(k);
@@ -6157,6 +6167,7 @@ const FOE_NOTE = {
 };
 function openLevel(i) {
   const id = LEVELS[i].id;
+  if (!window.__sg.all && staNow() < BATTLE_STA) { G = null; screen = 'camp'; CAMP.t0 = uiNow(); showReward('体力不够', [`打一关要 ${BATTLE_STA} 体力`, '11–16 点、18–23 点可在军帐领 60'], ['zhang'], false); return; }   // 11-02 体力控制
   if (i === 0 && !storySeen('open')) { playStory('open', () => openLevel(0)); return; }   // 第一次进第一关：先演序章（桃园、雷劈、醒来）
   /* 10-26 用户：「不需要任何破题门槛，不要在地图提示，可以让军师提示」——不再拦着不让打；缺的东西开战时军师提一句（见 counselGateTip） */
   enterLevel(i);
@@ -6619,19 +6630,18 @@ function drawCampaignMap(mim, t) {
     if (ok) hit(x - 34, y - 18, 68, 64, () => { MENU.lvPop = i; }); });
   /* 地图上不提示还缺什么（10-26） */
 }
-// 扫荡（11-02 用户：「点击关卡要出现攻打和扫荡（通过第五关后，3*的关卡可以扫荡）」）：不用打，按三星打赢发一份——三人经验、精铁、专属材料（照旧受每天上限）、
-// 「打赢一次」那道军务；首通、斗将陨铁、功绩、其他打法军务都不算。打仗不花体力，扫荡花 SWEEP_STA 体力（不然经验能无限刷）
+// 扫荡（11-02 用户：「点击关卡要出现攻打和扫荡（通过第五关后，3*的关卡可以扫荡）」）：不用打，按三星打赢发一份——三人经验、精铁 1、专属材料 1、
+// 「打赢一次」那道军务；首通、斗将陨铁、功绩、其他打法军务都不算。扫荡和打赢一样花 SWEEP_STA 体力
 const SWEEP_STA = 10, sweepOpen = () => !!BEST[5] || window.__sg.all, canSweep = lv => sweepOpen() && (BEST[lv.id] || 0) >= 3;
 function sweepLevel(i) {
   const lv = LEVELS[i]; if (!canSweep(lv) || staNow() < SWEEP_STA) return;
   INV.sta.v -= SWEEP_STA; const got = [], add = (k, n) => { if (n > 0) { INV.it[k] += n; got.push([k, n]); } };
-  if ((DAILY.caps.精铁 || 0) < DROP_CAP) { add('精铁', 1); DAILY.caps.精铁 = (DAILY.caps.精铁 || 0) + 1; }
-  for (const m of matOfLv(lv.id)) { const n = Math.min(2, MAT_CAP - (DAILY.caps[m.name] || 0)); if (n > 0) { add(m.name, n); DAILY.caps[m.name] = (DAILY.caps[m.name] || 0) + n; } }
+  add('精铁', 1); for (const m of matOfLv(lv.id)) add(m.name, 1);   // 11-02 不设每日上限，和打赢一样
   const who = fighters(lv).filter(id => ROSTER[id]), g = expGain(lv, true, 3, false); for (const id of who) addExp(ROSTER[id], g); saveRoster();
   let tk = 0; for (const t of DAILY.tasks) if (!t.done && t.lv === lv.id && t.k === 'mat') { payTask(t); tk++; }
   const M = DAILY.met = DAILY.met || {}; M[lv.id] = [...new Set([...(M[lv.id] || []), 'mat'])];
   saveInv(); saveDaily();
-  showReward('扫荡 · ' + lv.name, [`三人各得经验 +${g}`, ...(tk ? [`军务完成 ${tk} 道 · 资历 +${tk}`] : []), ...(got.length ? [] : ['今天的精铁、材料已拿满'])], who.length ? who : ['guan', 'zhang', 'liu'], true, [...got, ...(tk ? [['残页', tk * TASK_PAY]] : [])]);
+  showReward('扫荡 · ' + lv.name, [`三人各得经验 +${g}`, ...(tk ? [`军务完成 ${tk} 道 · 资历 +${tk}`] : [])], who.length ? who : ['guan', 'zhang', 'liu'], true, [...got, ...(tk ? [['残页', tk * TASK_PAY]] : [])]);
 }
 function drawLvPop(t) {                                                             // 点了关：攻打 / 扫荡
   const i = MENU.lvPop; if (i == null) return; const lv = LEVELS[i]; if (!lv) { MENU.lvPop = null; return; }
@@ -6646,7 +6656,7 @@ function drawLvPop(t) {                                                         
   // 11-02 用户：「还要出现关卡可能掉落的东西」——精铁、这关专属材料，首通还没拿的写「首通」
   { const D = [['精铁', '']]; for (const m of matOfLv(lv.id)) D.push([m.name, '']); if (lv.kind === 'duel' && lv.id < 30 && !(INV.duelMet || {})[lv.id]) D.push(['陨铁', '首通']); if (lv.id === 20 && !INV.seal20) D.push(['将印', '首通']);
     uiText('可能掉落', px + 14, py + 98, 11, 'rgba(246,210,122,.85)', 'left', PLAIN, { stroke: false });
-    const full = k => k === '精铁' ? (DAILY.caps.精铁 || 0) >= DROP_CAP : matOfLv(lv.id).some(m => m.name === k) && (DAILY.caps[k] || 0) >= MAT_CAP;   // 11-02 用户：「这里也要显示，免得玩家浪费体力刷」——今天已领满的变淡、标「满」
+    const full = k => false;   // 11-02 掉落不再设每日上限   // 11-02 用户：「这里也要显示，免得玩家浪费体力刷」——今天已领满的变淡、标「满」
     D.forEach(([k, tag], j) => { const ix = px + 84 + j * 34, f = !tag && full(k); ctx.save(); if (f) ctx.globalAlpha = .4; drawItemIcon(k, ix, py + 98, 22); ctx.restore(); if (f) uiText('满', ix + 9, py + 106, 10, UIC.red2, 'center', PLAIN, { lw: 2.5 }); if (tag) uiText(tag, ix, py + 115, 8, '#ffd76e', 'center', PLAIN, { lw: 2 }); hov(ix - 12, py + 86, 24, 24, ITEM_TIP[k] || k); });
     const F = D.filter(([k, tag]) => !tag && full(k)).map(([k]) => k); if (F.length) uiText(`今天${F.join('、')}已领满`, px + 84 + D.length * 34 - 8, py + 98, 10, 'rgba(255,170,140,.85)', 'left', PLAIN, { stroke: false }); }
   const bw = 90, bh = 30, by = py + 128, ax = px + pw / 2 - bw - 10, sx = px + pw / 2 + 10;   // 11-02 用户：「2个btn 太大了」——112×38 → 90×30
