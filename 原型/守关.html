@@ -4810,6 +4810,32 @@ function drawArmCols() {
     uiText('点这里', cx, WALL_Y - 20, 12, `rgba(255,236,190,${.7 + .3 * br})`, 'center', FONT, { lw: 3 }); }
 }
 const HB_W = 79, HB_X = W - 10 - HB_W;                                           // 顶栏敌军、军功两条（11-02 缩短一半、靠右）
+// 11-02 用户：「点击任何敌人要在蓝框出现它的头像，那么知道点中了什么」——点了敌人，战场右上角出一块小牌：圆头像（它自己的图集截上半身）+ 名字；
+// 还盯着它（三人一起盯或某员武将盯）就一直亮，没人盯了再留 2 秒
+const FACECROP = {};
+function faceCrop(SK) {                                                           // 图集第一帧里头在哪：按不透明像素一行行量，身子开始变宽那行是肩，往上一点就是头（顶上细细的常是举起的弓、矛）；截一块方的，按图集记下
+  if (SK in FACECROP) return FACECROP[SK]; const im = IMG[SK]; if (!ready(im)) return null;
+  const As = Object.keys(SHEETS[SK].anims), R = SHEETS[SK].anims[As.includes('run') ? 'run' : As[0]].rects[0], c = document.createElement('canvas'); c.width = R[2]; c.height = R[3];
+  const g = c.getContext('2d'); g.drawImage(im, R[0], R[1], R[2], R[3], 0, 0, R[2], R[3]);
+  try { const d = g.getImageData(0, 0, R[2], R[3]).data, op = (x, y) => d[(y * R[2] + x) * 4 + 3] > 60; let sh = -1, bot = 0;
+    for (let y = 0; y < R[3]; y++) { let n = 0; for (let x = 0; x < R[2]; x++) if (op(x, y)) n++; if (n) bot = y; if (sh < 0 && n > R[2] * .15) sh = y; }
+    if (sh < 0) return FACECROP[SK] = null; const q = Math.max(10, (bot - sh) * .55), top = Math.max(0, sh - q * .45); let sx = 0, n = 0;
+    for (let y = Math.round(top); y < Math.min(R[3], top + q); y++) for (let x = 0; x < R[2]; x++) if (op(x, y)) { sx += x; n++; }
+    return FACECROP[SK] = [R[0] + (n ? sx / n : R[2] / 2) - q / 2, R[1] + top, q];
+  } catch (e) { return FACECROP[SK] = null; }
+}
+function drawFocusChip(by) {
+  const T0 = G.tapped; if (!T0) return false; const e = T0.e, held = !e.dead && !e.rout && (G.focus === e || Object.values(G.focusBy || {}).includes(e));
+  if (!held && uiNow() - T0.t0 > 2) { G.tapped = null; return false; }
+  const F = FOES[e.kind] || {}, nm = F.name || '敌人', y = by + 4, r = 12; ctx.font = `12px ${FONT}`; const w = 22 + 2 * r + ctx.measureText(nm).width, x = W - 8 - w;
+  uiPanel(x, y, w, 28, { r: 14, single: true, lw: 1, alpha: .88, edge: held ? UIC.red2 : UIC.gold });
+  const cx = x + 4 + r, cy = y + 14; ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.clip(); ctx.fillStyle = '#3a2b1f'; ctx.fillRect(cx - r, cy - r, 2 * r, 2 * r);
+  if (e.lamp && ready(IMG.qixing_lamp)) { const im = IMG.qixing_lamp, h = 2 * r + 4; ctx.drawImage(im, cx - h * im.width / im.height / 2, cy - r - 2, h * im.width / im.height, h); }
+  else { const SK = sheetOf(F); if (SK && SHEETS[SK]) { const C = faceCrop(SK); if (C) { ctx.filter = tintOf(F); ctx.drawImage(IMG[SK], C[0], C[1], C[2], C[2], cx - r, cy - r, 2 * r, 2 * r); ctx.filter = 'none'; } } }   // 头和上身
+  ctx.restore(); ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(cx, cy, r + .5, 0, 6.283); ctx.stroke();
+  uiText(nm, x + 8 + 2 * r + 6, cy + 1, 12, held ? '#ffd2b8' : UIC.cream, 'left', FONT, { lw: 3 });
+  return true;
+}
 function drawHud() {
   // 顶栏、底栏、血条改成简洁版（10-25 用户：「btn 不要过于繁杂，会感觉堆在一起」「图2就繁杂了」）：乌漆一块，只下沿一条细金线；条是细金边圆角槽，不再带祥云
   if (ready(IMG.ui2_top)) draw9(IMG.ui2_top, -24, -6, W + 48, TOP - 2, 40, 40, 8, 12, .5); else uiPanel(-4, -4, W + 8, TOP - 10, { r: 0, alpha: .92 });
@@ -4848,8 +4874,9 @@ function drawHud() {
   if (G.cart && G.cart.hp > 0) st.push([(G.cart.label || (G.cart.kind === 'ram' ? '冲车' : '车驾')) + ' ' + Math.ceil(G.cart.hp * SHOWX) + ' · ' + Math.round((G.cart.y - G.RU.cart.y0) / (G.RU.cart.y1 - G.RU.cart.y0) * 100) + '%', G.cart.hp < G.cart.max * .35 ? UIC.red2 : UIC.cream]);
   const by = G.boss && !G.boss.dead ? TOP + 30 : TOP - 4;
   if (G.nWaves > 1) { const t = `第 ${Math.max(1, G.wave + 1)}/${G.nWaves} 波`; ctx.font = `12px ${PLAIN}`; const w = ctx.measureText(t).width + 22; uiPanel(8, by + 4, w, 19, { r: 9.5, single: true, lw: 1, alpha: .86 }); uiText(t, 8 + w / 2, by + 14, 12, UIC.gold2, 'center', PLAIN, { stroke: false }); }   // 波数：战场左上角一块小牌，和右边的状态小牌同一排
-  G.hudChips = Math.max(st.length, G.nWaves > 1 ? 1 : 0);                        // 提示卷轴挪到这几块小牌下面，不压住
-  st.forEach(([t, c], k) => { ctx.font = `12px ${PLAIN}`; const w = ctx.measureText(t).width + 22; uiPanel(W - w - 8, by + 4 + k * 22, w, 19, { r: 9.5, single: true, lw: 1, alpha: .86 }); uiText(t, W - 8 - w / 2, by + 14 + k * 22, 12, c, 'center', PLAIN, { stroke: false }); });
+  const fy = drawFocusChip(by) ? 32 : 0;                                        // 点中的敌人：右上角一块小牌（头像 + 名字），状态小牌排在它下面
+  G.hudChips = Math.max(Math.ceil((fy + st.length * 22) / 22), G.nWaves > 1 ? 1 : 0);   // 提示卷轴挪到这几块小牌下面，不压住
+  st.forEach(([t, c], k) => { ctx.font = `12px ${PLAIN}`; const w = ctx.measureText(t).width + 22; uiPanel(W - w - 8, by + 4 + fy + k * 22, w, 19, { r: 9.5, single: true, lw: 1, alpha: .86 }); uiText(t, W - 8 - w / 2, by + 14 + fy + k * 22, 12, c, 'center', PLAIN, { stroke: false }); });
   if (G.boss && !G.boss.dead) { const b = G.boss, T = FOES[b.kind];                  // 敌将血条：名牌加一长条，分十格
     uiPanel(8, TOP - 6, W - 16, 30, { r: 6, alpha: .9, top: '#3a1610', bot: '#1e0c08' });
     uiText(T.name, 18, TOP + 9, 16, '#ffd9b0', 'left', FONT, { glow: 'rgba(226,86,58,.6)' }); if (T.title) uiText(T.title, 18 + 16 * T.name.length + 6, TOP + 10, 10, 'rgba(255,220,190,.7)', 'left', PLAIN, { stroke: false });
@@ -5083,7 +5110,7 @@ function drawPause() {
   ctx.fillStyle = 'rgba(8,5,4,.7)'; ctx.fillRect(0, 0, W, H);
   uiText('暂停', W / 2, 230, 40, goldGrad(230, 40), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 14, lw: 6 });
   pill(110, 280, 140, 36, '继续', () => { G.paused = false; });
-  pill(110, 326, 140, 36, '看军功', () => { G.paused = false; G.panel = true; G.panelAdv = null; MENU.panelT = uiNow(); }, false);
+  pill(110, 326, 140, 36, '看关卡目标', () => { G.paused = false; showGoals(); }, false);   /* 11-02 用户：「这里看军功改为看关卡目标」——军功在战场左边功钮里看；目标说明开着时战场照样停住 */
   pill(110, 372, 140, 36, '退出这一关', () => { screen = 'menu'; G = null; }, false);
 }
 // 军功面板：已有的战法、下次晋升还差多少、军师报的敌情和主意
@@ -6667,7 +6694,7 @@ cv.addEventListener('pointerdown', ev => {
     if (G.decoyArm) { placeDecoy(x, y); return; }
     if (G.wells) { const w = G.wells.find(w => Math.hypot(w.x - x, w.y - 8 - y) < 22); if (w) { tapWell(w); return; } }
     let best = null, bd = 26; for (const e of G.foes) { const d = Math.hypot(e.x - x, e.y - 10 - y); if (d < bd) { bd = d; best = e; } }
-    if (best && seen(best)) { if (G.pickHero) { (G.focusBy = G.focusBy || {})[G.pickHero] = best; G.pickHero = null; } else { G.focus = best; G.focusBy = {}; } }   // 先点城头某员武将再点敌人：只给他标；直接点敌人：三人一起盯
+    if (best && seen(best)) { if (G.pickHero) { (G.focusBy = G.focusBy || {})[G.pickHero] = best; G.pickHero = null; } else { G.focus = best; G.focusBy = {}; } G.tapped = { e: best, t0: uiNow() }; }   // 先点城头某员武将再点敌人：只给他标；直接点敌人：三人一起盯
   }
 });
 
