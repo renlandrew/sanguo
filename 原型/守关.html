@@ -6438,8 +6438,9 @@ function drawMenuTip(t) {
   ctx.save(); ctx.globalAlpha = a; if (ready(IMG.ui_avatar_ring)) ctx.drawImage(IMG.ui_avatar_ring, hx - hr * 1.3, hy - hr * 1.3, hr * 2.6, hr * 2.6); else { ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(hx, hy, hr + 1, 0, 6.283); ctx.stroke(); }
   uiSeal(hx + 12, hy - 12, 13, '!', UIC.red); ctx.restore(); }
   hit(hx - 20, hy - 20, 40, 40, () => { MENU.tipOpen = !MENU.tipOpen; });
-  if (MENU.tipOpen) { const ks = .78, y = CARD_Y - 112; ctx.save(); ctx.translate(W * (1 - ks) / 2, y); ctx.scale(ks, ks); drawCounselSay(ck, C, T.say, 0, a); ctx.restore();   // 点开：话浮在头像上面，三兄弟腿前，看完点一下就收
-    hit(W * (1 - ks) / 2, y - 4, W * ks, 60, () => { MENU.tipOpen = false; tipDone(T.k); }); }
+  if (MENU.tipOpen) { const ks = .74, y = CARD_Y - 46;   // 11-02 用户圈在脚下、关卡牌上面那条：「点开后在蓝框即可」
+    ctx.save(); ctx.translate(W * (1 - ks) / 2, y); ctx.scale(ks, ks); drawCounselSay(ck, C, T.say, 0, a); ctx.restore();   // 点开：话贴在关卡牌上面，看完点一下就收
+    hit(W * (1 - ks) / 2, y - 4, W * ks, 48, () => { MENU.tipOpen = false; tipDone(T.k); }); }
   const by = H - 90 + 3 * Math.sin(t * 6); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#ffd76e'; ctx.shadowColor = 'rgba(255,190,80,.8)'; ctx.shadowBlur = 8;   // 往下指着该点的钮，一上一下地跳
   ctx.beginPath(); ctx.moveTo(T.x - 9, by - 10); ctx.lineTo(T.x + 9, by - 10); ctx.lineTo(T.x, by); ctx.closePath(); ctx.fill(); ctx.restore();
 }
