@@ -4807,27 +4807,28 @@ function drawArmCols() {
     if (ready(ic)) { const s = 34, f = s / Math.max(ic.width, ic.height); ctx.save(); ctx.globalAlpha = .55 + .3 * br; ctx.drawImage(ic, cx - ic.width * f / 2, WALL_Y - 46 - ic.height * f / 2, ic.width * f, ic.height * f); ctx.restore(); }
     uiText('点这里', cx, WALL_Y - 20, 12, `rgba(255,236,190,${.7 + .3 * br})`, 'center', FONT, { lw: 3 }); }
 }
+const HB_W = 79, HB_X = W - 10 - HB_W;                                           // 顶栏敌军、军功两条（11-02 缩短一半、靠右）
 function drawHud() {
   // 顶栏、底栏、血条改成简洁版（10-25 用户：「btn 不要过于繁杂，会感觉堆在一起」「图2就繁杂了」）：乌漆一块，只下沿一条细金线；条是细金边圆角槽，不再带祥云
   if (ready(IMG.ui2_top)) draw9(IMG.ui2_top, -24, -6, W + 48, TOP - 2, 40, 40, 8, 12, .5); else uiPanel(-4, -4, W + 8, TOP - 10, { r: 0, alpha: .92 });
   uiSeal(24, 30, 32, CNUM(G.lv.id), G.lv.kind === 'duel' ? '#8a1c10' : UIC.red);
   uiText(G.lv.name, 46, 24, G.lv.name.length > 5 ? 20 : 24, UIC.cream, 'left', FONT, { glow: 'rgba(242,190,90,.35)' });
-  if (G.nWaves > 1) { const t = `第 ${Math.max(1, G.wave + 1)}/${G.nWaves} 波`; uiText(t, 46, 50, 12, UIC.gold2, 'left', PLAIN, { stroke: false }); }
-  else uiText('第一章 群雄逐鹿', 46, 50, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });
+  uiText('第一章 群雄逐鹿', 46, 50, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });   // 11-02 用户：「第几波就在左上或者右上角想办法」——波数挪到战场左上角（下面 st 那段）
   const left = Math.max(0, G.total - G.killed - G.leaked - (G.routed || 0));
   if (ready(IMG.ui2_slot)) {                                                      // 细金边槽（凹槽挖空对准条），敌军数压在条上
-    const k = 18 / 33; uiBar('foe', 192 + 5 * k, 13 + 6 * k, 158 - 12 * k, 20 * k, left / Math.max(1, G.total), '#8a1a10', '#e2563a', { edge: 'rgba(0,0,0,0)' }); draw9(IMG.ui2_slot, 192, 13, 158, 18, 18, 18, 0, 0, k); uiText('敌 ' + left, 271, 22, 11, UIC.cream, 'center', PLAIN);
+    const k = 18 / 33; uiBar('foe', HB_X + 5 * k, 13 + 6 * k, HB_W - 12 * k, 20 * k, left / Math.max(1, G.total), '#8a1a10', '#e2563a', { edge: 'rgba(0,0,0,0)' }); draw9(IMG.ui2_slot, HB_X, 13, HB_W, 18, 18, 18, 0, 0, k); uiText('敌 ' + left, HB_X + HB_W / 2, 22, 11, UIC.cream, 'center', PLAIN);
   } else { uiText('敌', 190, 22, 15, UIC.red2, 'center'); uiBar('foe', 202, 15, 96, 12, left / Math.max(1, G.total), '#8a1a10', '#e2563a'); uiText(String(left), 302, 21, 12, UIC.cream, 'left', PLAIN); }
   // 军功：一个小圆徽章写等级，旁边金条
   const gArt = ready(IMG.ui2_slot), k2 = 15 / 33;
-  if (gArt) { uiBar('exp', 192 + 5 * k2, 40 + 6 * k2, 158 - 12 * k2, 20 * k2, rankFrac(), '#a8701a', '#ffd76e', { edge: 'rgba(0,0,0,0)' }); draw9(IMG.ui2_slot, 192, 40, 158, 15, 18, 18, 0, 0, k2); uiText('军功', 185, 47, 11, UIC.gold2, 'right', PLAIN, { stroke: false }); }
+  if (gArt) { uiBar('exp', HB_X + 5 * k2, 40 + 6 * k2, HB_W - 12 * k2, 20 * k2, rankFrac(), '#a8701a', '#ffd76e', { edge: 'rgba(0,0,0,0)' }); draw9(IMG.ui2_slot, HB_X, 40, HB_W, 15, 18, 18, 0, 0, k2); uiText('军功', HB_X + HB_W / 2, 47.5, 10, UIC.cream, 'center', PLAIN, { lw: 3 }); }   // 「军功」原来写在条左边、被「目标」钮盖住，挪到条上
   /* 10-26 用户圈了军功条前那方「一」字圆印：「这个不需要」——不画军功等级印 */
   if (!gArt) { uiText('军功', 210, 47, 12, UIC.gold2, 'left', PLAIN, { stroke: false }); uiBar('exp', 238, 42, 78, 9, rankFrac(), '#a8701a', '#ffd76e', { edge: '#8a6a2a' }); }
   // 退：右上角一个小圆钮
   // 10-27 用户：「2个条宽度保持一致，军功和退上下并列，退改为退军」——退军钮挪到敌军条左边，和下面的「军功」对齐
-  ctx.save(); ctx.beginPath(); ctx.roundRect(153, 12, 34, 20, 10); ctx.fillStyle = 'rgba(20,14,10,.85)'; ctx.fill(); ctx.strokeStyle = UIC.gold; ctx.lineWidth = 1.2; ctx.stroke(); ctx.restore();
-  uiPanel(150, 40, 40, 20, { r: 10, single: true, lw: 1, alpha: .9 }); uiText('目标', 170, 50.5, 11, UIC.gold2, 'center', FONT, { stroke: false }); hit(150, 38, 40, 24, showGoals);   // 本关目标
-  uiText('退军', 170, 22.5, 11, UIC.cream, 'center', FONT, { stroke: false }); hit(150, 6, 40, 30, () => { screen = 'menu'; G = null; });
+  const bx = HB_X - 44;   // 11-02 用户：「敌军和目标太长了，缩短一半」——两条 158 → 79，连钮一起靠右
+  ctx.save(); ctx.beginPath(); ctx.roundRect(bx + 3, 12, 34, 20, 10); ctx.fillStyle = 'rgba(20,14,10,.85)'; ctx.fill(); ctx.strokeStyle = UIC.gold; ctx.lineWidth = 1.2; ctx.stroke(); ctx.restore();
+  uiPanel(bx, 40, 40, 20, { r: 10, single: true, lw: 1, alpha: .9 }); uiText('目标', bx + 20, 50.5, 11, UIC.gold2, 'center', FONT, { stroke: false }); hit(bx, 38, 40, 24, showGoals);   // 本关目标
+  uiText('退军', bx + 20, 22.5, 11, UIC.cream, 'center', FONT, { stroke: false }); hit(bx, 6, 40, 30, () => { screen = 'menu'; G = null; });
   const st = []; if (G.RU.casts) st.push(['招式剩 ' + G.casts, G.casts <= 3 ? UIC.red2 : UIC.cream]);
   if (G.RU.timed && !G.timedDone) st.push([G.RU.timed.label + ' ' + Math.max(0, G.RU.timed.t * TIMEX.v - G.t).toFixed(0) + ' 秒', UIC.gold2]);
   if (G.civs) st.push(['救下 ' + G.saved + '/' + G.civTotal + (G.misfire ? ' · 误伤 ' + G.misfire : ''), UIC.cream]);
@@ -4844,7 +4845,8 @@ function drawHud() {
   if (G.flags) st.push(['将旗 ' + G.flags.filter(f => f.up).length + '/' + G.flags.length, UIC.cream]);
   if (G.cart && G.cart.hp > 0) st.push([(G.cart.label || (G.cart.kind === 'ram' ? '冲车' : '车驾')) + ' ' + Math.ceil(G.cart.hp * SHOWX) + ' · ' + Math.round((G.cart.y - G.RU.cart.y0) / (G.RU.cart.y1 - G.RU.cart.y0) * 100) + '%', G.cart.hp < G.cart.max * .35 ? UIC.red2 : UIC.cream]);
   const by = G.boss && !G.boss.dead ? TOP + 30 : TOP - 4;
-  G.hudChips = st.length;                                                       // 提示卷轴挪到这几块小牌下面，不压住
+  if (G.nWaves > 1) { const t = `第 ${Math.max(1, G.wave + 1)}/${G.nWaves} 波`; ctx.font = `12px ${PLAIN}`; const w = ctx.measureText(t).width + 22; uiPanel(8, by + 4, w, 19, { r: 9.5, single: true, lw: 1, alpha: .86 }); uiText(t, 8 + w / 2, by + 14, 12, UIC.gold2, 'center', PLAIN, { stroke: false }); }   // 波数：战场左上角一块小牌，和右边的状态小牌同一排
+  G.hudChips = Math.max(st.length, G.nWaves > 1 ? 1 : 0);                        // 提示卷轴挪到这几块小牌下面，不压住
   st.forEach(([t, c], k) => { ctx.font = `12px ${PLAIN}`; const w = ctx.measureText(t).width + 22; uiPanel(W - w - 8, by + 4 + k * 22, w, 19, { r: 9.5, single: true, lw: 1, alpha: .86 }); uiText(t, W - 8 - w / 2, by + 14 + k * 22, 12, c, 'center', PLAIN, { stroke: false }); });
   if (G.boss && !G.boss.dead) { const b = G.boss, T = FOES[b.kind];                  // 敌将血条：名牌加一长条，分十格
     uiPanel(8, TOP - 6, W - 16, 30, { r: 6, alpha: .9, top: '#3a1610', bot: '#1e0c08' });
