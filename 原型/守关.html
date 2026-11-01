@@ -5069,7 +5069,7 @@ function drawBattleBtns() {
   if (G.propTip && (G.propTip.hover || uiNow() - G.propTip.t0 < 2.2)) { const T = G.propTip, lines = fitLines(T.desc, 150, 11, PLAIN), bw = 170, bh = 26 + lines.length * 14, bx = clamp(T.x - bw / 2, 6, W - bw - 6), by = T.y - bh - 8;   // 军械小图标的说明（点一下 / 鼠标停住）
     uiPanel(bx, by, bw, bh, { r: 6, alpha: .95 }); uiText(T.name, bx + 10, by + 13, 13, UIC.gold2, 'left', FONT, { stroke: false }); lines.forEach((ln, i) => uiText(ln, bx + 10, by + 30 + i * 14, 11, UIC.cream, 'left', PLAIN, { stroke: false })); }
   ctx.save(); if (over) ctx.globalAlpha = .22; roundBtn(32, 402, 20, ready(IMG.ui_btn_gong) ? '' : '功', '', () => { if (G.pick) { G.state = 'pick'; G.pick.t0 = undefined; return; } G.panel = true; G.panelAdv = null; MENU.panelT = uiNow(); }, false); ctx.restore();
-  if (ready(IMG.ui_btn_gong)) { const im = IMG.ui_btn_gong, f = 30 / Math.max(im.width, im.height); ctx.save(); if (over) ctx.globalAlpha = .22; ctx.drawImage(im, 32 - im.width * f / 2, 402 - im.height * f / 2, im.width * f, im.height * f); ctx.restore(); }   // 11-02 用户：「去掉这2字（军功），功画一个图吧」——有图就画图，没图照旧写「功」
+  if (ready(IMG.ui_btn_gong)) { const im = IMG.ui_btn_gong, f = 35 / Math.max(im.width, im.height); ctx.save(); if (over) ctx.globalAlpha = .22; ctx.drawImage(im, 32 - im.width * f / 2, 402 - im.height * f / 2, im.width * f, im.height * f); ctx.restore(); }   // 11-02 用户：「去掉这2字（军功），功画一个图吧」——有图就画图，没图照旧写「功」
   if (G.pick) { const P = G.pick, u = clamp(P.wait / PICK_WAIT, 0, 1), br = .5 + .5 * Math.sin(uiNow() * 7);   // 晋升待选：「功」外一圈金光呼吸、一圈倒数，上面写「晋升」
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(32, 402, 14, 32, 402, 36); g.addColorStop(0, `rgba(255,200,90,${.35 + .3 * br})`); g.addColorStop(1, 'rgba(255,190,80,0)'); ctx.fillStyle = g; ctx.fillRect(-4, 366, 72, 72); ctx.restore();
     ctx.save(); ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(32, 402, 24, -Math.PI / 2, -Math.PI / 2 + 6.283 * (1 - u)); ctx.stroke(); ctx.restore();
@@ -5521,6 +5521,27 @@ function slotBar(x, y, w, h, segs) {
 }
 const GEN_HUE = { guan: ['#1f7a52', '#7ff0b8'], zhang: ['#9a2a14', '#ff9a6a'], liu: ['#1f5a8a', '#9ad6ff'] };   // 结算伤害条：人物色（关羽青、张飞火红、刘备蓝）
 // 一张武将的结算条（10-25 夜改）：画的漆面金边牌；左边头像和等级经验，右边招式、普攻各打了多少（人物色两段条：深的是招式，浅的是普攻；条长按三人里打得最多的那个比）
+// 11-02 用户截图结算页：「太挤了」——三员武将不再一人一整行，并排三张小卡：头像、名字、等级、经验条、伤害总数
+function drawGainMini(g, x, y, w, h, tt) {
+  if (tt <= 0) return;
+  const u = ease(tt / .3); ctx.save(); ctx.globalAlpha = u; ctx.translate(0, (1 - u) * 16);
+  const p = ease(clamp((tt - .35) / 1.1, 0, 1)), cur = addExp({ lv: g.lv0, exp: g.exp0 }, Math.round(g.g * p)), up = cur.lv > g.lv0;
+  if (cur.lv !== g.shownLv) { if (g.shownLv != null) g.flashT = tt; g.shownLv = cur.lv; }
+  const fl = g.flashT != null ? clamp(1 - (tt - g.flashT) / .5, 0, 1) : 0, gr = clamp((tt - .2) / .8, 0, 1);
+  plate(x, y, w, h, fl > 0);
+  const px = x + 22, py = y + 23, pr = 14, fc = FACE[g.id];
+  ctx.save(); ctx.beginPath(); ctx.arc(px, py, pr, 0, 6.283); ctx.clip(); ctx.fillStyle = '#2a1f16'; ctx.fill(); if (ready(IMG[g.id])) ctx.drawImage(IMG[g.id], fc[0], fc[1], fc[2], fc[2], px - pr, py - pr, pr * 2, pr * 2); ctx.restore();
+  if (ready(IMG.ui_avatar_ring)) ctx.drawImage(IMG.ui_avatar_ring, px - pr * 1.3, py - pr * 1.3, pr * 2.6, pr * 2.6);
+  if (up) { const su = g.firstUpT != null ? ease((tt - g.firstUpT) / .2) : (g.firstUpT = tt, 0), ss = 1.8 - .8 * su; ctx.save(); ctx.translate(px + 12, py - 11); ctx.scale(ss, ss); ctx.globalAlpha *= su; uiSeal(0, 0, 14, '升', UIC.red); ctx.restore(); }
+  const tx = x + 42;
+  uiText(GEN[g.id].name, tx, y + 16, 13, UIC.cream, 'left', FONT, { lw: 3 });
+  const ls = 1 + .5 * fl; ctx.save(); ctx.translate(tx, y + 32); ctx.scale(ls, ls); uiText('Lv' + cur.lv, 0, 0, 10, up ? UIC.gold2 : 'rgba(244,230,196,.8)', 'left', PLAIN, { lw: 3, glow: fl > 0 ? 'rgba(255,210,110,.9)' : null, glowR: 10 }); ctx.restore();
+  uiText('+' + Math.round(g.g * p), x + w - 8, y + 32, 10, '#ffd76e', 'right', PLAIN, { lw: 2.5 });
+  const need = needLv(cur.lv), fr = cur.lv >= LV_CAP ? 1 : cur.exp / need;
+  slotBar(x + 8, y + 42, w - 16, 6, [[fr, '#a8701a', '#ffe08a']]);
+  uiText('伤害 ' + fmtDmg(g.dmg * gr), x + w / 2, y + 57, 10, 'rgba(244,230,196,.85)', 'center', PLAIN, { lw: 3 });
+  ctx.restore();
+}
 function drawGainCard(g, x, y, w, h, tt, win, top) {
   if (tt <= 0) return;
   const u = ease(tt / .3), ox = (1 - u) * 46;
@@ -5600,12 +5621,13 @@ function drawResult() {
     uiText(sub, cx + (first ? 8 : 0), 266, sz, sandSub || r.first ? UIC.gold2 : 'rgba(244,230,196,.6)', 'center', FONT, { lw: 3 }); }
   ctx.restore();
   // 出战武将一张张滑出来
-  const tight = !!((r.blame !== undefined ? r.blame : (r.blame = counselBlame(r))) && (r.ach || []).length);   // 11-02 用户截图：军师认错下面那句兄弟的话和「达成功绩」叠在一起——两样都有时武将卡压扁一点，腾出一行
-  const t1 = 1.05, gap = .22, ch = tight ? 44 : 50, cg = tight ? 2 : 4, y0 = 282 + 46 + (PREP && PREP.li === G.li && PREP.last || r.first && G.lv.reward ? 18 : 0), top = Math.max(0, ...gains.map(g => g.dmg));
-  gains.forEach((g, k) => drawGainCard(g, 14, y0 + k * (ch + cg), W - 28, ch, t - (t1 + k * gap), win, top));
+  if (r.blame === undefined) r.blame = counselBlame(r);
+  const t1 = 1.05, gap = .22, y0 = 282 + 46 + (PREP && PREP.li === G.li && PREP.last || r.first && G.lv.reward ? 18 : 0), top = Math.max(0, ...gains.map(g => g.dmg));
+  const gw = (W - 28 - 6 * (gains.length - 1)) / Math.max(1, gains.length), gh = 64;
+  gains.forEach((g, k) => drawGainMini(g, 14 + k * (gw + 6), y0, gw, gh, t - (t1 + k * gap)));
   // 下面一格：听了军师荐错的卡，军师自己认错（10-25 夜用户：「低智军师常常犯错……事后会以逗比方式告诉用户，这是军师的问题」）；没有就摆战利品
   const tb = t1 + gains.length * gap + (gains.length ? 1.4 : .2), ba = clamp((t - (tb - .4)) / .3, 0, 1), armed = t >= tb, al = ba * (armed ? 1 : .5);
-  let by = y0 + Math.max(2, gains.length) * (ch + cg) + 6; const li = G.li, next = win && li + 1 < LEVELS.length;
+  let by = y0 + (gains.length ? gh + 12 : 0); const li = G.li, next = win && li + 1 < LEVELS.length;
   const blame = r.blame !== undefined ? r.blame : (r.blame = counselBlame(r));
   const tot = {}; if (r.loot) { for (const o of r.loot) if (o.n) tot[o.k] = (tot[o.k] || 0) + o.n; if (r.tasks.length) tot.残页 = (tot.残页 || 0) + r.tasks.length * TASK_PAY; } for (const [k, n] of r.achGot || []) tot[k] = (tot[k] || 0) + n;
   const caps = (r.loot || []).filter(o => o.capped && !tot[o.k]).map(o => o.k), ents = [...Object.entries(tot), ...caps.map(k => [k, 0])];
@@ -5616,8 +5638,8 @@ function drawResult() {
       if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, -sz / 2 - 1, -sz / 2 - 1, sz + 2, sz + 2, 60, 60, 60, 60, .1);
       uiText(n ? '×' + n : '满', sz / 2 - 3, sz / 2 - 6, 11, n ? '#fff2dc' : UIC.red2, 'right', PLAIN, { lw: 3 }); ctx.restore(); }); };
   if (blame) { const u = clamp((t - (tb - .5)) / .35, 0, 1); if (u > 0) { ctx.save(); ctx.globalAlpha = u; ctx.translate(0, (1 - ease(u)) * 20);
-      drawCounselSay(blame.ck, COUNSEL[blame.ck], blame.text, by - 4, 1, blame.retort); ctx.restore(); }
-    by += 22 + (cardLines(blame.text, 17, 3).length > 2 ? 39 : 31) + (blame.retort ? 18 : 6); if (ents.length) drawLoot(26, W - 22 - (ents.length - 1) * 17, 266); }
+      const bk = .86; ctx.translate(W * (1 - bk) / 2, by); ctx.scale(bk, bk); drawCounselSay(blame.ck, COUNSEL[blame.ck], blame.text, 0, 1, blame.retort); ctx.restore(); }   // 卷轴缩一点
+    by += (22 + (cardLines(blame.text, 17, 3).length > 2 ? 39 : 31) + (blame.retort ? 18 : 6)) * .86 + 8; if (ents.length) drawLoot(26, W - 22 - (ents.length - 1) * 17, 266); }
   else if (ents.length) { const sm = !!(r.ach && r.ach.length); drawLoot(sm ? 32 : 40, W / 2, by + (sm ? 18 : 22)); by += sm ? 40 : 50; }   // 下面还有功绩一行时图标小一点
   const AC = r.ach || [];                                                               // 10-30 这局新达成的功绩：盖「功」印、写几项，下一行列名字（在战利品下、按钮上）
   if (AC.length) { const u = clamp((t - (tb - .2)) / .3, 0, 1), yb0 = H - 54; if (u > 0) { const two = by + 40 <= yb0 - 4, ay = Math.min(by + (blame ? 10 : 16), yb0 - (two ? 34 : 14));
@@ -6583,7 +6605,7 @@ cv.addEventListener('pointerdown', ev => {
   if (G && G.ult) return;
   const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) / S, y = (ev.clientY - r.top) / S;
   sndInit();
-  if (G && G.teach) { closeTeach(); return; }                                       // 教学说明：点哪都是继续
+  if (G && G.teach) { const quit = screen === 'play' && y < 36 && x >= HB_X - 44 && x <= HB_X - 4; closeTeach(); if (quit) { screen = 'menu'; G = null; } return; }   // 教学说明：点哪都是继续；11-02 用户「第一关无法退军」——说明开着时点顶栏退军也直接退（原来只算继续）
   if (screen !== 'play' && SCMAX[screen] > 0) { const top = HITS.slice().reverse().find(h => x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
     if (!top || !top.fixed) { DRAG = { x, y, off0: Math.min(SCRL[screen] || 0, SCMAX[screen]), moved: false }; return; } }   // 能拖的页：先不算点，松手时没拖过才算
   for (let i = HITS.length - 1; i >= 0; i--) { const h = HITS[i]; if (x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h) {
