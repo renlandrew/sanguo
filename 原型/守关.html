@@ -183,7 +183,7 @@ function bakeGeneral(id) {
 // 小兵：正面朝镜头跑过来，f 是跑动的相位
 const FOES = {
   bing:  { name: '黄巾兵', hp: 40, spd: 33, leak: 3, exp: 1, r: 9, box: [34, 52], s: 1, wpn: 'spear', sheet: 'huangjin', sh: 40 },
-  gong:  { name: '黄巾弓手', hp: 32, spd: 36, leak: 2, exp: 2, r: 9, box: [34, 52], s: 1, wpn: 'bow', stopY: 300, shoot: { every: 2.4, dmg: 3 }, sheet: 'gong', sh: 38, tint: 'gong', tintOwn: true },   // 10-28 用户：「第三关提示打弓箭手，但我好像没看到」——混在黄巾堆里分不出，头巾衣服调成青蓝
+  gong:  { name: '黄巾弓手', hp: 32, spd: 36, leak: 2, exp: 2, r: 9, box: [34, 52], s: 1, wpn: 'bow', stopY: 300, shoot: { every: 2.4, dmg: 3 }, sheet: 'gong', sh: 38, tint: 'gong' },   /* 11-02 用户：弓手整张转蓝（脸手也蓝）→「只染衣服，脸手不变」：衣服、头巾离线换成深青（工具/recolor_cloth.py，原色存 美术/弓手原色/），自己的图集不再整张调色；tint 只在借别人图集时用 */   // 10-28 用户：「第三关提示打弓箭手，但我好像没看到」——混在黄巾堆里分不出，头巾衣服调成青蓝
   lishi: { name: '黄巾力士', hp: 190, spd: 20, leak: 10, exp: 4, r: 13, box: [48, 66], s: 1.32, wpn: 'club', bulk: 12, sheet: 'lishi', sh: 58 },
   cyz:   { name: '程远志', hp: 1500, spd: 12, dps: 18, exp: 20, r: 22, box: [76, 96], s: 1.9, wpn: 'blade', bulk: 11, boss: true, sheet: 'cyz', sh: 70, title: '黄巾大将' },
   // 第一章新兵种（10-24，见 ../设计/第一章设定.md 3.1）
