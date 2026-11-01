@@ -1234,6 +1234,7 @@ function stepCharge() {
 function nextWave() {
   G.wave = G.queue[G.qi].w; G.waveT0 = G.t; G.waveClear = null; (G.waveLog = G.waveLog || []).push([G.t, G.wave]);
   const last = G.wave === G.nWaves - 1; if (G.nWaves > 1) sfx('horn'); if (G.nWaves > 1) G.fx.push({ k: 'wave', t: 0, dur: 1.6, text: last ? '最后一波' : '第' + CN[G.wave] + '波', last });
+  if (last && G.nWaves > 1 && !G.sim) G.waveHold = { t: 0, dur: 1.6 };   // 11-02 用户：「最后一波出现时游戏要暂停」「那个字出来时」——横幅演完前战场停住
 }
 function stepWaves() {
   if (G.slowT > 0) { G.waveT0 += DT; if (G.waveClear != null) G.waveClear += DT; return; }   // 缓兵之计：援军也停下
@@ -1452,6 +1453,7 @@ function step(dt) {
   if (!G.sim && G.foeCs && !G.csShown && !G.teach && !window.__sg.auto) { G.csShown = true; foeTacIntro(); }   // 敌军师：每局开战前报一次（看破了报计，看不破说看不透）
   if (G.paused || G.panel || G.teach) return;                                       // 暂停、看军功、教学说明时整个战场停住
   if (G.ult) { G.ult.t += dt; if (G.ult.t >= G.ult.dur) G.ult = null; return; }
+  if (G.waveHold) { G.waveHold.t += dt; for (const f of G.fx) if (f.k === 'wave') f.t += dt; if (G.waveHold.t >= G.waveHold.dur) G.waveHold = null; return; }   // 「最后一波」字出来时：只走横幅，战场停住
   if (G.shiUp) { G.shiUp.t += dt; if (G.shiUp.t >= G.shiUp.dur) G.shiUp = null; }   // 势升级画面：11-02 用户「这个变黑和暂停去掉，过于影响游戏进程了」——不再停战场，边打边演          // 大招特写：整个战场停住，演完再接着打
   if (!G || G.state !== 'play') return;
   if (G.pick && !G.sim && (G.pick.wait += dt) >= PICK_WAIT) autoTakeAdv();          // 军功晋升没点开：到时军师代选
@@ -5042,7 +5044,7 @@ function drawCounselSay(ck, C, text, y, a = 1, retort) {
   ctx.save(); ctx.globalAlpha *= a; const im = IMG['p_' + ck], cx = 38, cy = y + 26;
   ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, 22, 0, 6.283); ctx.clip(); if (ready(im)) ctx.drawImage(im, cx - 26, cy - 22, 52, 52); else { ctx.fillStyle = '#3a2b1f'; ctx.fill(); } ctx.restore();
   if (ready(IMG.ui_avatar_ring)) ctx.drawImage(IMG.ui_avatar_ring, cx - 29, cy - 29, 58, 58); else { ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, 23, 0, 6.283); ctx.stroke(); }
-  uiText(`${C.name} · 智 ${C.zhi}`, cx, cy + 33, 10, UIC.gold2, 'center', PLAIN, { lw: 3 });
+  uiText(C.name, cx, cy + 33, 10, UIC.gold2, 'center', PLAIN, { lw: 3 });   // 11-02 用户：「不需要说智多少」
   const bx = 68, bw = W - bx - 6, lines = cardLines(text, 17, 3), sh = lines.length > 2 ? 78 : 62, k = sh / 136, ins = 100 * k + 2;
   if (ready(IMG.ui_scroll)) draw9(IMG.ui_scroll, bx, cy - sh / 2, bw, sh, 100, 100, 0, 0, k);
   else { ctx.fillStyle = 'rgba(244,230,196,.94)'; rr(bx, cy - sh * .3, bw, sh * .6, 6); ctx.fill(); }
