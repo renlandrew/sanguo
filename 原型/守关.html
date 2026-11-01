@@ -428,7 +428,7 @@ function shiFx(id, n) {                                                         
   G.shiUp = { t: 0, dur: big ? 2.2 : 1.5, id, n, big, name: big ? SHI[G.act[id]][n][0] : '' }; sfx('gong');
 }
 function drawShiUp(f) {
-  { const a = Math.min(1, f.t / .15) * (f.t > f.dur - .3 ? Math.max(0, (f.dur - f.t) / .3) : 1); ctx.save(); ctx.globalAlpha = .9 * a; ctx.fillStyle = '#06080a'; ctx.fillRect(0, 0, W, H); ctx.restore(); }   // 压暗
+  /* 11-02 去掉压暗（用户：「这个变黑和暂停去掉」） */
   const L = SHI_LOOK[f.id], t = f.t, u = Math.min(1, t / .25), out = t > f.dur - .4 ? Math.max(0, (f.dur - t) / .4) : 1, cx = W / 2, cy = 250, e = 1 - Math.pow(1 - u, 3);
   ctx.save(); ctx.globalAlpha = .55 * out * u; const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, f.big ? 260 : 190); g.addColorStop(0, L.glow + '.85)'); g.addColorStop(.4, L.glow + '.25)'); g.addColorStop(1, L.glow + '0)');
   ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore();                              // 一大团人物色的光
@@ -1268,7 +1268,11 @@ function die(e, src) {
   if (G.state === 'play') checkRank();
 }
 function checkRank() {
-  if (G.state === 'play' && G.rank < RANK_MAX && G.exp >= needOf(G.rank)) { G.state = 'pick'; G.pick = choose3(); sfx('swish'); if (window.__sg.auto) setTimeout(() => G && G.state === 'pick' && takePerk(autoPick()), 0); }
+  if (G.state === 'play' && !G.pick && G.rank < RANK_MAX && G.exp >= needOf(G.rank)) {
+    if (G.sim || window.__sg.auto) { G.state = 'pick'; G.pick = choose3(); sfx('swish'); if (window.__sg.auto) setTimeout(() => G && G.state === 'pick' && takePerk(autoPick()), 0); return; }   // 机器人：照旧当场选（推演不变）
+    // 11-02 用户：「军功似乎太多了点，也影响游戏进程……让战斗尽量流畅往前，少暂停，但玩家可以点一些东西」——攒够了不停战场：「功」钮亮起、倒数；
+    // 玩家点「功」才停下来翻卡自己挑，不点 PICK_WAIT 秒后按军师荐的那张代选
+    G.pick = choose3(); G.pick.adv = counselAdvise(G.pick); G.pick.wait = 0; sfx('swish'); }
 }
 const owned = id => (G.perks[id] || 0) > 0;
 const unlocked = p => (!p.need || p.need.every(g => g.some(owned))) && (!p.ok || p.ok());
@@ -1383,6 +1387,8 @@ function counselIntel() {
   }
   return out;
 }
+const PICK_WAIT = 6;
+function autoTakeAdv() { const P = G.pick, k = P.adv.i, nm = P[k].name; takePerk(k); const f = G.fx.findLast(f => f.k === 'txt' && f.text === '战法 · ' + nm); if (f) f.text = '军师代选 · ' + nm; else G.fx.push({ k: 'txt', t: 0, x: W / 2, y: 336, text: '军师代选', size: 16, color: UIC.gold2, dur: 1.6 }); }   // 势卡由势升级画面报名字，这里只补一句
 function takePerk(i) {
   const p = G.pick[i]; if (!p) return;
   const A = G.pick.adv; if (A) { G.advLog.push({ took: i === A.i, bad: i === A.i && !A.right && A.ti !== i, card: p.name, best: G.pick[A.ti].name, ck: A.ck }); }   // 记下听没听军师的、听了荐错的没有，结算时军师自己认错
@@ -1446,8 +1452,9 @@ function step(dt) {
   if (!G.sim && G.foeCs && !G.csShown && !G.teach && !window.__sg.auto) { G.csShown = true; foeTacIntro(); }   // 敌军师：每局开战前报一次（看破了报计，看不破说看不透）
   if (G.paused || G.panel || G.teach) return;                                       // 暂停、看军功、教学说明时整个战场停住
   if (G.ult) { G.ult.t += dt; if (G.ult.t >= G.ult.dur) G.ult = null; return; }
-  if (G.shiUp) { G.shiUp.t += dt; if (G.shiUp.t >= G.shiUp.dur) G.shiUp = null; return; }   // 势升级画面：战场停住          // 大招特写：整个战场停住，演完再接着打
+  if (G.shiUp) { G.shiUp.t += dt; if (G.shiUp.t >= G.shiUp.dur) G.shiUp = null; }   // 势升级画面：11-02 用户「这个变黑和暂停去掉，过于影响游戏进程了」——不再停战场，边打边演          // 大招特写：整个战场停住，演完再接着打
   if (!G || G.state !== 'play') return;
+  if (G.pick && !G.sim && (G.pick.wait += dt) >= PICK_WAIT) autoTakeAdv();          // 军功晋升没点开：到时军师代选
   stepHujin(dt); if (G.cnt) G.cnt.wallMin = Math.min(G.cnt.wallMin, G.wall / G.wallMax);
   if (G.pas && G.lastWall != null && G.wall < G.lastWall - .01 && hasPas('zhang', 'nuqi') && G.nuqi < 6) G.nuqi++; G.lastWall = G.wall;   // 燕人怒气：城防挨一下叠一层
   if (G.wallLog && G.t >= G.wallNext) { G.wallLog.push([Math.round(G.t), Math.max(0, Math.round(G.wall / G.wallMax * 100))]); G.wallNext = G.t + 2; }
@@ -5057,7 +5064,11 @@ function drawBattleBtns() {
   drawAmbushBtn(); drawDitchBtn();
   if (G.propTip && (G.propTip.hover || uiNow() - G.propTip.t0 < 2.2)) { const T = G.propTip, lines = fitLines(T.desc, 150, 11, PLAIN), bw = 170, bh = 26 + lines.length * 14, bx = clamp(T.x - bw / 2, 6, W - bw - 6), by = T.y - bh - 8;   // 军械小图标的说明（点一下 / 鼠标停住）
     uiPanel(bx, by, bw, bh, { r: 6, alpha: .95 }); uiText(T.name, bx + 10, by + 13, 13, UIC.gold2, 'left', FONT, { stroke: false }); lines.forEach((ln, i) => uiText(ln, bx + 10, by + 30 + i * 14, 11, UIC.cream, 'left', PLAIN, { stroke: false })); }
-  ctx.save(); if (over) ctx.globalAlpha = .22; roundBtn(32, 402, 20, '功', '军功', () => { G.panel = true; G.panelAdv = null; MENU.panelT = uiNow(); }, false); ctx.restore();
+  ctx.save(); if (over) ctx.globalAlpha = .22; roundBtn(32, 402, 20, '功', '军功', () => { if (G.pick) { G.state = 'pick'; G.pick.t0 = undefined; return; } G.panel = true; G.panelAdv = null; MENU.panelT = uiNow(); }, false); ctx.restore();
+  if (G.pick) { const P = G.pick, u = clamp(P.wait / PICK_WAIT, 0, 1), br = .5 + .5 * Math.sin(uiNow() * 7);   // 晋升待选：「功」外一圈金光呼吸、一圈倒数，上面写「晋升」
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(32, 402, 14, 32, 402, 36); g.addColorStop(0, `rgba(255,200,90,${.35 + .3 * br})`); g.addColorStop(1, 'rgba(255,190,80,0)'); ctx.fillStyle = g; ctx.fillRect(-4, 366, 72, 72); ctx.restore();
+    ctx.save(); ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(32, 402, 24, -Math.PI / 2, -Math.PI / 2 + 6.283 * (1 - u)); ctx.stroke(); ctx.restore();
+    uiText('晋升 · 点我挑', 32 + 30, 402 - 26, 12, UIC.gold2, 'left', FONT, { lw: 3, glow: 'rgba(255,190,80,.6)', glowR: 6 }); }
   if (G.RU.night && G.RU.night.blind && (G.lightN > 0 || G.flareT > 0)) { const ic = IMG.ui_ico_fire, bx = 50, by = 386;   // 「功」右上角挂火把：还剩几支、亮着还剩几秒
     ctx.save(); if (G.flareT <= 0) { ctx.shadowColor = `rgba(255,150,60,${.5 + .3 * Math.sin(uiNow() * 4)})`; ctx.shadowBlur = 10; } if (ready(ic)) ctx.drawImage(ic, bx - 10, by - 10, 20, 20); ctx.restore();
     uiText(G.flareT > 0 ? Math.ceil(G.flareT) + '秒' : '×' + G.lightN, bx + 12, by + 2, 11, '#ffb04a', 'left', PLAIN, { lw: 3 }); }
