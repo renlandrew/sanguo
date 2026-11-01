@@ -6435,7 +6435,7 @@ function drawMenuTip(t) {
   const by = H - 90 + 3 * Math.sin(t * 6); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#ffd76e'; ctx.shadowColor = 'rgba(255,190,80,.8)'; ctx.shadowBlur = 8;   // 往下指着该点的钮，一上一下地跳
   ctx.beginPath(); ctx.moveTo(T.x - 9, by - 10); ctx.lineTo(T.x + 9, by - 10); ctx.lineTo(T.x, by); ctx.closePath(); ctx.fill(); ctx.restore();
 }
-const TRIO_H = 292, TRIO_FOOT = 430, CARD_Y = 514, TIP_Y = 456, BG_UP = 86;   // 11-02 用户：「三人往上，军师提示条和关卡牌放脚下」                                            // 主页三兄弟：画多高、脚在哪（城头步道）
+const TRIO_H = 292, TRIO_FOOT = 498, CARD_Y = 518, TIP_Y = 136, BG_UP = 86;   // 11-02 用户：「三人往上，军师提示条和关卡牌放脚下」                                            // 主页三兄弟：画多高、脚在哪（城头步道）
 function drawMenu() {
   const open1 = open1st();
   if (!BEST[1] && !MENU.autoGo && !window.__sg.all) { MENU.autoGo = true; openLevel(0); if (screen !== 'menu') return; }   // 11-02 用户：「新玩家直接开始第一关，不存在先看到界面」——第一关没过，开页就进（序章 → 第一关）；退军回来才看到主页，一次开页只自动进一次
