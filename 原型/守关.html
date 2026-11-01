@@ -6385,6 +6385,11 @@ function navBtn(cx, label, draw, fn, badge, big) {
   if (badge) uiSeal(cx + 18, cy - 18, 14, '!', UIC.red);
   hit(cx - 29, cy - 30, 58, H - cy + 30, () => { if (MENU.tip && MENU.tip.x === cx) tipDone(MENU.tip.k); fn(); });   // 点了提示指着的钮，那条提示就算看过
 }
+function navLocked(cx, label, draw, big) {                                      // 没开放的钮：图标压暗、字发灰，点了提示什么时候开
+  const cy = H - 52; ctx.save(); ctx.globalAlpha = .32; ctx.filter = 'grayscale(1)'; draw(cx, cy, big ? 50 : 40); ctx.restore();
+  uiText(label, cx, H - 16, fitSize(label, big ? 15 : 13, 64), 'rgba(200,190,170,.45)', 'center', FONT, { lw: 3 });
+  hit(cx - 29, cy - 30, 58, H - cy + 30, () => { MENU.lockT = uiNow(); });
+}
 const navIco = k => (cx, cy, s) => { const im = IMG[k]; if (!ready(im)) return; const f = s / Math.max(im.width, im.height); ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); };
 const navCards = (cx, cy, s) => { [['foe_fire', -.32, -9], ['roar', .3, 9], ['qinglong', 0, 0]].forEach(([k, a, dx]) => { const im = IMG['card_' + k], w = s * .5, h = w * 1.5;   // 奇谋钮：三张奇谋卡扇开
     ctx.save(); ctx.translate(cx + dx, cy); ctx.rotate(a); ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 4; ctx.fillStyle = '#c9a25a'; ctx.fillRect(-w / 2 - 1.5, -h / 2 - 1.5, w + 3, h + 3); ctx.shadowBlur = 0;
@@ -6402,7 +6407,8 @@ const MENU_TIPS = [
   { k: 'daily', x: 270, ok: () => !!BEST[1], say: '「军帐」每天有军务：打法军令、出外探访、日常杂务，做了得材料和资历，晋阶就靠它' },
   { k: 'qimou', x: 210, ok: () => !!BEST[2], say: '「奇谋」里能看三兄弟的大招和敌我两边的计谋，打之前看看敌人会用什么计' },
 ];
-const tipNow = () => MENU_TIPS.find(T => !(INV.tipSeen || {})[T.k] && T.ok());
+const open1st = () => !!BEST[1] || window.__sg.all;                              // 第一关过了才开神兵、战役、奇谋、军帐（11-02）
+const tipNow = () => MENU_TIPS.find(T => !(INV.tipSeen || {})[T.k] && T.ok() && (open1st() || T.x === 30 || T.x === 330));   // 没开的钮不指
 const tipDone = k => { INV.tipSeen = INV.tipSeen || {}; INV.tipSeen[k] = 1; saveInv(); };
 function drawMenuTip(t) {
   const T = tipNow(); MENU.tip = T || null; if (!T || REWARD || (MENU.note && t - MENU.note.t0 < 3.2)) return;
@@ -6412,6 +6418,8 @@ function drawMenuTip(t) {
   ctx.beginPath(); ctx.moveTo(T.x - 9, by - 10); ctx.lineTo(T.x + 9, by - 10); ctx.lineTo(T.x, by); ctx.closePath(); ctx.fill(); ctx.restore();
 }
 function drawMenu() {
+  const open1 = open1st();
+  if (!BEST[1] && !MENU.autoGo && !window.__sg.all) { MENU.autoGo = true; openLevel(0); if (screen !== 'menu') return; }   // 11-02 用户：「新玩家直接开始第一关，不存在先看到界面」——第一关没过，开页就进（序章 → 第一关）；退军回来才看到主页，一次开页只自动进一次
   drawBg(); const t = uiNow();
   if (!INV.rankMig) { INV.rankMig = 1; for (let k = 1; k < RANKS.length; k++) if (BEST[RANKS[k].node]) INV.rank = Math.max(INV.rank || 0, k); syncRankArt(); saveInv(); }   // 旧档：打过的节点关补认官阶
   const vg = ctx.createLinearGradient(0, 0, 0, H); vg.addColorStop(0, 'rgba(10,6,4,.35)'); vg.addColorStop(.25, 'rgba(10,6,4,0)'); vg.addColorStop(.62, 'rgba(10,6,4,.05)'); vg.addColorStop(1, 'rgba(10,6,4,.8)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
@@ -6440,7 +6448,7 @@ function drawMenu() {
   uiText(`${SEGS[Math.floor(ni / 10)]} · ${levelTag(lv)}`, 70, cy0 + 20, 11, 'rgba(246,210,122,.85)', 'left', PLAIN, { stroke: false });
   uiText(lv.name, 70, cy0 + 42, fitSize(lv.name, 22, cw - 70 - 96, 99, FONT, 3), UIC.cream, 'left', FONT, { lw: 3 });
   uiText(fitText(lv.sub, 11, cw - 70 - 104), 70, cy0 + 66, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });   // 下面写这一关的一句话剧情
-  hit(10, cy0, cw - 96, 84, () => { screen = 'levels'; MENU.seg = Math.floor(ni / 10); });
+  hit(10, cy0, cw - 96, 84, () => { if (!open1) { MENU.lockT = uiNow(); return; } screen = 'levels'; MENU.seg = Math.floor(ni / 10); });
   { const bx = W - 108, by = cy0 + 20, bw = 90, bh = 44, br = .5 + .5 * Math.sin(t * 3);   // 出征：红漆钮（页签那张画的漆面），一呼一吸的金光
     ctx.save(); ctx.shadowColor = `rgba(255,190,90,${.45 + .3 * br})`; ctx.shadowBlur = 14; if (ready(IMG.ui2_tab_red)) draw9(IMG.ui2_tab_red, bx, by, bw, bh, 90, 90, 0, 0, bh / 189); else uiPanel(bx, by, bw, bh, { r: bh / 2, top: '#c0402a', bot: '#6e140c' }); ctx.restore();
     uiText('出征', bx + bw / 2, by + bh / 2 + 1, fitSize('出征', 22, bw - bh * .95), '#fff2dc', 'center', FONT, { lw: 4, glow: 'rgba(255,200,90,.5)', glowR: 8 }); hit(bx, by, bw, bh, () => openLevel(ni)); }
@@ -6461,10 +6469,14 @@ function drawMenu() {
   const newC = Object.keys(COUNSEL).some(k => counselOK(k) && !(INV.seenC || []).includes(k) && k !== 'zoujing');   // 军师挪进武将页（10-26），有新军师时武将钮上亮
   // 10-30 用户：奇谋「放这里吧」——底栏六个钮，战役仍居中偏大（第三格）
   navBtn(30, '武将', navFace('liu', FACE.liu), () => { screen = 'roster'; MENU.rosterT = uiNow(); }, newC || cHint() || loadNew());
-  navBtn(90, '神兵', navIco('ui_nav_armory'), () => { screen = 'armory'; ARM.t0 = uiNow(); }, canUp('wpn'));
-  navBtn(150, '战役', navIco('ui_nav_map'), () => { screen = 'levels'; MENU.seg = Math.floor(frontier() / 10); }, false, true);
-  navBtn(210, '奇谋', navCards, () => { screen = 'qimou'; QM.sel = null; QM.from = 'menu'; }, false);
-  navBtn(270, '军帐', navIco('ui_nav_camp'), () => { screen = 'camp'; CAMP.t0 = uiNow(); }, dailyTotal() > dailyDone());
+  // 11-02 用户：「这里都在打完第一关再开」——第一关没过，神兵、战役、奇谋、军帐压暗上锁，点了只提示一句
+  const nav = (cx, label, draw, fn, badge, big) => open1 ? navBtn(cx, label, draw, fn, badge, big) : navLocked(cx, label, draw, big);
+  nav(90, '神兵', navIco('ui_nav_armory'), () => { screen = 'armory'; ARM.t0 = uiNow(); }, canUp('wpn'));
+  nav(150, '战役', navIco('ui_nav_map'), () => { screen = 'levels'; MENU.seg = Math.floor(frontier() / 10); }, false, true);
+  nav(210, '奇谋', navCards, () => { screen = 'qimou'; QM.sel = null; QM.from = 'menu'; }, false);
+  nav(270, '军帐', navIco('ui_nav_camp'), () => { screen = 'camp'; CAMP.t0 = uiNow(); }, dailyTotal() > dailyDone());
+  if (!open1 && MENU.lockT && t - MENU.lockT < 1.8) { const a = clamp((1.8 - (t - MENU.lockT)) / .4, 0, 1); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(20,12,6,.88)'; rr(W / 2 - 90, H - 118, 180, 26, 10); ctx.fill();
+    uiText('打完第一关「桃园结义」开放', W / 2, H - 105, 13, UIC.gold2, 'center', FONT, { lw: 3 }); ctx.restore(); }
   navBtn(330, '系统', navIco('ui_nav_sys'), () => { screen = 'system'; }, false);
   drawMenuTip(t);
   // 右上角月卡
@@ -6570,7 +6582,7 @@ cv.addEventListener('wheel', ev => { if (screen === 'play' || !(SCMAX[screen] > 
 window.__sg = {
   auto: false, turbo: 1, all: new URLSearchParams(location.search).has('all'), seed: 0,   // 网址带 ?all 就十关全开（试玩用）
   tune: TUNE, PERKS, GEN, LEVELS, WAVE, TIMEX, MER, RANK_AT, setSpd(v) { SPD.v = SPD_X = v; ACT_X = 1 / v; }, get G() { return G; }, draw: () => render(),            // draw：面板藏着时浏览器不跑动画帧，截图前手动画一帧 get screen() { return screen; },
-  start: i => startLevel(i), up: (k, who) => doUp(k, who), open: i => openLevel(i), get prep() { return PREP; }, set prep(v) { PREP = v; }, get screen() { return screen; }, get ml() { return [ML, MLB]; }, get snd() { return { SND, MP }; }, spPlay: (...a) => spPlay(...a), get feats() { return G && G.feats; }, get cnt() { return G && G.cnt; },
+  start: i => startLevel(i), up: (k, who) => doUp(k, who), open: i => openLevel(i), get prep() { return PREP; }, set prep(v) { PREP = v; }, get screen() { return screen; }, set screen(v) { screen = v; }, get ml() { return [ML, MLB]; }, get snd() { return { SND, MP }; }, spPlay: (...a) => spPlay(...a), get feats() { return G && G.feats; }, get cnt() { return G && G.cnt; },
   // 军师荐得对不对：机器人照真值打，每次晋升让三位军师各荐一次，数荐中真值最高那张的次数（10-25）
   advTest(levels, seeds = 2) { const out = {};
     for (const i of levels) for (let k = 0; k < seeds; k++) { this.seed = k * 101; this.auto = true; this.simming = true; startLevel(i); this.simming = false; G.sim = true; let n = 0;
