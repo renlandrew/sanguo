@@ -3192,7 +3192,7 @@ function uiPanel(x, y, w, h, o = {}) {
   if (o.glow) { ctx.shadowColor = o.glow; ctx.shadowBlur = o.glowR || 12; }
   ctx.lineWidth = o.lw || 1.6; ctx.strokeStyle = o.edge || UIC.gold; rr(x + .5, y + .5, w - 1, h - 1, r); ctx.stroke(); ctx.shadowBlur = 0;
   if (!o.single) { ctx.globalAlpha = .35; ctx.lineWidth = 1; rr(x + 3, y + 3, w - 6, h - 6, Math.max(1, r - 2)); ctx.stroke(); }
-  ctx.globalAlpha = .12; ctx.fillStyle = '#fff'; rr(x + 2, y + 2, w - 4, h * .42, r); ctx.fill();          // 上半一层高光
+  ctx.globalAlpha = .12; ctx.fillStyle = '#fff'; rr(x + 2, y + 2, w - 4, h * .42, Math.min(r, h * .21)); ctx.fill();          // 上半一层高光（11-02：圆角不能大过高光一半高，不然圆弧溢出钮外，「目标」钮背后多一块灰影）
   ctx.restore();
 }
 function uiBar(key, x, y, w, h, frac, c1, c2, o = {}) {
