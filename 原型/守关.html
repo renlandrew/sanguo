@@ -6300,7 +6300,7 @@ function drawAch() {                                                            
 // 配招页（10-29）：出阵的每人一行——主动招选一个、被动按格数选；底下亮出已成的连携
 const prepLoads = P => { const L = {}; for (const id of new Set(P.order.filter(Boolean))) if (SKILLS[id]) L[id] = loadOf(id); return L; };
 function drawLoadout(P) {
-  const L = prepLoads(P), ids = Object.keys(L), slots = pasSlots(), rowH = 112, h = 62 + ids.length * rowH + 30 + Math.ceil(COMBOS.length / 2) * 30 + 74, y0 = Math.max(16, (H - h) / 2);
+  const L = prepLoads(P), ids = Object.keys(L), slots = pasSlots(), rowH = slots ? 112 : 66 /* 11-02 用户：「拥挤」——被动格没开时不摆那排灰掉的被动（标题下已写晋阶开放），每人一行只放招式 */, h = 62 + ids.length * rowH + 40 + Math.ceil(COMBOS.length / 2) * 30 + 74, y0 = Math.max(16, (H - h) / 2);
   ctx.fillStyle = 'rgba(6,4,3,.82)'; ctx.fillRect(0, 0, W, H); hit(0, 0, W, H, () => {});
   plate(10, y0, W - 20, h, true); uiText('配招', W / 2, y0 + 26, 20, UIC.gold2, 'center', FONT);
   if (slots) uiText(`每人带一个招式、${slots} 个被动`, W / 2, y0 + 48, 11, 'rgba(244,230,196,.75)', 'center', PLAIN, { stroke: false });
@@ -6315,13 +6315,13 @@ function drawLoadout(P) {
       if (open) uiText(a.desc, x + w / 2, y + 30, fitSize(a.desc, 9, w - 8, 10, PLAIN), 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false }); ctx.restore();
       if (!open) segText([['晋阶', 'rgba(244,230,196,.55)'], [RANKS[a.rank].name, '#ff6a4a'], ['学会', 'rgba(244,230,196,.55)']], x + w / 2, y + 30, 10, PLAIN, { lw: 3 });
       if (open) hit(x, y, w, 40, () => set(id, q => { q.act = k; })); x += w + 6; }
-    let px = 68; for (const [k, a] of Object.entries(S.pas)) { const on = l.pas.includes(k), w = 84, py = y + 48;
+    let px = 68; if (slots) for (const [k, a] of Object.entries(S.pas)) { const on = l.pas.includes(k), w = 84, py = y + 48;
       ctx.save(); if (!slots) ctx.globalAlpha = .35; uiPanel(px, py, w, 52, { r: 7, top: on ? '#24304a' : '#2b1f16', bot: UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.4)', glow: on ? 'rgba(140,190,255,.5)' : null });
       uiText(a.name, px + w / 2, py + 12, 12, on ? '#dfeaff' : UIC.cream, 'center', FONT, { lw: 3 });
       cardLines(a.desc, 9, 2).forEach((ln, i) => uiText(ln, px + w / 2, py + 27 + i * 11, fitSize(ln, 9, w - 6, 99, PLAIN), 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false })); ctx.restore();
       if (slots) hit(px, py, w, 52, () => set(id, q => { if (q.pas.includes(k)) q.pas = q.pas.filter(z => z !== k); else { q.pas.push(k); if (q.pas.length > slots) q.pas.shift(); } })); px += w + 4; } });
   // 连携全部列出来（10-29 用户：「直接全部把可能的都列出来，如果点到了，就亮，没点到相关技能，就灰度。连携要成为游戏最大特点」）
-  const cy = y0 + 62 + ids.length * rowH, on = new Set(combosOf(L).map(c => c.id)), cw = (W - 52) / 2;
+  const cy = y0 + 72 + ids.length * rowH, on = new Set(combosOf(L).map(c => c.id)), cw = (W - 52) / 2;
   uiText(`连携 ${on.size}/${COMBOS.length}`, 22, cy + 4, 13, UIC.gold2, 'left', FONT, { stroke: false });
   COMBOS.forEach((c, k) => { const x = 20 + (k % 2) * (cw + 8), y = cy + 14 + Math.floor(k / 2) * 30, lit = on.has(c.id), sel = P.comboSel === c.id;
     ctx.save(); if (!lit) { ctx.globalAlpha = .45; ctx.filter = 'grayscale(1)'; }
