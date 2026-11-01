@@ -5522,6 +5522,15 @@ function slotBar(x, y, w, h, segs) {
 const GEN_HUE = { guan: ['#1f7a52', '#7ff0b8'], zhang: ['#9a2a14', '#ff9a6a'], liu: ['#1f5a8a', '#9ad6ff'] };   // 结算伤害条：人物色（关羽青、张飞火红、刘备蓝）
 // 一张武将的结算条（10-25 夜改）：画的漆面金边牌；左边头像和等级经验，右边招式、普攻各打了多少（人物色两段条：深的是招式，浅的是普攻；条长按三人里打得最多的那个比）
 // 11-02 用户截图结算页：「太挤了」——三员武将不再一人一整行，并排三张小卡：头像、名字、等级、经验条、伤害总数
+const blameLines = b => fitLines(b.text, W - 28 - 46 - 10, 11, PLAIN).slice(0, 3), blameH = b => 10 + blameLines(b).length * 14 + (b.retort ? 15 : 0);
+function drawBlameLine(b, y) {                                                    // 结算页军师认错：细牌、小头像，不用卷轴
+  const L = blameLines(b), h = blameH(b), x = 14, w = W - 28, im = IMG['p_' + b.ck], cx = x + 22, cy = y + 4 + L.length * 7;
+  ctx.fillStyle = 'rgba(14,9,6,.72)'; rr(x, y, w, h, 8); ctx.fill(); ctx.strokeStyle = 'rgba(217,166,64,.5)'; ctx.lineWidth = 1; rr(x + .5, y + .5, w - 1, h - 1, 8); ctx.stroke();
+  ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, 14, 0, 6.283); ctx.clip(); if (ready(im)) ctx.drawImage(im, cx - 17, cy - 14, 34, 34); else { ctx.fillStyle = '#3a2b1f'; ctx.fill(); } ctx.restore();
+  ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(cx, cy, 14.5, 0, 6.283); ctx.stroke();
+  L.forEach((ln, i) => uiText(ln, x + 46, y + 12 + i * 14, 11, UIC.cream, 'left', PLAIN, { stroke: false }));
+  if (b.retort) uiText(fitText(b.retort, 10, w - 56), x + 46, y + 12 + L.length * 14 + 1, 10, '#ffd76e', 'left', PLAIN, { stroke: false });
+}
 function drawGainMini(g, x, y, w, h, tt) {
   if (tt <= 0) return;
   const u = ease(tt / .3); ctx.save(); ctx.globalAlpha = u; ctx.translate(0, (1 - u) * 16);
@@ -5638,8 +5647,8 @@ function drawResult() {
       if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, -sz / 2 - 1, -sz / 2 - 1, sz + 2, sz + 2, 60, 60, 60, 60, .1);
       uiText(n ? '×' + n : '满', sz / 2 - 3, sz / 2 - 6, 11, n ? '#fff2dc' : UIC.red2, 'right', PLAIN, { lw: 3 }); ctx.restore(); }); };
   if (blame) { const u = clamp((t - (tb - .5)) / .35, 0, 1); if (u > 0) { ctx.save(); ctx.globalAlpha = u; ctx.translate(0, (1 - ease(u)) * 20);
-      const bk = .86; ctx.translate(W * (1 - bk) / 2, by); ctx.scale(bk, bk); drawCounselSay(blame.ck, COUNSEL[blame.ck], blame.text, 0, 1, blame.retort); ctx.restore(); }   // 卷轴缩一点
-    by += (22 + (cardLines(blame.text, 17, 3).length > 2 ? 39 : 31) + (blame.retort ? 18 : 6)) * .86 + 8; if (ents.length) drawLoot(26, W - 22 - (ents.length - 1) * 17, 266); }
+      drawBlameLine(blame, by); ctx.restore(); }   // 11-02 用户：「这个卷轴太占地方了」——不用卷轴，一条细牌：小头像 + 两行小字 + 兄弟一句
+    by += blameH(blame) + 8; if (ents.length) drawLoot(26, W - 22 - (ents.length - 1) * 17, 266); }
   else if (ents.length) { const sm = !!(r.ach && r.ach.length); drawLoot(sm ? 32 : 40, W / 2, by + (sm ? 18 : 22)); by += sm ? 40 : 50; }   // 下面还有功绩一行时图标小一点
   const AC = r.ach || [];                                                               // 10-30 这局新达成的功绩：盖「功」印、写几项，下一行列名字（在战利品下、按钮上）
   if (AC.length) { const u = clamp((t - (tb - .2)) / .3, 0, 1), yb0 = H - 54; if (u > 0) { const two = by + 40 <= yb0 - 4, ay = Math.min(by + (blame ? 10 : 16), yb0 - (two ? 34 : 14));
