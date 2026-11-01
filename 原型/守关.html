@@ -5622,7 +5622,7 @@ function drawResult() {
   const sub = sandSub || (r.first && G.lv.reward ? G.lv.reward : '');
   { const gs = r.goals || [], gy = sub ? 298 : 278;   // 10-30 用户：「padding大一些，和上面的3星的margin也大一点」   // 三颗星各一行：几颗星 + 条件，做到的金字，没做到的朱红带「未达成」（10-30 用户：「看不出来3颗星对应的哪个完成了，或者哪个没完成」；原来只写一行）
     gs.forEach((g, k) => { const y = gy + k * 18, ln = g.text + (g.ok ? '' : ' · 未达成'), sz = fitSize(ln, 12, W - 60 - 44, 99, FONT, 3), x0 = 30 + 44;
-      for (let q = 0; q <= k; q++) uiStar(x0 - 8 - (k - q) * 13, y, 5.5, g.ok);
+      for (let q = 0; q <= k; q++) uiStar(36 + q * 13, y, 5.5, g.ok);   // 11-02 用户：「这里靠左对齐」——星从左边排起，字一律从 x0 开始
       uiText(ln, x0, y, sz, g.ok ? '#ffe08a' : '#ff8a6a', 'left', FONT, { lw: 3 }); }); }
   const lootR = !!(G.advLog || []).some(a => a.bad) && r.loot && r.loot.length;          // 军师认错占了下面那格时，战利品缩小放到这一行右边
   if (sub) { const mw = lootR ? W - 150 : W - 70, sz = fitSize(sub, 12, mw, 99, FONT, 3), cx = W / 2 - (lootR ? 36 : 0), first = r.first && !sandSub; ctx.font = `${fpx(sz)}px ${FONT}`; const sw2 = ctx.measureText(sub).width;
@@ -6463,15 +6463,15 @@ function drawMenuTip(t) {
   const T = tipNow(); MENU.tip = T || null; if (!T || REWARD || (MENU.note && t - MENU.note.t0 < 3.2)) return;
   if (MENU.tipK !== T.k) { MENU.tipK = T.k; MENU.tipT = t; MENU.tipOpen = false; } const a = clamp((t - MENU.tipT - .4) / .3, 0, 1); if (a <= 0) return;
   // 11-02 用户：「军师提示感觉不好放」→「收成小头像点开看」：平时只在关卡牌左上角露军师小头像（固定不动、挂「!」），点开才说那句话；点话算看过
-  const [ck, C] = counselNow(), im = IMG['p_' + ck], hx = 40, hy = CARD_Y - 24, hr = 15;   // 11-02 用户：「固定在这个位置不要动」——不再一跳一跳
+  const [ck, C] = counselNow(), im = IMG['p_' + ck], hx = 40, hy = CARD_Y - 30, hr = 15;   // 11-02 用户：「固定在这个位置不要动」——不再一跳一跳
   if (!MENU.tipOpen) {   // 点开后卷轴自带头像，小头像先藏起来
   ctx.save(); ctx.globalAlpha = a; ctx.beginPath(); ctx.arc(hx, hy, hr, 0, 6.283); ctx.clip(); if (ready(im)) ctx.drawImage(im, hx - hr * 1.2, hy - hr, hr * 2.4, hr * 2.4); else { ctx.fillStyle = '#3a2b1f'; ctx.fill(); } ctx.restore();
   ctx.save(); ctx.globalAlpha = a; if (ready(IMG.ui_avatar_ring)) ctx.drawImage(IMG.ui_avatar_ring, hx - hr * 1.3, hy - hr * 1.3, hr * 2.6, hr * 2.6); else { ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(hx, hy, hr + 1, 0, 6.283); ctx.stroke(); }
   uiSeal(hx + 12, hy - 12, 13, '!', UIC.red); ctx.restore(); }
   hit(hx - 20, hy - 20, 40, 40, () => { MENU.tipOpen = !MENU.tipOpen; });
-  if (MENU.tipOpen) { const ks = .74, y = CARD_Y - 46;   // 11-02 用户圈在脚下、关卡牌上面那条：「点开后在蓝框即可」
-    ctx.save(); ctx.translate(W * (1 - ks) / 2, y); ctx.scale(ks, ks); drawCounselSay(ck, C, T.say, 0, a); ctx.restore();   // 点开：话贴在关卡牌上面，看完点一下就收
-    hit(W * (1 - ks) / 2, y - 4, W * ks, 48, () => { MENU.tipOpen = false; tipDone(T.k); }); }
+  if (MENU.tipOpen) { const ks = .74, tx = hx - 38 * ks, ty = hy - 26 * ks;   // 11-02 用户：「头像和说话都留在左边」——点开后头像不挪，话从头像右边展开
+    ctx.save(); ctx.translate(tx, ty); ctx.scale(ks, ks); drawCounselSay(ck, C, T.say, 0, a); ctx.restore();
+    hit(tx + 60 * ks, ty - 4, (W - 66) * ks, 48, () => { MENU.tipOpen = false; tipDone(T.k); }); }
   const by = H - 90 + 3 * Math.sin(t * 6); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#ffd76e'; ctx.shadowColor = 'rgba(255,190,80,.8)'; ctx.shadowBlur = 8;   // 往下指着该点的钮，一上一下地跳
   ctx.beginPath(); ctx.moveTo(T.x - 9, by - 10); ctx.lineTo(T.x + 9, by - 10); ctx.lineTo(T.x, by); ctx.closePath(); ctx.fill(); ctx.restore();
 }
