@@ -1018,7 +1018,7 @@ function eta(cost) {
   }
   return { d: worst, lack };
 }
-const etaText = (d, lack = []) => d <= 0 ? '够了' : d < 1 ? (lack.some(([k]) => k === '残页' || k === '将印' || k === '陨铁') ? '今天做完军务就够' : `今天再打赢 ${Math.max(...lack.map(([, n]) => n), 1)} 关就够`) : d === 1 ? '明天就够' : d === 2 ? '后天就够' : `还要 ${d} 天`;
+const etaText = (d, lack = []) => d <= 0 ? '够了' : '';   // 11-02 用户：「去掉所有明天就够的字眼」——不再估「今天／明天／后天／还要 n 天就够」，只在够了时说够了
 const upCost = key => UPS[key].cost((INV.up[key] || 0) + 1);
 function canUp(key) { const U = UPS[key], k = INV.up[key] || 0; if (k >= U.max) return false; if (U.need && !INV.up[U.need]) return false; return Object.entries(upCost(key)).every(([i, n]) => (INV.it[i] || 0) >= n); }
 function doUp(key, who) {
@@ -5908,7 +5908,7 @@ function drawCamp() {
       uiBar('goal_' + it, 130, yy - 4, 150, 8, have / n, '#8a5a14', '#ffd76e', { edge: 'rgba(217,166,64,.55)' }); });
     if (canUp(key)) pill(W / 2 - 60, 186, 120, 32, key === 'awake' ? '觉醒' : U.gen ? '研习' : '打造', () => { if (key === 'awake') CAMP.pickAwake = true; else { const ok = doUp(key); MENU.flash = { key, t0: uiNow() }; const U2 = UPS[key];
       if (ok) showReward(U2.gen ? '研习成功' : '打造成功', [`${U2.name} ${U2.max > 1 ? '+' + INV.up[key] : '已学会'}`, ...(key === 'wpn' ? ['三兄弟的兵器一起精炼'] : []), U2.desc(INV.up[key])], U2.gen ? [U2.gen] : ['guan', 'zhang', 'liu']); else showReward('材料不够', ['还差：' + lackText(Object.entries(upCost(key)).filter(([i, n]) => (INV.it[i] || 0) < n))], U2.gen ? [U2.gen] : ['zhang'], false); } });
-    else uiText(etaText(d, gl.lack) + (gl.lack.some(([i]) => i === '将印') && !INV.seal20 ? '，再首通第廿关' : ''), W / 2, 204, 17, etaColor(d), 'center', FONT);
+    else uiText(gl.lack.some(([i]) => i === '将印') && !INV.seal20 ? '将印要首通第廿关' : '', W / 2, 204, 17, etaColor(d), 'center', FONT);
     if (MENU.flash && uiNow() - MENU.flash.t0 < 1.2) { const u = (uiNow() - MENU.flash.t0) / 1.2; ctx.save(); ctx.globalAlpha = 1 - u; uiSeal(W - 58, 108, 34 + 12 * u, UPS[MENU.flash.key].gen ? '悟' : '成', UIC.red); ctx.restore(); }
     SC.off += 110; ctx.restore(); SC.bot = Math.max(SC.bot, 58 + 166 + 110); }
   // 今天的军务十二道：打法军务一行一道（点「去打」直接进那一关）；出外探访、日常杂务各一行，一键做完
@@ -6130,7 +6130,7 @@ function drawGate() {
   });
   const y2 = 168 + lack.length * 70 + 14;
   uiText(ge.d <= 0 ? '材料够了，去军帐打造、研习就能打' : `还差 ${lackText(ge.lack)}`, W / 2, y2, 15, UIC.cream, 'center', PLAIN);
-  if (ge.d > 0) uiText(etaText(ge.d, ge.lack) + (ge.d >= 1 ? '——明天点卯、做军务再来' : ''), W / 2, y2 + 24, 16, etaColor(ge.d), 'center', FONT);
+  /* 11-02 不再写几天后够、「明天点卯、做军务再来」 */
   pill(40, y2 + 52, 130, 34, '去军帐', () => { screen = 'camp'; GATE = null; });
   pill(190, y2 + 52, 130, 34, '返回', () => { screen = 'menu'; GATE = null; }, false);
   if (window.__sg.all) pill(70, y2 + 98, 220, 30, '试玩：按推荐强化出战', () => { GATE = null; enterLevel(i); }, false);
