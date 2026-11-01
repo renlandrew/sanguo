@@ -532,7 +532,7 @@ const LEVELS = [
   { id: 1, name: '桃园结义', sub: '黄巾兵来犯涿县，三兄弟头一回并肩', hpMul: 0.219, slots: ['guan', null, null, null], join: [[7, 'zhang'], [14, 'liu']], walk: 1.2, far: 1.6, wait: 2, tx: .6, map: 'peach', reward: '刘关张入队 · 刘备学会双股剑',
     rules: { give: ['log'] },                                                        // 10-25 夜：第一关还没学招，开局送一层滚木；只打四波，很快打完
     waves: [[2, 'bing', 12, 6, 'rand'], [9, 'bing', 14, 0, 'line'], [15, 'bing', 16, 6, 'rand'], [21, 'lishi', 3, 2, 'rand'], [22, 'bing', 14, 0, 'wedge']],   // 10-26 用户手机试玩：「前三关太久了，要让玩家尽快开始爽」——六波减到五波、敌人走快 1.4 倍
-    tips: [[1, '黄巾兵冲过来了！关羽在城头劈出刀气，穿透一路'], [5, '城头备了滚木：敌人挤成一堆时会自己滚下去，那一列碾平（一关一次）'], [7, '张飞加入：蛇矛专刺冲到城下的'], [14, '刘备加入：剑气打得最远，会追着打'], [22, '三人还没学会招式，这一关全靠普攻和滚木']] },
+    tips: [[1, '黄巾兵冲过来了！关羽在城头劈出刀气，穿透一路'], [5, '城头备了滚木：点左边「滚木」钮，再点敌人挤成一堆的那一列，整列碾平（一关一次）'], [7, '张飞加入：蛇矛专刺冲到城下的'], [14, '刘备加入：剑气打得最远，会追着打'], [22, '三人还没学会招式，这一关全靠普攻和滚木']] },
   { id: 2, name: '招募乡勇', sub: '乡勇刚招来，黄巾又到', hpMul: 0.197, slots: ['zhang', 'liu', 'guan', null], join: [], walk: 1.2, far: 1.6, wait: 2, tx: .6, map: 'plain', reward: '乡里良马 · 关羽学会青龙斩',
     rules: { volley: { every: 10, n: 8, dmg: 22 } },
     waves: [[2, 'bing', 22, 6, 'rand'], [9, 'bing', 20, 0, 'wedge'], [15, 'lishi', 6, 2, 'rand'], [18, 'bing', 34, 10, 'rand'], [30, 'bing', 22, 0, 'line'], [34, 'lishi', 10, 6, 'rand']],   // 10-26：十二波砍到六波、走快 1.4 倍
@@ -1584,7 +1584,7 @@ function step(dt) {
   // 滚木
   // 滚木、连弩改成自己点（10-25 用户：「滚木那类主动战法让用户自己点」）：好了就在底栏空格里亮着，点一下放；机器人试跑时有敌人就点
   if ((G.botAT = (G.botAT || 0) - dt) <= 0) {   // 10-28 用户：「滚木，弩，挡马那些因为或自动或不需要按，就直接显示在城墙外即可……5个框留给最多5个武将」——滚木、连弩改自动放（推演一直按这套时机）
-    G.botAT = .25; if (G.st.logs > 0 && !G.logUsed) botAim('log', al); if (G.st.nu && !G.nuUsed) botAim('nu', al); }
+    G.botAT = .25; if (G.st.logs > 0 && !G.logUsed && (G.sim || window.__sg.auto)) botAim('log', al); if (G.st.nu && !G.nuUsed) botAim('nu', al); }   // 11-02 用户：「滚木还是要自己点击放」——玩家的滚木改回自己点（战场左边滚木钮 → 点一列），机器人推演照旧自动
   for (const L of G.logs) {
     if (L.stopped) { L.fade = (L.fade || 0) + dt; continue; }
     L.y -= 230 * dt; L.rot += dt * 9;
@@ -2482,7 +2482,7 @@ const MOVE_ANIM = { heavy: ['heavy'], combo: ['combo', 'heavy'], rush: ['rush', 
 function drawWallProps() {
   const items = []; G.propRects = [];
   for (const p of PERKS) if (G.perks[p.id] && !p.gen && !p.combo && p.id !== 'banma' && ready(IMG['ui_ico_' + p.id])) items.push({ im: IMG['ui_ico_' + p.id], n: G.perks[p.id], used: (p.id === 'log' && G.logUsed) || (p.id === 'nu' && G.nuUsed), name: p.name, desc: p.desc });
-  if (G.st.logs > 0 && !G.perks.log && ready(IMG.ui_ico_log)) items.push({ im: IMG.ui_ico_log, n: G.st.logs, used: G.logUsed, name: '滚木', desc: '敌人挤成一堆时自己滚下去，那一列碾平（一关一次）' });   // 关卡送的（第一关开局送一层滚木）
+  if (G.st.logs > 0 && !G.perks.log && ready(IMG.ui_ico_log)) items.push({ im: IMG.ui_ico_log, n: G.st.logs, used: G.logUsed, name: '滚木', desc: '点左边「滚木」钮，再点要滚的那一列，整列碾平（一关一次）' });   // 关卡送的（第一关开局送一层滚木）
   if (G.st.nu > 0 && !G.perks.nu && ready(IMG.ui_ico_nu)) items.push({ im: IMG.ui_ico_nu, n: G.st.nu, used: G.nuUsed, name: '连弩', desc: '敌人最密时自己放，一列万箭齐发（一关一次）' });
   if (G.RU.night) items.push({ im: IMG.ui_ico_fire, n: G.lightN, used: G.lightN <= 0, name: '火把', desc: G.RU.night.blind ? '在「军功」里点：全场亮 8 秒，命中回到八成五' : '自己插到敌人多的地方，照亮一片 20 秒' });
   if (G.RU.decoy) items.push({ cloth: true, n: G.decoyN || 0, used: !G.decoyN, name: '赤帻', desc: '城前压了一片时自己扔下去，附近敌人 5 秒都冲它去' });
@@ -5111,6 +5111,10 @@ function drawBattleBtns() {
   drawAmbushBtn(); drawDitchBtn();
   if (G.propTip && (G.propTip.hover || uiNow() - G.propTip.t0 < 2.2)) { const T = G.propTip, lines = fitLines(T.desc, 150, 11, PLAIN), bw = 170, bh = 26 + lines.length * 14, bx = clamp(T.x - bw / 2, 6, W - bw - 6), by = T.y - bh - 8;   // 军械小图标的说明（点一下 / 鼠标停住）
     uiPanel(bx, by, bw, bh, { r: 6, alpha: .95 }); uiText(T.name, bx + 10, by + 13, 13, UIC.gold2, 'left', FONT, { stroke: false }); lines.forEach((ln, i) => uiText(ln, bx + 10, by + 30 + i * 14, 11, UIC.cream, 'left', PLAIN, { stroke: false })); }
+  if (G.st.logs > 0 && !G.logUsed) { const bx = 32, by = 350, n = Math.min(3, G.st.logs), on = !!G.logArm, br = .5 + .5 * Math.sin(uiNow() * 5);   // 滚木钮：功钮上面；点一下亮起、再点战场哪一列就往哪列滚（三层不用选，直接滚满）
+    ctx.save(); if (over) ctx.globalAlpha = .22; if (on) { ctx.shadowColor = `rgba(255,200,90,${.6 + .3 * br})`; ctx.shadowBlur = 14; } roundBtn(bx, by, 18, '', '', pressLog, false); ctx.restore();
+    const im = IMG.ui_ico_log; if (ready(im)) { const f = 26 / Math.max(im.width, im.height); ctx.drawImage(im, bx - im.width * f / 2, by - im.height * f / 2, im.width * f, im.height * f); }
+    uiText(on ? '点一列' : n > 1 ? `滚木 ×${n}` : '滚木', bx, by + 27, 10, on ? '#ffe08a' : UIC.cream, 'center', PLAIN, { lw: 3 }); }
   ctx.save(); if (over) ctx.globalAlpha = .22; roundBtn(32, 402, 20, ready(IMG.ui_btn_gong) ? '' : '功', '', () => { if (G.pick) { G.state = 'pick'; G.pick.t0 = undefined; return; } G.panel = true; G.panelAdv = null; MENU.panelT = uiNow(); }, false); ctx.restore();
   if (ready(IMG.ui_btn_gong)) { const im = IMG.ui_btn_gong, f = 28 / Math.max(im.width, im.height); ctx.save(); if (over) ctx.globalAlpha = .22; ctx.drawImage(im, 32 - im.width * f / 2, 402 - im.height * f / 2, im.width * f, im.height * f); ctx.restore(); }   // 11-02 用户：「去掉这2字（军功），功画一个图吧」——有图就画图，没图照旧写「功」
   if (G.pick) { const P = G.pick, u = clamp(P.wait / PICK_WAIT, 0, 1), br = .5 + .5 * Math.sin(uiNow() * 7);   // 晋升待选：「功」外一圈金光呼吸、一圈倒数，上面写「晋升」
