@@ -5072,7 +5072,8 @@ function drawBattleBtns() {
   if (ready(IMG.ui_btn_gong)) { const im = IMG.ui_btn_gong, f = 28 / Math.max(im.width, im.height); ctx.save(); if (over) ctx.globalAlpha = .22; ctx.drawImage(im, 32 - im.width * f / 2, 402 - im.height * f / 2, im.width * f, im.height * f); ctx.restore(); }   // 11-02 用户：「去掉这2字（军功），功画一个图吧」——有图就画图，没图照旧写「功」
   if (G.pick) { const P = G.pick, u = clamp(P.wait / PICK_WAIT, 0, 1), br = .5 + .5 * Math.sin(uiNow() * 7);   // 晋升待选：「功」外一圈金光呼吸、一圈倒数，上面写「晋升」
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(32, 402, 14, 32, 402, 36); g.addColorStop(0, `rgba(255,200,90,${.35 + .3 * br})`); g.addColorStop(1, 'rgba(255,190,80,0)'); ctx.fillStyle = g; ctx.fillRect(-4, 366, 72, 72); ctx.restore();
-    ctx.save(); ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(32, 402, 24, -Math.PI / 2, -Math.PI / 2 + 6.283 * (1 - u)); ctx.stroke(); ctx.restore();
+    ctx.save(); ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(10,6,4,.7)'; ctx.beginPath(); ctx.arc(32, 402, 25, 0, 6.283); ctx.stroke();   // 11-02 用户：「那个圈因为也是金色，看不清在倒计时」——深色底槽 + 朱红倒数
+    ctx.strokeStyle = '#ff4a2a'; ctx.lineWidth = 3.5; ctx.lineCap = 'round'; ctx.shadowColor = 'rgba(255,80,40,.8)'; ctx.shadowBlur = 6; ctx.beginPath(); ctx.arc(32, 402, 25, -Math.PI / 2, -Math.PI / 2 + 6.283 * (1 - u)); ctx.stroke(); ctx.restore();
     uiText('晋升 · 点我挑', 32 + 30, 402 - 26, 12, UIC.gold2, 'left', FONT, { lw: 3, glow: 'rgba(255,190,80,.6)', glowR: 6 }); }
   if (G.RU.night && G.RU.night.blind && (G.lightN > 0 || G.flareT > 0)) { const ic = IMG.ui_ico_fire, bx = 50, by = 386;   // 「功」右上角挂火把：还剩几支、亮着还剩几秒
     ctx.save(); if (G.flareT <= 0) { ctx.shadowColor = `rgba(255,150,60,${.5 + .3 * Math.sin(uiNow() * 4)})`; ctx.shadowBlur = 10; } if (ready(ic)) ctx.drawImage(ic, bx - 10, by - 10, 20, 20); ctx.restore();
