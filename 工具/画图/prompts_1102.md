@@ -23,3 +23,19 @@ Vertical 9:16 mobile game title-screen background, Three Kingdoms era, the view 
 - **不花眼**：大色块，天空和中间几乎平的，只有地平线那一条亮、有一道远处紫雷（张角）。
 - **背景里不要人**：刘关张会单独叠在中间；画了人就会两套人打架。
 - 中间段要比人物暗、偏冷，人物（红绿白蓝）才跳得出来。
+
+# 11-02 战场「军功」钮图标（用户：「去掉这2字，功画一个图吧？」）
+
+战场左边那颗圆钮（点开看军功、军功攒够时点它挑战法）。现在钮里写一个「功」字，要换成一个图标。
+钮是黑漆圆底、金边，图标画进去约 30×30 像素，所以只要一个大剪影，不要细节。
+存 `美术/界面/军功钮.png`（透明底或纯中灰底都行），我抠好缩成 `原型/img/ui_btn_gong.png`，游戏有图就自动换上。
+
+## 军功钮图标（1:1）
+
+```text
+A single game UI icon for "military merit": a bronze tiger-shaped military tally (Chinese hufu) lying diagonally, with a short red silk ribbon tied at one end and a small gold star-shaped medal hanging from it, Three Kingdoms era; bold simple silhouette that reads clearly at 30 pixels, warm bronze-gold and red, bright hand-painted game icon style, large clean shapes, no fine details, no text, no characters, no circle frame, no background scene, plain mid-gray background, single object centered with generous margin, no dark outline
+```
+
+要点：
+- 只画图标本身，不要画圆框（钮的黑漆圆底和金边游戏自己画）。
+- 30 像素也要认得出：虎符的大轮廓 + 一条红绸，别画铭文、花纹。

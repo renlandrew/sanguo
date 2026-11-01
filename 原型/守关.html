@@ -4987,7 +4987,7 @@ function drawTip() {
 // 军功晋升（10-25 用户截图：「这里是不是太html？」）：照雾港「位阶提升」改成抽卡——三张竖版卡扣着发下来、一张张翻开，背后一团呼吸的光；
 // 卡框、卡背、军械图标是画出来的（img/ui_card_tall.png、ui_card_back.png、ui_ico_<战法>.png），武将战法用武将头像，连携露两张脸；
 // 连携、绝技的卡边一圈红金光一闪一闪；点一张，那张往上一抬、盖章，别的落下去，0.4 秒后回到战斗
-for (const k of ['ui_ambush_btn', 'ui_ambush_hide']) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.png' + BUST; }
+for (const k of ['ui_ambush_btn', 'ui_ambush_hide', 'ui_btn_gong']) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.png' + BUST; }
 for (const k of ['ui_card_tall', 'ui_card_back', 'ui_ico_xianchong', 'ui_ico_fire', 'ui_ico_log', 'ui_ico_jum', 'ui_ico_order', 'ui_ico_mend', 'ui_ico_nu', 'ui_ico_pozhen', 'ui_ico_banma', 'ui_ico_jinshu']) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.png' + BUST; }
 function drawPick() {
   const P = G.pick; P.t0 ??= uiNow(); const t = uiNow() - P.t0, sel = P.sel;
@@ -5068,7 +5068,8 @@ function drawBattleBtns() {
   drawAmbushBtn(); drawDitchBtn();
   if (G.propTip && (G.propTip.hover || uiNow() - G.propTip.t0 < 2.2)) { const T = G.propTip, lines = fitLines(T.desc, 150, 11, PLAIN), bw = 170, bh = 26 + lines.length * 14, bx = clamp(T.x - bw / 2, 6, W - bw - 6), by = T.y - bh - 8;   // 军械小图标的说明（点一下 / 鼠标停住）
     uiPanel(bx, by, bw, bh, { r: 6, alpha: .95 }); uiText(T.name, bx + 10, by + 13, 13, UIC.gold2, 'left', FONT, { stroke: false }); lines.forEach((ln, i) => uiText(ln, bx + 10, by + 30 + i * 14, 11, UIC.cream, 'left', PLAIN, { stroke: false })); }
-  ctx.save(); if (over) ctx.globalAlpha = .22; roundBtn(32, 402, 20, '功', '军功', () => { if (G.pick) { G.state = 'pick'; G.pick.t0 = undefined; return; } G.panel = true; G.panelAdv = null; MENU.panelT = uiNow(); }, false); ctx.restore();
+  ctx.save(); if (over) ctx.globalAlpha = .22; roundBtn(32, 402, 20, ready(IMG.ui_btn_gong) ? '' : '功', '', () => { if (G.pick) { G.state = 'pick'; G.pick.t0 = undefined; return; } G.panel = true; G.panelAdv = null; MENU.panelT = uiNow(); }, false); ctx.restore();
+  if (ready(IMG.ui_btn_gong)) { const im = IMG.ui_btn_gong, f = 30 / Math.max(im.width, im.height); ctx.save(); if (over) ctx.globalAlpha = .22; ctx.drawImage(im, 32 - im.width * f / 2, 402 - im.height * f / 2, im.width * f, im.height * f); ctx.restore(); }   // 11-02 用户：「去掉这2字（军功），功画一个图吧」——有图就画图，没图照旧写「功」
   if (G.pick) { const P = G.pick, u = clamp(P.wait / PICK_WAIT, 0, 1), br = .5 + .5 * Math.sin(uiNow() * 7);   // 晋升待选：「功」外一圈金光呼吸、一圈倒数，上面写「晋升」
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(32, 402, 14, 32, 402, 36); g.addColorStop(0, `rgba(255,200,90,${.35 + .3 * br})`); g.addColorStop(1, 'rgba(255,190,80,0)'); ctx.fillStyle = g; ctx.fillRect(-4, 366, 72, 72); ctx.restore();
     ctx.save(); ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(32, 402, 24, -Math.PI / 2, -Math.PI / 2 + 6.283 * (1 - u)); ctx.stroke(); ctx.restore();
