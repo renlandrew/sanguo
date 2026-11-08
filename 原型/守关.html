@@ -1213,7 +1213,7 @@ function hurt(e, d, src) {
   if (who && G.dmgBy) { const dd = Math.max(0, Math.min(d, e.hp)); G.dmgBy[who] += dd; if (BIGSRC.has(src)) G.dmgSk[who] += dd; }   // 结算分开写招式、普攻各打了多少
   if (e.duel) G.exp += Math.min(d, e.hp) / e.max * 40;                                                                  // 斗将：砍敌将也给军功（一场约 40）
   e.hp -= d; if (src !== 'burn') e.hitT = .1;
-  if (!G.sim) { const vd = G.visDelay ? G.visDelay(e) : 0; if (src !== 'burn') { e.flash = .12; e.flashDelay = vd; e.kickPend = (e.kickPend || 0) + (BIGSRC.has(src) ? 7 : 3.5); if (!vd) { e.kick = Math.min(10, (e.kick || 0) + e.kickPend); e.kickPend = 0; } } popDmg(e, d, src, vd); }
+  if (!G.sim) { const vd = G.visDelay ? G.visDelay(e) : 0; if (src !== 'burn') { e.flash = .12; e.flashDelay = vd; e.kickPend = (e.kickPend || 0) + (src === 'slash' || src === 'roar' ? 10 : BIGSRC.has(src) ? 7 : 3.5); if (src === 'roar') e.shkPend = true; if (!vd) { e.kick = Math.min(10, (e.kick || 0) + e.kickPend); e.kickPend = 0; if (e.shkPend) { e.shk = .22; e.shkPend = false; } } }   /* 11-08 后仰分轻重：青龙斩、一喝重；被喝的先抖一下 */ popDmg(e, d, src, vd); }
   if (e.hp <= 0) die(e, src); else if (e.duel && G.state === 'play') checkRank();
 }
 // 溃散：转身逃走，不撞城、不给军功
@@ -1472,6 +1472,7 @@ function step(dt) {
   if (G.scorch) { for (const d of G.scorch) d.t += dt; G.scorch = G.scorch.filter(d => d.t < 14); }
   stepParts(dt);
   if (G.shake > 0) G.shake -= dt;
+  if (G.hsQ && G.hsQ.length && (G.vt || 0) >= G.hsQ[0][0]) G.freeze = Math.max(G.freeze || 0, G.hsQ.shift()[1]);   // 11-08 预约的停帧到点了
   if (G.freeze > 0) { G.freeze -= dt; return; }
   if (G.cart && G.cart.brkT != null) { G.cart.brkT += dt; if (G.cart.brkT >= RAM_BREAK_T) end(false, RU0().cart.lose || '冲车被毁'); return; }   // 冲车散架：战场停住演完再结算，特效、粒子、烟照常动（模拟推演不走这里）
   G.t += dt;
@@ -1488,9 +1489,10 @@ function step(dt) {
     const T = FOES[e.kind];
     if (T.lamp) { if (e.flash > 0) e.flash -= dt; continue; }   // 七星灯不走不动，喝不退
     if (e.hitT > 0) e.hitT -= dt;
-    if (e.flashDelay > 0) { e.flashDelay -= dt; if (e.flashDelay <= 0 && e.kickPend) { e.kick = Math.min(10, (e.kick || 0) + e.kickPend); e.kickPend = 0; } }   // 刀还没扫到
+    if (e.flashDelay > 0) { e.flashDelay -= dt; if (e.flashDelay <= 0 && e.kickPend) { e.kick = Math.min(10, (e.kick || 0) + e.kickPend); e.kickPend = 0; if (e.shkPend) { e.shk = .22; e.shkPend = false; } } }   // 刀还没扫到
     else if (e.flash > 0) e.flash -= dt;
     if (e.kick > 0) e.kick = Math.max(0, e.kick - dt * 40);
+    if (e.shk > 0) e.shk -= dt;
     if (e.rout) {                                                // 溃散：往回跑，跑远了就没了
       const dy = -60 * dt * depth(e.y); fan(e, dy); e.y += dy; e.f = (e.f + dt * 8) % 4; e.ra = (e.ra || 0) + dt;
       if (e.y < HZ + 2 || e.ra > 3.5) e.dead = true;
@@ -1799,8 +1801,10 @@ function stepAttacks(dt, al) {
     if (A.kind === 'qi') for (let k = 0; k < n; k++) G.shots.push({ k: 'qi', side: k % 2, x: gx + (k % 2 ? 6 : -6), y: gy, target: inR[k % inR.length], dmg, trail: [], ang });
     else if (A.kind === 'wave') for (let k = 0; k < n; k++) { const a = ang + (k - (n - 1) / 2) * .22; G.shots.push({ k: 'wave', x: gx, y: gy, vx: Math.cos(a) * 380, vy: Math.sin(a) * 380, ang: a, life: A.range / 380, hit: new Set(), dmg }); }
     else if (A.kind === 'thrust') {
+      G.visDelay = () => HIT_AT.thrust;   // 矛尖第 0.13 秒才扎到
       for (let k = 0; k < Math.min(inR.length, A.n + G.st.n.zhang); k++) { const e = inR[k]; hitWith(e, dmg, 'thrust'); G.fx.push({ k: 'stab', t: 0, x0: gx + 8, y0: gy - 4, x: e.x, y: e.y - 14 }); burst('ember', e.x, e.y - 14, 2, 150, { life: .35, s: 2.6, g: 60 }); G.stabs++;
         if (G.st.wan && ++G.wanN >= 20) { G.wanN = 0; miniRoar(); } }
+      G.visDelay = null;
       if (G.RU.rage && !rage && G.stabs >= G.RU.rage) { G.stabs = 0; G.rageT = 6; G.fx.push({ k: 'banner', t: 0, text: '怒鞭督邮', sub: '张飞暴怒 6 秒' }); }
     }
   }
@@ -1815,6 +1819,10 @@ function pickAtk(id, i) {
   for (const k of ks) if ((r -= W8[k]) <= 0) { v = k; break; }
   G.lastAtk[i] = v; return v;
 }
+// 11-08 法术优化（用户：「根据我们最新的法术优化，优化三国游戏」「先做刘关张六招」，照 spell-store 的做法）：
+// 伤害数字、闪白、后仰一律等画面上兵器碰到人那一帧才出（G.visDelay）；停帧按轻重：普攻不停，双股剑每道剑停 1 帧，青龙斩停 3 帧，且停在碰到那一刻（hitStop 预约）
+const HIT_AT = { thrust: .13, wave: .06, sword: .07 };   // thrust 等于 SPEAR_T 的蓄＋刺（矛尖扎到）；wave 刀气横斩过去、sword 两道剑光落下
+function hitStop(at, dur) { if (G.sim) return; const T = (G.vt || 0) + at; (G.hsQ = G.hsQ || []).push([T, dur]); G.hsQ.sort((a, b) => a[0] - b[0]); }
 function hitWith(e, dmg, src) { hurt(e, dmg, src); if (G.st.burn > 0 && !e.dead) { e.burnT = 3; e.burnDps = G.st.burn / 3 * (src === 'wave' && G.st.huodao ? 1.6 : 1); } }
 // 万人敌：每刺 20 下顺手小喝一声（城前 120 以内晕 0.8 秒）
 function miniRoar() { const i = G.order.indexOf('zhang'); for (const e of alive()) if (WALL_Y - e.y < 120 && !e.duel) { const res = FOES[e.kind].boss ? .35 : 1; e.knock += 18 * res * SPD_X; e.stun = Math.max(e.stun, .8 * res); } G.roarT = G.t; G.fx.push({ k: 'txt', t: 0, x: genX(i), y: GY - 96, text: '喝！', size: 24, color: INK }); }
@@ -1825,7 +1833,7 @@ function stepShot(s, dt) {
     const T = FOES[e.kind], ty = e.y - 14 * T.s * persp(e.y), dx = e.x - s.x, dy = ty - s.y, d = Math.hypot(dx, dy), v = 520 * dt;
     s.t = (s.t || 0) + dt; s.trail.push([s.x, s.y]); if (s.trail.length > 8) s.trail.shift();
     if (!G.sim && vr() < .04) part('petal', s.x, s.y, { vx: VR(-20, 20), vy: VR(-10, 25), life: .9, s: VR(2.4, 3.4), g: 25, drag: 2.5 });   // 剑气沿路洒桃花
-    if (d < v + 4) { hitWith(e, s.dmg, 'qi'); if (!G.sim) G.fx.push({ k: 'cleave', t: 0, x: e.x, y: e.y, c: s.side ? '#ffd56a' : '#bfe6ff', ang: s.ang, ps: persp(e.y), wt: WT() }); s.done = true; }   // 斩开地面（原来的 nick 小闪光不用了）
+    if (d < v + 4) { hitWith(e, s.dmg, 'qi'); if (!G.sim) { G.fx.push({ k: 'cleave', t: 0, x: e.x, y: e.y, c: s.side ? '#ffd56a' : '#bfe6ff', ang: s.ang, ps: persp(e.y), wt: WT() }); G.fx.push({ k: 'qiPass', t: 0, dur: .16, x: s.x, y: s.y, cx: e.x, cy: ty, ang: s.ang, side: s.side, age: s.vb != null ? (G.vt || 0) - s.vb : .3 }); if (hasFb('hit_azure')) hitBurst(e.x, ty, s.side ? 'gold' : 'azure', 40 * RKX(), 0, 3); } s.done = true; }   // 11-08：剑气不再碰到就消失，往前穿过人（后半截画在人身后），碰到那下炸一朵   // 斩开地面（原来的 nick 小闪光不用了）
     else { s.x += dx / d * v; s.y += dy / d * v; s.ang = Math.atan2(dy, dx); }
   } else if (s.k === 'volley') {
     const e = s.target; if (!e || e.dead || e.rout) { s.done = true; return; }
@@ -1837,7 +1845,7 @@ function stepShot(s, dt) {
     if (!G.sim && !SPX.ok && vr() < .85) part('scale', s.x - Math.cos(s.ang) * 16 + VR(-10, 10), s.y - Math.sin(s.ang) * 16 + VR(-10, 10), { vx: -s.vx * .08, vy: -s.vy * .08 + VR(-15, 15), life: .55, s: VR(2.8, 4.4), drag: 3 });   // 刀气身后掉青龙鳞
     for (const e of G.foes) {
       if (e.dead || s.hit.has(e)) continue; const T = FOES[e.kind], ps = persp(e.y), cy = e.y - 14 * T.s * ps;
-      if (Math.hypot(s.x - e.x, (s.y - cy) * 1.2) < 15 + T.r * ps) { s.hit.add(e); hitWith(e, s.dmg, 'wave'); G.fx.push({ k: 'cut', t: 0, x: e.x, y: cy, ang: s.ang }); if (!SPX.ok) burst('shard', e.x, cy, 3, 100, { life: .45, s: 2.6, g: 120 }); }
+      if (Math.hypot(s.x - e.x, (s.y - cy) * 1.2) < 15 + T.r * ps) { s.hit.add(e); G.visDelay = () => HIT_AT.wave; hitWith(e, s.dmg, 'wave'); G.visDelay = null; G.fx.push({ k: 'cut', t: 0, x: e.x, y: cy, ang: s.ang }); if (!SPX.ok) burst('shard', e.x, cy, 3, 100, { life: .45, s: 2.6, g: 120 }); }
     }
   } else if (s.k === 'sword') {
     s.t += dt; let e = s.target;
@@ -1846,7 +1854,7 @@ function stepShot(s, dt) {
     s.trail.push([s.x, s.y]); if (s.trail.length > 10) s.trail.shift();
     if (!G.sim && vr() < .12) part('petal', s.x, s.y, { vx: VR(-30, 30), vy: VR(-20, 20), life: 1, s: VR(2.8, 3.8), g: 20, drag: 2 });   // 飞剑拖一路桃花
     if (d < v + 4) {
-      const crit = e.stun > 0 || (G.st.shuang && G.t - (e.roaredT ?? -9) < WIN_ROAR), d0 = G.st.liuDmg * (s.boost || 1); hurt(e, d0 * (crit ? 2 : 1), 'sword');
+      const crit = e.stun > 0 || (G.st.shuang && G.t - (e.roaredT ?? -9) < WIN_ROAR), d0 = G.st.liuDmg * (s.boost || 1); G.visDelay = () => HIT_AT.sword; hurt(e, d0 * (crit ? 2 : 1), 'sword'); hitStop(HIT_AT.sword, 1 / 30);
       gnd({ mode: 2, x: e.x, y: e.y - 2, rx: crit ? 64 : 44, sq: .4, dur: .75, open: .1, col: HCOL.liu });   // 10-29 双股剑：每把剑落点一小块交叉剑痕
       if (((G.up && G.up.liu2) || G.shiRoot) && !e.dead && !FOES[e.kind].boss) e.rootT = Math.max(e.rootT || 0, G.up && G.up.liu3 ? 6 : G.up && G.up.liu2 ? 4 : 3);   // 剑印
       if (crit && G.st.shuang) { if (G.cnt) G.cnt.cShuang++; if (!e.dead) e.stun += G.comboLv && G.comboLv.cShuang > 1 ? 2 : 1; const spl = []; for (const f of alive()) if (f !== e && Math.hypot(f.x - e.x, f.y - e.y) < 40) { hurt(f, d0 * .5, 'sword'); spl.push([f.x, f.y - 14 * FOES[f.kind].s * persp(f.y)]); }
@@ -1856,7 +1864,7 @@ function stepShot(s, dt) {
           hitBurst(e.x, ty, 'azure', 90, .12, 4); hitBurst(e.x, ty, 'gold', 70, .16, 3); for (const [sx, sy] of spl.slice(0, 6)) hitBurst(sx, sy, 'gold', 46, .3, 2);
           if (ML) for (let q = 0; q < 3; q++) ML.splat(e.x + VR(-8, 8), ty + 10, VR(-30, 30), VR(-200, -120), VR(7, 10), [0, VR(.7, 1), .25, 0]);   // 被劈的人身上冒张飞的火（又晕住）
           if (title) { punch(e.x, ty, .06); spxWash(e.x, ty, 'azure', .4); spxDim(.5); const sk = G.fx.filter(q => q.k === 'skname' && q.id === 'liu').pop(); if (sk) { sk.text = '双剑破阵'; sk.t = 0; } } } }
-      G.fx.push({ k: 'cross', t: 0, x: e.x, y: ty, crit, rot: VR(-.3, .3), ang: s.ang }); s.done = true;
+      G.visDelay = null; G.fx.push({ k: 'cross', t: 0, x: e.x, y: ty, crit, rot: VR(-.3, .3), ang: s.ang }); s.done = true;
     } else { s.x += dx / d * v; s.y += dy / d * v; s.ang = Math.atan2(dy, dx); }
   } else if (s.k === 'foeArrow') {
     s.t += dt; const u = s.t / s.dur; s.x = s.x0 + (s.tx - s.x0) * u; s.y = s.y0 + (s.ty - s.y0) * u - Math.sin(Math.PI * u) * 40;
@@ -1973,8 +1981,9 @@ function resolveSkill(id, boost = 1) {
   if (id === 'guan' && G.act && G.act.guan === 'wenjiu') { resolveWenjiu(boost); return; }
   if (id === 'liu' && G.act && G.act.liu === 'hujin') { resolveHujin(boost); return; }
   if (id === 'zhang') {
-    const R0 = G.st.zhangR;
+    const R0 = G.st.zhangR; G.visDelay = e => clamp((WALL_Y - e.y) / R0, 0, 1) * .25;   // 11-08 冲击波从城头往外推 0.25 秒，推到谁谁才挨
     for (const e of al) { const d = WALL_Y - e.y; if (d < R0 || e.duel) { e.roaredT = G.t; const T = FOES[e.kind], res = T.boss ? (T.taunt || T.rampage ? 1 : .35) : (T.stunRes || 1); if (T.taunt || T.rampage) shoutBack(e); hurt(e, 24 * HPX * boost, 'roar'); if (e.duel && e.mv && e.mv.k !== 'heal') { if (e.mv.uns) G.unsBroken = (G.unsBroken || 0) + 1; e.mv = null; e.moveT = (G.lv.gap || 3) * TIMEX.v; if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 110, text: '打断！', size: 24, color: CINNABAR }); }   /* 一喝喝断敌将正在蓄的招（10-26 用户：「张飞的喝不能阻断」——原来只晕 0.5 秒，晕完突刺照样落下） */ if (!e.duel) e.knock += SPD_X * (28 + 50 * (1 - d / R0)) * res; e.stun = Math.max(e.stun, G.st.zhangStun * res); } }
+    G.visDelay = null;
     G.fx.push({ k: 'roar', t: 0, ox: genX(G.order.indexOf('zhang')), R: R0, hits: al.filter(e => WALL_Y - e.y < R0).map(e => [e.x, e.y - 14]), rays: Array.from({ length: 15 }, (_, i) => ({ a: -Math.PI * .93 + Math.PI * .86 * (i + R(-.35, .35)) / 14, l: R0 * R(.45, 1.02), w: R(12, 24), bend: R(-.12, .12) })) });
     G.shake = .3; G.roarT = G.t;
     gnd({ mode: 1, x: genX(G.order.indexOf('zhang')), y: WALL_Y - 26, rx: Math.min(R0, 200) * 1.05, sq: .36, dur: 1.1, open: .22, col: HCOL.zhang, n: 12 });   // 10-29 我方大招补贴地层：一喝冲开一圈地裂
@@ -2013,8 +2022,8 @@ function resolveSkill(id, boost = 1) {
       if (ML) for (let q = 0; q < 6; q++) { const yy = TOP + (WALL_Y - 30 - TOP) * q / 5; ML.splat(G.pojX + VR(-6, 6), yy, VR(-20, 20), VR(-160, -90), VR(8, 11), [0, VR(.7, 1), .25, 0]); }   // 张飞那一路重新烧起来
       const sk = G.fx.filter(q => q.k === 'skname' && q.id === 'guan').pop(); if (sk) { sk.text = '横竖斩'; sk.t = 0; } }
     const hits = inS.map(e => [e.x, e.y - 14, G.visDelay(e)]); G.visDelay = null;
-    G.fx.push({ k: 'slash', t: 0, x: cx, y: cy, r, dir, rot: R(-.35, .35), n: hit, hits, sp: Array.from({ length: 22 }, () => ({ u: R(0, 1), d: R(2, 22), r: R(.8, 3) })) });
-    G.freeze = .07; G.shake = .28;
+    G.fx.push({ k: 'slash', t: 0, x: cx, y: cy, r, dir, foes: G.sim ? null : inS, rot: R(-.35, .35), n: hit, hits, sp: Array.from({ length: 22 }, () => ({ u: R(0, 1), d: R(2, 22), r: R(.8, 3) })) });
+    if (G.sim) G.freeze = .07; else hitStop(.09, .1); G.shake = .28;   // 11-08 玩家这边：刀扫到一半才停、停 3 帧（原来出刀当下就停，刀还没到）
   }
 }
 // 丈八破阵（10-29 新招）：选敌人最密的一路，矛势从城头直刺到底，整列都穿；三层伤害按穿过的人数衰减很少
@@ -2318,6 +2327,7 @@ function renderScreen() {
   drawAura(fs);
   drawRoarLine();
   drawWallProps();
+  for (const f of G.fx) if (f.k === 'qiPass') drawQiPass(f, true);   // 剑气穿过人的后半截（人挡在它前面）
   for (const e of fs) drawFoe(e);
   for (const f of G.fx) if (f.k === 'ambush') drawAmbushTroops(f);
   drawFieldThings(); drawCart(); drawNight(); drawQixingHud();
@@ -2335,6 +2345,7 @@ function renderScreen() {
   for (const f of G.fx) if (f.k === 'cutin') drawCutIn(f);   // 黄天当立：光带、光瓣、飘带
   drawShards();
   if (ML) { const dt = clamp((G.vt || 0) - (ML.vt0 ?? (G.vt || 0)), 0, 1 / 20); ML.vt0 = G.vt || 0; ML.step(dt); if (ML.render(Math.ceil(cv.width / 2), Math.ceil(cv.height / 2))) ctx.drawImage(ML.canvas, 0, 0, W, H); ML.drawParts(ctx); }   // 10-30 卡顿：墨流半分辨率渲染（烟火本来就糊，像素少四分之三）
+  for (const f of G.fx) if (f.k === 'slash' && f.t < .35 && f.foes) for (const e of f.foes) if (!e.dead && e.y - 14 < f.y) drawFoe(e);   // 11-08 青龙斩扫穿一排：刀弧远的那半边让站在后面的敌人挡住（这些人在刀上再画一遍）
   drawWash();
   for (const f of G.fx) drawFx(f);
   drawNums();
@@ -2568,7 +2579,7 @@ function drawFoe(e) {
     else if (T.shoot && e.y >= stopY) { anim = 'shoot'; fr = (1 - e.shootT / (T.shoot.every * ACT_X)) * (nOf('shoot') - .01); }
     else if (e.atk) { anim = 'ram'; fr = T.boss ? (G.t * 6) % nOf('ram') : (e.ram || 0) / .6 * (nOf('ram') - .01); }
     if (e.duel && e.mv && e.mv.k === 'heal') for (let k = 0; k < 6; k++) { const a = G.t * 2 + k * 1.05, yy = y - ((G.t * 40 + k * 17) % (T.sh * ps)); blot(ctx, x + Math.cos(a) * 26 * ps, yy, 3, JADE, .55, vr, 7); }
-    const jx = x + (e.hitT > 0 ? VR(-1.5, 1.5) : 0), sk = T.sh / SHEETS[SK].stand * ps * (e.duel ? 2.2 : 1), al = (e.rout ? clamp(1 - (e.ra || 0) / 3.5, 0, 1) * .8 : 1) * clamp((y - HZ) / 16, .1, 1);
+    const jx = x + (e.flash > 0 && !(e.flashDelay > 0) ? VR(-1.5, 1.5) : 0) + (e.shk > 0 ? VR(-3, 3) * e.shk / .22 : 0),   /* 11-08 受击抖动跟着接触帧走；被喝的抖得更狠 */ sk = T.sh / SHEETS[SK].stand * ps * (e.duel ? 2.2 : 1), al = (e.rout ? clamp(1 - (e.ra || 0) / 3.5, 0, 1) * .8 : 1) * clamp((y - HZ) / 16, .1, 1);
     drawSheet(SK, anim, fr, jx, y, sk, al);
     ctx.filter = 'none';
     if (e.flash > 0 && !(e.flashDelay > 0)) drawSheetFlash(SK, anim, fr, jx, y, sk, '#fffaf0', .85 * Math.min(1, e.flash / .07) * al);          // 受击闪白
@@ -4446,7 +4457,7 @@ function drawCutSlash(f) {
 // 张飞矛气：GPT 画的火矛（矛尖朝上）。10-25 用户：「如何让这矛有animate 的感觉？」——两件事：
 //   一、矛身上的火自己在动：画切成 24 条横条，每条按一个往矛尾走的波浪一张一缩（矛杆在正中不动，两边的火舌一阵阵往后舔），再叠一层明暗闪烁的光；
 //   二、捅的节奏是「蓄、刺、停、收」：先往回一缩，极快刺出去（刺的那一下矛身拉长、身后两道残影），扎到停一下、轻轻一震，再往回收、淡掉。
-const SPEAR_T = { pull: .06, thrust: .07, hold: .06, back: .15 };                                  // 一共 0.34 秒；扎到是第 0.13 秒
+const SPEAR_T = { pull: .06, thrust: .07, hold: .06, back: .15 };   // 扎到 = pull + thrust，HIT_AT.thrust 照这个写                                  // 一共 0.34 秒；扎到是第 0.13 秒
 // 官阶越高普攻越大越亮（10-29 用户：「当军阶升级后，他们的普攻全部要加大范围，增加一些光」）：只管画面，判定不变。
 // 每升一阶画稿、拖尾、炸开都大 8%（校尉 ×1.48），光多一层；义军队正起命中多一团金光，讨贼副尉起再多两片金屑
 const RKX = () => 1 + .08 * rankNow(), RKG = () => .06 * rankNow();
@@ -4720,8 +4731,17 @@ function drawCTao(f) {
   const xs = f.xs.map(q => q[0]).sort((a, b) => a - b); comboLink(t, xs[0], xs[1], 'rgba(255,190,210,1)', 'rgba(255,214,110,1)'); comboLink(t, xs[1], xs[2], 'rgba(255,214,110,1)', 'rgba(255,190,210,1)');
   comboTitle(t, out, '桃园同心', [['rgba(255,140,180,.95)', '#ffe0ea'], ['rgba(255,140,180,.95)', '#ffe0ea'], ['rgba(255,200,80,.95)', '#fff0c8'], ['rgba(255,200,80,.95)', '#fff0c8']]);
 }
+// 11-08 刘备剑气穿过人：碰到以后剑气再往前划 34，以敌人身子中线为界，前半截画在人前面（drawFx），后半截在人身后（drawFoe 之前画）
+function drawQiPass(f, back) {
+  const u = f.t / f.dur; if (u >= 1 || f.t < 0 || !hasPaint2('sword')) return;
+  const d = [Math.cos(f.ang), Math.sin(f.ang)], q = [-d[1], d[0]], L = 300, sg = back ? 1 : -1, x = f.x + d[0] * 34 * u, y = f.y + d[1] * 34 * u;
+  ctx.save(); ctx.beginPath(); ctx.moveTo(f.cx + q[0] * L, f.cy + q[1] * L); ctx.lineTo(f.cx - q[0] * L, f.cy - q[1] * L);
+  ctx.lineTo(f.cx - q[0] * L + d[0] * L * sg, f.cy - q[1] * L + d[1] * L * sg); ctx.lineTo(f.cx + q[0] * L + d[0] * L * sg, f.cy + q[1] * L + d[1] * L * sg); ctx.closePath(); ctx.clip();
+  drawPaintLive('sword', x, y, 56 * RKX(), f.ang + Math.PI / 2, 1 - u * u, 1, f.age + f.t, .5, .16, 34); ctx.restore();
+}
 function drawFx(f) {
   if (f.k === 'skname') { drawSkName(f); return; }
+  if (f.k === 'qiPass') { drawQiPass(f, false); return; }
   if (f.k === 'qlfly') { if (f.t < f.dur) drawQlFly(f); return; }
   if (f.k === 'splash') {
     const u = f.t / .55; if (u > 1) return;
