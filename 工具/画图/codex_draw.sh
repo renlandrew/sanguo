@@ -5,7 +5,7 @@
 C="/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"
 HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/../.." && pwd)"; OUT="${OUT:-$ROOT/美术/重画/codex}"; mkdir -p "$OUT/log"
 JOBS="${JOBS:-$HERE/jobs_v2.json}"   # 10-28：JOBS、OUT 可以从外面指定（draw_1028.sh 用）
-REF="$ROOT/美术/重画/画风参考_雷劈.jpg"
+REF="${REF:-$ROOT/美术/重画/画风参考_雷劈.jpg}"   # 11-08 可从外面指定（第二章立绘照第一章敌将立绘）
 IDS=("$@"); [ ${#IDS[@]} -eq 0 ] && IDS=($(python3 -c 'import json,sys;print(" ".join(x["id"] for x in json.load(open(sys.argv[1]))))' "$JOBS"))   # 路径里有 andrew's 的撇号：一律走 argv，别拼进 python 字符串
 for id in "${IDS[@]}"; do
   [ -f "$OUT/$id.png" ] && continue
