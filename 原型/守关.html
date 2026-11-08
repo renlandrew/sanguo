@@ -579,7 +579,7 @@ const LEVELS = [
     rules: { night: { vis: 250, torches: [[80, 300], [280, 260]] }, timed: { t: 60, label: '曹操出城', text: '曹操出城了', sub: '刘关张且战且退' } },
     waves: [[2, 'xiliang', 16, 8, 'rand'], [10, 'xiliang', 14, 0, 'wedge'], [18, 'xiliang', 22, 10, 'rand'], [24, 'xiaowei', 1, 0, 'rand', { g: 'a', lead: true }], [24, 'xiliang', 18, 0, 'line', { g: 'a' }],
       [34, 'xiliang', 26, 10, 'rand'], [44, 'xiliang', 20, 0, 'wedge'], [50, 'xiaowei', 1, 0, 'rand', { g: 'b', lead: true }], [50, 'xiliang', 24, 8, 'rand', { g: 'b' }]],
-    tips: [[1, '夜里限时：守住城门，等曹操骑马出城；黑处的敌人打不到，用「火把」照亮'], [6, '西凉兵举着盾：剑气、刀气打正面只有一半，张飞的矛照刺'], [22, '西凉校尉带兵，斩了他，他带的兵就溃散']] },
+    tips: [[1, '夜里限时：守住城门，等曹操骑马出城；黑处的敌人打不到，火把会自己插到敌人多的地方'], [6, '西凉兵举着盾：剑气、刀气打正面只有一半，张飞的矛照刺'], [22, '西凉校尉带兵，斩了他，他带的兵就溃散']] },
   { id: 12, name: '十八路会盟', sub: '酸枣大营 · 诸侯会盟，西凉铁骑来袭营', hpMul: 2.458,   /* 沙盘推演样本关（10-25 夜晋升减少后按改前星数重调 5.88→3.2）：原来比按推荐等级调的 4.88 强三成五，配对了（拒马）三星、不配一星多 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'suanzao', reward: '刘备可学「激将」',
     rules: { volley: { every: 15, n: 10, dmg: 22, text: '袁绍营放箭' } },
     waves: [[2, 'xiliang', 20, 8, 'rand'], [8, 'tieqi', 4, 4, 'rand'], [16, 'xiliang', 22, 0, 'wedge'], [22, 'tieqi', 6, 5, 'rand'], [28, 'xiliang', 30, 10, 'rand'], [38, 'tieqi', 8, 6, 'rand'],
@@ -597,7 +597,7 @@ const LEVELS = [
     tips: [[1, '夜袭：铁骑摸黑冲营，黑处的打不到；火把会自己照亮敌人多的地方'], [4, '赤帻：城前压了一片时会自己扔下去，附近的敌人 5 秒都冲它去（每关一次）']] },
   { id: 15, name: '胡轸', sub: '拦路将 · 董卓都督胡轸挡在汜水关前', kind: 'duel', boss: 'huzhen', hpMul: 9.767,   /* 10-30 站位居中后 2.33 → 1.33 星、10/12，×0.91 回到 2.5 星 12/12 */ slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '熟铁 · 兵书残卷',
     moves: ['heavy', 'summon', 'combo', 'heavy', 'buff', 'summon', 'combo'], gap: 3.2, heavy: 6, adds: [['xiliang', 5]],
-    tips: [[1, '斗将：胡轸双刀连斩，砍两下，盾要举两次'], [12, '张飞的一喝能喝晕他，打断蓄势']] },
+    tips: [[1, '斗将：胡轸「双刀连斩」一下砍两刀，大盾会自己挡两次'], [12, '张飞的一喝能喝晕他，打断蓄势']] },
   { id: 16, name: '汜水关强攻', sub: '关隘 · 城头装上连弩，西凉弓骑来回骚扰', hpMul: 3.1, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'sishui', reward: '牛筋',
     rules: { give: ['nu'] },
     waves: [[2, 'xiliang', 20, 8, 'rand'], [8, 'gongqi', 4, 4, 'rand'], [14, 'xiliang', 24, 0, 'wedge'], [20, 'gongqi', 6, 5, 'rand'], [26, 'tieqi', 6, 4, 'rand'], [32, 'xiliang', 30, 10, 'rand'],
@@ -927,7 +927,7 @@ const TASKS = {
   ram:     { ok: lv => !!(lv.rules && lv.rules.cart && lv.rules.cart.kind === 'ram'), text: n => `${n}冲车保住一半撞开关门`, check: (r, G) => r.win && G.cart && G.cart.hp >= G.cart.max * .5 },
   ally:    { ok: lv => !!(lv.rules && lv.rules.ally), text: (n, id) => `${n}${LEVELS.find(l => l.id === id)?.rules.ally.name || '友军'}保住一半血`, check: (r, G) => r.win && G.ally && G.ally.hp >= G.ally.max * .5 },
   flags:   { ok: lv => !!(lv.rules && lv.rules.flags), text: n => `${n}两面将旗一面不倒`, check: (r, G) => r.win && !G.flagsDown },
-  torch:   { ok: lv => !!(lv.rules && lv.rules.night), text: n => `${n}只点一支火把`, check: (r, G) => r.win && G.lightN >= 2 },
+  torch:   { ok: lv => !!(lv.rules && lv.rules.night && lv.rules.night.blind), text:   /* 11-08 只在全黑关（火把自己点）出；第十一、十四关火把自动插，玩家管不了 */ n => `${n}只点一支火把`, check: (r, G) => r.win && G.lightN >= 2 },
   mat:     { ok: lv => matOfLv(lv.id).length > 0, text: (n, id) => `${n}打赢一次（掉${matOfLv(id).map(m => m.name).join('、')}）`, check: (r, G) => r.win },   // 10-29 刷专属材料顺手做军务
   seal:    { ok: lv => !!(lv.rules && lv.rules.wells), text: n => `${n}捞出传国玉玺`, check: (r, G) => r.win && G.sealFound },
   ploy:    { ok: lv => lv.id === 12, text: n => `${n}在伏兵杀出时放缓兵之计`, check: (r, G) => r.win && G.adv && G.adv.used && G.adv.cond === 'ambush' },
@@ -1955,7 +1955,12 @@ const comboWait = i => { const id = G.order[i], C = G.combos || [], zi = G.order
   return since > win - .6 && G.ready[zi] - G.t < 3; };
 const roarWait = i => {                                                         // 自动时张飞的一喝：城前喝得到人才喝（三个以上进了一喝的圈、有人快撞城、或在斗将），不然开场一好就喝、喝了个空，后面的连携也接不上
   if (G.order[i] !== 'zhang' || !G.act || G.act.zhang !== 'roar') return false; const R0 = G.st.zhangR, al = alive().filter(e => !FOES[e.kind].civ && seen(e));
-  return !(G.duel && !G.duel.dead) && al.filter(e => WALL_Y - e.y < R0).length < 3 && !al.some(e => WALL_Y - e.y < 60); };
+  const run = al.filter(e => e.chargeT > 0), pend = Object.values(G.chg || {}).some(c => c.state === 'warn' || c.state === 'mark');   // 11-08 冲阵：照会掐时机的打法，留着一喝等冲阵冲进圈里再喝
+  if (run.length) return !(run.filter(e => WALL_Y - e.y < R0 * .9).length >= Math.max(3, run.length * .4) || run.some(e => WALL_Y - e.y < 70));
+  if (pend) return true;
+  const d = G.duel && !G.duel.dead ? G.duel : null;   // 斗将：一喝留给「无双」（喝断它），照会掐时机的打法
+  if (d) { const m = d.mv, unsNext = (d.hvN || 0) % UNS_EVERY === UNS_EVERY - 1; if (m && m.uns && m.t > .5) return false; return unsNext || !(d.guardT2 > 0 || al.filter(e => WALL_Y - e.y < R0 && !e.duel).length >= 8); }
+  return al.filter(e => WALL_Y - e.y < R0).length < 3 && !al.some(e => WALL_Y - e.y < 60); };
 const nextCaster = () => { if (playerAuto()) { const gi = G.order.indexOf('guan'), C = G.combos || [];
     if (gi >= 0 && G.act && G.seal[gi] <= 0 && G.t >= G.ready[gi] && G.t - (G.roarT ?? -9) < WIN_ROAR && ((C.includes('cYun') && G.act.guan === 'qinglong') || (C.includes('cHe') && G.act.guan === 'wenjiu'))) return gi;   // 喝后窗口里关羽先接（不然刘备先把喝晕的砍死了）
     let b = -1; for (let k = 0; k < NS; k++) { const i = (G.turn + k) % NS; if (G.order[i] && knows(G.order[i]) && G.seal[i] <= 0 && !comboWait(i) && !roarWait(i) && (b < 0 || G.ready[i] < G.ready[b])) b = i; } return b; }   // 自动：冷却最快好的那位（等连携的先让一让）
