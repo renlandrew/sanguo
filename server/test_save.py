@@ -49,6 +49,13 @@ try:
     # 新建档第 1 天就上传满级 → 迁移也说不过去？满级在 180 天内是说得过去的，所以收下；但精铁 99999 说不过去 → 拒
     st, h2 = call('POST', '/hello', {}); st, r = call('PUT', '/save', {'data': {'sgz.proto.inv': inv(1, {'精铁': 99999})}, 'at': 1}, h2['token'])
     check('第一份就离谱（精铁 99999）也拒', st == 409)
+    # 11-09 试玩统计
+    st, r = call('POST', '/ev', {'did': 'ab' * 12, 'ev': 'start', 'lv': 1, 'src': 'bili_a', 'lang': 'zh'}); check('试玩统计收下', st == 200 and r.get('ok'))
+    st, r = call('POST', '/ev', {'did': 'ab' * 12, 'ev': 'hack', 'lv': 1}); check('不认的事件 400', st == 400)
+    st, r = call('POST', '/ev', {'did': 'xyz', 'ev': 'win', 'lv': 1}); check('设备串不对 400', st == 400)
+    st, r = call('POST', '/ev', {'did': 'ab' * 12, 'ev': 'win', 'lv': 1, 'src': 'Bad Src!'}); check('来源标签不对 400', st == 400)
+    out = subprocess.run([sys.executable, os.path.join(HERE, 'sanguo_save.py'), 'funnel', '--state', state], capture_output=True, text=True).stdout
+    check('漏斗能出数（1 台、开打第一关 1/1）', '试玩设备 1 台' in out and '1/1' in out)
 finally:
     srv.terminate()
 print('\n%d 项通过，%d 项失败' % (ok, fail)); sys.exit(1 if fail else 0)

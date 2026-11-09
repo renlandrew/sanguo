@@ -29,6 +29,10 @@
   POST /save    {token, data, at}       → {rev}                              同上，给切后台时的 sendBeacon（带不了头）
   POST /claim   {code}                  → {token, code, rev, at, data}       另一台设备认领
   POST /rotate  Authorization           → {code}                             换一个存档码（旧的作废）
+  POST /ev      {did, ev, lv, n, src, lang} → {ok}                         试玩统计（11-09，见下）
+
+试玩统计（11-09 用户同意先做网页试玩版、找陌生玩家测留存）：只有 ?demo 试玩版发；did 是试玩设备自己生成的随机串（库里只存摘要），
+ev 只收白名单里的几种，src 是推广链接带的来源标签。不存 IP、不存存档。看漏斗：python3 sanguo_save.py funnel --state … [--src 标签] [--days 30]
 跨域（10-25 用户同意）：英文版在 itch.io（*.itch.zone）上，直接调 https://theubai.cn/jieyun/api/，和中文网页版共用一个库；
 本机调试的 localhost / 127.0.0.1 也放行。不带 cookie，凭证都在请求里，别的网站拿不到玩家的凭证。
 """
@@ -42,6 +46,10 @@ MAX_BODY = 192 * 1024
 KEEP_HISTORY = 30
 LOCK_FAILS, LOCK_SECS = 5, 600
 HELLO_PER_HOUR = 40
+EV_OK = {'open', 'start', 'win', 'lose', 'end'}       # 打开页面、开打、赢、输（含退军）、试玩打到头
+EV_PER_HOUR = 1200
+SRC_OK = re.compile(r'^[a-z0-9_-]{0,24}$')
+DID_OK = re.compile(r'^[0-9a-f]{16,40}$')
 CORS_OK = re.compile(r'^http://(localhost|127\.0\.0\.1)(:\d{1,5})?$')   # 正式站同源不用跨域；只放本机调试
 
 
@@ -64,7 +72,10 @@ class Store:
               CREATE TABLE IF NOT EXISTS history(save_id INTEGER NOT NULL, rev INTEGER NOT NULL, data TEXT NOT NULL, at REAL NOT NULL, saved REAL NOT NULL,
                 PRIMARY KEY(save_id, rev));
               CREATE INDEX IF NOT EXISTS devices_save ON devices(save_id);
-              CREATE TABLE IF NOT EXISTS admins(save_id INTEGER PRIMARY KEY, since REAL NOT NULL);''')   # 10-25：管理员存档（按存档编号记，换存档码也还是管理员）
+              CREATE TABLE IF NOT EXISTS admins(save_id INTEGER PRIMARY KEY, since REAL NOT NULL);
+              CREATE TABLE IF NOT EXISTS events(ts REAL NOT NULL, day TEXT NOT NULL, did TEXT NOT NULL, ev TEXT NOT NULL, lv INTEGER NOT NULL DEFAULT 0,
+                n INTEGER NOT NULL DEFAULT 0, src TEXT NOT NULL DEFAULT '', lang TEXT NOT NULL DEFAULT 'zh');
+              CREATE INDEX IF NOT EXISTS events_did ON events(did, ts);''')   # 11-09 试玩统计   # 10-25：管理员存档（按存档编号记，换存档码也还是管理员）
 
     @staticmethod
     def thash(token): return hashlib.sha256(token.encode()).hexdigest()
@@ -152,6 +163,17 @@ class Store:
         if admin: out['admin'] = True
         return out
 
+    def event(self, b):
+        did, ev, src, lang = str(b.get('did') or ''), str(b.get('ev') or ''), str(b.get('src') or ''), str(b.get('lang') or 'zh')
+        lv, n = b.get('lv'), b.get('n')
+        if not DID_OK.match(did) or ev not in EV_OK or not SRC_OK.match(src) or lang not in ('zh', 'en'): return False
+        lv = lv if isinstance(lv, int) and 0 <= lv <= 99 else 0; n = n if isinstance(n, int) and 0 <= n <= 9999 else 0
+        now = time.time()
+        with self.lock:
+            self.db.execute('INSERT INTO events(ts, day, did, ev, lv, n, src, lang) VALUES(?,?,?,?,?,?,?,?)',
+                            (now, time.strftime('%Y-%m-%d', time.gmtime(now)), self.thash(did)[:24], ev, lv, n, src, lang))
+        return True
+
     def rotate(self, token):
         with self.lock:
             sid = self._save_of(token)
@@ -205,7 +227,12 @@ def valid_data(d):
 class Limits:
     """存档码连错、新建太快：按 IP 在内存里计数（不落盘）。"""
     def __init__(self):
-        self.fails, self.hellos, self.lock = {}, {}, threading.Lock()
+        self.fails, self.hellos, self.evs, self.lock = {}, {}, {}, threading.Lock()
+    def ev_ok(self, ip):
+        with self.lock:
+            now = time.time(); q = [t for t in self.evs.get(ip, []) if now - t < 3600]
+            if len(q) >= EV_PER_HOUR: self.evs[ip] = q; return False
+            q.append(now); self.evs[ip] = q; return True
     def locked(self, ip):
         with self.lock:
             n, t = self.fails.get(ip, (0, 0))
@@ -271,6 +298,9 @@ class Handler(BaseHTTPRequestHandler):
                 r = self.store.put(self.token(body), data, at)
                 if r and 'reject' in r: return self.reply(409, {'error': '存档数值不合理：' + r['reject']})   # 客户端收到后恢复云端上一份
                 return self.reply(200, r) if r else self.reply(401, {'error': '凭证不对'})
+            if method == 'POST' and path == '/ev':
+                if not self.limits.ev_ok(self.ip()): return self.reply(429, {'error': '太频繁了'})
+                return self.reply(200, {'ok': True}) if self.store.event(body) else self.reply(400, {'error': '统计格式不对'})
             if method == 'POST' and path == '/claim':
                 wait = self.limits.locked(self.ip())
                 if wait: return self.reply(429, {'error': '存档码错了太多次，%d 分钟后再试' % max(1, wait // 60)})
@@ -316,6 +346,33 @@ def cmd_stats(a):
     dev = db.execute('SELECT COUNT(*) FROM devices').fetchone()[0]
     print('存档 %d 份（存过进度的 %d 份），设备 %d 台；最近一天玩过 %d 份，最近一周 %d 份' % (n, played, dev, day, week))
 
+def cmd_funnel(a):
+    # 11-09 试玩漏斗：按设备算（did 摘要）。D1 = 第一次打开后的第二个 UTC 日历日又有动静；D7 同理第 7 天（第 7 天还没到的不算进分母）
+    db = sqlite3.connect(os.path.join(a.state, 'saves.sqlite')); since = time.time() - a.days * 86400
+    q = 'SELECT did, ev, lv, day, src, lang FROM events WHERE ts > ?' + (' AND src = ?' if a.src else '') + (' AND lang = ?' if a.lang else '')
+    args = [since] + ([a.src] if a.src else []) + ([a.lang] if a.lang else [])
+    dev = {}
+    for did, ev, lv, day, src, lang in db.execute(q + ' ORDER BY ts', args):
+        d = dev.setdefault(did, {'first': day, 'days': set(), 'start': set(), 'win': set(), 'src': src})
+        d['days'].add(day)
+        if ev in ('start', 'win'): d[ev].add(lv)
+    if not dev: print('还没有试玩数据'); return
+    D = lambda s: datetime.date.fromisoformat(s)
+    today = datetime.datetime.utcnow().date(); n = len(dev); pct = lambda k, m: '%d/%d（%d%%）' % (k, m, round(100 * k / m)) if m else '0/0'
+    s1 = sum(1 for d in dev.values() if 1 in d['start']); w1 = sum(1 for d in dev.values() if 1 in d['win'])
+    s3 = sum(1 for d in dev.values() if 1 in d['win'] and 3 in d['start']); w10 = sum(1 for d in dev.values() if 10 in d['win'])
+    e1 = [d for d in dev.values() if (today - D(d['first'])).days >= 1]; e7 = [d for d in dev.values() if (today - D(d['first'])).days >= 7]
+    r1 = sum(1 for d in e1 if any((D(x) - D(d['first'])).days == 1 for x in d['days'])); r7 = sum(1 for d in e7 if any((D(x) - D(d['first'])).days == 7 for x in d['days']))
+    print('试玩设备 %d 台（最近 %d 天%s%s）' % (n, a.days, '，来源 ' + a.src if a.src else '', '，语言 ' + a.lang if a.lang else ''))
+    print('  开打第一关  ', pct(s1, n)); print('  打赢第一关  ', pct(w1, n)); print('  赢了第一关又开打第三关', pct(s3, w1))
+    print('  打赢第十关  ', pct(w10, n)); print('  次日回来 D1 ', pct(r1, len(e1))); print('  第七天回来 D7', pct(r7, len(e7)))
+    by = {}
+    for d in dev.values(): by[d['src'] or '（无）'] = by.get(d['src'] or '（无）', 0) + 1
+    print('  来源：' + '，'.join('%s %d' % kv for kv in sorted(by.items(), key=lambda kv: -kv[1])))
+    far = {}
+    for d in dev.values(): m = max(d['win'] or {0}); far[m] = far.get(m, 0) + 1
+    print('  最远打赢到第几关：' + '，'.join('%d关 %d台' % kv for kv in sorted(far.items())))
+
 def cmd_backup(a):
     os.makedirs(a.to, exist_ok=True)
     src = sqlite3.connect(os.path.join(a.state, 'saves.sqlite'))
@@ -353,11 +410,12 @@ def main():
     sub = ap.add_subparsers(dest='cmd')
     s = sub.add_parser('serve'); s.add_argument('--host', default='127.0.0.1'); s.add_argument('--port', type=int, default=8094); s.add_argument('--state', required=True)
     s = sub.add_parser('stats'); s.add_argument('--state', required=True)
+    s = sub.add_parser('funnel'); s.add_argument('--state', required=True); s.add_argument('--src', default=''); s.add_argument('--lang', default=''); s.add_argument('--days', type=int, default=30)
     s = sub.add_parser('backup'); s.add_argument('--state', required=True); s.add_argument('--to', required=True); s.add_argument('--keep', type=int, default=14)
     s = sub.add_parser('history'); s.add_argument('--state', required=True); s.add_argument('--code', required=True)
     s = sub.add_parser('admin'); s.add_argument('--state', required=True); s.add_argument('--code', required=True); s.add_argument('--off', action='store_true')
     a = ap.parse_args()
-    {'serve': cmd_serve, 'stats': cmd_stats, 'backup': cmd_backup, 'history': cmd_history, 'admin': cmd_admin}.get(a.cmd, lambda _: ap.print_help())(a)
+    {'serve': cmd_serve, 'stats': cmd_stats, 'funnel': cmd_funnel, 'backup': cmd_backup, 'history': cmd_history, 'admin': cmd_admin}.get(a.cmd, lambda _: ap.print_help())(a)
 
 if __name__ == '__main__':
     main()

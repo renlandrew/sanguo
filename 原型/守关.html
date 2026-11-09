@@ -887,7 +887,17 @@ function buildQueue(lv) {
 
 // ---------- 存档（只记每关最好星数） ----------
 // 网址带 ?save=名字 时存进另一套档（测试用，不碰玩家真存档 sgz.proto.*）
-const SAVE_NS = new URLSearchParams(location.search).get('save') || (() => { try { return localStorage.getItem('sgz.slot') || 'proto'; } catch (e) { return 'proto'; } })();   // 测试期两格存档（系统页左右拨动切换）：proto / proto2
+// ===== 试玩版（11-09 用户同意先做网页试玩、找陌生玩家测留存）：网址带 ?demo ——只开前 10 关、不扣体力、存在单独的 demo 档（不上云，也不碰正式档）；
+// 匿名统计打开、开打、输赢、打到头，发到 /sanguo/api/ev（设备号是本机随机串，不带存档、不带 IP）。?src=标签 记第一次从哪条推广链接来的。
+const QS = new URLSearchParams(location.search), DEMO = QS.has('demo'), DEMO_MAX = 10;
+const DEMO_ID = DEMO ? (() => { try { let d = localStorage.getItem('sgz.demo.did'); if (!d) { d = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem('sgz.demo.did', d); }
+  let src = localStorage.getItem('sgz.demo.src'); if (src == null) { src = (QS.get('src') || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 24); localStorage.setItem('sgz.demo.src', src); } return { did: d, src }; } catch (e) { return null; } })() : null;
+function demoEv(ev, lv = 0, n = 0) {
+  if (!DEMO_ID || window.__sg && (window.__sg.simming || window.__sg.all)) return;
+  const url = location.pathname.replace(/[^/]*$/, '') + 'api/ev', body = JSON.stringify({ did: DEMO_ID.did, ev, lv, n, src: DEMO_ID.src, lang: 'zh' });
+  try { if (!(navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], { type: 'application/json' })))) fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'application/json' }, keepalive: true }).catch(() => {}); } catch (e) {}
+}
+const SAVE_NS = QS.get('save') || (DEMO ? 'demo' : null) || (() => { try { return localStorage.getItem('sgz.slot') || 'proto'; } catch (e) { return 'proto'; } })();   // 测试期两格存档（系统页左右拨动切换）：proto / proto2
 // ===== 云存档（10-30 用户：「不是接了ec2吗，你做一个数据库啊，如同劫云」）=====
 // 照劫云：不注册，第一次打开服务器发一个凭证（存在 sgz.cloud）和 9 位存档码；改了等 5 秒合并上传，切后台、关页面立刻补传；断网照玩、联网补传；
 // 换手机在「系统」里输存档码接着玩。服务器（三国志/server/sanguo_save.py，EC2 上 /sanguo/api/）多两件事：
@@ -1250,6 +1260,7 @@ let ML = null;
 // 换成第二层墨流（黑墨调色，和青龙斩的青金墨分开）画在敌人后面：从他身上往外、往上冒一缕缕墨烟，约一秒淡掉
 let MLB = null;
 function startLevel(i) {
+  if (!window.__sg.simming) demoEv('start', LEVELS[i].id);
   sheetPrune(i); if (!window.__sg.simming) { MAPL = {}; SPR = {}; SPRHIT = {}; for (const k in SPDV) delete SPDV[k]; INKBG.clear(); G && (G.spW = null); }   // 上一关的垫底画布、染色副本放掉 if (ML) ML.clear(); if (MLB) MLB.clear();
   const lv = LEVELS[i], RU = lv.rules || {};
   if (!window.__sg.simming) { CUR_LV = i; const js = JSON.stringify(lv); for (const k in BGC) if (k !== lv.map && k !== MAP_ALIAS[lv.map]) delete BGC[k]; if (!BGC[lv.map]) ready(IMG['bg_' + lv.map]); if (!IMG['bg_' + lv.map] && MAP_ALIAS[lv.map] && !BGC[MAP_ALIAS[lv.map]]) ready(IMG['bg_' + MAP_ALIAS[lv.map]]);   // 用到才加载的图：开打前先把这关的兵种图集、底图、敌将华彩叫起来，免得头几个兵看不见
@@ -2466,7 +2477,8 @@ function end(win, why) {
   if (!G.sim && G.cnt) { INV.comboSeen = INV.comboSeen || {}; for (const k of ['cYun', 'cHeng', 'cHe', 'cShuang', 'cRen', 'cTao']) if (G.cnt[k]) INV.comboSeen[k] = 1; saveInv(); }   // 10-29：六个连携跨局累计，输了的那局打出来的也算，当场存盘
   G.feats = win && G.cnt ? featCheck(stars) : []; if (!G.sim && G.feats.length) { INV.feat = INV.feat || {}; for (const f of G.feats) INV.feat[f] = 1; saveInv(); }
   if (!G.sim) { const A = achClaimable(); G.result.ach = A.map(a => a.sec === '首通' ? '首通 · ' + a.name : a.name); G.result.achPrep = achPrepOf(A); G.result.achGot = claimAch(A); }   // 10-30 用户：「结算时如果完成任何功绩，都在结算页提示」；又：「完成了……还是要我去点成就完成才给我」——达成就直接发，连以前没领的一起
-  if (!G.sim && win) { staNow(); INV.sta.v = Math.max(0, INV.sta.v - BATTLE_STA); }   // 打赢花 10 体力（输了、退军不扣）
+  if (!G.sim && win && !DEMO) { staNow(); INV.sta.v = Math.max(0, INV.sta.v - BATTLE_STA); }
+  if (!G.sim) demoEv(win ? 'win' : 'lose', G.lv.id, win ? stars : Math.round(G.t));   // 试玩统计：赢记星数，输记撑了几秒   // 打赢花 10 体力（输了、退军不扣）
   if (!G.sim) { awardExp(win, stars); settleLoot(win); G.fx = G.fx.filter(f => !['wave', 'banner', 'txt', 'leak'].includes(f.k)); }   // 战场上的横幅、飘字别透过结算页露出来
 }
 // 结算经验（10-25）：出战的每人拿全份，升级时记下五维涨了几点（显示整数，涨过整数线才算涨 1）
@@ -6543,7 +6555,8 @@ const FOE_NOTE = {
 };
 function openLevel(i) {
   const id = LEVELS[i].id;
-  if (!window.__sg.all && staNow() < BATTLE_STA) { G = null; screen = 'camp'; CAMP.t0 = uiNow(); showReward('体力不够', [`打一关要 ${BATTLE_STA} 体力`, '12–14 点、19–21 点可在军帐领 20'], ['zhang'], false); return; }   // 11-02 体力控制
+  if (DEMO && LEVELS[i] && LEVELS[i].id > DEMO_MAX) { G = null; screen = 'levels'; demoEv('end', LEVELS[i].id); showReward('试玩到此为止', ['前十关就是试玩的全部内容，谢谢你打到这里！', '正式版还有五十关和第二章「徐州风云」'], ['guan', 'zhang', 'liu'], true); return; }
+  if (!window.__sg.all && !DEMO && staNow() < BATTLE_STA) { G = null; screen = 'camp'; CAMP.t0 = uiNow(); showReward('体力不够', [`打一关要 ${BATTLE_STA} 体力`, '12–14 点、19–21 点可在军帐领 20'], ['zhang'], false); return; }   // 11-02 体力控制
   if (i === 0 && !storySeen('open')) { playStory('open', () => openLevel(0)); return; }
   if (LEVELS[i] && LEVELS[i].id === 31 && !storySeen('c2') && !window.__sg.simming) { playStory('c2', () => openLevel(i)); return; }   // 第一次进第二章：先演开章   // 第一次进第一关：先演序章（桃园、雷劈、醒来）
   /* 10-26 用户：「不需要任何破题门槛，不要在地图提示，可以让军师提示」——不再拦着不让打；缺的东西开战时军师提一句（见 counselGateTip） */
@@ -6925,6 +6938,7 @@ function drawMenu() {
   /* 11-02 用户：「你做了一层蒙影吗？」——去掉上下压暗的渐变（底部原来压到八成黑，城头发黑） */
   if (ready(IMG.trio)) { const im = IMG.trio, wide = im.width > im.height, h = wide ? W * im.height / im.width : TRIO_H, w = h * im.width / im.height; ctx.drawImage(im, W / 2 - w / 2, wide ? 150 : TRIO_FOOT - TRIO_H, w, h); }   // 11-02 用户改了首页图（城头步道在下面）：「让他们站城墙上」——脚落在城头步道上   // 横图铺满一屏宽；10-27 换成 Codex 画的竖版三人（灰底抠图），按高度画、居中，脚落在关卡牌上面
   uiText('群雄逐鹿', W / 2, 96, 50, UIC.gold2, 'center', FONT, { glow: `rgba(255,190,80,${.5 + .2 * Math.sin(t * 2)})`, glowR: 20, lw: 7 });
+  if (DEMO) uiText('试玩版 · 前十关', W / 2, 130, 14, UIC.cream, 'center', FONT, { lw: 3 });   // 11-09 试玩版
   const nt = dailyTick(); if (nt) MENU.note = { ...nt, t0: t };
   if (CRASH && !CRASH.t0) CRASH.t0 = t;
   if (CRASH && t - CRASH.t0 < 20) { const c = CRASH, msg = `上次${c.scr === 'play' && c.lv ? `第 ${c.lv} 关第 ${c.t} 秒` : '在' + ({ menu: '主页', levels: '选关' }[c.scr] || c.scr)}页面被手机关掉重开（图片约 ${c.mb}MB）`;   // 中断提示：截图发回来查
@@ -7184,7 +7198,7 @@ const aliveClear = () => { try { localStorage.removeItem('sgz.alive'); } catch (
 addEventListener('pagehide', aliveClear); document.addEventListener('visibilitychange', () => { if (document.hidden) aliveClear(); });
 const BGV = document.getElementById('bgv'), BGX = BGV.getContext('2d'); let bgTick = 0;
 function bgMirror() { const wide = innerWidth > W * S + 2; if (BGV.style.display !== (wide ? '' : 'none')) BGV.style.display = wide ? '' : 'none'; if (!wide || (bgTick++ & 3)) return;   /* 10-27 手机上变糊：全屏加模糊滤镜的底层画布让手机浏览器把整页降了清晰度，窄屏直接不显示 */ BGX.drawImage(cv, 0, 0, 36, 64); }   // 宽屏才画，每 4 帧缩成 36×64 一次，放大加模糊就够当底
-function boot() { fit(); addEventListener('resize', fit); if (new URLSearchParams(location.search).has('story')) playStory('open', () => { screen = 'menu'; }, true);   /* 网址带 ?story：直接从序章开始翻看第一章全部剧情（10-26 用户：「你专门开个故事我看看，可以来回翻动的」） */
+function boot() { fit(); addEventListener('resize', fit); demoEv('open'); if (new URLSearchParams(location.search).has('story')) playStory('open', () => { screen = 'menu'; }, true);   /* 网址带 ?story：直接从序章开始翻看第一章全部剧情（10-26 用户：「你专门开个故事我看看，可以来回翻动的」） */
   requestAnimationFrame(frame); }
 const RS_OPT = [1.5, 2, 3];   // 画面清晰度（画布按屏幕几倍像素画）：越高越清楚、越吃内存；每台手机各自记
 const rsCap = () => { try { const v = +localStorage.getItem('sgz.rs'); return RS_OPT.includes(v) ? v : 1.5; } catch (e) { return 1.5; } };
