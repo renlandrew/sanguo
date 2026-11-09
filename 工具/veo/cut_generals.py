@@ -64,6 +64,8 @@ PLAN = {
     'xiaowei': {'run': ('run', range(8, 32, 2)), 'ram': ('ram', range(0, 40, 3)), 'die': ('die', range(8, 40, 3))},
     'yushe': {'run': ('run', range(8, 32, 2)), 'die': ('die', range(12, 40, 3))},
     'panfeng': {'idle': ('ram', range(0, 4)), 'ram': ('ram', range(0, 40, 3))},
+    # 11-08 赵云首录（make_zhao_pack.py）：待机那条 4–10 帧 Veo 叠影过渡，取 18 帧以后站定、披风飘；七进七出第 21 帧起侧过来露脸，只取前 21 帧
+    'zhao': {'idle': ('idle', range(18, 40, 2)), 'atk': ('atk', range(0, 40, 3)), 'atk2': ('atk2', range(0, 40, 3)), 'skill': ('skill', range(0, 21, 2))},
     'wuanguo': {'idle': ('ram', range(0, 4)), 'ram': ('ram', range(0, 40, 3))},
 }
 
@@ -136,7 +138,7 @@ for g in (sys.argv[2:] or ['guan', 'zhang', 'liu']):
     k = STAND / fig0; bw0 = body(m0)[0]
     strips, meta = [], {'stand': STAND, 'anims': {}}
     import os; NEWP = os.environ.get('NEWPLAN') == '1'   # 10-27 新画风重录：刘关张不用旧的 PLAN（那是按旧视频挑的帧），照 PICK
-    for anim, (src, idx) in (PLAN[g] if g in FOE else {**{a: (a, i) for a, i in PICK.items()}, **(NEW_PLAN.get(g, {}) if NEWP else PLAN.get(g, {}))}).items():
+    for anim, (src, idx) in (PLAN[g] if g in FOE or g in ('zhao',) else {**{a: (a, i) for a, i in PICK.items()}, **(NEW_PLAN.get(g, {}) if NEWP else PLAN.get(g, {}))}).items():
         if src not in takes: continue
         tid = takes[src].stem; end = END.get(tid, N - 1); cs = cells(takes[src])
         frames = []

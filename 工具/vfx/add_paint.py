@@ -27,10 +27,11 @@ if turn: im = im.rotate(-90 if turn == 'cw' else 90, expand=True)
 w, h = im.size; k = (CELL - 2 * PAD) / max(h, w); W2, H2 = max(1, round(w * k)), max(1, round(h * k))
 im = im.resize((W2, H2), Image.Resampling.LANCZOS)
 atlas = Image.open(OUT / 'fx_paint.png').convert('RGBA'); meta = json.loads((OUT / 'fx_paint.json').read_text())
-cells = [[(j % 2) * CELL, (j // 2) * CELL] for j in range(4)]
+cells = [[x, y] for y in (0, CELL) for x in (0, CELL, 2 * CELL)]   # 11-08 赵云两张：图集从 2×2 扩成 3 列 2 行（原来四格位置不变）
 used = {tuple(m['cell'][:2]): nm for nm, m in meta.items()}
 spot = next((c for c in cells if used.get(tuple(c)) == name), None) or next((c for c in cells if tuple(c) not in used), None)
-if spot is None: sys.exit('图集四格都满了')
+if spot is None: sys.exit('图集六格都满了')
+if atlas.width < spot[0] + CELL: wide = Image.new('RGBA', (spot[0] + CELL, atlas.height)); wide.paste(atlas, (0, 0)); atlas = wide
 cx, cy = spot; atlas.paste(Image.new('RGBA', (CELL, CELL)), (cx, cy))
 ox, oy = cx + (CELL - W2) // 2, cy + (CELL - H2) // 2; atlas.paste(im, (ox, oy))
 meta[name] = {'cell': [cx, cy, CELL, CELL], 'box': [ox - cx, oy - cy, W2, H2]}

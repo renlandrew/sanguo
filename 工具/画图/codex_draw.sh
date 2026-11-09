@@ -5,13 +5,13 @@
 C="/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"
 HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/../.." && pwd)"; OUT="${OUT:-$ROOT/美术/重画/codex}"; mkdir -p "$OUT/log"
 JOBS="${JOBS:-$HERE/jobs_v2.json}"   # 10-28：JOBS、OUT 可以从外面指定（draw_1028.sh 用）
-REF="${REF:-$ROOT/美术/重画/画风参考_雷劈.jpg}"   # 11-08 可从外面指定（第二章立绘照第一章敌将立绘）
+REF="${REF:-$ROOT/美术/重画/画风参考_雷劈.jpg}"   # 11-08 可从外面指定（第二章立绘照第一章敌将立绘）；REF2 再附一张（赵云：造型照立绘、画风照刘备）
 IDS=("$@"); [ ${#IDS[@]} -eq 0 ] && IDS=($(python3 -c 'import json,sys;print(" ".join(x["id"] for x in json.load(open(sys.argv[1]))))' "$JOBS"))   # 路径里有 andrew's 的撇号：一律走 argv，别拼进 python 字符串
 for id in "${IDS[@]}"; do
   [ -f "$OUT/$id.png" ] && continue
   P=$(python3 -c 'import json,sys;print(next(x["prompt"] for x in json.load(open(sys.argv[1])) if x["id"]==sys.argv[2]))' "$JOBS" "$id")
   [ -z "$P" ] && { echo "读不到 $id 的 prompt，停"; exit 1; }
   printf "%s" "用内置 image_gen 工具画一张图（只画这一张，不要写代码）。画完把图片文件复制到 $OUT/$id.png 然后结束。附图是画风参考。
-$P" | (cd "$OUT" && "$C" exec --skip-git-repo-check -s workspace-write -i "$REF" $([[ $id == *zoujing* ]] && echo -i "$ROOT/美术/重画/邹靖造型参考.webp") - > "log/$id.txt" 2>&1)
+$P" | (cd "$OUT" && "$C" exec --skip-git-repo-check -s workspace-write -i "$REF" ${REF2:+-i "$REF2"} $([[ $id == *zoujing* ]] && echo -i "$ROOT/美术/重画/邹靖造型参考.webp") - > "log/$id.txt" 2>&1)
   if [ -f "$OUT/$id.png" ]; then echo "ok $id"; elif grep -q "429\|usage_limit" "$OUT/log/$id.txt"; then echo "额度用完，停在 $id"; exit 1; else echo "没画出 $id（看 log/$id.txt）"; fi
 done
