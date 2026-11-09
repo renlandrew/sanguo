@@ -1241,6 +1241,7 @@ const levelFor = (i, id, sim) => sim || !ROSTER[id] ? EXPECT[i][id] : window.__s
 
 // ---------- 一局 ----------
 let G = null, screen = 'menu';
+let BACKTO = null;   // 11-09 用户：「如果从成就这里点击过去打，那么打完后应该会到成就页面」——从军帐军务、神兵「去刷」进的关，打完点「返回」回那一页；从地图、主页进的照旧回地图
 let PREP = null;                                     // 出阵布置：{ li, order, kits, runs: [推演结果…] }
 // 墨流层（墨流.js，10-25 用户发来电影截图：「我要这样的」）：实时流体，只给两个大招用——青龙斩青金墨浪、当阳一喝火爆带烟尘碎石；
 // 普攻和双股剑仍是干净的刀光剑光（用户：「你也不能全部都是这样，也要有没有烟气的」）。不支持 WebGL2 时为 false，照旧用帧动画
@@ -6087,7 +6088,7 @@ function drawResult() {
       ctx.restore(); } }
   // 牌匾按钮一排放在最下面：经验条涨完才能点
   const go = fn => () => { const k = r.story; if (k && !storySeen(k)) { G = null; playStory(k, fn); } else fn(); };   // 有剧情先演完再去
-  const back = go(() => { screen = 'levels'; G = null; }), yb = H - 54;   // 10-30 用户：「3个btn 短一些，上下padding大一点点」——108/120/108 宽 42 高 → 96/108/96 宽 46 高，居中
+  const back = go(() => { const b = BACKTO; BACKTO = null; G = null; screen = b || 'levels'; if (b === 'camp') CAMP.t0 = uiNow(); else if (b === 'armory') ARM.t0 = uiNow(); }), yb = H - 54;   // 10-30 用户：「3个btn 短一些，上下padding大一点点」——108/120/108 宽 42 高 → 96/108/96 宽 46 高，居中
   if (next) { plaque(22, yb, 96, 46, '再来', go(() => openLevel(li)), false, al); plaque(126, yb, 108, 46, '下一关', go(() => openLevel(li + 1)), true, al); plaque(242, yb, 96, 46, '返回', back, false, al); }
   else { plaque(54, yb, 120, 46, '再来', go(() => openLevel(li)), true, al); plaque(186, yb, 120, 46, '返回', back, false, al); }
 }
@@ -6314,7 +6315,7 @@ function drawCamp() {
     uiSeal(36, y + 20, 24, CNUM(lvNo(LEVELS[li])), LEVELS[li].kind === 'duel' ? '#8a1c10' : UIC.red);
     uiText(TASKS[t.k].text(lvName(t.lv), t.lv), 56, y + 14, 13, t.done ? 'rgba(244,230,196,.55)' : UIC.cream, 'left', PLAIN, { stroke: false });
     uiText('残页 +' + TASK_PAY, 56, y + 30, 10, 'rgba(240,217,160,.6)', 'left', PLAIN, { stroke: false });
-    if (t.done) uiSeal(W - 42, y + 20, 26, '毕', UIC.red, true); else pill(W - 92, y + 8, 64, 24, '去打', () => { screen = 'menu'; openLevel(li); });
+    if (t.done) uiSeal(W - 42, y + 20, 26, '毕', UIC.red, true); else pill(W - 92, y + 8, 64, 24, '去打', () => { screen = 'menu'; BACKTO = 'camp'; openLevel(li); });
   });
   let y = 264 + TOPY + (ts.length ? shown.length * 44 : 92);
   { const id = visitWho(), left = DAILY.visitN - DAILY.visits, vr0 = CAMP.visit && uiNow() - CAMP.visit.t0 < 2.6 ? CAMP.visit : null;   // 出外探访
@@ -6447,7 +6448,7 @@ function drawArmory2() {
   { const M = MAT[id], got = DAILY.caps[M.name] || 0, ML = M.lv.filter(l => (l > 30) === !!BEST[30]), lvs = ML.map(lvName).join('、');   // 11-08 只列本章的刷点（三个写不下）   // 专属材料哪里来（10-29）：+6 起要；今天还能刷几块；点「去刷」开最前面那关
     uiText(`${M.name}：${lvs}打赢掉（今日 ${got}/${MAT_CAP}）`, 22, 156, 11, ITEM_C[M.name], 'left', PLAIN, { stroke: false });
     uiText('功绩也给，兵器 +6 起要', 22, 172, 10, 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false });
-    const go = ML.find(l => BEST[l] != null || BEST[l - 1] != null || l === 1); if (got < MAT_CAP && go) pill(22, 182, 56, 22, '去刷', () => openLevel(go - 1));
+    const go = ML.find(l => BEST[l] != null || BEST[l - 1] != null || l === 1); if (got < MAT_CAP && go) pill(22, 182, 56, 22, '去刷', () => { BACKTO = 'armory'; openLevel(go - 1); });
     if ((INV.it.陨铁 || 0) >= MAT_SWAP) pill(84, 182, 96, 22, `陨铁 ${MAT_SWAP} 换 1`, () => { INV.it.陨铁 -= MAT_SWAP; INV.it[M.name]++; saveInv(); sfx('anvil'); }); }
   ['guan', 'zhang', 'liu'].forEach((g, k) => { const x = W - 70, y = 70 + k * 92, on = g === id;                       // 右边三格：三人的兵器
     ctx.save(); if (!on) ctx.globalAlpha = .5; ctx.fillStyle = 'rgba(14,10,7,.8)'; rr(x, y, 58, 84, 7); ctx.fill();   /* 和底栏武将牌一样：暗底加细金框（关卡牌那张缩小了里面的金边像个方框） */
@@ -6571,7 +6572,7 @@ function drawFoeIcon(kind, x, y, h) {
 }
 function drawPrep() {
   const P = PREP, lv = LEVELS[P.li], t = uiNow() - (P.t0 || 0); prepBg(lv); prepHead(lv);
-  plaque(278, 14, 72, 26, '返回', () => { screen = 'menu'; }, false);
+  plaque(278, 14, 72, 26, '返回', () => { const b = BACKTO; BACKTO = null; screen = b || 'menu'; if (b === 'camp') CAMP.t0 = uiNow(); else if (b === 'armory') ARM.t0 = uiNow(); }, false);   // 11-09 从军帐、神兵进来的，返回也回那一页
   plaque(196, 14, 76, 26, '本关目标', () => { P.goal = true; }, false);
   plaque(114, 14, 76, 26, '配招', () => { P.load = true; loadSeen(); }, !!combosOf(prepLoads(P)).length); if (loadNew()) uiSeal(186, 16, 13, '!', UIC.red);
   // 敌情
@@ -6951,7 +6952,7 @@ function drawMenu() {
   hit(cx0, cy0, cw - 66, chh, () => { if (!open1) { MENU.lockT = uiNow(); return; } screen = 'levels'; MENU.seg = Math.floor(ni / 10); });
   { const bw = 58, bh = 24, bx = cx0 + cw - bw - 4, by = cy0 + (chh - bh) / 2, br = .5 + .5 * Math.sin(t * 3);   // 出征：红漆钮（页签那张画的漆面），一呼一吸的金光
     ctx.save(); ctx.shadowColor = `rgba(255,190,90,${.45 + .3 * br})`; ctx.shadowBlur = 14; if (ready(IMG.ui2_tab_red)) draw9(IMG.ui2_tab_red, bx, by, bw, bh, 90, 90, 0, 0, bh / 189); else uiPanel(bx, by, bw, bh, { r: bh / 2, top: '#c0402a', bot: '#6e140c' }); ctx.restore();
-    uiText('出征', bx + bw / 2, by + bh / 2 + 1, fitSize('出征', 15, bw - bh * .95), '#fff2dc', 'center', FONT, { lw: 3, glow: 'rgba(255,200,90,.5)', glowR: 8 }); hit(bx, by, bw, bh, () => openLevel(ni)); }
+    uiText('出征', bx + bw / 2, by + bh / 2 + 1, fitSize('出征', 15, bw - bh * .95), '#fff2dc', 'center', FONT, { lw: 3, glow: 'rgba(255,200,90,.5)', glowR: 8 }); hit(bx, by, bw, bh, () => { BACKTO = null; openLevel(ni); }); }
   // 点卯横幅
   if (MENU.note && t - MENU.note.t0 < 3.2) { const u = (t - MENU.note.t0) / 3.2, a = u < .1 ? u / .1 : u > .8 ? (1 - u) / .2 : 1, g = MENU.note.got;
     const ny = TIP_Y - 10; ctx.save(); ctx.globalAlpha = a; if (ready(IMG.ui_banner)) draw9(IMG.ui_banner, 8, ny, W - 16, 80, 90, 90, 0, 0, 80 / 89);   // 挪到关卡牌上面，别挡住三兄弟的脸（10-26 试玩）
@@ -7045,7 +7046,7 @@ function drawLvPop(t) {                                                         
     const F = D.filter(([k, tag]) => !tag && full(k)).map(([k]) => k); if (F.length) uiText(`今天${F.join('、')}已领满`, px + 84 + D.length * 34 - 8, py + 98, 10, 'rgba(255,170,140,.85)', 'left', PLAIN, { stroke: false }); }
   const bw = 90, bh = 30, by = py + 128, ax = px + pw / 2 - bw - 10, sx = px + pw / 2 + 10;   // 11-02 用户：「2个btn 太大了」——112×38 → 90×30
   { ctx.save(); if (ready(IMG.ui2_tab_red)) draw9(IMG.ui2_tab_red, ax, by, bw, bh, 90, 90, 0, 0, bh / 189); else uiPanel(ax, by, bw, bh, { r: bh / 2, top: '#c0402a', bot: '#6e140c' }); ctx.restore();
-    uiText('攻打', ax + bw / 2, by + bh / 2 + 1, 15, '#fff2dc', 'center', FONT, { lw: 4 }); hit(ax, by, bw, bh, () => { MENU.lvPop = null; openLevel(i); }); }
+    uiText('攻打', ax + bw / 2, by + bh / 2 + 1, 15, '#fff2dc', 'center', FONT, { lw: 4 }); hit(ax, by, bw, bh, () => { MENU.lvPop = null; BACKTO = null; openLevel(i); }); }
   { const ok = sw && sta >= SWEEP_STA; ctx.save(); if (!ok) ctx.globalAlpha = .45; if (ready(IMG.ui2_tab_dark)) draw9(IMG.ui2_tab_dark, sx, by, bw, bh, 90, 90, 0, 0, bh / 189); else uiPanel(sx, by, bw, bh, { r: bh / 2 });
     uiText('扫荡', sx + bw / 2, by + bh / 2 + 1, 15, UIC.gold2, 'center', FONT, { lw: 4 }); ctx.restore();
     const why = !sweepOpen() ? '通过第五关开放' : b < 3 ? '三星才能扫荡' : sta < SWEEP_STA ? `体力不够（${sta}/${SWEEP_STA}）` : `花体力 ${SWEEP_STA} · 剩 ${sta}`;
@@ -7090,7 +7091,8 @@ function drawLevels() {
 cv.addEventListener('pointermove', ev => { if (ev.pointerType !== 'mouse') return; const r = cv.getBoundingClientRect(); MOUSE = { x: (ev.clientX - r.left) / S, y: (ev.clientY - r.top) / S }; });   // 悬停说明只给鼠标
 cv.addEventListener('pointerleave', () => { MOUSE = null; });
 const cvPt = ev => { const r = cv.getBoundingClientRect(); return [(ev.clientX - r.left) / S, (ev.clientY - r.top) / S]; };
-cv.addEventListener('pointermove', ev => { if (G && G.drag) { [G.drag.x, G.drag.y] = cvPt(ev); } });   // 拖着底栏的牌
+cv.addEventListener('pointermove', ev => { const P = PRESS; if (P && P.h.long && P.x != null) { const [x, y] = cvPt(ev); if (Math.hypot(x - P.x, y - P.y) > 8) { PRESS = null; clearTimeout(P.tm); P.h.long(); } }   // 11-09 用户：「拖拽移动角色放开后，如果技能已经好了，放开鼠标时会释放技能」——没按满 0.45 秒就拖动了，原来松手算点、出招；现在手指一动就算拿起这张牌
+  if (G && G.drag) { [G.drag.x, G.drag.y] = cvPt(ev); } });   // 拖着底栏的牌
 for (const ev of ['pointerup', 'pointercancel']) cv.addEventListener(ev, e => { if (G && G.drag) { const D = G.drag; G.drag = null; if (e.type === 'pointerup' && G.state === 'play') { const [x, y] = cvPt(e), j = slotAt(x, y); if (j >= 0 && j !== D.i) { swapSlots(D.i, j); sfx('tap'); } } return; }   // 松手：落在另一张上就换，落别处不动，都不出招
   const P = PRESS; if (!P) return; PRESS = null; clearTimeout(P.tm); if (e.type === 'pointerup') { sfx('tap'); P.h.fn(); } });
 cv.addEventListener('pointermove', ev => {   // 电脑上鼠标停在城墙军械图标上：显示说明
@@ -7106,7 +7108,7 @@ cv.addEventListener('pointerdown', ev => {
   if (screen !== 'play' && SCMAX[screen] > 0) { const top = HITS.slice().reverse().find(h => x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
     if (!top || !top.fixed) { DRAG = { x, y, off0: Math.min(SCRL[screen] || 0, SCMAX[screen]), moved: false }; return; } }   // 能拖的页：先不算点，松手时没拖过才算
   for (let i = HITS.length - 1; i >= 0; i--) { const h = HITS[i]; if (x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h) {
-    if (h.long) { const P = PRESS = { h, tm: setTimeout(() => { if (PRESS === P) { PRESS = null; sfx('tap'); h.long(); } }, 450) }; return; }   // 有长按的：按住满 0.45 秒算长按，早松手算点
+    if (h.long) { const P = PRESS = { h, x, y, tm: setTimeout(() => { if (PRESS === P) { PRESS = null; sfx('tap'); h.long(); } }, 450) }; return; }   // 有长按的：按住满 0.45 秒算长按，早松手算点
     sfx('tap'); h.fn(); return; } }
   if (G && (G.paused || G.panel)) return;
   if (G && G.state === 'play' && y > TOP && y < WALL_Y + 10) {
@@ -7130,7 +7132,7 @@ cv.addEventListener('wheel', ev => { if (screen === 'play' || !(SCMAX[screen] > 
 window.__sg = {
   auto: false, turbo: 1, all: new URLSearchParams(location.search).has('all'), seed: 0,   // 网址带 ?all 就十关全开（试玩用）
   tune: TUNE, PERKS, GEN, LEVELS, WAVE, TIMEX, MER, RANK_AT, setSpd(v) { SPD.v = SPD_X = v; ACT_X = 1 / v; }, get G() { return G; }, draw: () => render(),            // draw：面板藏着时浏览器不跑动画帧，截图前手动画一帧 get screen() { return screen; },
-  start: i => startLevel(i), up: (k, who) => doUp(k, who), open: i => openLevel(i), get prep() { return PREP; }, set prep(v) { PREP = v; }, get screen() { return screen; }, set screen(v) { screen = v; }, get ml() { return [ML, MLB]; }, get snd() { return { SND, MP }; }, spPlay: (...a) => spPlay(...a), get feats() { return G && G.feats; }, get cnt() { return G && G.cnt; },
+  start: i => startLevel(i), up: (k, who) => doUp(k, who), open: i => openLevel(i), get backto() { return BACKTO; }, set backto(v) { BACKTO = v; }, get prep() { return PREP; }, set prep(v) { PREP = v; }, get screen() { return screen; }, set screen(v) { screen = v; }, get ml() { return [ML, MLB]; }, get snd() { return { SND, MP }; }, spPlay: (...a) => spPlay(...a), get feats() { return G && G.feats; }, get cnt() { return G && G.cnt; },
   // 军师荐得对不对：机器人照真值打，每次晋升让三位军师各荐一次，数荐中真值最高那张的次数（10-25）
   advTest(levels, seeds = 2) { const out = {};
     for (const i of levels) for (let k = 0; k < seeds; k++) { this.seed = k * 101; this.auto = true; this.simming = true; startLevel(i); this.simming = false; G.sim = true; let n = 0;
