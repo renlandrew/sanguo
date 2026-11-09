@@ -83,10 +83,16 @@ T = {
 '带「伏兵」：两侧河沟藏乡勇，看准时机点令旗—': 'Brings "Ambush": militia hide in the ditches; tap the flag at the right moment —',
 '带「凿堑」（城前挖一道深堑，敌兵过堑慢一半、': 'Brings "Trench" (a deep trench before the wall; foes cross at half speed, ',
 '骑兵落马，# 秒）和「将计就计」（破掉敌军…': 'cavalry unhorsed, #s) and "Turn the Tables" (break the enemy…',
-'「元龙在此，计从心出」': '"Yuanlong is here; the plan is in my head."', '「兵者，诡道也」': '"All warfare is deception."',
-'「剿过黄巾，黄巾那几路兵我门儿清」': '"I\'ve fought the Turbans. I know every one of their tricks."', '「打仗嘛，先把城守住」': '"War? Step one: hold the wall."',
+'「元龙在此，计从心出」': '"Yuanlong\'s here. I have a plan."', '「兵者，诡道也」': '"All warfare is deception."',
+'「剿过黄巾，黄巾那几路兵我门儿清」': '"I know every Turban trick."', '「打仗嘛，先把城守住」': '"War? First, hold the wall."',
 '邹靖：打第十一关孟德献刀之前，最好先备上这个': 'Zou Jing: get this ready before Stage 11, "Cao Cao\'s Dagger"',
 '邹靖：术士给兵回血，先研习刘备的剑印': 'Zou Jing: sorcerers heal their troops — study Liu Bei\'s Sword Seal first',
 '邹靖：邓茂甲厚，兵器不到 # 砍不动他': 'Zou Jing: Deng Mao\'s armor is thick — you need weapon # to cut him',
 '援军': 'Allies', '守城？也好！城头有滚木，砸下去便是！': 'Defend the wall? Fine! There are logs up there — drop them!',
+'盾兵': 'Shields',
+# 11-09 军师页英文整句（原来按中文 22 字切开再翻，半句半句的）
+'剿过黄巾：黄巾的兵报得准；就爱猛攻，对症的军械老看走眼': 'Fought the Turbans, so he reads their troops well. Loves all-out attack; often misjudges the right gear.',
+'带「伏兵」：两侧河沟藏乡勇，看准时机点令旗——用对了才有三星。偏守，打敌将的战法常低估': 'Brings "Ambush": militia hide in the ditches — tap the flag at the right moment for 3★. Defensive; underrates anti-general tactics.',
+'智力最高：敌军师的计（郭嘉除外）都看得破，荐卡也准；举盾的兵常看走眼': 'Top Intellect: sees through enemy plans (except Guo Jia) and picks well. Misreads shield troops.',
+'带「凿堑」（城前挖一道深堑，敌兵过堑慢一半、骑兵落马，8 秒）和「将计就计」（破掉敌军师第一个计）。连携、对症看得准；骑兵的事常看走眼': 'Brings "Trench" (foes cross at half speed, cavalry unhorsed, 8s) and "Turn the Tables" (breaks the first enemy plan). Reads combos and gear well; misjudges cavalry.',
 }
