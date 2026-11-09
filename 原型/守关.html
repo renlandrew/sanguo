@@ -24,7 +24,7 @@
 // 加载页（10-27 用户：「做一个加载页面，全部加载完才进入游戏界面」）：开头这段时间里 new 出来的图都记下来，全部好了（或坏了）才进主页；最多等 30 秒
 // 10-30 用户：「有时会自己重新刷新？」「也有突然断了链接不上」——服务器日志看是 iPhone 每分钟左右重开一次页面：所有图解码后合计约 2.1GB，Safari 内存不够把页面杀了。
 // 大图（大招录像、敌将华彩、剧情图、战场底图、各兵种和敌将图集、命中帧动画）改成用到才加载：设 src 时先记下，第一次 ready() 问到它才真去下载解码，也不算进加载页
-const REL_LIST = 'ult_|fx_boss_|fx_sp_|map_|bg\\.|story_|bg_|room|card_|enemy_|huangjin|lishi|gong|cyz|yayi|dengmao|shushi|qibing|xiliang|feixiong|xianzhen|baixing|zhangjiao|tieqi|langqi|huzhen|huaxiong|lijue|gaoshun|lvbu|g_zhao|panfeng|wuanguo|qishou|zhangbao|duyou|qushuai|zhangliang|xiaowei|yushe';
+const REL_LIST = 'ult_|fx_boss_|fx_sp_|map_|bg\\.|story_|bg_|room|card_|enemy_|huangjin|lishi|gong|cyz|yayi|dengmao|shushi|qibing|xiliang|feixiong|xianzhen|baixing|zhangjiao|tieqi|langqi|huzhen|huaxiong|lijue|gaoshun|lvbu|g_zhao|xiahoudun|dianwei|jiling|zhangliao|panfeng|wuanguo|qishou|zhangbao|duyou|qushuai|zhangliang|xiaowei|yushe';
 const LAZY_RE = new RegExp('img/(fb/|' + REL_LIST + ')'), REL_RE = new RegExp('img/(' + REL_LIST + ')');   // 命中帧动画 fb/ 用到才加载但不释放；其余换关时放掉
 // 10-30 用户：「第五关又重启」——大招特写（ult_，每张约 60MB）原来学了就一直留着，前几关剧情学了三招就三张；改成也换关释放，开打前只叫起这关觉醒那人和敌将的，剧情学招前先叫起
 const SRC_SET = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src').set;
@@ -111,8 +111,8 @@ for (const [k, ext] of [['wall', 'png'], ['bg', 'jpg']]) { IMG[k] = new Image();
 // 各关地图自己的整张背景（10-25 用户：程序画的谷口山崖太假，「要让 gpt 画」「直接重新画就好了」）：有图就用它、不再叠程序画的那层，没有就用通用战场
 for (const m of ['canyon', 'peach', 'camp', 'yamen', 'grass', 'luoyang', 'suanzao', 'sishui', 'hulao', 'ruins', 'plain', /* 11-08 第二章 */ 'xuzhou', 'tancheng', 'sishuiR', 'xzwall', 'xiaopei', 'huainan', 'yuanmen', 'xuchang', 'xiapi', 'xiapiW', 'baimen']) {   // plain：11-02 原来借主页底图 bg.jpg，主页换城头图后拆出来（第二关「招募乡勇」等）
  const k = 'bg_' + m; IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.jpg' + BUST; }
-const SHEET_WEBP = new Set(['g_zhao', 'lvbu', 'zhangjiao', 'huaxiong', 'lijue', 'huzhen', 'dengmao', 'qishou', 'zhangbao', 'duyou', 'qushuai', 'zhangliang', 'xiaowei', 'yushe']);   // 10-30 渠帅、张梁、西凉校尉、俞涉 Veo 首录   // 10-29 邓茂、旗手、张宝、督邮 Veo 首录   // 10-29 斗将敌将按高清重切（用户嫌糊），图集大，改用 webp
-const SHEETS = {}; for (const k of ['huangjin', 'lishi', 'gong', 'cyz', 'yayi', 'dengmao', 'shushi', 'qibing', ...Array.from({ length: 7 }, (_, i) => 'qibing_' + (i + 1)), ...['huangjin', 'yayi', 'lishi', 'gong', 'shushi', 'cyz', 'dengmao', 'xiliang', 'feixiong', 'xianzhen', 'baixing'].map(k => k + '_back'), 'zhangjiao', 'g_guan', 'g_zhang', 'g_liu', 'g_zhao', 'xiliang', 'feixiong', 'xianzhen', 'baixing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'gaoshun', 'lvbu', 'panfeng', 'wuanguo', 'qishou', 'zhangbao', 'duyou', 'qushuai', 'zhangliang', 'xiaowei', 'yushe']) { const file = k === 'qibing' ? 'enemy_qibing_0' : k.startsWith('qibing_') ? 'enemy_' + k : k; IMG[k] = new Image(); IMG[k].src = 'img/' + file + (SHEET_WEBP.has(k) ? '.webp' : '.png') + BUST; fetch('img/' + file + '.json' + BUST).then(r => r.json()).then(j => { SHEETS[k] = j; }).catch(() => {}); }
+const SHEET_WEBP = new Set(['g_zhao', 'xiahoudun', 'dianwei', 'jiling', 'zhangliao', 'lvbu', 'zhangjiao', 'huaxiong', 'lijue', 'huzhen', 'dengmao', 'qishou', 'zhangbao', 'duyou', 'qushuai', 'zhangliang', 'xiaowei', 'yushe']);   // 10-30 渠帅、张梁、西凉校尉、俞涉 Veo 首录   // 10-29 邓茂、旗手、张宝、督邮 Veo 首录   // 10-29 斗将敌将按高清重切（用户嫌糊），图集大，改用 webp
+const SHEETS = {}; for (const k of ['huangjin', 'lishi', 'gong', 'cyz', 'yayi', 'dengmao', 'shushi', 'qibing', ...Array.from({ length: 7 }, (_, i) => 'qibing_' + (i + 1)), ...['huangjin', 'yayi', 'lishi', 'gong', 'shushi', 'cyz', 'dengmao', 'xiliang', 'feixiong', 'xianzhen', 'baixing'].map(k => k + '_back'), 'zhangjiao', 'g_guan', 'g_zhang', 'g_liu', 'g_zhao', 'xiahoudun', 'dianwei', 'jiling', 'zhangliao', 'xiliang', 'feixiong', 'xianzhen', 'baixing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'gaoshun', 'lvbu', 'panfeng', 'wuanguo', 'qishou', 'zhangbao', 'duyou', 'qushuai', 'zhangliang', 'xiaowei', 'yushe']) { const file = k === 'qibing' ? 'enemy_qibing_0' : k.startsWith('qibing_') ? 'enemy_' + k : k; IMG[k] = new Image(); IMG[k].src = 'img/' + file + (SHEET_WEBP.has(k) ? '.webp' : '.png') + BUST; fetch('img/' + file + '.json' + BUST).then(r => r.json()).then(j => { SHEETS[k] = j; }).catch(() => {}); }
 let BG, WALL, MIST, GBODY = {}, SPR = {}, SPRHIT = {}, BLOTS = [];
 function bakeBg() {
   return layer(W, H, g => {
@@ -222,11 +222,11 @@ const FOES = {
   huainan:  { name: '淮南兵', hp: 26, spd: 38, leak: 2, exp: 1, r: 9, box: [34, 52], s: 1, wpn: 'spear', sheet: 'huangjin', sh: 40, tint: 'huainan', tintOwn: true },   // 袁术的兵：弱，一来一大片
   yuanlishi:{ name: '袁术力士', hp: 230, spd: 20, leak: 11, exp: 5, r: 13, box: [48, 66], s: 1.32, wpn: 'club', bulk: 12, sheet: 'lishi', sh: 58, tint: 'huainan', tintOwn: true },
   lvbuS:    { name: '吕布', hp: 1e9, spd: 22, dps: 0, exp: 0, r: 24, box: [76, 96], s: 2, wpn: 'blade', bulk: 11, boss: true, sheet: 'lvbu', alt: 'cyz', sh: 100, title: '没了赤兔', tint: 'lvbu', pt: 'lvbu', invuln: true, rampage: true },
-  xiahoudun: { name: '夏侯惇', hp: 3000, spd: 0, dps: 0, exp: 60, r: 22, box: [76, 96], s: 1.9, wpn: 'spear', bulk: 11, boss: true, duel: true, sheet: 'lijue', alt: 'dengmao', sh: 94, title: '曹操大将', tint: 'xhd', tintOwn: true },
-  dianwei:   { name: '典韦', hp: 3600, spd: 0, dps: 0, exp: 90, r: 24, box: [76, 96], s: 2, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'huzhen', alt: 'dengmao', sh: 98, title: '古之恶来', tint: 'dianwei', tintOwn: true },
+  xiahoudun: { name: '夏侯惇', hp: 3000, spd: 0, dps: 0, exp: 60, r: 22, box: [76, 96], s: 1.9, wpn: 'spear', bulk: 11, boss: true, duel: true, sheet: 'xiahoudun', alt: 'lijue', sh: 94, title: '曹操大将' },   // 11-08 自己的 Veo 图集（首帧用剧情立绘）
+  dianwei:   { name: '典韦', hp: 3600, spd: 0, dps: 0, exp: 90, r: 24, box: [76, 96], s: 2, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'dianwei', alt: 'huzhen', sh: 98, title: '古之恶来' },
   xunzheng:  { name: '荀正', hp: 2600, spd: 0, dps: 0, exp: 50, r: 22, box: [76, 96], s: 1.9, wpn: 'spear', bulk: 11, boss: true, duel: true, sheet: 'dengmao', sh: 76, title: '袁术部将', tint: 'yuanj', tintOwn: true },
-  jiling:    { name: '纪灵', hp: 4000, spd: 0, dps: 0, exp: 100, r: 24, box: [76, 96], s: 2, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'huaxiong', alt: 'cyz', sh: 100, title: '袁术上将', tint: 'jiling', tintOwn: true },
-  zhangliao: { name: '张辽', hp: 3400, spd: 0, dps: 0, exp: 70, r: 22, box: [76, 96], s: 1.9, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'lijue', alt: 'dengmao', sh: 94, title: '吕布部将', tint: 'zhangliao', tintOwn: true },
+  jiling:    { name: '纪灵', hp: 4000, spd: 0, dps: 0, exp: 100, r: 24, box: [76, 96], s: 2, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'jiling', alt: 'huaxiong', sh: 100, title: '袁术上将' },
+  zhangliao: { name: '张辽', hp: 3400, spd: 0, dps: 0, exp: 70, r: 22, box: [76, 96], s: 1.9, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'zhangliao', alt: 'lijue', sh: 94, title: '吕布部将' },
   lvbu2:     { name: '吕布', hp: 5200, spd: 0, dps: 0, exp: 120, r: 26, box: [76, 96], s: 2.1, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'lvbu', alt: 'cyz', sh: 110, title: '白门楼', tint: 'lvbu', pt: 'lvbu' },
   qixing: { name: '七星灯', hp: 1, spd: 0, dps: 0, exp: 0, r: 9, box: [22, 40], s: 1, lamp: true },   // 11-01 第十关张角拜北斗点的灯（见 stepQixing）
   zhangjiao: { name: '张角', hp: 2300, spd: 0, dps: 0, exp: 60, r: 26, box: [76, 96], s: 2.1, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'zhangjiao', alt: 'shushi', sh: 108, title: '天公将军', aura: true },   // 图集是 Veo 录的，高度连九节杖算
@@ -2734,7 +2734,7 @@ function drawCorpse(f) {
   drawSheet(k, f.anim, fr, f.x, f.y, T.sh / SHEETS[k].stand * f.ps, al); ctx.filter = 'none';
 }
 // 斗将出招演哪段：先找和招同名的那段（Veo 录的敌将），没有就退到施法／撞城
-const MOVE_ANIM = { heavy: ['heavy'], combo: ['combo', 'heavy'], rush: ['rush', 'heavy'], summon: ['summon'], buff: ['taunt', 'summon'], heal: ['summon'], guard: ['idle'], seal: ['cast'] };
+const MOVE_ANIM = { heavy: ['heavy'], combo: ['combo', 'heavy'], rush: ['rush', 'heavy'], summon: ['summon'], buff: ['taunt', 'summon'], heal: ['summon'], guard: ['idle'], seal: ['seal', 'cast'] };   // 11-08 典韦掷戟有自己那段
 // 城墙外一排小图标（10-28 用户：「滚木，弩，挡马那些……直接显示在城墙外即可，小一些，不要挡视野」）：
 // 这一关拿到的军械、城防战法（滚木、连弩、拒马、绊马索、破阵弩……）和自动的赤帻、火把、举盾。画在敌人底下，敌人走过来会盖住它们；用掉了（滚木、连弩一关一次）变灰
 function drawWallProps() {

@@ -64,6 +64,12 @@ PLAN = {
     'xiaowei': {'run': ('run', range(8, 32, 2)), 'ram': ('ram', range(0, 40, 3)), 'die': ('die', range(8, 40, 3))},
     'yushe': {'run': ('run', range(8, 32, 2)), 'die': ('die', range(12, 40, 3))},
     'panfeng': {'idle': ('ram', range(0, 4)), 'ram': ('ram', range(0, 40, 3))},
+    # 11-08 第二章敌将首录（make_foe_pack6.py，首帧用剧情立绘）：夏侯惇挺枪、连挑中段转身背对镜头——挺枪改用召兵那条（举枪前指）、连挑切掉背身那几帧；
+    # 张辽待机背景有风痕，改用连斩收势后站定的几帧；纪灵第一帧灰底和后面不一样，待机从第 4 帧取
+    'xiahoudun': {'idle': ('idle', range(0, 40, 3)), 'heavy': ('summon', range(0, 26, 2)), 'combo': ('combo', [*range(0, 10), *range(26, 40, 2)]), 'summon': ('summon', range(0, 40, 3)), 'hit': ('die', range(0, 8, 2)), 'die': ('die', range(6, 40, 3))},
+    'dianwei': {'idle': ('idle', range(0, 40, 3)), 'heavy': ('heavy', range(0, 40, 3)), 'combo': ('combo', range(0, 40, 3)), 'seal': ('seal', range(0, 40, 3)), 'hit': ('die', range(0, 8, 2)), 'die': ('die', range(6, 40, 3))},
+    'jiling': {'idle': ('idle', range(4, 40, 3)), 'heavy': ('heavy', range(0, 40, 3)), 'combo': ('combo', range(0, 40, 3)), 'summon': ('summon', range(0, 40, 3)), 'hit': ('die', range(0, 8, 2)), 'die': ('die', range(6, 40, 3))},
+    'zhangliao': {'idle': ('combo', range(30, 40)), 'heavy': ('heavy', range(0, 40, 3)), 'combo': ('combo', range(0, 30, 2)), 'hit': ('die', range(0, 6, 2)), 'die': ('die', range(8, 40, 3))},
     # 11-08 赵云首录（make_zhao_pack.py）：待机那条 4–10 帧 Veo 叠影过渡，取 18 帧以后站定、披风飘；七进七出第 21 帧起侧过来露脸，只取前 21 帧
     'zhao': {'idle': ('idle', range(18, 40, 2)), 'atk': ('atk', range(0, 40, 3)), 'atk2': ('atk2', range(0, 40, 3)), 'skill': ('skill', range(0, 21, 2))},
     'wuanguo': {'idle': ('ram', range(0, 4)), 'ram': ('ram', range(0, 40, 3))},
@@ -89,7 +95,8 @@ ALIAS = {'zhangjiao': {'run': 'idle', 'ram': 'cast', 'fly': 'die'}, 'qibing': {'
          'panfeng': {'run': 'idle'}, 'wuanguo': {'run': 'idle'},
          'dengmao': {'run': 'idle', 'ram': 'heavy', 'cast': 'heavy', 'fly': 'die'}, 'qishou': {'hit': 'run', 'fly': 'die'},
          'zhangbao': {'hit': 'run', 'fly': 'die', 'cast': 'ram'}, 'duyou': {'hit': 'run', 'fly': 'die'},
-         'qushuai': {'hit': 'run', 'fly': 'die'}, 'zhangliang': {'hit': 'run', 'fly': 'die', 'cast': 'ram'}, 'xiaowei': {'hit': 'run', 'fly': 'die'}, 'yushe': {'hit': 'run', 'fly': 'die', 'ram': 'run'}}
+         'qushuai': {'hit': 'run', 'fly': 'die'}, 'zhangliang': {'hit': 'run', 'fly': 'die', 'cast': 'ram'}, 'xiaowei': {'hit': 'run', 'fly': 'die'}, 'yushe': {'hit': 'run', 'fly': 'die', 'ram': 'run'},
+         **{k: {'run': 'idle', 'ram': 'heavy', 'cast': 'heavy', 'fly': 'die'} for k in ('xiahoudun', 'dianwei', 'jiling', 'zhangliao')}}
 
 def gray_of(rgb):
     a = rgb.astype(np.float32)
@@ -127,7 +134,7 @@ def cells(path):
     sheet = np.asarray(Image.open(path).convert('RGB')); ch, cw = sheet.shape[0] // ROWS, sheet.shape[1] // COLS
     return [sheet[(i // COLS) * ch:(i // COLS + 1) * ch, (i % COLS) * cw:(i % COLS + 1) * cw] for i in range(N)]
 
-FOE = {'dengmao', 'qishou', 'zhangbao', 'duyou', 'zhangjiao', 'qibing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'lvbu', 'gaoshun', 'panfeng', 'wuanguo', 'qushuai', 'zhangliang', 'xiaowei', 'yushe'}   # 敌人和友军：图集不带 g_ 前缀
+FOE = {'xiahoudun', 'dianwei', 'jiling', 'zhangliao', 'dengmao', 'qishou', 'zhangbao', 'duyou', 'zhangjiao', 'qibing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'lvbu', 'gaoshun', 'panfeng', 'wuanguo', 'qushuai', 'zhangliang', 'xiaowei', 'yushe'}   # 敌人和友军：图集不带 g_ 前缀
 for g in (sys.argv[2:] or ['guan', 'zhang', 'liu']):
     takes = {p.stem.split('_', 1)[1]: p for p in SRC.glob(f'{g}[0-9]_*.jpg')}
     base = 'idle' if 'idle' in takes else next(iter(PLAN.get(g, {}).values()), (None,))[0]   # 脚底和缩放按这条的首帧定
