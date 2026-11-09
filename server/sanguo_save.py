@@ -349,7 +349,7 @@ def cmd_stats(a):
 def cmd_funnel(a):
     # 11-09 试玩漏斗：按设备算（did 摘要）。D1 = 第一次打开后的第二个 UTC 日历日又有动静；D7 同理第 7 天（第 7 天还没到的不算进分母）
     db = sqlite3.connect(os.path.join(a.state, 'saves.sqlite')); since = time.time() - a.days * 86400
-    q = 'SELECT did, ev, lv, day, src, lang FROM events WHERE ts > ?' + (' AND src = ?' if a.src else '') + (' AND lang = ?' if a.lang else '')
+    q = 'SELECT did, ev, lv, day, src, lang FROM events WHERE ts > ?' + (' AND src = ?' if a.src else " AND src != 'selftest'")   # 自测用 src=selftest，默认不算 + (' AND lang = ?' if a.lang else '')
     args = [since] + ([a.src] if a.src else []) + ([a.lang] if a.lang else [])
     dev = {}
     for did, ev, lv, day, src, lang in db.execute(q + ' ORDER BY ts', args):
@@ -358,7 +358,7 @@ def cmd_funnel(a):
         if ev in ('start', 'win'): d[ev].add(lv)
     if not dev: print('还没有试玩数据'); return
     D = lambda s: datetime.date.fromisoformat(s)
-    today = datetime.datetime.utcnow().date(); n = len(dev); pct = lambda k, m: '%d/%d（%d%%）' % (k, m, round(100 * k / m)) if m else '0/0'
+    today = datetime.datetime.now(datetime.timezone.utc).date(); n = len(dev); pct = lambda k, m: '%d/%d（%d%%）' % (k, m, round(100 * k / m)) if m else '0/0'
     s1 = sum(1 for d in dev.values() if 1 in d['start']); w1 = sum(1 for d in dev.values() if 1 in d['win'])
     s3 = sum(1 for d in dev.values() if 1 in d['win'] and 3 in d['start']); w10 = sum(1 for d in dev.values() if 10 in d['win'])
     e1 = [d for d in dev.values() if (today - D(d['first'])).days >= 1]; e7 = [d for d in dev.values() if (today - D(d['first'])).days >= 7]
