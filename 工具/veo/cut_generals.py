@@ -73,6 +73,17 @@ PLAN = {
     # 11-08 赵云首录（make_zhao_pack.py）：待机那条 4–10 帧 Veo 叠影过渡，取 18 帧以后站定、披风飘；七进七出第 21 帧起侧过来露脸，只取前 21 帧
     'zhao': {'idle': ('idle', range(18, 40, 2)), 'atk': ('atk', range(0, 40, 3)), 'atk2': ('atk2', range(0, 40, 3)), 'skill': ('skill', range(0, 21, 2))},
     'wuanguo': {'idle': ('ram', range(0, 4)), 'ram': ('ram', range(0, 40, 3))},
+    # 11-09 第二章兵种和荀正首录（ChatGPT 网页画首帧，make_foe_pack6.py）：曹兵倒下时头盔飞出、校尉倒下第 7–9 帧兵器上冒火星、荀正倒下第 4–16 帧白闪和碎白点，从 17 取；
+    # 虎豹骑奔跑按剪影一周 9 帧（30–38）；落马第 16 帧起马没了、20–22 帧剩一截马尾，跳过；荀正待机前 8 帧灰底在变、头顶飘一缕红缨，从第 8 帧取
+    'caobing': {'run': ('run', range(8, 32, 2)), 'ram': ('ram', range(0, 40, 3)), 'die': ('die', range(4, 40, 3))},
+    'caoxiao': {'run': ('run', range(8, 32, 2)), 'ram': ('ram', range(0, 40, 3)), 'die': ('die', [0, 2, 4, 6, *range(11, 40, 3)])},
+    'huainan': {'run': ('run', range(8, 32, 2)), 'ram': ('ram', range(0, 40, 3)), 'die': ('die', range(4, 40, 3))},
+    'hubao': {'run': ('run', range(30, 39)), 'ram': ('ram', range(0, 40, 3)), 'die': ('die', [*range(4, 20, 2), *range(24, 34, 2)])},
+    # 弩手出手那条 Veo 把弩画成了长弓（第 3 帧起），改用跑步那条开头站定端弩瞄准的 6 帧；倒下第 3–7 帧弩也变弓，跳过
+    'nushou': {'run': ('run', range(14, 32, 2)), 'shoot': ('run', range(0, 6)), 'die': ('die', [0, 1, 2, *range(8, 40, 3)])},
+    # 力士砸棍第 6–8 帧头顶飘着的一截连上了棍、20–27 帧糊成一团再变锤、32 起转身背对镜头：取举棍那段接横扫；倒下第 5–9 帧头顶白闪，跳过
+    'yuanlishi': {'run': ('run', range(22, 32)), 'ram': ('ram', [0, 2, 4, 10, 12, 14, 16, 18, 28, 29, 30, 31]), 'die': ('die', [0, 2, 4, *range(16, 40, 3)])},
+    'xunzheng': {'idle': ('idle', range(8, 40, 3)), 'heavy': ('heavy', range(0, 40, 3)), 'hit': ('die', range(0, 4)), 'die': ('die', range(17, 40, 2))},
 }
 
 # 10-27 新画风重录时个别人的段换来源：刘备待机那条 Veo 整条叠了两个人（10-28 用户：「这里 2 个刘备」），改用普攻那条末尾站定的 9 帧
@@ -80,6 +91,9 @@ NEW_PLAN = {'liu': {'idle': ('atk', range(31, 40))}}
 
 # 镜头中途推近了的那几条（10-25：西凉铁骑撞城那条，人马越来越大）：这一段按它自己第一帧的马身宽度缩回和定脚底那条一样大，脚底也用它自己的
 FIT = {('tieqi', 'ram'), ('gaoshun', 'run')}
+# 11-09 第二章兵种：Veo 每条开头镜头远近不一（曹兵跑步那条一开头人就大了三成），每段按它那条视频第一帧的人高缩回和定脚底那条一样大
+FITH = {'caobing', 'nushou', 'caoxiao', 'huainan', 'yuanlishi', 'hubao'}
+RUNZ = {'nushou': 439 / 535, 'yuanlishi': 439 / 543}   # 弩手、力士跑步那条人一路走近（第 0 帧人高 439 → 后段约 535、543），只取后段稳定的几帧，按人高缩回
 
 def body(m):
     # 人马的「身宽」：剪影下半截每行宽度的九成分位（举起的矛、刀不算），和脚底、中线
@@ -96,7 +110,8 @@ ALIAS = {'zhangjiao': {'run': 'idle', 'ram': 'cast', 'fly': 'die'}, 'qibing': {'
          'dengmao': {'run': 'idle', 'ram': 'heavy', 'cast': 'heavy', 'fly': 'die'}, 'qishou': {'hit': 'run', 'fly': 'die'},
          'zhangbao': {'hit': 'run', 'fly': 'die', 'cast': 'ram'}, 'duyou': {'hit': 'run', 'fly': 'die'},
          'qushuai': {'hit': 'run', 'fly': 'die'}, 'zhangliang': {'hit': 'run', 'fly': 'die', 'cast': 'ram'}, 'xiaowei': {'hit': 'run', 'fly': 'die'}, 'yushe': {'hit': 'run', 'fly': 'die', 'ram': 'run'},
-         **{k: {'run': 'idle', 'ram': 'heavy', 'cast': 'heavy', 'fly': 'die'} for k in ('xiahoudun', 'dianwei', 'jiling', 'zhangliao')}}
+         **{k: {'run': 'idle', 'ram': 'heavy', 'cast': 'heavy', 'fly': 'die'} for k in ('xiahoudun', 'dianwei', 'jiling', 'zhangliao', 'xunzheng')},
+         **{k: {'hit': 'run', 'fly': 'die'} for k in ('caobing', 'caoxiao', 'huainan', 'hubao', 'yuanlishi')}, 'nushou': {'hit': 'run', 'fly': 'die', 'ram': 'shoot'}}
 
 def gray_of(rgb):
     a = rgb.astype(np.float32)
@@ -134,7 +149,7 @@ def cells(path):
     sheet = np.asarray(Image.open(path).convert('RGB')); ch, cw = sheet.shape[0] // ROWS, sheet.shape[1] // COLS
     return [sheet[(i // COLS) * ch:(i // COLS + 1) * ch, (i % COLS) * cw:(i % COLS + 1) * cw] for i in range(N)]
 
-FOE = {'xiahoudun', 'dianwei', 'jiling', 'zhangliao', 'dengmao', 'qishou', 'zhangbao', 'duyou', 'zhangjiao', 'qibing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'lvbu', 'gaoshun', 'panfeng', 'wuanguo', 'qushuai', 'zhangliang', 'xiaowei', 'yushe'}   # 敌人和友军：图集不带 g_ 前缀
+FOE = {'xiahoudun', 'dianwei', 'jiling', 'zhangliao', 'dengmao', 'qishou', 'zhangbao', 'duyou', 'zhangjiao', 'qibing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'lvbu', 'gaoshun', 'panfeng', 'wuanguo', 'qushuai', 'zhangliang', 'xiaowei', 'yushe', 'xunzheng', 'caobing', 'nushou', 'caoxiao', 'huainan', 'yuanlishi', 'hubao'}   # 敌人和友军：图集不带 g_ 前缀
 for g in (sys.argv[2:] or ['guan', 'zhang', 'liu']):
     takes = {p.stem.split('_', 1)[1]: p for p in SRC.glob(f'{g}[0-9]_*.jpg')}
     base = 'idle' if 'idle' in takes else next(iter(PLAN.get(g, {}).values()), (None,))[0]   # 脚底和缩放按这条的首帧定
@@ -156,6 +171,10 @@ for g in (sys.argv[2:] or ['guan', 'zhang', 'liu']):
             frames.append(f)
         kk, cx, feet = k, cx0, feet0
         if (g, anim) in FIT: bw, feet, cx = body(frames[0][..., 3] > 40); kk = k * bw0 / bw; print('  ', tid, '按马身宽缩', round(bw0 / bw, 2))
+        elif g in RUNZ and anim == 'run': kk = k * RUNZ[g]; _, feet, cx = body(frames[0][..., 3] > 40)
+        elif g in FITH and src != base:
+            m1 = matte(cs[0], flat_gray(cs[0]))[..., 3] > 40; y_ = np.where(m1.any(axis=1))[0]; kk = k * fig0 / (y_.max() - y_.min() + 1)
+            _, feet, cx = body(frames[0][..., 3] > 40); print('  ', tid, '按首帧人高缩', round(kk / k, 2))
         al = np.stack([f[..., 3] > 40 for f in frames]); ys, xs = np.where(al.any(axis=0))
         y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1               # 整段一个外框，脚底不动
         W, H = int(np.ceil((x1 - x0) * kk)) + 16, int(np.ceil((y1 - y0) * kk)) + 16    # 留 8 像素给墨线和光晕
