@@ -109,7 +109,7 @@ const BUST = '?t=' + Date.now();                     // 原型阶段图集常改
 // 城墙、战场背景（ChatGPT 画的，../工具/make_scene.py 处理）；没有时退回程序画的
 for (const [k, ext] of [['wall', 'png'], ['bg', 'jpg']]) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.' + ext + BUST; }
 // 各关地图自己的整张背景（10-25 用户：程序画的谷口山崖太假，「要让 gpt 画」「直接重新画就好了」）：有图就用它、不再叠程序画的那层，没有就用通用战场
-for (const m of ['canyon', 'peach', 'camp', 'yamen', 'grass', 'luoyang', 'suanzao', 'sishui', 'hulao', 'ruins', 'plain']) {   // plain：11-02 原来借主页底图 bg.jpg，主页换城头图后拆出来（第二关「招募乡勇」等）
+for (const m of ['canyon', 'peach', 'camp', 'yamen', 'grass', 'luoyang', 'suanzao', 'sishui', 'hulao', 'ruins', 'plain', /* 11-08 第二章 */ 'xuzhou', 'tancheng', 'sishuiR', 'xzwall', 'xiaopei', 'huainan', 'yuanmen', 'xuchang', 'xiapi', 'xiapiW', 'baimen']) {   // plain：11-02 原来借主页底图 bg.jpg，主页换城头图后拆出来（第二关「招募乡勇」等）
  const k = 'bg_' + m; IMG[k] = new Image(); IMG[k].src = 'img/' + k + '.jpg' + BUST; }
 const SHEET_WEBP = new Set(['lvbu', 'zhangjiao', 'huaxiong', 'lijue', 'huzhen', 'dengmao', 'qishou', 'zhangbao', 'duyou', 'qushuai', 'zhangliang', 'xiaowei', 'yushe']);   // 10-30 渠帅、张梁、西凉校尉、俞涉 Veo 首录   // 10-29 邓茂、旗手、张宝、督邮 Veo 首录   // 10-29 斗将敌将按高清重切（用户嫌糊），图集大，改用 webp
 const SHEETS = {}; for (const k of ['huangjin', 'lishi', 'gong', 'cyz', 'yayi', 'dengmao', 'shushi', 'qibing', ...Array.from({ length: 7 }, (_, i) => 'qibing_' + (i + 1)), ...['huangjin', 'yayi', 'lishi', 'gong', 'shushi', 'cyz', 'dengmao', 'xiliang', 'feixiong', 'xianzhen', 'baixing'].map(k => k + '_back'), 'zhangjiao', 'g_guan', 'g_zhang', 'g_liu', 'xiliang', 'feixiong', 'xianzhen', 'baixing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'gaoshun', 'lvbu', 'panfeng', 'wuanguo', 'qishou', 'zhangbao', 'duyou', 'qushuai', 'zhangliang', 'xiaowei', 'yushe']) { const file = k === 'qibing' ? 'enemy_qibing_0' : k.startsWith('qibing_') ? 'enemy_' + k : k; IMG[k] = new Image(); IMG[k].src = 'img/' + file + (SHEET_WEBP.has(k) ? '.webp' : '.png') + BUST; fetch('img/' + file + '.json' + BUST).then(r => r.json()).then(j => { SHEETS[k] = j; }).catch(() => {}); }
@@ -3099,8 +3099,7 @@ function drawFbs() {
   for (const f of G.fbs) { const t = vt - f.born; if (t < 0) continue; const M = FBM[f.k]; fbFrame(f.k, Math.min(M.n - 1, Math.floor(t / f.dur * M.n)), f.x, f.y, f.size, f.rot, f.alpha, f.flip, f.glow * (.5 + spxDimNow() * 1.5)); }
 }
 // 11–30 关的地图还没画的先借相近的（汜水关、虎牢关借谷口，酸枣大营借黄巾大营）
-const MAP_ALIAS = { sishui: 'canyon', hulao: 'canyon', suanzao: 'camp', luoyang: 'plain', ruins: 'plain', night: 'plain',
-  /* 第二章的地图还没画：先借第一章的 */ xuzhou: 'plain', tancheng: 'hulao', sishuiR: 'grass', xzwall: 'sishui', xiaopei: 'suanzao', huainan: 'canyon', yuanmen: 'camp', xuchang: 'luoyang', xiapi: 'hulao', xiapiW: 'canyon', baimen: 'sishui' };   // night（第九关夜战）原来也借主页底图
+const MAP_ALIAS = { sishui: 'canyon', hulao: 'canyon', suanzao: 'camp', luoyang: 'plain', ruins: 'plain', night: 'plain' };   // 第二章 11 张底图 11-08 画好，不再借第一章的   // night（第九关夜战）原来也借主页底图
 const BGC = {};   // 场景底图降饱和的副本（按地图名）；算好就把原图放掉，换关只留这关的（10-30 第 4–30 关复现：原图和副本各 8MB 同时常驻）
 function bgOf(m) { if (BGC[m]) return BGC[m]; const im = IMG['bg_' + m]; if (!ready(im)) return null; const c = inkBg(im); if (c !== im) { BGC[m] = c; INKBG.delete(im); relImg(im); } return c; }
 const mapKey = m => BGC[m] || ready(IMG['bg_' + m]) ? m : (MAP_ALIAS[m] || m);
@@ -5744,7 +5743,7 @@ for (const [key, L] of Object.entries(STORY)) { let cur = key === 'open' ? 'stor
 const STORY_GLOW = { story_liu: '80,150,255', story_guan: '60,220,150', story_zhang: '255,110,60', story_zhangjiao: '230,200,90', pt_jianyong: '90,170,230', pt_huaxiong: '220,80,50', pt_lvbu: '230,50,70',
   pt_luzhi: '70,160,150', pt_dongzhuo: '200,120,40', pt_caocao: '140,90,220', pt_gongsun: '220,230,240', pt_sunjian: '230,60,50',
   pt_zhaoyun: '200,225,255', pt_taoqian: '200,170,120', pt_chendeng: '170,200,240', pt_chengong: '160,120,220', pt_jiling: '240,200,80', pt_dianwei: '180,180,190', pt_xiahoudun: '90,130,220', pt_zhangliao: '150,120,230', pt_gaoshun: '200,200,200' };
-for (const k of [1, 2, 3]) { IMG['map_' + k] = new Image(); IMG['map_' + k].src = 'img/map_' + k + '.jpg' + BUST; }   // 战役地图（没有图时退回原来的关卡牌）
+for (const k of [1, 2, 3, 4, 5, 6]) { IMG['map_' + k] = new Image(); IMG['map_' + k].src = 'img/map_' + k + '.jpg' + BUST; }   // 战役地图（没有图时退回原来的关卡牌）
 // 每关一张专门画的剧情图（10-26 用户：「每一关都要有至少一张故事，强调逗B的剧情发展」）：img/story_s<关>.jpg 铺满整场；还没画好的关先用原来的立绘（存在第四格）
 for (let n = 1; n <= 60; n++) { const L = STORY['l' + n]; if (!L) continue; for (const ln of L) { ln[3] = ln[0]; ln[0] = 'story_s' + n; } }
 for (const k of new Set(Object.values(STORY).flat().flatMap(l => [l[0], l[3]]).filter(Boolean))) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + (STORY_GLOW[k] ? '.png' : '.jpg') + BUST; }
@@ -6914,6 +6913,10 @@ const MAP_NODE = [                                                              
   [[185, 112], [212, 150], [180, 196], [285, 250], [165, 270], [140, 340], [194, 372], [204, 428], [280, 436], [150, 522]],   // 桃园、乡里、大兴山口、青州、山下、长社草营、董卓车驾、安喜、广宗、黄巾大营（11-01 用户：「8和9的位置有点怪」——土路是先过广宗城再往下，8 原来画在城后面；挪到 7 和广宗之间那段路上）
   [[200, 110], [140, 525], [175, 482], [155, 432], [178, 385], [205, 338], [205, 292], [190, 246], [200, 206], [210, 166]],  // 洛阳城门、酸枣大营，再沿路往上过桥到汜水关
   [[190, 515], [235, 455], [215, 400], [240, 350], [195, 300], [215, 182], [200, 110], [262, 118], [252, 252], [172, 238]],  // 联军营地、关前几仗、撞关、洛阳火、井、回关前三英战吕布
+  // 11-08 第二章三张（Codex 画）：麦田村庄 → 被围的郯城 → 泗水木桥 → 徐州 → 曹营；徐州 → 小沛 → 淮河 → 水田 → 袁术大营辕门；小沛 → 许都 → 水围下邳 → 白门楼
+  [[72, 512], [205, 490], [165, 428], [92, 345], [168, 298], [232, 262], [150, 222], [300, 192], [213, 190], [213, 118]],
+  [[228, 122], [168, 200], [262, 230], [110, 300], [175, 290], [100, 380], [255, 380], [175, 420], [250, 470], [183, 525]],
+  [[140, 525], [250, 292], [160, 440], [262, 405], [115, 345], [285, 205], [110, 252], [205, 250], [70, 185], [165, 160]],
 ];
 const MAP_TOP = 100, MAP_BOT = 576;
 function drawCampaignMap(mim, t) {
