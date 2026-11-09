@@ -73,7 +73,7 @@ function enFit(s0, s, size, font) {
   if (!EN_ON || s === s0 || typeof s0 !== 'string' || !CJK.test(s0)) return size;
   ctx.font = `${fpx(size)}px ${font === FONT ? FONT_ZH : font}`; const zw = rawMeasure(s0).width;
   ctx.font = `${fpx(size)}px ${font}`; const ew = rawMeasure(s).width, ok = Math.max(zw * 1.1 + size * .5, size * 3.4);   // 两个字的短标签（导航、按钮）英文至少给三个半字宽
-  return ew > ok ? Math.max(Math.min(size, 9), size * ok / ew) : size;
+  const r = ew > ok ? Math.max(Math.min(size, 9), size * ok / ew) : size; if (window.__fitlog && r < size) window.__fitlog(s0, s, size, r); return r;   // __fitlog：调试，记下被缩的字
 }
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const rawMeasure = ctx.measureText.bind(ctx); if (EN_ON) ctx.measureText = s => rawMeasure(tr(s));   // 英文版：排版时量的是翻好的字（原来很多处量中文原文再摆位置）
@@ -2621,8 +2621,9 @@ function renderScreen() {
   if (ML) { const dt = clamp((G.vt || 0) - (ML.vt0 ?? (G.vt || 0)), 0, 1 / 20); ML.vt0 = G.vt || 0; ML.step(dt); if (ML.render(Math.ceil(cv.width / 2), Math.ceil(cv.height / 2))) ctx.drawImage(ML.canvas, 0, 0, W, H); ML.drawParts(ctx); }   // 10-30 卡顿：墨流半分辨率渲染（烟火本来就糊，像素少四分之三）
   for (const f of G.fx) if (f.k === 'slash' && f.t < .35 && f.foes) for (const e of f.foes) if (!e.dead && e.y - 14 < f.y) drawFoe(e);   // 11-08 青龙斩扫穿一排：刀弧远的那半边让站在后面的敌人挡住（这些人在刀上再画一遍）
   drawWash();
-  for (const f of G.fx) drawFx(f);
+  for (const f of G.fx) if (f.k !== 'banner') drawFx(f);
   drawNums();
+  for (const f of G.fx) if (f.k === 'banner') drawFx(f);   // 11-09 横幅画在伤害数字上面（「张飞加入」左边原来被数字压住）
   ctx.restore();
   if (G.logArm || G.nuArm) drawArmCols();
   drawHud(); drawSlots(); drawBattleBtns();
@@ -3527,7 +3528,15 @@ function fitSize(s, size, maxW, maxH = Infinity, font = FONT, lw = 0) { s = tr(s
 // 10-30 用户（晋升标题、教学卡「守城」后面那团）：「这些黄色全部去掉」——字后面的黄、金色光晕一律不画；红、蓝、白的光留着
 const yellowGlow = c => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c); return !!m && +m[1] >= 220 && +m[2] >= 140 && +m[3] <= 140; };   // 不缓存：有的光晕颜色每帧带不同透明度
 function uiText(s, x, y, size, color, align = 'left', font = FONT, o = {}) {
-  const s0 = s; s = tr(s); size = enFit(s0, s, size, font);
+  const s0 = s; s = tr(s);
+  if (EN_ON && o.maxW && s !== s0) {   // 11-09 英文：给了真实可用宽度就按它排，不按中文宽度缩；缩到 minFz 还放不下且 wrap，就在空格处折两行
+    ctx.font = `${fpx(size)}px ${font}`; const w = rawMeasure(s).width, lw = o.stroke !== false ? (o.lw || 3) : 0;
+    if (w + lw > o.maxW) { const f = size * o.maxW / (w + lw), mf = o.minFz || 10, sp = s.indexOf(' ');
+      if (f < mf && o.wrap && sp > 0) { const h = s.length / 2; let k = s.indexOf(' ', Math.round(h)), k2 = s.lastIndexOf(' ', Math.round(h)); if (k < 0 || (k2 > 0 && h - k2 < k - h)) k = k2;
+        const L = [s.slice(0, k), s.slice(k + 1)]; ctx.font = `${fpx(size)}px ${font}`; const lw2 = Math.max(...L.map(l => rawMeasure(l).width)) + lw, z = Math.max(8, Math.min(size, o.wrapFz || size, size * o.maxW / lw2)), dy = o.wrapUp ? -z * 1.05 : -z * .52;
+        const o2 = { ...o, maxW: 0 }; uiText(L[0], x, y + dy, z, color, align, font, o2); uiText(L[1], x, y + dy + z * 1.05, z, color, align, font, o2); return; }
+      size = Math.max(8, f); } }
+  else size = enFit(s0, s, size, font);
   if (SC.on) SC.bot = Math.max(SC.bot, y + size * .6);
   ctx.font = `${fpx(size)}px ${font}`; ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
   if (o.stroke !== false) { ctx.lineWidth = o.lw || Math.max(2.5, size * .16); ctx.strokeStyle = o.stroke || 'rgba(12,8,5,.9)'; ctx.strokeText(s, x, y); }
@@ -5213,7 +5222,7 @@ function drawHud() {
   const bx = HB_X - 44;   // 11-02 用户：「敌军和目标太长了，缩短一半」——两条 158 → 79，连钮一起靠右
   ctx.save(); ctx.beginPath(); ctx.roundRect(bx + 3, 12, 34, 20, 10); ctx.fillStyle = 'rgba(20,14,10,.85)'; ctx.fill(); ctx.strokeStyle = UIC.gold; ctx.lineWidth = 1.2; ctx.stroke(); ctx.restore();
   uiPanel(bx, 40, 40, 20, { r: 10, single: true, lw: 1, alpha: .9 }); uiText('目标', bx + 20, 50.5, 11, UIC.gold2, 'center', FONT, { stroke: false }); hit(bx, 38, 40, 24, showGoals);   // 本关目标
-  uiText('退军', bx + 20, 22.5, 11, UIC.cream, 'center', FONT, { stroke: false }); hit(bx, 6, 40, 30, retreat);
+  uiText(EN_ON ? 'Quit' : '退军', bx + 20, 22.5, 11, UIC.cream, 'center', FONT, { stroke: false }); hit(bx, 6, 40, 30, retreat);
   const st = []; if (G.RU.casts) st.push(['招式剩 ' + G.casts, G.casts <= 3 ? UIC.red2 : UIC.cream]);
   if (G.RU.timed && !G.timedDone) st.push([G.RU.timed.label + ' ' + Math.max(0, G.RU.timed.t * TIMEX.v - G.t).toFixed(0) + ' 秒', UIC.gold2]);
   if (G.civs) st.push(['救下 ' + G.saved + '/' + G.civTotal + (G.misfire ? ' · 误伤 ' + G.misfire : ''), UIC.cream]);
@@ -5290,7 +5299,7 @@ function drawSlots() {
     if (G.seal[i] > 0) { ctx.fillStyle = 'rgba(120,40,140,.55)'; ctx.fillRect(x, y + lift, w, h); }
     else if (G.RU.casts && G.casts <= 0) { ctx.fillStyle = 'rgba(8,5,3,.62)'; ctx.fillRect(x, y + lift, w, h); }
     ctx.restore();
-    if (!learnt || ok || casting) uiText(learnt ? skName(id) : '未学招式', x + w / 2, y + lift + h - 11, fitSize(learnt ? skName(id) : '未学招式', learnt ? 13 : 11, w - 6, 99, FONT, 3), ok ? UIC.gold2 : learnt ? UIC.cream : 'rgba(244,230,196,.6)', 'center', FONT, { lw: 3 });
+    if (!learnt || ok || casting) uiText(learnt ? skName(id) : '未学招式', x + w / 2, y + lift + h - 11, fitSize(learnt ? skName(id) : '未学招式', learnt ? 13 : 11, w - 6, 99, FONT, 3), ok ? UIC.gold2 : learnt ? UIC.cream : 'rgba(244,230,196,.6)', 'center', FONT, { lw: 3, maxW: w - 4, wrap: true, minFz: 12, wrapFz: 12, wrapUp: true });   // 英文招名放不下就折两行往上叠
     if (frac > 0) uiText(remain.toFixed(1), x + w / 2, y + lift + 30, 20, '#fff', 'center', PLAIN, { lw: 4 });
     if (G.seal[i] > 0) uiText('迷魂 ' + G.seal[i].toFixed(1), x + w / 2, y + lift + 30, 14, '#ffd0ff', 'center', PLAIN);
     else if (G.RU.casts && G.casts <= 0) uiText('招式用完', x + w / 2, y + lift + 30, 12, UIC.cream, 'center', PLAIN);
@@ -6375,8 +6384,8 @@ function drawCamp() {
     if (left) { pill(W - 112, y + 5, 88, 22, can ? `一键完成` : '体力不够', () => { const b0 = itemSnap(), l0 = choresLeft(); doChores(); const done = l0 - choresLeft(); if (done) { campFw(W / 2, 640 * .62, 7); campGain(itemDiff(b0, itemSnap()), W / 2, 640 * .62); } else showReward('体力不够', ['明天再来'], ['zhang'], false); }, true, can > 0); if (can) uiText(`体力 -${can * CHORE_STA}`, W - 68, y + 34, 10, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false }); }
     else uiSeal(W - 40, y + 15, 22, '毕', UIC.red, true);
     CHORES.forEach((c, k) => { const cx = 24 + (k % 2) * ((W - 48) / 2), cy = y + 48 + Math.floor(k / 2) * 27, on = choreOn(k);
-      uiText(c, cx, cy, 12, on ? 'rgba(244,230,196,.45)' : UIC.cream, 'left', PLAIN, { stroke: false });
-      { const [ik, n] = CHORE_PAY[k]; ctx.save(); if (on) ctx.globalAlpha = .4; drawItemIcon(ik, cx + 66, cy, 18); uiText('+' + n, cx + 77, cy, 11, UIC.cream, 'left', PLAIN, { stroke: false }); ctx.restore(); }   /* 图标代替字（10-29 用户） */
+      uiText(c, cx, cy, 12, on ? 'rgba(244,230,196,.45)' : UIC.cream, 'left', PLAIN, { stroke: false, maxW: 86 });
+      { const [ik, n] = CHORE_PAY[k], ix = EN_ON ? cx + Math.max(66, Math.min(86, (ctx.font = `${fpx(12)}px ${PLAIN}`, rawMeasure(tr(c)).width)) + 12) : cx + 66; ctx.save(); if (on) ctx.globalAlpha = .4; drawItemIcon(ik, ix, cy, 18); uiText('+' + n, ix + 11, cy, 11, UIC.cream, 'left', PLAIN, { stroke: false }); ctx.restore(); }   /* 英文：图标跟在字后面 */   /* 图标代替字（10-29 用户） */
       if (on) uiSeal(cx + 128, cy, 16, '毕', UIC.red, true); else hit(cx - 4, cy - 10, (W - 48) / 2, 20, () => { const b0 = itemSnap(); if (doChore(k)) { campFw(cx + 40, cy, 2); campGain(itemDiff(b0, itemSnap()), cx + 60, cy); } else showReward('体力不够', ['明天再来'], [BROS[k % 3]], false); }); });
   }
   if (gl && gl.lack.some(([i]) => i === '将印')) uiText(DAILY.weekSeal ? '本周将印已领' : `本周军务 ${DAILY.weekN}/${WEEK_N} · 满十道得将印一方`, W / 2, 580, 11, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
@@ -6758,12 +6767,12 @@ function drawAch() {                                                            
   campBg('功绩簿'); const L = achList(), TABS = [['战功', a => a.sec === '战功'], ['本阶', a => a.sec === '本阶功绩'], ['星绩', a => a.sec === '星绩'], ['首通', a => a.sec === '首通']];
   TABS.forEach(([nm, f], k) => { const x = 16 + k * ((W - 32) / 4), w = (W - 32) / 4 - 6, on = ACHUI.tab === k, n = L.filter(a => f(a) && a.ok && !a.got).length;
     uiPanel(x, 58, w, 30, { r: 8, top: on ? '#6e1a10' : '#2b1f16', bot: on ? '#3a0c06' : UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.45)' });
-    uiText(nm, x + w / 2, 73, 14, on ? '#fff2dc' : UIC.cream, 'center', FONT, { lw: 3 }); if (n) uiSeal(x + w - 8, 60, 11, String(n), UIC.red, true); hit(x, 58, w, 30, () => { ACHUI.tab = k; ACHUI.scroll = 0; }); });
+    uiText(nm, x + w / 2, 73, 14, on ? '#fff2dc' : UIC.cream, 'center', FONT, { lw: 3, maxW: w - 6 }); if (n) uiSeal(x + w - 8, 60, 11, String(n), UIC.red, true); hit(x, 58, w, 30, () => { ACHUI.tab = k; ACHUI.scroll = 0; }); });
   const tip = ['换着配招、打出连携才拿得到', '完成后另给资历，帮你更快晋阶', '各关最好成绩的星数加起来', '每关第一次打赢给一次'][ACHUI.tab]; uiText(tip, W / 2, 104, 11, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
   const S = L.filter(TABS[ACHUI.tab][1]).sort((a, b) => (b.ok && !b.got) - (a.ok && !a.got) || a.got - b.got), rowH = 58, y0 = 116, maxN = 7, off = Math.max(0, Math.min(ACHUI.scroll, S.length - maxN));
   if (!S.length) uiText('这一阶没有功绩', W / 2, 200, 14, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
   S.slice(off, off + maxN).forEach((a, k) => { const y = y0 + k * rowH, can = a.ok && !a.got; plate(14, y, W - 28, rowH - 6, can);
-    const nm = a.sec === '首通' ? `第${CNUM(a.lv)}关 · ${a.name}` : a.name; uiText(nm, 26, y + 16, 14, a.got ? 'rgba(244,230,196,.45)' : UIC.cream, 'left', FONT, { lw: 3 });
+    const nm = a.sec === '首通' ? `第${CNUM(a.lv)}关 · ${a.name}` : a.name; uiText(nm, 26, y + 16, 14, a.got ? 'rgba(244,230,196,.45)' : UIC.cream, 'left', FONT, { lw: 3, maxW: (a.pay.length || a.perk ? 192 : W - 28 - 70) - 26, wrap: true, minFz: 12, wrapFz: 12 });   // 英文：不压到右边奖励图标，长的折两行
     const prog = a.prog || [a.ok ? 1 : 0, 1]; slotBar(26, y + 30, 130, 10, [[Math.min(1, prog[0] / prog[1]), '#8a5a14', '#ffd76e']]); uiText(a.prog ? `${prog[0]}/${prog[1]}` : a.ok ? '已达成' : '未达成', 162, y + 35, 10, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false });
     a.pay.forEach(([kk, n], i) => { if (kk === '资历') uiSeal(214 + i * 34, y + 18, 16, '资', '#6a4a14', true); else drawItemIcon(kk, 214 + i * 34, y + 18, 20); uiText('×' + n, 214 + i * 34, y + 38, 10, UIC.cream, 'center', PLAIN, { stroke: false }); });
     if (a.perk) uiText((a.perk[0] === '被动' ? '「' : '') + a.perk[1] + (a.perk[0] === '被动' ? '」' : ''), 232, y + 26, 11, '#ffd76e', 'center', FONT, { lw: 3 });
@@ -6912,13 +6921,13 @@ const frontier = () => { const i = LEVELS.findIndex(lv => !BEST[lv.id]); return 
 // 底栏一个图标钮：画的图标（或头像套金圈）、下面一行金字、有事没做时角上一枚朱砂小方印
 function navBtn(cx, label, draw, fn, badge, big) {
   const cy = H - 52; draw(cx, cy, big ? 50 : 40);   // 10-30 用户：「似乎没居中对齐」——战役原来往上提 6，图标中线和别的错开；六个图标同一条中线
-  uiText(label, cx, H - 16, fitSize(label, big ? 15 : 13, 64), big ? UIC.gold2 : UIC.cream, 'center', FONT, { lw: 3 });
+  uiText(label, cx, H - 16, fitSize(label, big ? 15 : 13, 64), big ? UIC.gold2 : UIC.cream, 'center', FONT, { lw: 3, maxW: 60 });
   if (badge) uiSeal(cx + 18, cy - 18, 14, '!', UIC.red);
   hit(cx - 29, cy - 30, 58, H - cy + 30, () => { if (MENU.tip && MENU.tip.x === cx) tipDone(MENU.tip.k); fn(); });   // 点了提示指着的钮，那条提示就算看过
 }
 function navLocked(cx, label, draw, big) {                                      // 没开放的钮：图标压暗、字发灰，点了提示什么时候开
   const cy = H - 52; ctx.save(); ctx.globalAlpha = .32; ctx.filter = 'grayscale(1)'; draw(cx, cy, big ? 50 : 40); ctx.restore();
-  uiText(label, cx, H - 16, fitSize(label, big ? 15 : 13, 64), 'rgba(200,190,170,.45)', 'center', FONT, { lw: 3 });
+  uiText(label, cx, H - 16, fitSize(label, big ? 15 : 13, 64), 'rgba(200,190,170,.45)', 'center', FONT, { lw: 3, maxW: 60 });
   hit(cx - 29, cy - 30, 58, H - cy + 30, () => { MENU.lockT = uiNow(); });
 }
 const navIco = k => (cx, cy, s) => { const im = IMG[k]; if (!ready(im)) return; const f = s / Math.max(im.width, im.height); ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); };
