@@ -15,7 +15,7 @@
 <body>
 <canvas id="bgv" width="36" height="64" style="display:none"></canvas><canvas id="cv"></canvas>
 <script src="墨流.js?v=20261030"></script>
-<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261109c"><\/script>');</script>
+<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261109d"><\/script>');</script>
 <script>
 // 群雄逐鹿 · 守关原型（10-24）：敌军从上面一波波冲下来，刘关张站在城头各自普攻（10-24 起不设主角），招式按出手顺序轮流放，
 // 杀敌攒军功、升级三选一战法，守住城门过关。规则、数值、关卡见 ../设计/方案初稿.md「守关」一节。
@@ -5211,7 +5211,7 @@ function drawHud() {
   uiText(CHAP[chOf(G.lv)].no + ' ' + CHAP[chOf(G.lv)].name, 46, 50, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false, maxW: 140 });   // 11-02 用户：「第几波就在左上或者右上角想办法」——波数挪到战场左上角（下面 st 那段）
   const left = Math.max(0, G.total - G.killed - G.leaked - (G.routed || 0));
   if (ready(IMG.ui2_slot)) {                                                      // 细金边槽（凹槽挖空对准条），敌军数压在条上
-    const k = 18 / 33; uiBar('foe', HB_X + 5 * k, 13 + 6 * k, HB_W - 12 * k, 20 * k, left / Math.max(1, G.total), '#8a1a10', '#e2563a', { edge: 'rgba(0,0,0,0)' }); draw9(IMG.ui2_slot, HB_X, 13, HB_W, 18, 18, 18, 0, 0, k); uiText('敌 ' + left, HB_X + HB_W / 2, 22, 11, UIC.cream, 'center', PLAIN);
+    const k = 18 / 33; uiBar('foe', HB_X + 5 * k, 13 + 6 * k, HB_W - 12 * k, 20 * k, left / Math.max(1, G.total), '#8a1a10', '#e2563a', { edge: 'rgba(0,0,0,0)' }); draw9(IMG.ui2_slot, HB_X, 13, HB_W, 18, 18, 18, 0, 0, k); uiText('敌 ' + left, HB_X + HB_W / 2, 22, 11, UIC.cream, 'center', PLAIN, { maxW: HB_W - 8 });
   } else { uiText('敌', 190, 22, 15, UIC.red2, 'center'); uiBar('foe', 202, 15, 96, 12, left / Math.max(1, G.total), '#8a1a10', '#e2563a'); uiText(String(left), 302, 21, 12, UIC.cream, 'left', PLAIN); }
   // 军功：一个小圆徽章写等级，旁边金条
   const gArt = ready(IMG.ui2_slot), k2 = 15 / 33;
@@ -6397,7 +6397,7 @@ function drawCamp() {
     const sta = staNow(), can = Math.min(left, Math.floor(sta / CHORE_STA));
     uiText(`日常杂务 ${CHORES.length - left}/${CHORES.length}`, 24, y + 15, 13, UIC.cream, 'left', PLAIN, { stroke: false });
     uiText(`体力 ${sta}`, 112, y + 15, 11, sta >= CHORE_STA ? '#9be0a0' : UIC.red2, 'left', PLAIN, { stroke: false, maxW: 100 });
-    if (left) { pill(W - 112, y + 5, 88, 22, can ? `一键完成` : '体力不够', () => { const b0 = itemSnap(), l0 = choresLeft(); doChores(); const done = l0 - choresLeft(); if (done) { campFw(W / 2, 640 * .62, 7); campGain(itemDiff(b0, itemSnap()), W / 2, 640 * .62); } else showReward('体力不够', ['明天再来'], ['zhang'], false); }, true, can > 0); if (can) uiText(`体力 -${can * CHORE_STA}`, W - 68, y + 34, 10, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false }); }
+    if (left) { pill(W - 112, y + 5, 88, 22, can ? `一键完成` : '体力不够', () => { const b0 = itemSnap(), l0 = choresLeft(); doChores(); const done = l0 - choresLeft(); if (done) { campFw(W / 2, 640 * .62, 7); campGain(itemDiff(b0, itemSnap()), W / 2, 640 * .62); } else showReward('体力不够', ['明天再来'], ['zhang'], false); }, true, can > 0); if (can) uiText(`体力 -${can * CHORE_STA}`, W - 68, y + 34, EN_ON ? 11 : 10, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false, maxW: 90 }); }
     else uiSeal(W - 40, y + 15, 22, '毕', UIC.red, true);
     CHORES.forEach((c, k) => { const cx = 24 + (k % 2) * ((W - 48) / 2), cy = y + 48 + Math.floor(k / 2) * 27, on = choreOn(k);
       uiText(c, cx, cy, 12, on ? 'rgba(244,230,196,.45)' : UIC.cream, 'left', PLAIN, { stroke: false, maxW: 86 });
@@ -7076,8 +7076,14 @@ function drawCampaignMap(mim, t) {
     ctx.save(); if (!ok) ctx.globalAlpha = .5;
     if (i === cur) { ctx.shadowColor = `rgba(255,200,90,${.6 + .3 * Math.sin(t * 3)})`; ctx.shadowBlur = 16; }
     uiSeal(x, y, big ? 32 : 26, CNUM(lvNo(lv)), duel ? '#8a1c10' : UIC.red); ctx.shadowBlur = 0;
-    uiText(lv.name, x, y + (big ? 26 : 23), EN_ON ? 12 : fitSize(lv.name, 12, 92, 99, FONT), ok ? UIC.cream : 'rgba(244,230,196,.7)', 'center', FONT, { lw: 3.5, maxW: 96, wrap: true, minFz: 11, wrapFz: 11, wrapDown: true });
-    if (b) for (let k = 0; k < 3; k++) uiStar(x - 14 + k * 14, y + (big ? 41 : 38), 5.5, k < b);
+    let sy = y + (big ? 41 : 38); const lc = ok ? UIC.cream : 'rgba(244,230,196,.7)';
+    if (EN_ON) {   // 11-09 英文：关名长的折两行，星往下挪；正下方有别的关印就把名字写到旁边（第 1 关折行后挨着第 2 关的印）
+      const nm = tr(lv.name); ctx.font = `${fpx(12)}px ${FONT}`; const w1 = rawMeasure(nm).width + 4, two = w1 > 96, lw = two ? Math.min(96, w1 * .6) : w1, ly = y + (big ? 26 : 23), lh = two ? 24 : 12;
+      const nb = N.find(([nx, ny], k) => k !== j && Math.abs(nx - x) < lw / 2 + 16 && ny - y > 8 && ny - y < ly - y + lh + 16);
+      if (nb) { const left = nb[0] >= x, tx = left ? x - (big ? 20 : 17) : x + (big ? 20 : 17); uiText(lv.name, tx, y - (two ? 6 : 0), 12, lc, left ? 'right' : 'left', FONT, { lw: 3.5, maxW: 96, wrap: true, minFz: 11, wrapFz: 11, wrapDown: true }); }
+      else { uiText(lv.name, x, ly, 12, lc, 'center', FONT, { lw: 3.5, maxW: 96, wrap: true, minFz: 11, wrapFz: 11, wrapDown: true }); if (two) sy += 12; }
+    } else uiText(lv.name, x, y + (big ? 26 : 23), fitSize(lv.name, 12, 92, 99, FONT), lc, 'center', FONT, { lw: 3.5 });
+    if (b) for (let k = 0; k < 3; k++) uiStar(x - 14 + k * 14, sy, 5.5, k < b);
     ctx.restore();
     if (ok) hit(x - 34, y - 18, 68, 64, () => { MENU.lvPop = i; }); });
   /* 地图上不提示还缺什么（10-26） */
@@ -7101,13 +7107,14 @@ function drawLvPop(t) {                                                         
   const pw = 280, ph = 186, px = (W - pw) / 2, py = 210, b = BEST[lv.id] || 0, sw = canSweep(lv), sta = staNow();
   plate(px, py, pw, ph, true); hit(px, py, pw, ph, () => {});
   uiSeal(px + 30, py + 32, 30, CNUM(lvNo(lv)), lv.kind === 'duel' ? '#8a1c10' : UIC.red);
-  uiText(lv.name, px + 54, py + 26, fitSize(lv.name, 20, pw - 70, 99, FONT, 3), UIC.cream, 'left', FONT, { lw: 3 });
+  uiText(lv.name, px + 54, py + 26, EN_ON ? 20 : fitSize(lv.name, 20, pw - 70, 99, FONT, 3), UIC.cream, 'left', FONT, { lw: 3, maxW: pw - 54 - 62 });   // 英文：不压右上角的星
   uiText(`${SEGS[Math.floor(i / 10)]} · ${levelTag(lv)}`, px + 54, py + 46, 10, 'rgba(246,210,122,.85)', 'left', PLAIN, { stroke: false });
   for (let k = 0; k < 3; k++) uiStar(px + pw - 54 + k * 16, py + 30, 7, k < b);
-  uiText(fitText(lv.sub || '', 11, pw - 28), px + 14, py + 72, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });
+  if (EN_ON) fitLines(tr(lv.sub || ''), pw - 28, 11, PLAIN).slice(0, 2).forEach((ln, k) => uiText(ln, px + 14, py + 66 + k * 13, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false }));   // 英文：简介按词折两行
+  else uiText(fitText(lv.sub || '', 11, pw - 28), px + 14, py + 72, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });
   // 11-02 用户：「还要出现关卡可能掉落的东西」——精铁、这关专属材料，首通还没拿的写「首通」
   { const D = [['精铁', '']]; for (const m of matOfLv(lv.id)) D.push([m.name, '']); if (lv.kind === 'duel' && lv.id % 30 && !(INV.duelMet || {})[lv.id]) D.push(['陨铁', '首通']); if (lv.id === 20 && !INV.seal20) D.push(['将印', '首通']);
-    uiText('可能掉落', px + 14, py + 98, 11, 'rgba(246,210,122,.85)', 'left', PLAIN, { stroke: false });
+    uiText('可能掉落', px + 14, py + 98, 11, 'rgba(246,210,122,.85)', 'left', PLAIN, { stroke: false, maxW: 64 });
     const full = k => false;   // 11-02 掉落不再设每日上限   // 11-02 用户：「这里也要显示，免得玩家浪费体力刷」——今天已领满的变淡、标「满」
     D.forEach(([k, tag], j) => { const ix = px + 84 + j * 34, f = !tag && full(k); ctx.save(); if (f) ctx.globalAlpha = .4; drawItemIcon(k, ix, py + 98, 22); ctx.restore(); if (f) uiText('满', ix + 9, py + 106, 10, UIC.red2, 'center', PLAIN, { lw: 2.5 }); if (tag) uiText(tag, ix, py + 115, 8, '#ffd76e', 'center', PLAIN, { lw: 2 }); hov(ix - 12, py + 86, 24, 24, ITEM_TIP[k] || k); });
     const F = D.filter(([k, tag]) => !tag && full(k)).map(([k]) => k); if (F.length) uiText(`今天${F.join('、')}已领满`, px + 84 + D.length * 34 - 8, py + 98, 10, 'rgba(255,170,140,.85)', 'left', PLAIN, { stroke: false }); }
@@ -7117,7 +7124,7 @@ function drawLvPop(t) {                                                         
   { const ok = sw && sta >= SWEEP_STA; ctx.save(); if (!ok) ctx.globalAlpha = .45; if (ready(IMG.ui2_tab_dark)) draw9(IMG.ui2_tab_dark, sx, by, bw, bh, 90, 90, 0, 0, bh / 189); else uiPanel(sx, by, bw, bh, { r: bh / 2 });
     uiText('扫荡', sx + bw / 2, by + bh / 2 + 1, 15, UIC.gold2, 'center', FONT, { lw: 4 }); ctx.restore();
     const why = !sweepOpen() ? '通过第五关开放' : b < 3 ? '三星才能扫荡' : sta < SWEEP_STA ? `体力不够（${sta}/${SWEEP_STA}）` : `花体力 ${SWEEP_STA} · 剩 ${sta}`;
-    uiText(why, sx + bw / 2, by + bh + 12, 10, ok ? '#9be0a0' : 'rgba(244,230,196,.55)', 'center', PLAIN, { stroke: false });
+    uiText(why, sx + bw / 2, by + bh + 12, 10, ok ? '#9be0a0' : 'rgba(244,230,196,.55)', 'center', PLAIN, { stroke: false, maxW: 150 });
     if (ok) hit(sx, by, bw, bh, () => { MENU.lvPop = null; sweepLevel(i); }); }
 }
 function drawLevels() {

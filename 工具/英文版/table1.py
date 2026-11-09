@@ -95,4 +95,17 @@ T = {
 '带「伏兵」：两侧河沟藏乡勇，看准时机点令旗——用对了才有三星。偏守，打敌将的战法常低估': 'Brings "Ambush": militia hide in the ditches — tap the flag at the right moment for 3★. Defensive; underrates anti-general tactics.',
 '智力最高：敌军师的计（郭嘉除外）都看得破，荐卡也准；举盾的兵常看走眼': 'Top Intellect: sees through enemy plans (except Guo Jia) and picks well. Misreads shield troops.',
 '带「凿堑」（城前挖一道深堑，敌兵过堑慢一半、骑兵落马，8 秒）和「将计就计」（破掉敌军师第一个计）。连携、对症看得准；骑兵的事常看走眼': 'Brings "Trench" (foes cross at half speed, cavalry unhorsed, 8s) and "Turn the Tables" (breaks the first enemy plan). Reads combos and gear well; misjudges cavalry.',
+# 11-09 关卡弹窗（攻打／扫荡）
+'可能掉落': 'Drops', '攻打': 'Fight', '扫荡': 'Sweep', '通过第五关开放': 'Unlocks after Stage 5', '三星才能扫荡': 'Needs 3★ to sweep',
+'体力不够（#/#）': 'Not enough stamina (#/#)', '花体力 # · 剩 #': 'Costs # stamina · # left', '满': 'Full',
+'黄巾兵来犯涿县，三兄弟头一回并肩': 'Yellow Turbans raid Zhuo; the three brothers fight side by side for the first time.',
+'乡勇刚招来，黄巾又到': 'The militia just signed up, and the Turbans are back.',
+'大兴山谷口，黄巾大将程远志率众来犯': 'At the Daxing valley mouth, Turban general Cheng Yuanzhi attacks.',
+'黄巾围青州，刘备两侧设伏': 'The Turbans besiege Qingzhou; Liu Bei sets ambushes on both flanks.',
+'拦路将 · 大兴山下，邓茂挺枪拦路': 'Roadblock · Below Mount Daxing, Deng Mao blocks the road, spear raised.',
+'黄巾屯兵草营，皇甫嵩火攻': 'The Turbans camp in straw huts; Huangfu Song attacks with fire.',
+'演义第一回 · 黄巾追杀董卓，三兄弟出手相救': 'Chapter 1 of the novel · The Turbans chase Dong Zhuo; the brothers step in.',
+'安喜县驿馆 · 督邮索贿，张飞大怒': 'Anxi post house · The inspector demands a bribe; Zhang Fei loses it.',
+'夜战 · 张宝、张梁守广宗': 'Night battle · Zhang Bao and Zhang Liang hold Guangzong.',
+'大战 · 天公将军张角': 'Big battle · Zhang Jiao, General of Heaven.',
 }
