@@ -15,7 +15,7 @@
 <body>
 <canvas id="bgv" width="36" height="64" style="display:none"></canvas><canvas id="cv"></canvas>
 <script src="墨流.js?v=20261030"></script>
-<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261109e"><\/script>');</script>
+<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261110b"><\/script>');</script>
 <script>
 // 群雄逐鹿 · 守关原型（10-24）：敌军从上面一波波冲下来，刘关张站在城头各自普攻（10-24 起不设主角），招式按出手顺序轮流放，
 // 杀敌攒军功、升级三选一战法，守住城门过关。规则、数值、关卡见 ../设计/方案初稿.md「守关」一节。
@@ -925,8 +925,11 @@ const SAVE_NS = QS.get('save') || (DEMO ? 'demo' : null) || (() => { try { retur
 // 换手机在「系统」里输存档码接着玩。服务器（三国志/server/sanguo_save.py，EC2 上 /sanguo/api/）多两件事：
 // 回服务器时间（「第几天」、体力按它算，改手机时间没用）；按建档天数查数值是否合理，改出来的存档拒收（409），这边就换回云上那份。
 // 只同步正式存档（网址带 ?save= 的测试档、?all 试玩都不上云）；没有服务的地方（本机调试）照常玩
-const CLOUD_ON = ['proto', 'proto2'].includes(SAVE_NS) && !/[?&](save|all)\b/.test(location.search) && /^https?:$/.test(location.protocol);
-const CLOUD_API = location.pathname.replace(/[^/]*$/, '') + 'api', CLOUD_KEYS = ['proto', 'proto2'].flatMap(ns => ['stars', 'roster', 'inv', 'daily'].map(k => `sgz.${ns}.${k}`));
+// 11-10 itch 试玩包（用户：「放行 itch 的跨域请求」）：包里把 CLOUD_NS 换成试玩档 demo、CLOUD_API 换成正式站的全地址（工具/itch/make_itch.py）；上传时带上 slots，服务器只换这几格、别的格留着
+const CLOUD_NS = ['proto', 'proto2'];
+const CLOUD_ON = CLOUD_NS.includes(SAVE_NS) && !/[?&](save|all)\b/.test(location.search) && /^https?:$/.test(location.protocol);
+const CLOUD_API = location.pathname.replace(/[^/]*$/, '') + 'api', CLOUD_KEYS = CLOUD_NS.flatMap(ns => ['stars', 'roster', 'inv', 'daily'].map(k => `sgz.${ns}.${k}`));
+const FRAMED = (() => { try { return window.top !== window; } catch (e) { return true; } })();   // 嵌在别的网站的框里（itch）：浏览器不让弹 prompt／alert，也不让直接写剪贴板
 const CLOUD = { off: 0, st: 'off', msg: '', timer: 0, me: null };
 const nowMs = () => Date.now() + CLOUD.off;                                     // 游戏里的「现在」：联上服务器后按服务器时间
 try { CLOUD.me = JSON.parse(localStorage.getItem('sgz.cloud') || 'null'); } catch (e) {}
@@ -941,36 +944,68 @@ function cloudApply(data, rev) {                                                
   for (const k of CLOUD_KEYS) { if (data[k] != null) localStorage.setItem(k, data[k]); else localStorage.removeItem(k); }
   CLOUD.me.rev = rev; CLOUD.me.dirty = false; cloudSaveMe(); location.reload();
 }
-function cloudMark() { if (!CLOUD_ON || !CLOUD.me) return; if (!CLOUD.me.dirty) { CLOUD.me.dirty = true; cloudSaveMe(); } clearTimeout(CLOUD.timer); CLOUD.timer = setTimeout(cloudPush, 5000); }
+function cloudMark() { if (!CLOUD_ON) return; if (!CLOUD.me) { if (DEMO && CLOUD.st !== 'hello') cloudStart(); return; } if (!CLOUD.me.dirty) { CLOUD.me.dirty = true; cloudSaveMe(); } clearTimeout(CLOUD.timer); CLOUD.timer = setTimeout(cloudPush, 5000); }
 async function cloudPush() {
   if (!CLOUD_ON || !CLOUD.me || !CLOUD.me.dirty) return;
-  try { const [st, j] = await cloudCall('PUT', '/save', { data: cloudData(), at: Date.now() }, CLOUD.me.token);
+  try { const [st, j] = await cloudCall('PUT', '/save', { data: cloudData(), at: Date.now(), slots: CLOUD_NS }, CLOUD.me.token);
     if (st === 200) { CLOUD.me.rev = j.rev; CLOUD.me.dirty = false; cloudSaveMe(); CLOUD.st = 'ok'; }
-    else if (st === 409) { CLOUD.st = 'reject'; const [s2, g] = await cloudCall('GET', '/save', null, CLOUD.me.token); if (s2 === 200) { alert((j.error || '存档不合理') + '\n已换回云上的存档。'); cloudApply(g.data || {}, g.rev); } }
+    else if (st === 409) { CLOUD.st = 'reject'; const [s2, g] = await cloudCall('GET', '/save', null, CLOUD.me.token); if (s2 === 200) { alert(tr(j.error || '存档不合理') + '\n' + tr('已换回云上的存档。')); cloudApply(g.data || {}, g.rev); } }
     else CLOUD.st = 'err'; } catch (e) { CLOUD.st = 'offline'; }
 }
 async function cloudStart() {
   if (!CLOUD_ON) return;
   try {
-    if (!CLOUD.me || !CLOUD.me.token) { const [st, j] = await cloudCall('POST', '/hello', {}); if (st !== 200) { CLOUD.st = 'err'; return; }
+    if (!CLOUD.me || !CLOUD.me.token) {
+      if (DEMO && !localStorage.getItem(`sgz.${SAVE_NS}.stars`)) { CLOUD.st = 'idle'; return; }   // 试玩：打赢过一关才建档（只点开看一眼的人不占存档）
+      CLOUD.st = 'hello'; const [st, j] = await cloudCall('POST', '/hello', {}); if (st !== 200) { CLOUD.st = 'err'; return; }
       CLOUD.me = { token: j.token, code: j.code, rev: 0, dirty: true }; cloudSaveMe(); CLOUD.st = 'ok'; cloudPush(); return; }   // 第一次：把本机进度传上去（服务器当迁移）
     const [st, g] = await cloudCall('GET', '/save', null, CLOUD.me.token);
     if (st === 401) { CLOUD.me = null; cloudSaveMe(); return cloudStart(); }   // 凭证作废（比如换了码）：重新领一个
     if (st !== 200) { CLOUD.st = 'err'; return; }
     CLOUD.st = 'ok'; CLOUD.day = g.day;
-    if (g.rev > (CLOUD.me.rev || 0) && !CLOUD.me.dirty && Object.keys(g.data || {}).length) return cloudApply(g.data, g.rev);   // 别的设备存过更新的
+    if (g.rev > (CLOUD.me.rev || 0) && !CLOUD.me.dirty) { const d = g.data || {};   // 别的设备存过更新的；11-10 只看这一版管的几格：云上这几格是空的、或者和本机一样，就不动本机（同一个码可以正式版、试玩版各存各的）
+      if (CLOUD_KEYS.some(k => d[k] != null) && CLOUD_KEYS.some(k => (d[k] ?? null) !== localStorage.getItem(k))) return cloudApply(d, g.rev);
+      CLOUD.me.rev = g.rev; cloudSaveMe(); }
     if (CLOUD.me.dirty) cloudPush();
   } catch (e) { CLOUD.st = 'offline'; }
 }
-async function cloudClaim() {                                                     // 换手机：输存档码接着玩
-  const code = prompt('输入存档码（9 位，例如 ABC-DEF-GHJ）'); if (!code) return;
+async function cloudClaimCode(code) {                                             // 成功：换成云上那份并重进；不成：回出错的话
   try { const [st, j] = await cloudCall('POST', '/claim', { code });
-    if (st !== 200) { alert(j.error || '没有这个存档码'); return; }
-    CLOUD.me = { token: j.token, code: j.code, rev: j.rev, dirty: false }; cloudSaveMe(); cloudApply(j.data || {}, j.rev);
-  } catch (e) { alert('连不上服务器，稍后再试'); }
+    if (st !== 200) return j.error || '没有这个存档码';
+    const d = j.data || {}; CLOUD.me = { token: j.token, code: j.code, rev: j.rev, dirty: false }; cloudSaveMe();
+    if (CLOUD_KEYS.some(k => d[k] != null)) cloudApply(d, j.rev);
+    else { CLOUD.st = 'ok'; if (CLOUD_KEYS.some(k => localStorage.getItem(k) != null)) { CLOUD.me.dirty = true; cloudSaveMe(); cloudPush(); } }   // 11-10 那份存档里没有这一版的进度（比如码是试玩版里生成的）：本机的留着，并到那份存档里
+    return '';
+  } catch (e) { return '连不上服务器，稍后再试'; }
+}
+async function cloudClaim() {                                                     // 换手机：输存档码接着玩
+  if (FRAMED) return cloudBox('claim');
+  const code = prompt(tr('输入存档码（9 位，例如 ABC-DEF-GHJ）')); if (!code) return;
+  const err = await cloudClaimCode(code); if (err) alert(tr(err));
+}
+function cloudCopy() { if (FRAMED) return cloudBox('copy'); try { navigator.clipboard.writeText(CLOUD.me.code); } catch (e) {} }
+// 11-10 嵌在 itch 的框里时用网页自己的小窗代替 prompt（Chrome、Safari 都不让别的域名的框弹对话框）：claim＝输存档码，copy＝把自己的存档码摆出来，能长按选中，也能点按钮复制
+function cloudBox(mode) {
+  if (document.getElementById('cloudbox')) return;
+  const el = (t, css, txt) => { const e = document.createElement(t); e.style.cssText = css; if (txt) e.textContent = tr(txt); return e; };
+  const wrap = el('div', 'position:fixed;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;background:rgba(10,6,3,.8);touch-action:auto'); wrap.id = 'cloudbox';
+  const box = el('div', `width:min(84vw,290px);padding:16px 16px 14px;border:1px solid #9a7432;border-radius:10px;background:#2a160c;color:#f4e6c4;text-align:center;font:15px/1.5 ${PLAIN}`);
+  const inp = el('input', 'display:block;width:100%;box-sizing:border-box;margin:10px 0 8px;padding:9px 4px;border:1px solid #9a7432;border-radius:6px;background:#1a0c06;color:#fff;text-align:center;letter-spacing:2px;text-transform:uppercase;font:20px/1.2 ui-monospace,Menlo,Consolas,monospace;-webkit-user-select:text;user-select:text;outline:none');
+  const msg = el('div', 'min-height:36px;font-size:12px;line-height:18px;color:rgba(244,230,196,.7)', mode === 'claim' ? '会用那份存档替换这台设备上的进度' : '抄下来；换设备或浏览器清了数据后，用它接着玩'), row = el('div', 'display:flex;gap:10px;margin-top:8px');
+  const btn = (txt, red) => el('button', `flex:1;padding:8px 0;border:1px solid #9a7432;border-radius:16px;background:${red ? '#8a1c14' : '#1a0c06'};color:${red ? '#fff2dc' : '#f6d27a'};font:15px ${PLAIN};cursor:pointer`, txt);
+  const ok = btn(mode === 'claim' ? '确定' : '复制', true), no = btn(mode === 'claim' ? '取消' : '关闭', false), close = () => wrap.remove();
+  inp.maxLength = 11; inp.autocomplete = 'off'; inp.spellcheck = false; inp.setAttribute('autocapitalize', 'characters');
+  if (mode === 'claim') { inp.placeholder = 'ABC-DEF-GHJ';
+    const go = async () => { if (ok.disabled) return; if (!inp.value.trim()) return inp.focus(); ok.disabled = true; msg.textContent = tr('正在连接…'); const err = await cloudClaimCode(inp.value); if (err) { msg.textContent = tr(err); ok.disabled = false; } else close(); };
+    ok.onclick = go; inp.onkeydown = ev => { if (ev.key === 'Enter') go(); else if (ev.key === 'Escape') close(); };
+  } else { inp.value = CLOUD.me.code; inp.readOnly = true;
+    ok.onclick = () => { inp.focus(); inp.select(); let done = false; try { done = document.execCommand('copy'); } catch (e) {} if (!done && navigator.clipboard) navigator.clipboard.writeText(inp.value).then(() => { msg.textContent = tr('已复制'); }, () => {}); msg.textContent = tr(done ? '已复制' : '复制不了，请长按选中或者抄下来'); }; }
+  no.onclick = close; wrap.onclick = ev => { if (ev.target === wrap) close(); };
+  box.append(el('div', `font:20px ${FONT};color:#f6d27a`, mode === 'claim' ? '输入存档码' : '存档码'), inp, msg, row); row.append(no, ok); wrap.append(box); document.body.append(wrap);
+  if (mode === 'claim') setTimeout(() => inp.focus(), 60);
 }
 async function cloudRotate() { try { const [st, j] = await cloudCall('POST', '/rotate', {}, CLOUD.me.token); if (st === 200) { CLOUD.me.code = j.code; cloudSaveMe(); } } catch (e) {} }
-if (CLOUD_ON) { addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && CLOUD.me && CLOUD.me.dirty && navigator.sendBeacon) navigator.sendBeacon(CLOUD_API + '/save', new Blob([JSON.stringify({ token: CLOUD.me.token, data: cloudData(), at: Date.now() })], { type: 'application/json' })); });
+if (CLOUD_ON) { addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && CLOUD.me && CLOUD.me.dirty && navigator.sendBeacon) navigator.sendBeacon(CLOUD_API + '/save', new Blob([JSON.stringify({ token: CLOUD.me.token, data: cloudData(), at: Date.now(), slots: CLOUD_NS })], { type: 'application/json' })); });
   setTimeout(cloudStart, 300); }
 const SKEY = `sgz.${SAVE_NS}.stars`;
 let BEST = {}; try { BEST = JSON.parse(localStorage.getItem(SKEY) || '{}'); } catch (e) {}
@@ -5246,7 +5281,8 @@ function drawHud() {
   st.forEach(([t, c], k) => { ctx.font = `12px ${PLAIN}`; const w = ctx.measureText(t).width + 22; uiPanel(W - w - 8, by + 4 + fy + k * 22, w, 19, { r: 9.5, single: true, lw: 1, alpha: .86 }); uiText(t, W - 8 - w / 2, by + 14 + fy + k * 22, 12, c, 'center', PLAIN, { stroke: false }); });
   if (G.boss && !G.boss.dead) { const b = G.boss, T = FOES[b.kind];                  // 敌将血条：名牌加一长条，分十格
     uiPanel(8, TOP - 6, W - 16, 30, { r: 6, alpha: .9, top: '#3a1610', bot: '#1e0c08' });
-    uiText(T.name, 18, TOP + 9, 16, '#ffd9b0', 'left', FONT, { glow: 'rgba(226,86,58,.6)' }); if (T.title) uiText(T.title, 18 + 16 * T.name.length + 6, TOP + 10, 10, 'rgba(255,220,190,.7)', 'left', PLAIN, { stroke: false });
+    uiText(T.name, 18, TOP + 9, 16, '#ffd9b0', 'left', FONT, EN_ON ? { glow: 'rgba(226,86,58,.6)', maxW: 98 } : { glow: 'rgba(226,86,58,.6)' }); const bw = (t, z, f) => (ctx.font = `${fpx(z)}px ${f}`, rawMeasure(tr(t)).width), tx = 18 + (EN_ON ? bw(T.name, 16, FONT) : 16 * T.name.length) + 6;   // 11-10 英文名字长：按实际宽度排，封号放不下（会压到血条）就不写，出场横幅里有
+    if (T.title && (!EN_ON || tx + bw(T.title, 10, PLAIN) <= 116)) uiText(T.title, tx, TOP + 10, 10, 'rgba(255,220,190,.7)', 'left', PLAIN, { stroke: false });
     uiBar('boss', 120, TOP + 3, W - 136, 12, b.hp / b.max, '#6e0f08', '#e2563a', { seg: 10 });
     if (b.guardT2 > 0) uiText('护罩', W - 30, TOP + 9, 11, UIC.gold2, 'center', PLAIN);
   }
@@ -5660,9 +5696,9 @@ function drawSystem() {
     uiText(url ? '网址指定了存档，不能切换' : '两格各自独立，切换不会丢', W - 34, y4 + 64, 10, 'rgba(244,230,196,.55)', 'right', PLAIN, { stroke: false }); }
   { const y5 = 74 + 4 * 92 + 42; plate(16, y5, W - 32, 92); uiText('云存档', 34, y5 + 24, 18, UIC.gold2, 'left', FONT, { stroke: false });   // 10-30 云存档：存档码、换手机认领
     if (!CLOUD_ON) uiText(/[?&](save|all)\b/.test(location.search) ? '测试网址不上云' : '本机调试不上云', 34, y5 + 56, 12, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false });
-    else { const me = CLOUD.me; uiText(me && me.code ? '存档码  ' + me.code : (CLOUD.st === 'offline' ? '连不上服务器，联网后自动同步' : '正在连接…'), W - 34, y5 + 24, 14, UIC.cream, 'right', PLAIN, { stroke: false });
+    else { const me = CLOUD.me; uiText(me && me.code ? '存档码  ' + me.code : (CLOUD.st === 'offline' ? '连不上服务器，联网后自动同步' : CLOUD.st === 'idle' ? '打赢一关后生成存档码' : '正在连接…'), W - 34, y5 + 24, 14, UIC.cream, 'right', PLAIN, { stroke: false });
       uiText(CLOUD.st === 'reject' ? '存档数值不合理，已换回云上的' : me && me.dirty ? '有改动，稍后自动上传' : CLOUD.st === 'ok' ? '已同步' : '', 34, y5 + 46, 11, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false });
-      pill(30, y5 + 58, 112, 26, '输入存档码', cloudClaim, false); if (me && me.code) { pill(150, y5 + 58, 70, 26, '复制', () => { try { navigator.clipboard.writeText(me.code); } catch (e) {} }, false); pill(228, y5 + 58, 98, 26, '换一个码', cloudRotate, false); } } }
+      pill(30, y5 + 58, 112, 26, '输入存档码', cloudClaim, false); if (me && me.code) { pill(150, y5 + 58, 70, 26, '复制', cloudCopy, false); pill(228, y5 + 58, 98, 26, '换一个码', cloudRotate, false); } } }
   plaque(112, 606, 136, 32, '返回', () => { screen = 'menu'; }, false);
 }
 const SYS = { reset: 0 };
@@ -7221,7 +7257,7 @@ window.__sg = {
       while (G.state !== 'over' && G.t < 400 && n < 1e6) { if (G.state === 'pick') { const I = foeIntel(), tv = G.pick.map(p => perkEval(p, I).v), tb = tv.indexOf(Math.max(...tv));
           if (tv[tb] - Math.min(...tv) >= 100) for (const ck of Object.keys(COUNSEL)) { this.forceC = ck; const a = counselAdvise(G.pick), key = ck + (i < 10 ? '·黄巾' : '·董卓'); out[key] = out[key] || [0, 0]; out[key][1]++; if (tv[tb] - tv[a.i] >= 100) out[key][0]++; }   /* 只数有好坏之分的：荐了差 100 以上的算荐错 */
           this.forceC = null; takePerk(autoPick()); } else step(DT); n++; } }
-    this.seed = 0; this.auto = false; return Object.fromEntries(Object.entries(out).map(([k, [a, b]]) => [k, '荐错 ' + Math.round(a / b * 100) + '% (' + b + ')'])); }, ult: (k, foe) => playUlt(k, foe, true), get inv() { return INV; }, get daily() { return DAILY; }, dayOff: 0, tick: () => dailyTick(), gateLack: id => gateLack(id), nextGate: () => nextGate(), get scr() { return screen; }, set scr(v) { screen = v; }, get scmax() { return SCMAX; },
+    this.seed = 0; this.auto = false; return Object.fromEntries(Object.entries(out).map(([k, [a, b]]) => [k, '荐错 ' + Math.round(a / b * 100) + '% (' + b + ')'])); }, ult: (k, foe) => playUlt(k, foe, true), get inv() { return INV; }, get daily() { return DAILY; }, get cloud() { return { on: CLOUD_ON, ns: CLOUD_NS, api: CLOUD_API, framed: FRAMED, st: CLOUD.st, me: CLOUD.me, claim: cloudClaim, copy: cloudCopy }; },   /* 11-10 存档码（工具/itch/check_itch.py 核对用） */ dayOff: 0, tick: () => dailyTick(), gateLack: id => gateLack(id), nextGate: () => nextGate(), get scr() { return screen; }, set scr(v) { screen = v; }, get scmax() { return SCMAX; },
   // 不画面，直接跑：一直到这一关结束（auto 时自动选战法），返回结果
   sim(i, maxT = 300) { this.auto = true; this.simming = true; startLevel(i); this.simming = false; G.sim = true; let n = 0; while (G.state !== 'over' && G.t < maxT && n < 1e6) { if (G.state === 'pick') takePerk(autoPick()); if (this.hook) this.hook(G); step(DT); n++; } return { win: G.result && G.result.win, stars: G.result && G.result.stars, wall: Math.round(G.wall), t: Math.round(G.t), killed: G.killed, leaked: G.leaked, total: G.total, rank: G.rank, perks: G.perks }; },
   // 每关换 n 个种子各跑一遍：平均星数、胜场、城防、用时、撞城的兵、输的原因（调平衡用）

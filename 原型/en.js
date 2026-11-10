@@ -832,7 +832,37 @@ window.EN = {
 "关羽：……（默默把刀擦了三遍）": "Guan Yu: ...(silently polishes his blade three times)",
 "张飞：我建议给军师也上个绩效考核。": "Zhang Fei: I propose performance reviews for advisors.",
 "刘备：没事，就当交学费了。学费有点贵。": "Liu Bei: It's fine, call it tuition. Pricey tuition.",
-"战法": "Tactic"
+"战法": "Tactic",
+"硫磺": "Sulfur",
+"以后不漏一个兵打赢、首通": "win without leaks, first clear",
+"存档码": "Save code",
+"输入存档码": "Enter code",
+"复制": "Copy",
+"换一个码": "New code",
+"已同步": "Synced",
+"已复制": "Copied",
+"有改动，稍后自动上传": "Changes upload shortly",
+"正在连接…": "Connecting…",
+"连不上服务器，联网后自动同步": "Offline – syncs later",
+"打赢一关后生成存档码": "Win a stage to get a code",
+"存档数值不合理，已换回云上的": "Save rejected – cloud copy restored",
+"会用那份存档替换这台设备上的进度": "This replaces the progress on this device.",
+"抄下来；换设备或浏览器清了数据后，用它接着玩": "Write it down. Enter it on another device, or after your browser clears its data, to keep playing.",
+"复制不了，请长按选中或者抄下来": "Couldn't copy – select it or write it down.",
+"没有这个存档码": "No such save code.",
+"连不上服务器，稍后再试": "Can't reach the server – try again later.",
+"输入存档码（9 位，例如 ABC-DEF-GHJ）": "Enter your save code (9 characters, e.g. ABC-DEF-GHJ)",
+"存档不合理": "Save rejected",
+"已换回云上的存档。": "The cloud copy was restored.",
+"太频繁了，过一会儿再试": "Too many requests – try again in a while.",
+"服务器出错": "Server error.",
+"凭证不对": "Invalid credential.",
+"确定": "OK",
+"取消": "Cancel",
+"关闭": "Close",
+"两格各自独立，切换不会丢": "Two separate slots",
+"再点一次确认": "Tap again to confirm",
+"本机调试不上云": "Local – no cloud"
 };
 window.EN_RX = [[new RegExp("^张飞喝后\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 秒内青龙斩：扫到的每人\\ ([+-]?\\d+(?:\\.\\d+)?)\\.([+-]?\\d+(?:\\.\\d+)?)\\ 倍（砍晕的本来就有\\ ([+-]?\\d+(?:\\.\\d+)?)\\.([+-]?\\d+(?:\\.\\d+)?)\\ 倍）、范围\\ \\+([+-]?\\d+(?:\\.\\d+)?)%，清一片$"), "Dragon Slash within $1s of the Roar: $2.$3× to each foe hit (normally $4.$5× on stunned), range +$6%."],
 [new RegExp("^普攻\\ \\+([+-]?\\d+(?:\\.\\d+)?)%\\ ·\\ 招式\\ \\+([+-]?\\d+(?:\\.\\d+)?)%\\ ·\\ 冷却\\ ([+-]?\\d+(?:\\.\\d+)?)%\\ ·\\ 城防\\ \\+([+-]?\\d+(?:\\.\\d+)?)%$"), "Attack +$1% · Skills +$2% · Cooldown $3% · Wall +$4%"],
@@ -888,6 +918,7 @@ window.EN_RX = [[new RegExp("^张飞喝后\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 秒内青
 [new RegExp("^城防和车驾都剩一半以上（剩\\ ([+-]?\\d+(?:\\.\\d+)?)%）$"), "Wall and carriage above half (now $1%)"],
 [new RegExp("^两星之上，再城防剩\\ ([+-]?\\d+(?:\\.\\d+)?)%\\ 以上$"), "2★ plus wall above $1%"],
 [new RegExp("^青龙斩扫过的盾和甲失效\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 秒$"), "Dragon Slash strips shields and armor for $1s"],
+[new RegExp("^存档码错了太多次，([+-]?\\d+(?:\\.\\d+)?)\\ 分钟后再试$"), "Too many wrong codes – try again in $1 min."],
 [new RegExp("^一局打出\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 次「晕而斩之」$"), "$1 \"Stun & Slay\" in one battle"],
 [new RegExp("^丈八破阵一招穿死\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 个敌人$"), "Serpent Spear kills $1 in one thrust"],
 [new RegExp("^([+-]?\\d+(?:\\.\\d+)?)\\ 秒里刺得快一倍、一下刺三个$"), "$1s of double speed, hitting 3 at once"],
@@ -947,6 +978,7 @@ window.EN_RX = [[new RegExp("^张飞喝后\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 秒内青
 [new RegExp("^迷魂\\ ([+-]?\\d+(?:\\.\\d+)?)$"), "Dazed $1"],
 [new RegExp("^([+-]?\\d+(?:\\.\\d+)?)\\ 倍$"), "$1×"],
 [new RegExp("^敌\\ ([+-]?\\d+(?:\\.\\d+)?)$"), "Foes $1"],
+[new RegExp("^已有([+-]?\\d+(?:\\.\\d+)?)$"), "×$1"],
 [new RegExp("^([+-]?\\d+(?:\\.\\d+)?)秒$"), "$1s"]];
 // 手写的句式（make_en.py 原样接在 en.js 末尾）：中文数字的关号、「下一阶 · 某某」这类拼出来的句子
 (() => {
@@ -990,6 +1022,7 @@ window.EN_RX = [[new RegExp("^张飞喝后\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 秒内青
     [/^连携凑齐了：(.+)一起打$/, (m, gs) => `Combo ready: ${gs.split('、').map(t).join(' & ')} strike together.`],
     [/^(.+)要放火箭，摆了拒马也会被烧$/, (m, g) => `${t(g)} will loose fire arrows — barricades would just burn.`],
     [/^打赢一次（掉(.+)）$/, (m, x) => `win once (drops ${t(x)})`],
+    [/^存档码  (.+)$/, (m, c) => `Save code  ${c}`],   // 11-10 系统页云存档
     [/^(.+) · (.+)$/, (m, a, b) => `${t(a)} · ${t(b)}`],
   );
 })();

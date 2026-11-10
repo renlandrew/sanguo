@@ -40,6 +40,7 @@
     [/^连携凑齐了：(.+)一起打$/, (m, gs) => `Combo ready: ${gs.split('、').map(t).join(' & ')} strike together.`],
     [/^(.+)要放火箭，摆了拒马也会被烧$/, (m, g) => `${t(g)} will loose fire arrows — barricades would just burn.`],
     [/^打赢一次（掉(.+)）$/, (m, x) => `win once (drops ${t(x)})`],
+    [/^存档码  (.+)$/, (m, c) => `Save code  ${c}`],   // 11-10 系统页云存档
     [/^(.+) · (.+)$/, (m, a, b) => `${t(a)} · ${t(b)}`],
   );
 })();

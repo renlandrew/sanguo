@@ -55,3 +55,23 @@ T = {
 '刘备：没事，就当交学费了。学费有点贵。': 'Liu Bei: It\'s fine, call it tuition. Pricey tuition.',
 }
 T['战法'] = 'Tactic'
+# 11-10 截图时 __tmiss 里剩的三条
+T['硫磺'] = 'Sulfur'
+T['已有#'] = '×#'
+T['以后不漏一个兵打赢、首通'] = 'win without leaks, first clear'
+# 11-10 itch 试玩包接存档码：系统页「云存档」一栏、输存档码的小窗
+T.update({
+'存档码': 'Save code', '输入存档码': 'Enter code', '复制': 'Copy', '换一个码': 'New code', '已同步': 'Synced', '已复制': 'Copied',
+'有改动，稍后自动上传': 'Changes upload shortly', '正在连接…': 'Connecting…', '连不上服务器，联网后自动同步': 'Offline – syncs later',
+'打赢一关后生成存档码': 'Win a stage to get a code', '存档数值不合理，已换回云上的': 'Save rejected – cloud copy restored',
+'会用那份存档替换这台设备上的进度': 'This replaces the progress on this device.',
+'抄下来；换设备或浏览器清了数据后，用它接着玩': 'Write it down. Enter it on another device, or after your browser clears its data, to keep playing.',
+'复制不了，请长按选中或者抄下来': "Couldn't copy – select it or write it down.",
+'没有这个存档码': 'No such save code.', '连不上服务器，稍后再试': "Can't reach the server – try again later.",
+'输入存档码（9 位，例如 ABC-DEF-GHJ）': 'Enter your save code (9 characters, e.g. ABC-DEF-GHJ)',
+'存档不合理': 'Save rejected', '已换回云上的存档。': 'The cloud copy was restored.',
+'存档码错了太多次，# 分钟后再试': 'Too many wrong codes – try again in # min.', '太频繁了，过一会儿再试': 'Too many requests – try again in a while.',
+'服务器出错': 'Server error.', '凭证不对': 'Invalid credential.',
+'确定': 'OK', '取消': 'Cancel', '关闭': 'Close',
+})
+T.update({'两格各自独立，切换不会丢': 'Two separate slots', '再点一次确认': 'Tap again to confirm', '本机调试不上云': 'Local – no cloud'})

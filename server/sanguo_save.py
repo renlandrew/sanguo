@@ -25,7 +25,7 @@
 接口（nginx 把 /jieyun/api/ 转过来，前缀去掉；请求、回复都是 JSON）：
   POST /hello   {}                      → {token, code, rev: 0}              第一次打开
   GET  /save    Authorization: Bearer t → {rev, at, data}                    取最新
-  PUT  /save    {data, at}              → {rev}                              存（后存的为准）
+  PUT  /save    {data, at[, slots]}     → {rev}                              存（后存的为准）；slots 是这次要换掉的格（不写＝proto、proto2），别的格留着
   POST /save    {token, data, at}       → {rev}                              同上，给切后台时的 sendBeacon（带不了头）
   POST /claim   {code}                  → {token, code, rev, at, data}       另一台设备认领
   POST /rotate  Authorization           → {code}                             换一个存档码（旧的作废）
@@ -41,7 +41,9 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 ALPHA = '23456789ABCDEFGHJKMNPQRSTVWXYZ'          # 去掉 0 O 1 I L U，抄的时候不会认错；9 位约 2×10^13 种
-KEY_OK = re.compile(r'^sgz\.(proto|proto2)\.(stars|roster|inv|daily)$')   # 只收正式存档的四个键（测试档 ?save= 不上云）
+KEY_OK = re.compile(r'^sgz\.(proto|proto2|demo)\.(stars|roster|inv|daily)$')   # 只收正式存档的四个键（测试档 ?save= 不上云）；11-10 加试玩档 demo（itch 包用）
+SLOTS = ('proto', 'proto2', 'demo')
+SLOTS_OLD = ['proto', 'proto2']                          # 请求里没写 slots 的（11-10 以前的网页）：按老规矩，整份就是这两格
 MAX_BODY = 192 * 1024
 KEEP_HISTORY = 30
 LOCK_FAILS, LOCK_SECS = 5, 600
@@ -50,7 +52,9 @@ EV_OK = {'open', 'start', 'win', 'lose', 'end'}       # 打开页面、开打、
 EV_PER_HOUR = 1200
 SRC_OK = re.compile(r'^[a-z0-9_-]{0,24}$')
 DID_OK = re.compile(r'^[0-9a-f]{16,40}$')
-CORS_OK = re.compile(r'^http://(localhost|127\.0\.0\.1)(:\d{1,5})?$')   # 正式站同源不用跨域；只放本机调试
+# 正式站同源不用跨域；放本机调试，11-10 加 itch.io 放网页游戏的域名（html-classic.itch.zone 等，用户：「放行 itch 的跨域请求」）。
+# 存档只认请求里带的凭证，不用 cookie，所以放行来源不会让别的网页冒用玩家身份
+CORS_OK = re.compile(r'^(http://(localhost|127\.0\.0\.1)(:\d{1,5})?|https://[a-z0-9-]{1,40}\.itch\.zone)$')
 
 
 class Store:
@@ -127,11 +131,14 @@ class Store:
         if admin: r['admin'] = True              # 只有管理员存档才带这一项
         return r
 
-    def put(self, token, data, at):
+    def put(self, token, data, at, slots=SLOTS_OLD):
+        """只换掉 slots 里那几格，别的格原样留着（11-10：itch 试玩包只管 demo 一格——玩家把正式站的存档码输进试玩包，试玩包再上传时不能把正式档冲掉）"""
         now = time.time()
         with self.lock:
             sid = self._save_of(token)
             if sid is None: return None
+            old = json.loads(self.db.execute('SELECT data FROM saves WHERE id=?', (sid,)).fetchone()[0])
+            data = {**{k: v for k, v in old.items() if k.split('.')[1] not in slots}, **data}
             if not self.is_admin(sid):
                 cur_rev = self.db.execute('SELECT rev FROM saves WHERE id=?', (sid,)).fetchone()[0]
                 if cur_rev == 0:                            # 第一份上传当迁移（上云前本地已有进度）：找出这份数据最少要玩几天才说得过去，把建档日期往前推到那天
@@ -194,7 +201,7 @@ MAT_NEED = {6: 2, 7: 2, 8: 3, 9: 3, 10: 4}
 MATS = ['青龙鳞', '蛇纹镔铁', '雌雄剑胚']
 def plausible(data, days):
     """建档第 days 天，这份存档的数值说得过去吗。返回 (ok, 原因)。上限故意放宽（正常最快的约一倍半再加一笔），只挡明显改出来的。"""
-    for slot in ('proto', 'proto2'):
+    for slot in ('proto', 'proto2'):                    # 试玩档 demo 不查：试玩不耗体力、可以一直刷，按天数卡会把正常打出来的进度退回去；试玩档也不带进正式档
         raw = data.get('sgz.%s.inv' % slot)
         if not raw: continue
         try: inv = json.loads(raw)
@@ -295,7 +302,10 @@ class Handler(BaseHTTPRequestHandler):
                 data, at = body.get('data'), body.get('at')
                 if not valid_data(data): return self.reply(400, {'error': '存档格式不对'})
                 at = float(at) if isinstance(at, (int, float)) else time.time() * 1000
-                r = self.store.put(self.token(body), data, at)
+                slots = body.get('slots', SLOTS_OLD)
+                if not (isinstance(slots, list) and 0 < len(slots) <= len(SLOTS) and all(isinstance(x, str) and x in SLOTS for x in slots)) or any(k.split('.')[1] not in slots for k in data):
+                    return self.reply(400, {'error': '存档格不对'})
+                r = self.store.put(self.token(body), data, at, slots)
                 if r and 'reject' in r: return self.reply(409, {'error': '存档数值不合理：' + r['reject']})   # 客户端收到后恢复云端上一份
                 return self.reply(200, r) if r else self.reply(401, {'error': '凭证不对'})
             if method == 'POST' and path == '/ev':
