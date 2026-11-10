@@ -34,6 +34,6 @@ T.update({   # 军务后半句、官阶、晋阶奖励、神兵
 '选一人觉醒：招式伤害 +20%、冷却 -15%': 'Awaken one hero: skill dmg +20%, cooldown -15%',
 '张飞普攻、招式 #%': 'Zhang Fei attacks & skills #%', '刘备普攻、招式 #%': 'Liu Bei attacks & skills #%', '普攻、招式 #%': 'Attacks & skills #%',
 })
-T.update({'孟德献刀': 'Cao Cao\'s Dagger', '累计 # 颗星 等 # 项': '# stars total + # more', '白身。': 'No rank.'})
-T.update({'限时': 'Timed', '累计 # 颗星、首通 · 张角': '# stars total, first clear · Zhang Jiao', '首通 · 邓茂 等 # 项': 'First clear · Deng Mao + # more'})
+T.update({'孟德献刀': 'Cao Cao\'s Dagger', '白身。': 'No rank.'})
+T.update({'限时': 'Timed', '累计 # 颗星、首通 · 张角': '# stars total, first clear · Zhang Jiao'})
 T.update({'打赢一次（掉青龙鳞）': 'win once (drops Dragon Scale)', '打赢一次（掉蛇纹镔铁）': 'win once (drops Serpent Steel)', '打赢一次（掉雌雄剑胚）': 'win once (drops Twin Sword Blank)', '打赢一次（掉陨铁）': 'win once (drops Meteor Iron)'})

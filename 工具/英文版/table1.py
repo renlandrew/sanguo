@@ -73,7 +73,7 @@ T = {
 '我方城防（就是你们的血）都剩一半以上（剩 #%） · 未达成': 'Your wall (your HP) above half (now #%) · not met',
 '打完所有敌人，城防不破 · 未达成': 'Defeat all foes, wall holds · not met', '打完所有敌人，城防不破、车驾不毁': 'Defeat all foes; wall and carriage survive',
 '斩了敌将，我方城防（就是你们的血）不破 · 未达成': 'Slay the general, your wall (your HP) holds · not met',
-'第一关漏兵不超过两个': 'Stage 1: let 2 or fewer through', '第八关漏兵不超过两个': 'Stage 8: let 2 or fewer through', '第六关把草营全烧掉': 'Stage 6: burn every tent', '第三关三星 等 # 项': 'Stage 3 three stars + # more',
+'第一关漏兵不超过两个': 'Stage 1: let 2 or fewer through', '第八关漏兵不超过两个': 'Stage 8: let 2 or fewer through', '第六关把草营全烧掉': 'Stage 6: burn every tent',
 '首通第九关后加入': 'Joins after clearing Stage 9', '首通第四关后加入': 'Joins after clearing Stage 4', '首通第二章第十二关后加入': 'Joins after Ch.2 Stage 12',
 '随军军师在晋升时荐战法、报敌情；只是建议，听不听你定': 'Your advisor suggests tactics and scouts the enemy on promotion — advice only, your call',
 '智力最高：敌军师的计（郭嘉除外）都看得破，荐': 'Highest Intellect: sees through enemy plans (except Guo Jia); suggests',
