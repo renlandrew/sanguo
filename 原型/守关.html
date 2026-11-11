@@ -2838,8 +2838,8 @@ const MOVE_ANIM = { heavy: ['heavy'], combo: ['combo', 'heavy'], rush: ['rush', 
 // 这一关拿到的军械、城防战法（滚木、连弩、拒马、绊马索、破阵弩……）和自动的赤帻、火把、举盾。画在敌人底下，敌人走过来会盖住它们；用掉了（滚木、连弩一关一次）变灰
 function drawWallProps() {
   const items = []; G.propRects = [];
-  for (const p of PERKS) if (G.perks[p.id] && !p.gen && !p.combo && p.id !== 'banma' && ready(IMG['ui_ico_' + p.id])) items.push({ im: IMG['ui_ico_' + p.id], n: G.perks[p.id], used: (p.id === 'log' && G.logUsed) || (p.id === 'nu' && G.nuUsed), name: p.name, desc: p.desc });
-  if (G.st.logs > 0 && !G.perks.log && ready(IMG.ui_ico_log)) items.push({ im: IMG.ui_ico_log, n: G.st.logs, used: G.logUsed, name: '滚木', desc: '点左边「滚木」钮，再点要滚的那一列，整列碾平（一关一次）' });   // 关卡送的（第一关开局送一层滚木）
+  for (const p of PERKS) if (G.perks[p.id] && !p.gen && !p.combo && p.id !== 'banma' && p.id !== 'log' && ready(IMG['ui_ico_' + p.id])) items.push({ im: IMG['ui_ico_' + p.id], n: G.perks[p.id], used: (p.id === 'log' && G.logUsed) || (p.id === 'nu' && G.nuUsed), name: p.name, desc: p.desc });
+  // 11-11 用户：「左边有，右下不需要出现滚木了」——滚木已经有左边的滚木钮，城墙外这排不再画滚木（战法拿的和关卡送的都不画）
   if (G.st.nu > 0 && !G.perks.nu && ready(IMG.ui_ico_nu)) items.push({ im: IMG.ui_ico_nu, n: G.st.nu, used: G.nuUsed, name: '连弩', desc: '敌人最密时自己放，一列万箭齐发（一关一次）' });
   if (G.RU.night) items.push({ im: IMG.ui_ico_fire, n: G.lightN, used: G.lightN <= 0, name: '火把', desc: G.RU.night.blind ? '在「军功」里点：全场亮 8 秒，命中回到八成五' : '自己插到敌人多的地方，照亮一片 20 秒' });
   if (G.RU.decoy) items.push({ cloth: true, n: G.decoyN || 0, used: !G.decoyN, name: '赤帻', desc: '城前压了一片时自己扔下去，附近敌人 5 秒都冲它去' });
