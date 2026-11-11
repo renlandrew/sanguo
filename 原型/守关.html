@@ -5937,7 +5937,12 @@ const STORY_SFX = [['轰——', 'thunder'], ['马蹄声', 'hooves'], ['哇—�
 const STORY_KEYS = () => ['open', ...LEVELS.flatMap(l => l.id === 31 ? ['c2', 'l31'] : ['l' + l.id])].filter(k => STORY[k]);
 function storyEnter() { const ln = STORY[STP.key][STP.i]; STP.t0 = uiNow(); const lr = STORY_LEARN.find(([w]) => ln[2].includes(w)); STP.learn = lr && ultReady(lr[1]) ? { k: lr[1], t0: uiNow() } : null; if (STP.learn) { sfx(lr[1]); sfx('gong'); } const fx = STORY_SFX.find(([w]) => ln[2].includes(w)); STP.fx = fx ? { k: fx[1], t0: uiNow() } : null; if (fx) sfx(fx[1]); }
 // read：阅读模式（系统页「翻看剧情」或网址带 ?story）——点左边往回翻、右边往下翻，一场完了接下一场；不记成看过
-function playStory(key, then, read) { for (const ln of STORY[key] || []) for (const [w, k] of STORY_LEARN) if (String(ln[2]).includes(w) && ULT[k]) ready(ULT[k].im);   // 学招那句要演的大招特写先载
+// 11-11 用户：「过完一关后在剧情出来前会出现一个人物角色的图，一闪而过，每次还不一样」——剧情图是用到才下载的（换关还会放掉），剧情一开头图还没到，
+// 原来就先摆这句的备用立绘，图一到又换成剧情图，立绘一闪而过。现在：结算页一出来就把这场剧情的图都叫起来；开演时图还在下载就先空着（只有对话框），
+// 真下载失败、或等了 2.5 秒还没到，才退回立绘
+const storyPre = key => { for (const ln of STORY[key] || []) if (ln[0] && IMG[ln[0]]) ready(IMG[ln[0]]); };
+const imgBad = im => !!(im && im.complete && !im._lazy && im.getAttribute('src') && im.naturalWidth === 0);
+function playStory(key, then, read) { storyPre(key); for (const ln of STORY[key] || []) for (const [w, k] of STORY_LEARN) if (String(ln[2]).includes(w) && ULT[k]) ready(ULT[k].im);   // 学招那句要演的大招特写先载
    if (!read) { INV.story = { ...(INV.story || {}), [key]: true }; saveInv(); } const lv = LEVELS.find(l => 'l' + l.id === key);
   STP = { key, i: 0, t0: uiNow(), then, prev: null, bg: lv ? lv.map : null, read }; screen = 'story'; storyEnter(); }
 function storyJump(key, last) { if (storyBusy()) return; const lv = LEVELS.find(l => 'l' + l.id === key); STP.prev = STORY[STP.key][STP.i][0]; STP.fadeT = uiNow(); STP.key = key; STP.bg = lv ? lv.map : null; STP.i = last ? STORY[key].length - 1 : 0; storyEnter(); }
@@ -5969,7 +5974,7 @@ function drawBlurImg(k) {
 }
 function drawStory() {
   if (!STP) { screen = 'menu'; return; }
-  const t = uiNow(), L = STORY[STP.key], [k0, who, text0, alt] = L[STP.i], text = tr(text0), k = alt && !ready(IMG[k0]) ? alt : k0;   // 剧情图没读到就退回立绘
+  const t = uiNow(), L = STORY[STP.key], [k0, who, text0, alt] = L[STP.i], text = tr(text0), k = alt && !ready(IMG[k0]) && (imgBad(IMG[k0]) || t - STP.t0 > 2.5) ? alt : k0;   // 剧情图下载失败或久等不到才退回立绘（见 storyPre 上面）
   ctx.fillStyle = '#0c0805'; ctx.fillRect(0, 0, W, H);
   const fu = STP.prev && STP.prev !== k ? clamp((t - STP.fadeT) / .35, 0, 1) : 1;    // 换图时淡入淡出
   if (STP.learn) { drawBlurImg(k); const hb = HITS.length; drawUlt(STP.learn.k, t - STP.learn.t0, 0, false, -1, '习得', true); HITS.length = hb; }   // 学会招式：剧情图整张糊掉，大招特写居中、从头播到尾停在最后一帧
@@ -6128,7 +6133,7 @@ function drawGainCard(g, x, y, w, h, tt, win, top) {
   ctx.restore();
 }
 function drawResult() {
-  const r = G.result; r.t0 ??= uiNow(); const t = uiNow() - r.t0, win = r.win, gains = r.gains || [];
+  const r = G.result; r.t0 ??= uiNow(); const t = uiNow() - r.t0, win = r.win, gains = r.gains || []; if (r.story && !r.storyPre) { r.storyPre = 1; storyPre(r.story); }   // 剧情图趁结算时先下载
   // 整屏压暗：上面透一点战场，越往下越黑
   const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, `rgba(8,5,4,${Math.min(.6, t * 2)})`); bg.addColorStop(.4, `rgba(10,6,5,${Math.min(.84, t * 2.4)})`); bg.addColorStop(1, `rgba(6,4,3,${Math.min(.97, t * 3)})`);
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
