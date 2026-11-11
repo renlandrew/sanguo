@@ -37,7 +37,7 @@ T = {
 '点一下继续': 'Tap to continue', '点任意处继续': 'Tap anywhere', '上页': 'Prev', '下页': 'Next', '回看剧情': 'Story', '翻看剧情': 'Story log', '序章': 'Prologue',
 '月卡': 'Pass', '开通 · 三十元': 'Unlock · ¥30', '未开通': 'Inactive', '主页资料卡和武将头像换金边': 'Gold frames on profile and hero portraits', '金框': 'Gold',
 '云存档': 'Cloud save', '存档一': 'Slot 1', '存档二': 'Slot 2', '测试存档': 'Test save', '测试网址不上云': 'Test URL – no cloud', '网址指定了存档，不能切换': 'Save fixed by URL',
-'重置当前存档': 'Reset this save', '音乐': 'Music', '声效': 'Sound', '画面清晰度': 'Resolution', '越高越清楚、越吃内存': 'Higher is sharper but uses more memory',
+'重置当前存档': 'Reset this save', '音乐': 'Music', '声效': 'Sound', '画面清晰度': 'Resolution', '越高越清楚、越吃内存': 'Sharper = more memory',
 '研习': 'Study', '打造': 'Forge', '还没精炼': 'Not refined', '兵器不够利，砍不进去': 'Weapon too dull to cut through',
 '功绩也给，兵器 # 起要': 'Deeds help too; weapon needed from #',
 '城防  #%': 'Wall  #%', '城防 #，张角回血 #%': 'Wall #, Zhang Jiao heals #%', '敌 #': 'Foes #', '第 #/# 波': 'Wave #/#', '第一波': 'Wave 1', '第二波': 'Wave 2', '第三波': 'Wave 3', '第四波': 'Wave 4', '最后一波': 'Final Wave',

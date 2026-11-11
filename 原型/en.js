@@ -184,7 +184,7 @@ window.EN = {
 "音乐": "Music",
 "声效": "Sound",
 "画面清晰度": "Resolution",
-"越高越清楚、越吃内存": "Higher is sharper but uses more memory",
+"越高越清楚、越吃内存": "Sharper = more memory",
 "研习": "Study",
 "打造": "Forge",
 "还没精炼": "Not refined",
