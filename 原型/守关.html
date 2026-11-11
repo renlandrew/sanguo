@@ -1218,7 +1218,7 @@ function genTasks(day, n) {                                                     
 // 之后才出的军务（打过第一关才补的题）若今天已经做到，直接算完成、发残页和资历，不用再打一遍
 const TASK_AUTO = [];
 function payTask(t) { t.done = true; INV.it.残页 += TASK_PAY; DAILY.weekN++; addPrep(1); if (DAILY.weekN >= WEEK_N && !DAILY.weekSeal) { DAILY.weekSeal = true; INV.it.将印++; } }
-function autoTasks() { const M = DAILY.met || {}; let n = 0; for (const t of DAILY.tasks) if (!t.done && ((M[t.lv] || []).includes(t.k) || (t.k === 'star3' && (BEST[t.lv] || 0) >= 3))) {   /* 三星是一辈子的记录：哪天拿的都算 */ payTask(t); TASK_AUTO.push(t); n++; } if (n) { saveInv(); saveDaily(); } }
+function autoTasks() { const M = DAILY.met || {}; let n = 0; for (const t of DAILY.tasks) if (!t.done && ((M[t.lv] || []).includes(t.k) || (BEST[t.lv] || 0) >= 3)) {   /* 三星是一辈子的记录：哪天拿的都算。11-10 用户：「明明已经过了关3星了，但成就那里还是要去点，不是自动就达成」——原来只有「拿三星」那一道自动算，同一关别的题（漏兵、城防九成、关羽第一…）还要再去打；现在三星的关，它的军务都直接算完成 */ payTask(t); TASK_AUTO.push(t); n++; } if (n) { saveInv(); saveDaily(); } }
 // 每天第一次进来：点卯（漏掉的最多补两天）、出今天的军务、掉落上限清零、换周
 function dailyTick() {
   const td = dayStr(); let note = null;
@@ -5405,7 +5405,8 @@ function drawActBtn(a, x, y, w, h) {
 function tapSlot(i) {
   if (G.state !== 'play') return;
   if (G.RU.casts) { castSlot(i); return; }
-  if (G.sel < 0) { if (manualOn() && G.order[i] && knows(G.order[i]) && G.t >= G.ready[i] && G.seal[i] <= 0 && !G.cast) startCast(i); return; }   // 点：手动时牌好了就出招；换位置要先长按拿起这张（长按见 hit 的 long）
+  if (G.sel < 0) { if (playerAuto() && uiNow() - (G.autoHintT || -9) > 4) { G.autoHintT = uiNow(); G.fx.push({ k: 'banner', t: 0, text: '自动出招', sub: G.lv.id <= 3 ? '前三关自动出招，第四关起自己点' : '自动出招开着，点右边「自动」可以关' }); }   // 11-10 用户：「第二关好像点击不能技能」——前三关是自动出招（教学），点牌原来一点反应都没有，像坏了；现在说一句
+    if (manualOn() && G.order[i] && knows(G.order[i]) && G.t >= G.ready[i] && G.seal[i] <= 0 && !G.cast) startCast(i); return; }   // 点：手动时牌好了就出招；换位置要先长按拿起这张（长按见 hit 的 long）
   if (G.sel === i) { G.sel = -1; return; }
   swapSlots(G.sel, i);
 }
@@ -5643,13 +5644,19 @@ function mpPool() {
   if (!MP.pool) MP.pool = [0, 1, 2].map(() => { const el = new Audio(); el.preload = 'auto';
     try { const src = SND.ac.createMediaElementSource(el), g = SND.ac.createGain(); g.gain.value = 0; src.connect(g); g.connect(SND.mus); el._g = g; } catch (e) { el.volume = 0; }
     el.onerror = () => { if (el._name) MP.fail.add(el._name); if (MP.el === el) MP.el = null; };
-    el.onended = () => { if (MP.el === el) { MP.i++; MP.el = null; } }; return el; });
+    el.onended = () => { if (MP.el === el) { MP.i++; MP.el = null; } }; el.onplaying = () => { el._ok = true; }; return el; });
   return MP.pool;
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && SND.ac && SND.ac.state !== 'running') SND.ac.resume().catch(() => {}); });   // 切回来时把声音接上
-function mpKick() { const el = MP.el; if (!el) musicTick(true); else if (el.paused && !el.ended) el.play().catch(() => {}); }   // 在点屏的那一下里补放被拒的那首
+// 11-10 用户：「音乐触发很有问题，经常玩到一半就出现音乐」——苹果模拟器里一步步试出来：声音原来是在手指「按下」（pointerdown）那一下建、那一下接的，
+// 苹果的浏览器（含微信）只认「抬起」（pointerup／touchend／click）：按下时建的 AudioContext 立刻变成 interrupted，曲子在走但没声，之后按下时再 resume 也时灵时不灵，碰巧哪一下接上才响。
+// 现在手指抬起、点击、按键时都接一遍（建、resume、补放被拒的、换场合的那首也在这一下里起）；鼠标按下照旧
+function sndGest(ev) { SND.ev = ev.type; sndInit(); if (SND.ac) musicTick(true); }
+for (const t of ['pointerup', 'touchend', 'click', 'keydown']) addEventListener(t, sndGest, true);
+const mpRej = e => { SND.rej = (SND.rej || 0) + 1; SND.rejMsg = e && e.name; };   // play() 被浏览器拒了：记个数，?snddbg 时显示
+function mpKick() { const el = MP.el; if (!el) musicTick(true); else if (el.paused && !el.ended) el.play().catch(mpRej); }   // 在点屏的那一下里补放被拒的那首
 function mpPlay(name, loop) { const el = mpPool().find(e => e !== MP.el && !MP.old.includes(e)) || MP.old.shift(); if (!el) return;
-  if (el._g) el._g.gain.value = 0; el._name = name; el.loop = !!loop; el.src = 'music/' + name + '.mp3'; el.play().catch(() => {});
+  if (el._g) el._g.gain.value = 0; el._name = name; el.loop = !!loop; el.src = 'music/' + name + '.mp3'; el.play().catch(mpRej);
   if (MP.el) MP.old.push(MP.el); MP.el = el; MP.name = name; }
 function mpStop(el) { el.pause(); }   // 只停不清 src：清 src 会晚一点冒出 error，那时这个 <audio> 可能已经换去放别的曲子，会把那首误记成坏的
 function musicTick(force) {   // force：点屏那一下里调，AudioContext 还没转成 running 也先把这首 play() 起来
@@ -5664,6 +5671,9 @@ function musicTick(force) {   // force：点屏那一下里调，AudioContext �
   if (!MP.el && vol > 0) mpPlay(list[MP.i % list.length], !!fixed);
   if (MP.el) { const g = mpGain(MP.el); mpSetGain(MP.el, Math.min(1, Math.max(0, g + (vol - g) * (duck ? .35 : .04)))); }
 }
+// 11-10 ?snddbg：屏幕左下角显示音乐的实际状态（手机上听不出原因时看这个）
+if (/[?&]snddbg\b/.test(location.search)) addEventListener('load', () => { const d = document.createElement('div'); d.style.cssText = 'position:fixed;left:0;bottom:0;z-index:99;font:10px/1.25 monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 4px;white-space:pre;pointer-events:none'; document.body.appendChild(d);
+  setInterval(() => { d.textContent = `ac:${SND.ac ? SND.ac.state : '-'} want:${MP.want} cur:${MP.name || '-'} rej:${SND.rej | 0} ${SND.rejMsg || ''} ev:${SND.ev || '-'}` + (MP.pool || []).map((el, i) => `\n${i}${el === MP.el ? '*' : MP.old.includes(el) ? '~' : ' '} ${el._name || '-'} ${el.paused ? 'P' : '>'} rs${el.readyState} t${el.currentTime.toFixed(1)} g${mpGain(el).toFixed(2)} ${el._ok ? 'ok' : ''}`).join(''); }, 200); });
 // 现合的占位音乐：每帧排后面四分之一秒的音符；主页、结算、各页是「静」，打仗时是「战」
 const PENTA = [146.8, 164.8, 185, 220, 246.9, 293.7, 329.6, 370, 440, 493.9];      // D 宫五声：宫商角徵羽，两个八度
 function synthTick(want) {
@@ -6216,8 +6226,8 @@ function drawResult() {
   // 牌匾按钮一排放在最下面：经验条涨完才能点
   const go = fn => () => { const k = r.story; if (k && !storySeen(k)) { G = null; playStory(k, fn); } else fn(); };   // 有剧情先演完再去
   const back = go(() => { const b = BACKTO; BACKTO = null; G = null; screen = b || 'levels'; if (b === 'camp') CAMP.t0 = uiNow(); else if (b === 'armory') ARM.t0 = uiNow(); }), yb = H - 54;   // 10-30 用户：「3个btn 短一些，上下padding大一点点」——108/120/108 宽 42 高 → 96/108/96 宽 46 高，居中
-  if (next) { plaque(22, yb, 96, 46, '再来', go(() => openLevel(li)), false, al); plaque(126, yb, 108, 46, '下一关', go(() => openLevel(li + 1)), true, al); plaque(242, yb, 96, 46, '返回', back, false, al); }
-  else { plaque(54, yb, 120, 46, '再来', go(() => openLevel(li)), true, al); plaque(186, yb, 120, 46, '返回', back, false, al); }
+  if (next && !BACKTO) { plaque(22, yb, 96, 46, '再来', go(() => openLevel(li)), false, al); plaque(126, yb, 108, 46, '下一关', go(() => openLevel(li + 1)), true, al); plaque(242, yb, 96, 46, '返回', back, false, al); }
+  else { plaque(54, yb, 120, 46, '再来', go(() => openLevel(li)), !BACKTO, al); plaque(186, yb, 120, 46, '返回', back, !!BACKTO, al); }   // 11-10 用户：「不是说从成就点击去打的话，打完就跳回成就页吗」——从军帐军务、神兵进的关：结算页不再给「下一关」（原来点了就一路打下去，回不到军帐），亮着的主按钮是「返回」
 }
 // 军师认错（10-25 夜）：这一关听了他荐错的卡，结算时他自己出来认，口气逗一点；旁边一位兄弟（穿越来的，说话很现代）回一句
 const BLAME = {
@@ -7254,7 +7264,7 @@ cv.addEventListener('pointermove', ev => {   // 电脑上鼠标停在城墙军�
 cv.addEventListener('pointerdown', ev => {
   if (G && G.ult) return;
   const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) / S, y = (ev.clientY - r.top) / S;
-  sndInit();
+  if (ev.pointerType === 'mouse') sndInit();   // 手指的在抬起时接（见 sndGest）
   if (G && G.teach) { const quit = screen === 'play' && y < 36 && x >= HB_X - 44 && x <= HB_X - 4; closeTeach(); if (quit) retreat(); return; }   // 教学说明：点哪都是继续；11-02 用户「第一关无法退军」——说明开着时点顶栏退军也直接退（原来只算继续）
   if (screen !== 'play' && SCMAX[screen] > 0) { const top = HITS.slice().reverse().find(h => x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
     if (!top || !top.fixed) { DRAG = { x, y, off0: Math.min(SCRL[screen] || 0, SCMAX[screen]), moved: false }; return; } }   // 能拖的页：先不算点，松手时没拖过才算
