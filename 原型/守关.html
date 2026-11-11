@@ -2445,7 +2445,8 @@ function shoutBack(e) {
 //   滚木  一层碾一列小兵、撞到头目敌将就停；两层头目敌将撞退一大截、晕 1.5 秒；三层再打断敌将正在放的招、骑兵撞下马、盾兵盾破
 //   连弩  一层 8 箭、两层 16 箭、三层 30 箭万箭齐发，三层还压住弓手、弓骑、术士 2.5 秒
 const LOG_DMG = [60, 110, 180], LOG_RUNS = [LOG_RUN, 230, 320], NU_N = [8, 16, 30];
-const actSpan = (n, x) => n >= 3 ? [W / 2, W] : n === 2 ? [x < W / 2 ? W / 3 : W * 2 / 3, W * 2 / 3] : [(Math.min(2, Math.floor(clamp(x, 0, W - 1) / (W / 3))) + .5) * W / 3, W / 3];
+// 11-11 用户：「为什么中间那路没有？」→「改成三处」——两层原来只分左右两边，现在点左、中、右三段各有一处（宽度不变，还是三分之二个战场，中间那处正对中路）；机器人还是只挑左右，推演结果不变
+const actSpan = (n, x) => n >= 3 ? [W / 2, W] : n === 2 ? [x <= W / 3 ? W / 3 : x >= W * 2 / 3 ? W * 2 / 3 : W / 2, W * 2 / 3] : [(Math.min(2, Math.floor(clamp(x, 0, W - 1) / (W / 3))) + .5) * W / 3, W / 3];
 function pressLog() { if (!(G.st.logs > 0) || G.logUsed || G.state !== 'play') return; if (G.st.logs >= 3) { fireLog(W / 2); return; } G.logArm = !G.logArm; G.nuArm = false; G.lightArm = false; }
 function pressNu() { if (!G.st.nu || G.nuUsed || G.state !== 'play') return; if (G.st.nu >= 3) { fireNu(W / 2); return; } G.nuArm = !G.nuArm; G.logArm = false; G.lightArm = false; }
 function fireLog(x) {
@@ -2476,7 +2477,7 @@ function botAim(kind, al) {
   const n = Math.min(3, kind === 'log' ? G.st.logs : G.st.nu), reach = kind === 'log' ? LOG_RUNS[n - 1] : WALL_Y - HZ, need = [7, 11, 15][n - 1];
   const cs = n >= 3 ? [W / 2] : n === 2 ? [W / 3, W * 2 / 3] : [W / 6, W / 2, W * 5 / 6], hw = (n >= 3 ? W : n === 2 ? W * 2 / 3 : W / 3) / 2;
   const db = al.find(e => e.duel);                                                    // 斗将：两层起等敌将放重招时撞他——三层打断、两层撞晕；不在放重招时只看他召出来的兵
-  if (db && n >= 2) { if (db.mv && ['heavy', 'combo', 'rush'].includes(db.mv.k) && db.mv.t > .3) { if (kind === 'log') fireLog(db.x); else fireNu(db.x); } if (G.wall > G.wallMax * .35) return; }
+  if (db && n >= 2) { if (db.mv && ['heavy', 'combo', 'rush'].includes(db.mv.k) && db.mv.t > .3) { const bx2 = n === 2 ? (db.x < W / 2 ? W / 3 : W * 2 / 3) : db.x; if (kind === 'log') fireLog(bx2); else fireNu(bx2); } if (G.wall > G.wallMax * .35) return; }
   let best = cs[0], bc = -1, boss = false;
   for (const c of cs) { const inS = al.filter(e => !FOES[e.kind].civ && Math.abs(e.x - c) < hw && e.y > WALL_Y - reach && (kind === 'log' || seen(e))); const v = inS.length + (n >= 2 ? 6 * inS.filter(e => FOES[e.kind].boss && !e.duel && e.y > WALL_Y - reach * .6).length : 0); if (v > bc) { bc = v; best = c; boss = inS.some(e => FOES[e.kind].boss && !e.duel && e.y > WALL_Y - reach * .6); } }   // 走过来的头目、敌将冲近了才算
   if (bc >= need || (boss && n >= 2) || (G.wall < G.wallMax * .35 && bc > 2)) { if (kind === 'log') fireLog(best); else fireNu(best); }
@@ -5230,7 +5231,7 @@ function drawWaveBanner(f) {
 // 列底下摆一个半透明的滚木（连弩）图标、写「点这里」，一呼一吸；一层是左中右三列，两层是左右两半
 function drawArmCols() {
   const log = G.logArm, n = Math.min(3, log ? G.st.logs : G.st.nu), t = uiNow(), br = .5 + .5 * Math.sin(t * 5), reach = log ? LOG_RUNS[n - 1] : WALL_Y - HZ;
-  const cols = n === 2 ? [[W / 4, W / 2], [W * 3 / 4, W / 2]] : [[W / 6, W / 3], [W / 2, W / 3], [W * 5 / 6, W / 3]], ic = IMG[log ? 'ui_ico_log' : 'ui_ico_nu'];
+  const cols = [[W / 6, W / 3], [W / 2, W / 3], [W * 5 / 6, W / 3]], ic = IMG[log ? 'ui_ico_log' : 'ui_ico_nu'];
   for (const [cx, cw] of cols) { const top = WALL_Y - reach, h = reach, my = top + h * .62;
     ctx.save(); ctx.translate(cx, my); ctx.scale(cw * .46, h * .62); const g = ctx.createRadialGradient(0, .25, 0, 0, .25, 1); g.addColorStop(0, `rgba(255,214,120,${.22 + .12 * br})`); g.addColorStop(1, 'rgba(255,214,120,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 1, 0, 6.283); ctx.fill(); ctx.restore();
