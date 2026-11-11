@@ -6383,6 +6383,19 @@ function roundBtn(cx, cy, r, ch, label, fn, badge) {
   if (badge) uiSeal(cx + r * .74, cy - r * .7, 15, '!', UIC.red);
   hit(cx - r, cy - r, r * 2, r * 2 + 16, fn);
 }
+// 11-11 用户圈着选关页右上「▶ 第二章」：「这个icon 一律去掉，这是网站，换一个好看的」——▶◀ 在苹果手机上被画成系统表情（灰底方块），不再用字符当图标：
+// chev 画一个金色尖箭头（两边略内收的实心尖角，带淡金光）；chevBtn 是圆漆面 + 金圈 + 箭头
+function chev(cx, cy, s, dir, color = UIC.gold2, glow = 'rgba(255,200,90,.6)') {
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(dir, 1); ctx.shadowColor = glow; ctx.shadowBlur = s * .6; ctx.fillStyle = color;
+  ctx.beginPath(); ctx.moveTo(-s * .42, -s * .62); ctx.quadraticCurveTo(-s * .05, -s * .28, s * .5, 0); ctx.quadraticCurveTo(-s * .05, s * .28, -s * .42, s * .62); ctx.quadraticCurveTo(-s * .12, 0, -s * .42, -s * .62); ctx.fill(); ctx.restore();
+}
+function chevBtn(cx, cy, r, dir) {
+  ctx.save(); const g = ctx.createRadialGradient(cx - r * .3, cy - r * .4, 0, cx, cy, r); g.addColorStop(0, '#5a2a14'); g.addColorStop(1, '#1e0e07');
+  ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 6; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.fill(); ctx.shadowBlur = 0;
+  ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(cx, cy, r - .8, 0, 6.283); ctx.stroke();
+  ctx.globalAlpha = .4; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, r - 4, 0, 6.283); ctx.stroke(); ctx.restore();
+  chev(cx + dir * r * .08, cy, r * .95, dir);
+}
 // 简洁的漆面小按钮（不用带花的牌匾）
 function pill(x, y, w, h, label, fn, red = true, on = true) {
   const im = red ? IMG.ui2_tab_red : IMG.ui2_tab_dark; ctx.save(); if (!on) ctx.globalAlpha = .45;
@@ -6815,7 +6828,7 @@ function drawRank() {                                                           
     ['guan', 'liu', 'zhang'].forEach((id, k) => { const sz = 46, xx = x + (k - 1) * (sz + 4) - sz / 2, yy = 112, im = heroRankPortrait(id, rk);   /* 10-30 用户：「3个图标对齐，刘备不要凸起」 */
       ctx.save(); if (!big && N) ctx.globalAlpha = .75; rr(xx, yy, sz, sz, 6); ctx.clip(); if (ready(im)) ctx.drawImage(im, xx, yy, sz, sz); ctx.restore(); if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, xx - 1, yy - 1, sz + 2, sz + 2, 60, 60, 60, 60, .1); }); };
   plate(10, 60, W - 20, 176, true);
-  if (N) { col(r, 94, '现在', false); col(r + 1, W - 94, '下一阶', true); const pu = .6 + .4 * Math.sin(t * 4); ctx.save(); ctx.globalAlpha = pu; uiText('▶', W / 2, 135, 13, '#ffd76e', 'center', PLAIN, { stroke: false });   /* 箭头小一些（10-30 用户），对着头像中线 */ ctx.restore();
+  if (N) { col(r, 94, '现在', false); col(r + 1, W - 94, '下一阶', true); const pu = .6 + .4 * Math.sin(t * 4); ctx.save(); ctx.globalAlpha = pu; chev(W / 2 - 5, 135, 13, 1, '#ffd76e'); chev(W / 2 + 5, 135, 13, 1, '#ffd76e');   /* 箭头小一些（10-30 用户），对着头像中线 */ ctx.restore();
     uiText(`打${lvName(N.node)}之前晋阶`, W / 2, 210, 11, 'rgba(244,230,196,.65)', 'center', PLAIN, { stroke: false, maxW: W - 40 }); }
   else col(r, W / 2, '', true);
   if (N) { uiText('晋阶得到', 22, 262, 14, UIC.gold2, 'left', FONT, { stroke: false, maxW: 200 });
@@ -7245,7 +7258,7 @@ function drawLevels() {
   const ch = Math.floor(MENU.seg / 3), nCh = Math.ceil(LEVELS.length / 30), chOpen = c => c === 0 || window.__sg.all || !!BEST[c * 30];   // 打完上一章最后一关开下一章
   uiText(CHAP[ch].no + ' · ' + CHAP[ch].name, W / 2, 34, 26, goldGrad(34, 26), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 });
   for (const [d, x] of [[-1, 30], [1, W - 30]]) { const c = ch + d; if (c < 0 || c >= nCh) continue; const ok = chOpen(c); ctx.save(); if (!ok) ctx.globalAlpha = .4;
-    uiText(d < 0 ? '◀' : '▶', x, 34, 20, UIC.gold2, 'center', PLAIN, { lw: 3 }); uiText(CHAP[c].no, x, 52, 9, 'rgba(244,230,196,.75)', 'center', PLAIN, { stroke: false }); ctx.restore();
+    chevBtn(x, 31, 13, d); uiText(CHAP[c].no, x, 55, 9, 'rgba(244,230,196,.8)', 'center', PLAIN, { lw: 2.5 }); ctx.restore();
     hit(x - 26, 12, 52, 48, () => { if (ok) MENU.seg = c * 3; else { MENU.chLockT = uiNow(); } }); }
   if (MENU.chLockT && uiNow() - MENU.chLockT < 1.6) uiText(`打完${CHAP[ch].no}最后一关开放`, W / 2, 58, 11, UIC.red2, 'center', PLAIN, { lw: 3 });
   SEGS.slice(ch * 3, ch * 3 + 3).forEach((nm, k0) => { const k = ch * 3 + k0, x = 14 + k0 * 112, y = 66, on = MENU.seg === k;
