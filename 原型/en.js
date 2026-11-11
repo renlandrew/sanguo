@@ -2046,7 +2046,7 @@ window.EN_RX = [[new RegExp("^张飞喝后\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 秒内青
 [new RegExp("^城头新招的乡勇每\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 秒齐射一轮$"), "New militia on the wall fire a volley every $1s"],
 [new RegExp("^他出招后，下一位兄弟招式\\ \\+([+-]?\\d+(?:\\.\\d+)?)%$"), "Next brother's skill +$1%"],
 [new RegExp("^护阵护盾还在时，三人普攻\\ \\+([+-]?\\d+(?:\\.\\d+)?)%$"), "While the guard shield holds, all three attack +$1%."],
-[new RegExp("^城下骂阵：三人普攻慢一半\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 秒$"), "taunts below the wall: attacks half speed for $1s"],
+[new RegExp("^城下骂阵：三人普攻慢一半\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 秒$"), "Taunts below the wall: attacks half speed for $1s"],
 [new RegExp("^城防和车驾都剩一半以上（剩\\ ([+-]?\\d+(?:\\.\\d+)?)%）$"), "Wall and carriage above half (now $1%)"],
 [new RegExp("^两星之上，再城防剩\\ ([+-]?\\d+(?:\\.\\d+)?)%\\ 以上$"), "2★ plus wall above $1%"],
 [new RegExp("^青龙斩扫过的盾和甲失效\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 秒$"), "Dragon Slash strips shields and armor for $1s"],

@@ -213,7 +213,7 @@ T = {
 '单骑救主': 'Lone Rider', '七进七出扫到的兵晕 # 秒': 'Seven In, Seven Out stuns troops hit for #s',
 '剑印': 'Sword Seal', '双股剑砍中的定住 # 秒': 'Twin Blades root foes hit for #s', '刘备出招后，下一位兄弟招式 +#%': 'After Liu Bei\'s skill, the next brother\'s skill +#%',
 '一阵火箭射上城头：城防 -#%，拒马烧掉': 'fire arrows hit the wall: wall -#%, barricades burn',
-'城下骂阵：三人普攻慢一半 # 秒': 'taunts below the wall: attacks half speed for #s',
+'城下骂阵：三人普攻慢一半 # 秒': 'Taunts below the wall: attacks half speed for #s',
 '全军急行：快三成，# 秒': 'forced march: +30% speed for #s',
 '最后一波，再来 # 个兵': 'Last wave: # more troops',
 '场上黄巾回三成血': 'Turbans on the field heal 30%',

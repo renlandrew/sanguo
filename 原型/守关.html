@@ -6105,13 +6105,13 @@ function drawGainMini(g, x, y, w, h, tt) {
   const p = ease(clamp((tt - .35) / 1.1, 0, 1)), cur = addExp({ lv: g.lv0, exp: g.exp0 }, Math.round(g.g * p)), up = cur.lv > g.lv0;
   if (cur.lv !== g.shownLv) { if (g.shownLv != null) g.flashT = tt; g.shownLv = cur.lv; }
   const fl = g.flashT != null ? clamp(1 - (tt - g.flashT) / .5, 0, 1) : 0, gr = clamp((tt - .2) / .8, 0, 1);
-  plate(x, y, w, h, fl > 0);
+  plate(x, y, w, h, fl > 0); y += (h - 64) / 2;   // 11-11 框高了，里面照 64 高排、上下居中
   const px = x + 22, py = y + 23, pr = 14, fc = FACE[g.id];
   ctx.save(); ctx.beginPath(); ctx.arc(px, py, pr, 0, 6.283); ctx.clip(); ctx.fillStyle = '#2a1f16'; ctx.fill(); if (ready(IMG[g.id])) ctx.drawImage(IMG[g.id], fc[0], fc[1], fc[2], fc[2], px - pr, py - pr, pr * 2, pr * 2); ctx.restore();
   if (ready(IMG.ui_avatar_ring)) ctx.drawImage(IMG.ui_avatar_ring, px - pr * 1.3, py - pr * 1.3, pr * 2.6, pr * 2.6);
   if (up) { const su = g.firstUpT != null ? ease((tt - g.firstUpT) / .2) : (g.firstUpT = tt, 0), ss = 1.8 - .8 * su; ctx.save(); ctx.translate(px + 12, py - 11); ctx.scale(ss, ss); ctx.globalAlpha *= su; uiSeal(0, 0, 14, '升', UIC.red); ctx.restore(); }
   const tx = x + 42;
-  uiText(GEN[g.id].name, tx, y + 16, 13, UIC.cream, 'left', FONT, { lw: 3 });
+  uiText(GEN[g.id].name, tx, y + 16, 13, UIC.cream, 'left', FONT, { lw: 3, maxW: w - 48 });
   const ls = 1 + .5 * fl; ctx.save(); ctx.translate(tx, y + 32); ctx.scale(ls, ls); uiText('Lv' + cur.lv, 0, 0, 10, up ? UIC.gold2 : 'rgba(244,230,196,.8)', 'left', PLAIN, { lw: 3, glow: fl > 0 ? 'rgba(255,210,110,.9)' : null, glowR: 10 }); ctx.restore();
   uiText('+' + Math.round(g.g * p), x + w - 8, y + 32, 10, '#ffd76e', 'right', PLAIN, { lw: 2.5 });
   const need = needLv(cur.lv), fr = cur.lv >= LV_CAP ? 1 : cur.exp / need;
@@ -6199,12 +6199,14 @@ function drawResult() {
   ctx.restore();
   // 出战武将一张张滑出来
   if (r.blame === undefined) r.blame = counselBlame(r);
-  const t1 = 1.05, gap = .22, y0 = 282 + 46 + (PREP && PREP.li === G.li && PREP.last || r.first && G.lv.reward ? 18 : 0), top = Math.max(0, ...gains.map(g => g.dmg));
-  const gw = (W - 28 - 6 * (gains.length - 1)) / Math.max(1, gains.length), gh = 64;
-  gains.forEach((g, k) => drawGainMini(g, 14 + k * (gw + 6), y0, gw, gh, t - (t1 + k * gap)));
+  // 11-11 用户圈着三星条件、武将卡、战利品：「这些框处理好，不要总是那么挤」——三星第三行原来离武将卡只有十来像素，卡还带「升」印往上冒；
+  // 武将卡从三星最后一行往下空 30 再摆，卡高 64 → 72、卡间 6 → 10，战利品离卡 12 → 22（按钮在 H-54，下面还有余地）
+  const gEnd = ((sub ? 298 : 278) + Math.max(0, (r.goals || []).length - 1) * 18), t1 = 1.05, gap = .22, y0 = Math.max(282 + 46 + (PREP && PREP.li === G.li && PREP.last || r.first && G.lv.reward ? 18 : 0), gEnd + 30), top = Math.max(0, ...gains.map(g => g.dmg));
+  const gw = (W - 28 - 10 * (gains.length - 1)) / Math.max(1, gains.length), gh = 72;
+  gains.forEach((g, k) => drawGainMini(g, 14 + k * (gw + 10), y0, gw, gh, t - (t1 + k * gap)));
   // 下面一格：听了军师荐错的卡，军师自己认错（10-25 夜用户：「低智军师常常犯错……事后会以逗比方式告诉用户，这是军师的问题」）；没有就摆战利品
   const tb = t1 + gains.length * gap + (gains.length ? 1.4 : .2), ba = clamp((t - (tb - .4)) / .3, 0, 1), armed = t >= tb, al = ba * (armed ? 1 : .5);
-  let by = y0 + (gains.length ? gh + 12 : 0); const li = G.li, next = win && li + 1 < LEVELS.length;
+  let by = y0 + (gains.length ? gh + 22 : 0); const li = G.li, next = win && li + 1 < LEVELS.length;
   const blame = r.blame !== undefined ? r.blame : (r.blame = counselBlame(r));
   const tot = {}; if (r.loot) { for (const o of r.loot) if (o.n) tot[o.k] = (tot[o.k] || 0) + o.n; if (r.tasks.length) tot.残页 = (tot.残页 || 0) + r.tasks.length * TASK_PAY; } for (const [k, n] of r.achGot || []) tot[k] = (tot[k] || 0) + n;
   const caps = (r.loot || []).filter(o => o.capped && !tot[o.k]).map(o => o.k), ents = [...Object.entries(tot), ...caps.map(k => [k, 0])];
@@ -6401,18 +6403,21 @@ const QM_LIST = [
   ['我方计', [['ambush', '伏兵', '简雍', '计', '两侧河沟藏乡勇，看准时机点令旗'], ['ploy', '缓兵之计', '简雍', '控', '逼退城前的兵，全军停步 6 秒'], ['ditch', '凿堑', '卢植', '控', '城前深堑 8 秒：过堑慢一半、骑兵落马'], ['jiji', '将计就计', '卢植', '计', '敌军师头一个计当场破掉']]],
   ['敌方计', [['foe_ambush', '伏兵', '张宝 · 李儒', '攻', '5–6 骑从侧翼杀出'], ['foe_fire', '火箭', '李儒', '攻', '城防 -5%，拒马烧掉'], ['foe_lijian', '离间', '张宝 · 李儒', '控', '封关羽或刘备的招式 6 秒'], ['foe_jijiang', '激将', '李儒', '控', '城下骂阵：三人普攻慢一半 6 秒'],
     ['foe_rush', '急行', '张宝 · 李儒', '增', '敌军快三成，10 秒'], ['foe_reinf', '援军', '张宝 · 李儒', '增', '最后一波多来 8 个兵'], ['foe_yaoshu', '妖术回春', '张宝', '增', '场上黄巾回三成血']]] ];
-function drawQmCard(c, x, y, w, sel) {                                           // 卡框 342×513：插画窗口约 (21,21)–(321,348)，纸色说明栏约 y 350–487
-  const [key, name, who, tag, desc] = c, h = w * 1.5, k = w / 342, art = IMG['card_' + key], fr = IMG.card_frame;
+function drawQmCard(c, x, y, w, sel, ext = 0) {                                  // 卡框 342×513：插画窗口约 (21,21)–(321,348)，纸色说明栏约 y 350–487
+  // 11-11 用户看放大的卡：「这些招数可以下面高一些，留多点位置」（英文说明三行被底边吃掉）——放大时 ext：把框的纸面中段（框图 y 420–450）竖着拉长 ext，说明最多四行
+  const [key, name, who, tag, desc] = c, h = w * 1.5 + ext, k = w / 342, art = IMG['card_' + key], fr = IMG.card_frame;
   ctx.save(); if (sel) { ctx.shadowColor = 'rgba(255,210,120,.8)'; ctx.shadowBlur = 14; }
+  if (sel && ext) { ctx.fillStyle = '#1a120a'; ctx.fillRect(x + 4, y + 4, w - 8, h - 8); ctx.shadowBlur = 0; }   // 拉长的框分三段画，每段各带光晕会在接缝处亮出横线：光晕只垫一次
   if (ready(art)) { const sw = art.width, sh = sw * 328 / 300; ctx.drawImage(art, 0, 0, sw, Math.min(sh, art.height), x + 21 * k, y + 21 * k, 300 * k, 328 * k); }   // 插画取上半，填满窗口
-  if (ready(fr)) ctx.drawImage(fr, x, y, w, h); ctx.restore();
+  if (ready(fr)) { if (!ext) ctx.drawImage(fr, x, y, w, h); else { const q = fr.height / 513, a = 420, b = 450;
+    ctx.drawImage(fr, 0, 0, fr.width, a * q, x, y, w, a * k); ctx.drawImage(fr, 0, a * q, fr.width, (b - a) * q, x, y + a * k - .5, w, (b - a) * k + ext + 1); ctx.drawImage(fr, 0, b * q, fr.width, (513 - b) * q, x, y + b * k + ext, w, (513 - b) * k); } } ctx.restore();
   const py = y + 350 * k, T = QM_TAG[tag];
   const eo = EN_ON && w < 150 ? 16 * k : 0;   // 英文小卡：招名可折两行，标签和人名往下挪
   uiText(name, x + w / 2, py + 22 * k + eo * .7, Math.max(11, 30 * k), '#2a1a0e', 'center', FONT, { stroke: false, maxW: w - 30 * k, wrap: true, minFz: 11, wrapFz: 10.5 });
   { const tz = Math.max(8, 18 * k), tw = EN_ON ? Math.max(70 * k, (ctx.font = `${fpx(tz)}px ${PLAIN}`, rawMeasure(tr(T[0])).width) + 6) : 70 * k;
     ctx.fillStyle = T[1]; rr(x + 30 * k, py + 48 * k + eo, tw, 26 * k, 4); ctx.fill(); uiText(T[0], x + 30 * k + tw / 2, py + 61 * k + eo, tz, '#fff4e0', 'center', PLAIN, { stroke: false }); }
   uiText(who, x + w - 30 * k, py + 61 * k + eo, Math.max(8, 18 * k), '#6a4a2a', 'right', PLAIN, { stroke: false });
-  if (w >= 150) fitLines(desc, w - 50 * k, Math.max(8, 19 * k), PLAIN).slice(0, 3).forEach((ln, i) => uiText(ln, x + 25 * k, py + (92 + i * 24) * k, Math.max(8, 19 * k), '#3a2a1a', 'left', PLAIN, { stroke: false }));
+  if (w >= 150) fitLines(desc, w - 50 * k, Math.max(8, 19 * k), PLAIN).slice(0, ext ? 4 : 3).forEach((ln, i) => uiText(ln, x + 25 * k, py + (92 + i * 24) * k, Math.max(8, 19 * k), '#3a2a1a', 'left', PLAIN, { stroke: false }));
 }
 function drawQimou() {
   campBg('奇谋'); const [, list] = QM_LIST[QM.tab];
@@ -6420,7 +6425,7 @@ function drawQimou() {
   const w = 104, gap = 8, x0 = (W - 3 * w - 2 * gap) / 2;
   list.forEach((c, i) => { const x = x0 + (i % 3) * (w + gap), y = 94 + Math.floor(i / 3) * 166; drawQmCard(c, x, y, w, false); hit(x, y, w, w * 1.5, () => { QM.sel = c; }); });
   plaque(112, 606, 136, 32, '返回', () => { screen = QM.from || 'camp'; }, false);
-  if (QM.sel) { ctx.fillStyle = 'rgba(8,5,3,.82)'; ctx.fillRect(0, 0, W, H); const bw = 240; drawQmCard(QM.sel, (W - bw) / 2, 70, bw, true); hit(0, 0, W, H, () => { QM.sel = null; }); }
+  if (QM.sel) { ctx.fillStyle = 'rgba(8,5,3,.82)'; ctx.fillRect(0, 0, W, H); const bw = 240; drawQmCard(QM.sel, (W - bw) / 2, 60, bw, true, 44); hit(0, 0, W, H, () => { QM.sel = null; }); }
 }
 function drawCamp() {
   campBg('军帐'); dailyTick(); if (!REWARD && TASK_AUTO.length) { const A = TASK_AUTO.splice(0); showReward('军务已完成', [`${A.length} 道已经做到过 · 资历 +${A.length}`], ['guan', 'zhang', 'liu'], true, [['残页', A.length * TASK_PAY]]); }
@@ -6891,7 +6896,8 @@ function drawAch() {                                                            
 // 配招页（10-29）：出阵的每人一行——主动招选一个、被动按格数选；底下亮出已成的连携
 const prepLoads = P => { const L = {}; for (const id of new Set(P.order.filter(Boolean))) if (SKILLS[id]) L[id] = loadOf(id); return L; };
 function drawLoadout(P) {
-  const L = prepLoads(P), ids = Object.keys(L), slots = pasSlots(), rowH = slots ? 112 : 66 /* 11-02 用户：「拥挤」——被动格没开时不摆那排灰掉的被动（标题下已写晋阶开放），每人一行只放招式 */, h = 62 + ids.length * rowH + 40 + Math.ceil(COMBOS.length / 2) * 30 + 74, y0 = Math.max(16, (H - h) / 2);
+  // 11-11 用户：「loadout 也太压迫了」（截图圈着底下那块连携说明压住了第三排连携）——每人一行、连携每排都拉开些，说明块和「好了」各自留空；被动格开了放不下全屏，就按原来的紧一点
+  const L = prepLoads(P), ids = Object.keys(L), slots = pasSlots(), rowH = slots ? 112 : 74 /* 11-02 用户：「拥挤」——被动格没开时不摆那排灰掉的被动（标题下已写晋阶开放），每人一行只放招式 */, csp = slots ? 30 : 34, cRows = Math.ceil(COMBOS.length / 2), h = 234 + ids.length * rowH + cRows * csp - csp, y0 = Math.max(5, (H - h) / 2);
   ctx.fillStyle = 'rgba(6,4,3,.82)'; ctx.fillRect(0, 0, W, H); hit(0, 0, W, H, () => {});
   plate(10, y0, W - 20, h, true); uiText('配招', W / 2, y0 + 26, 20, UIC.gold2, 'center', FONT);
   if (slots) uiText(`每人带一个招式、${slots} 个被动`, W / 2, y0 + 48, 11, 'rgba(244,230,196,.75)', 'center', PLAIN, { stroke: false });
@@ -6913,20 +6919,20 @@ function drawLoadout(P) {
       cardLines(a.desc, 9, 2).forEach((ln, i) => uiText(ln, px + w / 2, py + 27 + i * 11, fitSize(ln, 9, w - 6, 99, PLAIN), 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false })); ctx.restore();
       if (slots) hit(px, py, w, 52, () => set(id, q => { if (q.pas.includes(k)) q.pas = q.pas.filter(z => z !== k); else { q.pas.push(k); if (q.pas.length > slots) q.pas.shift(); } })); px += w + 4; } });
   // 连携全部列出来（10-29 用户：「直接全部把可能的都列出来，如果点到了，就亮，没点到相关技能，就灰度。连携要成为游戏最大特点」）
-  const cy = y0 + 72 + ids.length * rowH, on = new Set(combosOf(L).map(c => c.id)), cw = (W - 52) / 2;
+  const cy = y0 + 76 + ids.length * rowH, on = new Set(combosOf(L).map(c => c.id)), cw = (W - 52) / 2;
   uiText(`连携 ${on.size}/${COMBOS.length}`, 22, cy + 4, 13, UIC.gold2, 'left', FONT, { stroke: false });
-  COMBOS.forEach((c, k) => { const x = 20 + (k % 2) * (cw + 8), y = cy + 14 + Math.floor(k / 2) * 30, lit = on.has(c.id), sel = P.comboSel === c.id;
+  COMBOS.forEach((c, k) => { const x = 20 + (k % 2) * (cw + 8), y = cy + 18 + Math.floor(k / 2) * csp, lit = on.has(c.id), sel = P.comboSel === c.id;
     ctx.save(); if (!lit) { ctx.globalAlpha = .45; ctx.filter = 'grayscale(1)'; }
     uiPanel(x, y, cw, 26, { r: 13, single: true, top: lit ? '#7a4a10' : '#2b1f16', bot: lit ? '#3a200a' : UIC.lac, edge: lit || sel ? UIC.gold2 : 'rgba(217,166,64,.4)', glow: lit ? 'rgba(255,200,90,.75)' : null });
     uiText(c.name, x + cw / 2, y + 13, 12, lit ? '#fff2c0' : UIC.cream, 'center', FONT, { lw: 3 }); ctx.restore();
     hit(x, y, cw, 26, () => { P.comboSel = sel ? null : c.id; }); });
-  const C0 = COMBOS.find(c => c.id === P.comboSel) || COMBOS.find(c => on.has(c.id)), dy = cy + 14 + Math.ceil(COMBOS.length / 2) * 30;
+  const C0 = COMBOS.find(c => c.id === P.comboSel) || COMBOS.find(c => on.has(c.id)), dy = cy + 18 + cRows * csp - csp + 26 + 18;
   if (C0) { const lit = on.has(C0.id), t2 = lit ? C0.desc : '需要 ' + C0.req;                          // 10-29 用户：「已成太HTML了」——一块小牌：左边印章「成／缺」，招名大字，下面一行效果或缺什么
-    uiPanel(18, dy - 6, W - 36, 48, { r: 7, top: lit ? '#3a240c' : '#231a12', bot: UIC.lac, edge: lit ? UIC.gold2 : 'rgba(217,166,64,.4)', glow: lit ? 'rgba(255,200,90,.45)' : null });
+    uiPanel(18, dy - 6, W - 36, 50, { r: 7, top: lit ? '#3a240c' : '#231a12', bot: UIC.lac, edge: lit ? UIC.gold2 : 'rgba(217,166,64,.4)', glow: lit ? 'rgba(255,200,90,.45)' : null });
     uiSeal(38, dy + 18, 26, lit ? '成' : '缺', lit ? UIC.red : '#4a4038');
     uiText(C0.name, 58, dy + 4, 13, lit ? '#ffe39a' : UIC.cream, 'left', FONT, { lw: 3 });
     fitLines(t2, W - 94, 10, PLAIN).slice(0, 2).forEach((ln, i) => uiText(ln, 58, dy + 19 + i * 13, 10, lit ? '#fff2dc' : 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false })); }   // 说明写全（10-29 用户：「描述不是很对」），最多两行
-  pill(W / 2 - 50, y0 + h - 34, 100, 26, '好了', () => { P.load = false; }, true);
+  pill(W / 2 - 55, y0 + h - 40, 110, 28, '好了', () => { P.load = false; }, true);
 }
 const prepKey = () => PREP.order.join(',') + '|' + JSON.stringify(prepLoads(PREP)) + '|' + PREP.kits.join(',') + '|' + (PREP.adviser || '') + '|' + PREP.cond;
 const yieldUI = () => new Promise(r => setTimeout(r, 16));
