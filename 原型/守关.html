@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>群雄逐鹿 · 守关原型</title>
+<title>群雄逐鹿 · Rise of Heroes</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@900&family=Alegreya+SC:wght@700;800&display=swap" rel="stylesheet">
 <style>
@@ -94,7 +94,7 @@ function trLoose(s, key = s) {
   return r;
 }
 const ini = n => EN_ON ? (tr(n).match(/[A-Za-z]/) || [n[0]])[0] : n[0];   // 没头像的将、敌计的记号只写一个字：英文写译名的头一个字母
-if (EN_ON) { document.title = 'Rise of Heroes'; document.documentElement.lang = 'en'; }   // 11-10 用户（浏览器标题栏截图）：「这里也要改」
+if (EN_ON) { document.title = 'Rise of Heroes'; document.documentElement.lang = 'en'; } else document.title = '群雄逐鹿';   // 11-10 用户（浏览器标题栏截图）：「这里也要改」
 window.__tr = tr;   // en.js 的句式规则里拆开的半句也走整套翻译
 function enFit(s0, s, size, font) {
   if (!EN_ON || s === s0 || typeof s0 !== 'string' || !CJK.test(s0)) return size;
@@ -5732,6 +5732,7 @@ function drawSystem() {
 const SYS = { reset: 0 };
 // ---------- 月卡（10-25 夜用户：「月卡等」）：照 5.0b「不卖强度，只卖省时间和外观」——每天的日常杂务自动做完、漏掉的点卯补领七天（平时两天）、主页资料卡和头像换金边 ----------
 const monthLeft = () => INV.month ? Math.max(0, INV.month.until - dayNum(dayStr())) : 0;
+const MONTH_SHOW = /[?&]month\b/.test(location.search);   // 11-10 用户：「月卡 暂时隐藏」——主页右上角的入口先不画（网址带 ?month 才有）；已经开过的，剩下的天数照常算
 function drawMonth() {
   campBg('月卡'); const t = uiNow(), left = monthLeft();
   const im = IMG.ui_nav_month; if (ready(im)) { const s = 130, f = s / Math.max(im.width, im.height), br = .5 + .5 * Math.sin(t * 2);
@@ -6699,7 +6700,7 @@ function prepBg(lv) {
 }
 function prepHead(lv, title) {
   uiSeal(28, 32, 26, CNUM(lvNo(lv)), UIC.red);
-  uiText(title || lv.name, 50, 28, 22, UIC.cream, 'left', FONT, { lw: 4, maxW: 60, wrap: true, minFz: 12, wrapFz: 11 });   // 11-10 英文关名长：折两行，不钻到右边的牌子底下
+  const nm = title || lv.name; uiText(nm, 50, 28, EN_ON ? 22 : fitSize(nm, 22, 112, 99, FONT, 4), UIC.cream, 'left', FONT, { lw: 4, maxW: 60, wrap: true, minFz: 12, wrapFz: 11 });   // 11-10 英文关名长：折两行，不钻到右边的牌子底下
   uiText(lv.sub, 50, 50, 10, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false });
 }
 const secTitle = (t, y) => { uiText(t, 16, y, 13, UIC.gold2, 'left', FONT, { lw: 3 }); ctx.fillStyle = 'rgba(217,166,64,.4)'; ctx.fillRect(16, y + 10, W - 32, 1); };
@@ -6710,9 +6711,11 @@ function drawFoeIcon(kind, x, y, h) {
 }
 function drawPrep() {
   const P = PREP, lv = LEVELS[P.li], t = uiNow() - (P.t0 || 0); prepBg(lv); prepHead(lv);
-  plaque(278, 14, 72, 26, '返回', () => { const b = BACKTO; BACKTO = null; screen = b || 'menu'; if (b === 'camp') CAMP.t0 = uiNow(); else if (b === 'armory') ARM.t0 = uiNow(); }, false);   // 11-09 从军帐、神兵进来的，返回也回那一页
-  plaque(196, 14, 76, 26, '本关目标', () => { P.goal = true; }, false);
-  plaque(114, 14, 76, 26, '配招', () => { P.load = true; loadSeen(); }, !!combosOf(prepLoads(P)).length); if (loadNew()) uiSeal(186, 16, 13, '!', UIC.red);
+  // 11-10 用户：「关名『十八路诸侯』有一截被『配招』按钮盖住……这个也改过来」——中文三块牌子收窄靠右（两头云纹不变、中间拉短），关名按剩下的宽度排；点的范围还是原来那么高。英文关名已经折两行，牌子不动
+  const back = () => { const b = BACKTO; BACKTO = null; screen = b || 'menu'; if (b === 'camp') CAMP.t0 = uiNow(); else if (b === 'armory') ARM.t0 = uiNow(); };   // 11-09 从军帐、神兵进来的，返回也回那一页
+  const pb = (x, w, label, fn, red) => { plaque3(x, 19, w, 17, label, fn, red); hit(x, 14, w, 26, fn); }, redL = !!combosOf(prepLoads(P)).length;
+  if (EN_ON) { plaque(278, 14, 72, 26, '返回', back, false); plaque(196, 14, 76, 26, '本关目标', () => { P.goal = true; }, false); plaque(114, 14, 76, 26, '配招', () => { P.load = true; loadSeen(); }, redL); if (loadNew()) uiSeal(186, 16, 13, '!', UIC.red); }
+  else { pb(296, 54, '返回', back, false); pb(226, 66, '本关目标', () => { P.goal = true; }, false); pb(168, 54, '配招', () => { P.load = true; loadSeen(); }, redL); if (loadNew()) uiSeal(218, 16, 13, '!', UIC.red); }
   // 敌情
   const fc = foeCounts(lv), nW = buildQueue(lv).nWaves; secTitle(`敌情 · ${nW} 波 · 约 ${fc.reduce((a, b) => a + b[1], 0)} 人`, 74);
   fc.slice(0, 4).forEach(([k, n], j) => { const y = 88 + j * 36, note = FOE_NOTE[k] || ['', ''];
@@ -7122,7 +7125,7 @@ function drawMenu() {
   navBtn(330, '系统', navIco('ui_nav_sys'), () => { screen = 'system'; }, false);
   drawMenuTip(t);
   // 右上角月卡
-  { const im = IMG.ui_nav_month, cx = W - 26, cy = 28, br = .5 + .5 * Math.sin(t * 2.4); if (ready(im)) { const f = 28 / Math.max(im.width, im.height);   /* 10-25 夜用户：「这有点太大，小一点」 40 → 28 */ ctx.save(); ctx.shadowColor = `rgba(255,200,90,${.35 + .3 * br})`; ctx.shadowBlur = 10; ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); ctx.restore(); } else uiSeal(cx, cy, 22, '月', UIC.red);
+  if (MONTH_SHOW) { const im = IMG.ui_nav_month, cx = W - 26, cy = 28, br = .5 + .5 * Math.sin(t * 2.4); if (ready(im)) { const f = 28 / Math.max(im.width, im.height);   /* 10-25 夜用户：「这有点太大，小一点」 40 → 28 */ ctx.save(); ctx.shadowColor = `rgba(255,200,90,${.35 + .3 * br})`; ctx.shadowBlur = 10; ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); ctx.restore(); } else uiSeal(cx, cy, 22, '月', UIC.red);
     uiText('月卡', cx, cy + 21, 10, UIC.gold2, 'center', FONT, { lw: 3 }); hit(cx - 22, cy - 20, 44, 52, () => { screen = 'month'; MON.ask = false; }); }
 }
 // 战役页：三段页签、每段十关两列（原来摆在主页上）
