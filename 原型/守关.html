@@ -3604,7 +3604,9 @@ function uiText(s, x, y, size, color, align = 'left', font = FONT, o = {}) {
   if (SC.on) SC.bot = Math.max(SC.bot, y + size * .6);
   ctx.font = `${fpx(size)}px ${font}`; ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
   if (o.stroke !== false) { ctx.lineWidth = o.lw || Math.max(2.5, size * .16); ctx.strokeStyle = o.stroke || 'rgba(12,8,5,.9)'; ctx.strokeText(s, x, y); }
-  if (o.glow && !yellowGlow(o.glow)) { ctx.shadowColor = o.glow; ctx.shadowBlur = o.glowR || 10; }
+  // 11-11 用户圈着败退结算页星星后面那块红方块：「这个正方形好难看」——苹果的浏览器给「渐变色的字」画光晕时，画出来的是一整块方的色块（还往下偏），不是字形的光。
+  // 字是渐变色时，光晕先用纯色的字画一遍，再盖上不带光晕的渐变字；纯色字照旧
+  if (o.glow && !yellowGlow(o.glow)) { ctx.shadowColor = o.glow; ctx.shadowBlur = o.glowR || 10; if (typeof color !== 'string') { ctx.fillStyle = o.glow; ctx.fillText(s, x, y); ctx.shadowBlur = 0; } }
   ctx.fillStyle = color; ctx.fillText(s, x, y); ctx.shadowBlur = 0;
 }
 function uiButton(x, y, w, h, label, fn, kind = 'main') {
