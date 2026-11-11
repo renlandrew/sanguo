@@ -2747,30 +2747,6 @@ const TINT = { gong: 'hue-rotate(170deg) saturate(1.4)', xiliang: 'hue-rotate(-4
   huaxiong: 'hue-rotate(-40deg) saturate(1.4) brightness(.8)', lvbu: 'hue-rotate(250deg) saturate(1.6) brightness(1.05)', huzhen: 'hue-rotate(-35deg) brightness(.75)', lijue: 'hue-rotate(160deg) saturate(.8) brightness(.8)',
   /* 第二章：曹军蓝黑、袁术军金黄 */ cao: 'hue-rotate(185deg) saturate(.9) brightness(.85)', nu: 'hue-rotate(200deg) saturate(.7) brightness(.9)', hubao: 'grayscale(.7) brightness(.7) contrast(1.2)', huainan: 'hue-rotate(10deg) saturate(1.5) brightness(1.08)',
   xhd: 'hue-rotate(40deg) saturate(.9) brightness(.85)', dianwei: 'grayscale(.6) brightness(.72) contrast(1.15)', yuanj: 'hue-rotate(15deg) saturate(1.6) brightness(1.05)', jiling: 'hue-rotate(40deg) saturate(1.3) brightness(1.05)', zhangliao: 'hue-rotate(220deg) saturate(.8) brightness(.9)' };
-// 只处理关羽待机帧里的浅灰横线；动画、锚点和原图集保持不变。
-function makeCleanGuanIdle(image, sheet) {
-  const a = sheet.anims.idle, ref = sheet.anims.atk, [rx, ry, rw, rh] = ref.rects[0];
-  const guard = document.createElement('canvas'); guard.width = a.rects[0][2]; guard.height = a.rects[0][3];
-  const g = guard.getContext('2d', { willReadFrequently: true });
-  // 普攻首帧没有横线，借它的刀刃轮廓保护金属高光。
-  g.drawImage(image, rx, ry, rw, rh, a.anchor[0] - ref.anchor[0], a.anchor[1] - ref.anchor[1], rw, rh);
-  const protect = g.getImageData(0, 0, guard.width, guard.height).data;
-  return a.rects.map(([sx, sy, w, h]) => {
-    const c = document.createElement('canvas'); c.width = w; c.height = h;
-    const cx = c.getContext('2d', { willReadFrequently: true }); cx.drawImage(image, sx, sy, w, h, 0, 0, w, h);
-    const d = cx.getImageData(0, 0, w, h), pix = d.data;
-    for (let y = 0; y < Math.min(230, h); y++) for (let x = 0; x < w; x++) {
-      const i = (y * w + x) * 4, r = pix[i], g = pix[i + 1], b = pix[i + 2];
-      if (!pix[i + 3] || Math.max(r,g,b) < 105 || Math.max(r,g,b) - Math.min(r,g,b) > 20) continue;
-      let sword = false;
-      if (x >= 185 && x <= 235 && y < 83) for (let yy = Math.max(0,y-0); yy <= Math.min(h-1,y+0) && !sword; yy++) for (let xx = Math.max(0,x-0); xx <= Math.min(w-1,x+0); xx++) if (protect[(yy*w+xx)*4+3] > 48) { sword = true; break; }
-      if (!sword) pix[i + 3] = 0;
-    }
-    cx.putImageData(d, 0, 0); return c;
-  });
-}
-
-let GUAN_IDLE_CLEAN;
 // 10-30 用户：「玩到第三关似乎有些卡？」——桌面实测：图集一张三千多像素、解码后二三十 MB，几张轮流挤显存，被挤掉的下次画要重新上传（单次 20–50 毫秒）；
 // 调色（ctx.filter）还要每画一次滤整张。改成：这一关第一次画到的图集，按屏幕上实际要的大小缩小（小兵四成左右、敌将七成），连调色一起画进一张小画布，之后都贴它；
 // 换关时把上一关没用到的放掉。只管画面
@@ -2788,12 +2764,8 @@ function sheetImg(name) {
 function sheetPrune(li) { for (const [k, e] of Object.entries(SHEET_C)) if (e.lv !== SHEET_LV) { e.c.width = e.c.height = 0; delete SHEET_C[k]; } SHEET_LV = li; }
 function drawSheet(name, anim, f, x, y, k, alpha = 1) {
   const S = SHEETS[name], A = S.anims[anim], r = A.rects[clamp(Math.floor(f), 0, A.rects.length - 1)];
-  // 原图待机的灰色横线是在透明图集里，先缓存清理后的每一帧，保留原动作。
-  if (name === 'g_guan' && anim === 'idle') {
-    if (GUAN_IDLE_CLEAN === undefined) { try { GUAN_IDLE_CLEAN = makeCleanGuanIdle(IMG[name], S); } catch (_) { GUAN_IDLE_CLEAN = null; } }
-    const clean = GUAN_IDLE_CLEAN && GUAN_IDLE_CLEAN[clamp(Math.floor(f), 0, A.rects.length - 1)];
-    if (clean) { ctx.globalAlpha = alpha; ctx.drawImage(clean, x - A.anchor[0] * k, y - A.anchor[1] * k, r[2] * k, r[3] * k); ctx.globalAlpha = 1; return; }
-  }
+  // 11-11 用户：「青州解围，有时消失，但其实他的技能在，内存问题？」——关羽待机帧原来开局时现从图集里画进 14 张小画布、去掉灰横线再用（攻击、放招直接用图集）；
+  // 苹果手机内存紧时，从大图集往小画布里画可能画出空白，空白帧缓存下来，关羽站着就一直看不见、一出手又出现。去灰线改成直接做进 img/g_guan.png（同一算法在浏览器里算好写回图集），不再现画
   const f0 = ctx.filter, { c: im, s: q } = sheetImg(name); ctx.filter = 'none';
   ctx.globalAlpha = alpha; ctx.drawImage(im, r[0] * q, r[1] * q, r[2] * q, r[3] * q, x - A.anchor[0] * k, y - A.anchor[1] * k, r[2] * k, r[3] * k); ctx.globalAlpha = 1; ctx.filter = f0;
 }
