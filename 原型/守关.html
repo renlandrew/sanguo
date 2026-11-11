@@ -5381,6 +5381,7 @@ function drawSlots() {
     if (i === nextCaster() && !casting && !G.RU.casts && !manualOn()) { ctx.save(); ctx.fillStyle = UIC.gold2; ctx.shadowColor = 'rgba(255,210,110,.9)'; ctx.shadowBlur = 8; ctx.beginPath(); ctx.moveTo(x + w / 2 - 7, y - 6); ctx.lineTo(x + w / 2 + 7, y - 6); ctx.lineTo(x + w / 2, y + 1); ctx.closePath(); ctx.fill(); ctx.restore(); }   // 下一个出招的：头上一个金色小三角
     if (drag) { ctx.save(); ctx.fillStyle = 'rgba(8,5,3,.6)'; rr(x, y, w, h, 7); ctx.fill(); ctx.restore(); }
     if (G.drag && !drag && slotAt(G.drag.x, G.drag.y) === i) { ctx.save(); ctx.strokeStyle = '#8fd0ff'; ctx.lineWidth = 3; ctx.shadowColor = 'rgba(140,200,255,.9)'; ctx.shadowBlur = 12; rr(x - 2, y - 2, w + 4, h + 4, 8); ctx.stroke(); ctx.restore(); }
+    if (playerAuto() && !casting) { ctx.save(); rr(x, y + lift, w, h, 7); ctx.fillStyle = 'rgba(24,17,12,.5)'; ctx.fill(); ctx.restore(); }   // 11-10 用户：「既然自动出招，就如同正常打一次，灰度就好了，不需要弹什么横幅」——自动出招时（前三关、或开着「自动」）牌淡下去（「不用黑色，淡下去即可」：不去色，只盖一层半透的底色），正在出招的那张照常有颜色；点牌的横幅撤掉
     hit(x, y, w, h, () => tapSlot(i), () => { if (G.state === 'play' && G.order[i]) G.drag = { i, x: x + w / 2, y: y + h / 2 }; });
   }
   if (G.drag) { const D = G.drag, id = G.order[D.i], fc = FACE[id], w = 52, h = 64;   // 10-30 用户：「换人物的位置，应该是长按后拽动，但不会影响技能」——长按拿起这张牌跟着手指走，松在另一张上就换
@@ -5405,8 +5406,7 @@ function drawActBtn(a, x, y, w, h) {
 function tapSlot(i) {
   if (G.state !== 'play') return;
   if (G.RU.casts) { castSlot(i); return; }
-  if (G.sel < 0) { if (playerAuto() && uiNow() - (G.autoHintT || -9) > 4) { G.autoHintT = uiNow(); G.fx.push({ k: 'banner', t: 0, text: '自动出招', sub: G.lv.id <= 3 ? '前三关自动出招，第四关起自己点' : '自动出招开着，点右边「自动」可以关' }); }   // 11-10 用户：「第二关好像点击不能技能」——前三关是自动出招（教学），点牌原来一点反应都没有，像坏了；现在说一句
-    if (manualOn() && G.order[i] && knows(G.order[i]) && G.t >= G.ready[i] && G.seal[i] <= 0 && !G.cast) startCast(i); return; }   // 点：手动时牌好了就出招；换位置要先长按拿起这张（长按见 hit 的 long）
+  if (G.sel < 0) { if (manualOn() && G.order[i] && knows(G.order[i]) && G.t >= G.ready[i] && G.seal[i] <= 0 && !G.cast) startCast(i); return; }   // 点：手动时牌好了就出招；换位置要先长按拿起这张（长按见 hit 的 long）
   if (G.sel === i) { G.sel = -1; return; }
   swapSlots(G.sel, i);
 }
