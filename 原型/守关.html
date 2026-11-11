@@ -6101,20 +6101,29 @@ function drawBlameLine(b, y) {                                                  
   L.forEach((ln, i) => uiText(ln, x + 46, y + 12 + i * 14, 11, UIC.cream, 'left', PLAIN, { stroke: false }));
   if (b.retort) uiText(fitText(b.retort, 10, w - 56), x + 46, y + 12 + L.length * 14 + 1, 10, '#ffd76e', 'left', PLAIN, { stroke: false });
 }
+// 等级一格：升了级写「Lv2 升」（英文 Lv2 ↑），升级那一下（fl 从 1 落到 0，半秒）等级放大、背后一团金光往外散
+function lvUp(x, y, sz, lv, up, fl) {
+  const s1 = 'Lv' + lv, mk = EN_ON ? '\u2191' : '升'; ctx.font = `${fpx(sz)}px ${PLAIN}`; const w1 = ctx.measureText(s1).width, w2 = up ? ctx.measureText(mk).width : 0;
+  if (fl > 0) { const cx = x + (w1 + w2) / 2, r = 22 + 24 * (1 - fl); ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(cx, y, 0, cx, y, r);
+    g.addColorStop(0, `rgba(255,240,180,${fl})`); g.addColorStop(.35, `rgba(255,200,90,${.8 * fl})`); g.addColorStop(1, 'rgba(255,170,60,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, y, r, 0, 6.283); ctx.fill(); ctx.restore(); }
+  const ls = 1 + .25 * fl; ctx.save(); ctx.translate(x, y); ctx.scale(ls, ls);
+  uiText(s1, 0, 0, sz, up ? (fl > 0 ? '#fff4c8' : UIC.gold2) : 'rgba(244,230,196,.8)', 'left', PLAIN, { lw: 3, glow: fl > 0 ? 'rgba(255,210,110,.95)' : null, glowR: 12 });
+  if (up) uiText(mk, w1 + 1, 0, sz, '#ffd76e', 'left', EN_ON ? PLAIN : FONT, { lw: 3, glow: fl > 0 ? 'rgba(255,210,110,.95)' : null, glowR: 12 }); ctx.restore();
+}
 function drawGainMini(g, x, y, w, h, tt) {
   if (tt <= 0) return;
   const u = ease(tt / .3); ctx.save(); ctx.globalAlpha = u; ctx.translate(0, (1 - u) * 16);
   const p = ease(clamp((tt - .35) / 1.1, 0, 1)), cur = addExp({ lv: g.lv0, exp: g.exp0 }, Math.round(g.g * p)), up = cur.lv > g.lv0;
   if (cur.lv !== g.shownLv) { if (g.shownLv != null) g.flashT = tt; g.shownLv = cur.lv; }
-  const fl = g.flashT != null ? clamp(1 - (tt - g.flashT) / .5, 0, 1) : 0, gr = clamp((tt - .2) / .8, 0, 1);
+  const fl = g.flashT != null ? clamp(1 - (tt - g.flashT) / .8, 0, 1) : 0, gr = clamp((tt - .2) / .8, 0, 1);
   plate(x, y, w, h, fl > 0); y += (h - 64) / 2;   // 11-11 框高了，里面照 64 高排、上下居中
   const px = x + 22, py = y + 23, pr = 14, fc = FACE[g.id];
   ctx.save(); ctx.beginPath(); ctx.arc(px, py, pr, 0, 6.283); ctx.clip(); ctx.fillStyle = '#2a1f16'; ctx.fill(); if (ready(IMG[g.id])) ctx.drawImage(IMG[g.id], fc[0], fc[1], fc[2], fc[2], px - pr, py - pr, pr * 2, pr * 2); ctx.restore();
   if (ready(IMG.ui_avatar_ring)) ctx.drawImage(IMG.ui_avatar_ring, px - pr * 1.3, py - pr * 1.3, pr * 2.6, pr * 2.6);
-  if (up) { const su = g.firstUpT != null ? ease((tt - g.firstUpT) / .2) : (g.firstUpT = tt, 0), ss = 1.8 - .8 * su; ctx.save(); ctx.translate(px + 12, py - 11); ctx.scale(ss, ss); ctx.globalAlpha *= su; uiSeal(0, 0, 14, '升', UIC.red); ctx.restore(); }
+  // 11-11 用户问头像上那个红底三角「是什么意思」（英文版「升」印换成了三角，还压着名字）→「就这样。升级那一下让等级闪一下金光」：不盖印，等级后面写「升」（英文 ↑），升级那一下等级后面闪一团金光
   const tx = x + 42;
   uiText(GEN[g.id].name, tx, y + 16, 13, UIC.cream, 'left', FONT, { lw: 3, maxW: w - 48 });
-  const ls = 1 + .5 * fl; ctx.save(); ctx.translate(tx, y + 32); ctx.scale(ls, ls); uiText('Lv' + cur.lv, 0, 0, 10, up ? UIC.gold2 : 'rgba(244,230,196,.8)', 'left', PLAIN, { lw: 3, glow: fl > 0 ? 'rgba(255,210,110,.9)' : null, glowR: 10 }); ctx.restore();
+  lvUp(tx, y + 32, 10, cur.lv, up, fl);
   uiText('+' + Math.round(g.g * p), x + w - 8, y + 32, 10, '#ffd76e', 'right', PLAIN, { lw: 2.5 });
   const need = needLv(cur.lv), fr = cur.lv >= LV_CAP ? 1 : cur.exp / need;
   slotBar(x + 8, y + 42, w - 16, 6, [[fr, '#a8701a', '#ffe08a']]);
@@ -6127,16 +6136,15 @@ function drawGainCard(g, x, y, w, h, tt, win, top) {
   ctx.save(); ctx.globalAlpha = u; ctx.translate(ox, 0);
   const p = ease(clamp((tt - .35) / 1.1, 0, 1)), cur = addExp({ lv: g.lv0, exp: g.exp0 }, Math.round(g.g * p)), up = cur.lv > g.lv0;
   if (cur.lv !== g.shownLv) { if (g.shownLv != null) g.flashT = tt; g.shownLv = cur.lv; }
-  const fl = g.flashT != null ? clamp(1 - (tt - g.flashT) / .5, 0, 1) : 0;
+  const fl = g.flashT != null ? clamp(1 - (tt - g.flashT) / .8, 0, 1) : 0;
   plate(x, y, w, h, fl > 0); y += (h - 44) / 2; h = 44;   // 10-30 用户：「框内上下padding也要大一些」——框高了，里面照 44 高排、上下居中
   // 头像：圆的、套金圈（10-25 夜用户嫌密：一行只留名字、等级、细经验条，右边一条伤害条和总数；五维涨了几点到武将页看）
   const px = x + 26, py = y + h / 2, pr = 16, fc = FACE[g.id];
   ctx.save(); ctx.beginPath(); ctx.arc(px, py, pr, 0, 6.283); ctx.clip(); ctx.fillStyle = '#2a1f16'; ctx.fill(); if (ready(IMG[g.id])) ctx.drawImage(IMG[g.id], fc[0], fc[1], fc[2], fc[2], px - pr, py - pr, pr * 2, pr * 2); ctx.restore();
   if (ready(IMG.ui_avatar_ring)) ctx.drawImage(IMG.ui_avatar_ring, px - pr * 1.3, py - pr * 1.3, pr * 2.6, pr * 2.6);
-  if (up) { const su = g.firstUpT != null ? ease((tt - g.firstUpT) / .2) : (g.firstUpT = tt, 0), ss = 1.8 - .8 * su; ctx.save(); ctx.translate(px + 14, py - 12); ctx.scale(ss, ss); ctx.globalAlpha *= su; uiSeal(0, 0, 16, '升', UIC.red); ctx.restore(); }
   const tx = x + 50;
   uiText(GEN[g.id].name, tx, y + 15, 14, UIC.cream, 'left', FONT, { lw: 3 });
-  const ls = 1 + .5 * fl; ctx.save(); ctx.translate(tx + 34, y + 16); ctx.scale(ls, ls); uiText('Lv' + cur.lv, 0, 0, 11, up ? UIC.gold2 : 'rgba(244,230,196,.8)', 'left', PLAIN, { lw: 3, glow: fl > 0 ? 'rgba(255,210,110,.9)' : null, glowR: 10 }); ctx.restore();
+  lvUp(tx + 34, y + 16, 11, cur.lv, up, fl);
   const need = needLv(cur.lv), fr = cur.lv >= LV_CAP ? 1 : cur.exp / need;
   slotBar(tx, y + 27, 66, 8, [[fr, '#a8701a', '#ffe08a']]); uiText('+' + Math.round(g.g * p), tx + 70, y + 31, 10, '#ffd76e', 'left', PLAIN, { lw: 2.5 });
   // 伤害：一条两段（深的是招式，浅的是普攻），右上一个总数；学了招才写招名
