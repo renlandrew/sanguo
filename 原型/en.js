@@ -1966,7 +1966,12 @@ window.EN = {
 "打完第二章最后一关开放": "Opens after the last stage of Chapter 2",
 "第五关以后不漏一个兵打赢": "From Stage 5 on, win with none getting through",
 "谋略·乡勇：城头乡勇专射冲到城前的，每 6 秒三箭": "Militia: wall archers shoot whoever reaches it, 3 arrows / 6s",
-"计策·缓兵之计：逼退城前的兵，全军停步 6 秒、援军晚到": "Stalling Ploy: pushes foes back; all halt 6s, reinforcements late"
+"计策·缓兵之计：逼退城前的兵，全军停步 6 秒、援军晚到": "Stalling Ploy: pushes foes back; all halt 6s, reinforcements late",
+"城防损失": "Wall lost to",
+" · 要先拿到二星": " · needs 2★ first",
+" · 要先拿到一星": " · needs 1★ first",
+"要先拿到二星": "needs 2★ first",
+"要先拿到一星": "needs 1★ first"
 };
 window.EN_RX = [[new RegExp("^张飞喝后\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 秒内青龙斩：扫到的每人\\ ([+-]?\\d+(?:\\.\\d+)?)\\.([+-]?\\d+(?:\\.\\d+)?)\\ 倍（砍晕的本来就有\\ ([+-]?\\d+(?:\\.\\d+)?)\\.([+-]?\\d+(?:\\.\\d+)?)\\ 倍）、范围\\ \\+([+-]?\\d+(?:\\.\\d+)?)%，清一片$"), "Dragon Slash within $1s of the Roar: $2.$3× to each foe hit (normally $4.$5× on stunned), range +$6%."],
 [new RegExp("^普攻\\ \\+([+-]?\\d+(?:\\.\\d+)?)%\\ ·\\ 招式\\ \\+([+-]?\\d+(?:\\.\\d+)?)%\\ ·\\ 冷却\\ ([+-]?\\d+(?:\\.\\d+)?)%\\ ·\\ 城防\\ \\+([+-]?\\d+(?:\\.\\d+)?)%$"), "Attack +$1% · Skills +$2% · Cooldown $3% · Wall +$4%"],
@@ -2116,6 +2121,7 @@ window.EN_RX = [[new RegExp("^张飞喝后\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 秒内青
 [new RegExp("^紫电\\ ·\\ \\+([+-]?\\d+(?:\\.\\d+)?)$"), "Violet Bolt · +$1"],
 [new RegExp("^天命\\ ·\\ \\+([+-]?\\d+(?:\\.\\d+)?)$"), "Mandate · +$1"],
 [new RegExp("^达成功绩\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 项$"), "$1 deeds done"],
+[new RegExp("^要先拿到\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 星$"), "needs $1★ first"],
 [new RegExp("^旗倒了！乱阵\\ ([+-]?\\d+(?:\\.\\d+)?)$"), "Banner down! Chaos $1"],
 [new RegExp("^第\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 次晋升$"), "Promotion $1"],
 [new RegExp("^点火把（剩\\ ([+-]?\\d+(?:\\.\\d+)?)）$"), "Light torch ($1)"],

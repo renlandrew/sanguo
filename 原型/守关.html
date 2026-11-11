@@ -542,7 +542,7 @@ const foeSeen = () => G.foeCs && counselNow()[1].zhi > G.foeCs.zhi;             
 function fireTac(T) {
   const C = G.foeCs, cav = ck => FOE_CS[ck].cav || (ck === 'zhangbao' ? 'qibing' : 'tieqi'); T.done = true; G.events.push([G.t, ini(TAC[T.k].name)]); let sub = '';
   if (T.k === 'ambush') { const x0 = T.side < 0 ? 16 : 290; for (let k = 0; k < T.n; k++) spawn({ kind: cav(C.ck), x: R(x0, x0 + 54), w: G.wave, lane: false, g: 'foeAdv' }, 300 + R(-24, 24)); G.total += T.n; G.liAmbT = G.t; sub = `${T.n} 骑从${T.side < 0 ? '左' : '右'}侧杀出`; }
-  else if (T.k === 'fire') { G.wall = Math.max(1, G.wall - G.wallMax * .05); if (G.st.jum) { G.st.jum = false; G.jumBurnt = true; } sub = '城防 -5%' + (G.jumBurnt ? '，拒马烧掉' : ''); G.shake = .2; }
+  else if (T.k === 'fire') { G.wall = Math.max(1, G.wall - wBy('火箭', G.wallMax * .05)); if (G.st.jum) { G.st.jum = false; G.jumBurnt = true; } sub = '城防 -5%' + (G.jumBurnt ? '，拒马烧掉' : ''); G.shake = .2; }
   else if (T.k === 'lijian') { const i = G.order.indexOf(T.hero); if (i >= 0) G.seal[i] = Math.max(G.seal[i] || 0, 6); sub = `${GEN[T.hero].name}的招式被封 6 秒`; }
   else if (T.k === 'jijiang') { G.tauntT = Math.max(G.tauntT || 0, 6); sub = '三人普攻慢一半 6 秒'; }
   else if (T.k === 'rush') { for (const e of alive()) if (!e.duel) e.hasteT = Math.max(e.hasteT || 0, 10); sub = '敌军快三成，10 秒'; }
@@ -1372,7 +1372,7 @@ function startLevel(i) {
   if (G.up.liu3) G.st.liuSwords += 2;
   G.wpnNeed = (GATES[lv.id] || {}).wpn || 0;
   if (!window.__sg.simming && GATES[lv.id] && gateLack(lv.id).length) { const [, C] = counselNow(); G.tips = [[.5, `${C.name}：${GATE_SAY[lv.id]}`], ...(G.tips || [])]; }   // 缺推荐的东西：开战时军师提一句（10-26 不再拦关）
-  G.leakLog = []; G.wallLog = []; G.wallNext = 0;                                     // 沙盘推演看的：哪一波、哪一路漏了什么兵，城防随时间怎么掉
+  G.leakLog = []; G.wallLog = []; G.wallNext = 0; G.wallBy = {};                                     // 沙盘推演看的：哪一波、哪一路漏了什么兵，城防随时间怎么掉
   // 出阵布置（10-25 沙盘推演样本）：出手顺序、开局带的锦囊（一条战法），推演和正式出战都用同一份
   if (!window.__sg.simming && !G.sim) G.order = applyLineup(G.order, lv);
   if (PREP && PREP.li === i) { G.order = PREP.order.slice(); for (const id of PREP.kits) { const p = PERKS.find(p => p.id === id); if (p) { p.fn(G.st); G.perks[id] = (G.perks[id] || 0) + 1; } } }
@@ -1811,13 +1811,13 @@ function step(dt) {
     }
     if (T.rampage) {                                           // 吕布追公孙瓒：在场上横冲，隔一阵冲向城下砸一下（打不死，只能喝退）
       e.ph += dt * .9; e.x = clamp(HX + Math.sin(e.ph) * 130, 30, W - 30); e.rushCd = (e.rushCd ?? 4) - dt; e.f = (e.f + dt * 6) % 4;
-      if (e.rushT > 0) { e.rushT -= dt; const ny = Math.min(WALL_Y - 6, e.y + 160 * SPD_X * dt); fan(e, ny - e.y); e.y = ny; if (e.y >= WALL_Y - 8) { G.wall -= 6; e.rushT = 0; e.knock += 160 * SPD_X; G.shake = .25; if (!G.sim) G.fx.push({ k: 'dust', t: 0, x: e.x, y: WALL_Y }); } }
+      if (e.rushT > 0) { e.rushT -= dt; const ny = Math.min(WALL_Y - 6, e.y + 160 * SPD_X * dt); fan(e, ny - e.y); e.y = ny; if (e.y >= WALL_Y - 8) { G.wall -= wBy(e.kind, 6); e.rushT = 0; e.knock += 160 * SPD_X; G.shake = .25; if (!G.sim) G.fx.push({ k: 'dust', t: 0, x: e.x, y: WALL_Y }); } }
       else if (e.rushCd <= 0) { e.rushT = 3; e.rushCd = 7 * ACT_X; if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 100, text: '吕布冲阵！', size: 18, color: CINNABAR }); }
       else if (e.y > 300) { const ny = e.y - 20 * dt; fan(e, ny - e.y); e.y = ny; } else if (e.y < 260) { const ny = e.y + 30 * SPD_X * dt; fan(e, ny - e.y); e.y = ny; }
       continue;
     }
     if (T.runShoot) {                                          // 弓骑：边跑边射；跑到城下转身回去，跑远了再回头
-      e.shootT -= dt; if (e.shootT <= 0) { e.shootT = T.runShoot.every * ACT_X; G.shots.push({ k: 'foeArrow', x: e.x, y: e.y - 22, x0: e.x, y0: e.y - 22, tx: clamp(e.x + R(-40, 40), 10, W - 10), ty: WALL_Y + R(0, 8), t: 0, dur: .9, dmg: T.runShoot.dmg }); }
+      e.shootT -= dt; if (e.shootT <= 0) { e.shootT = T.runShoot.every * ACT_X; G.shots.push({ k: 'foeArrow', x: e.x, y: e.y - 22, x0: e.x, y0: e.y - 22, tx: clamp(e.x + R(-40, 40), 10, W - 10), ty: WALL_Y + R(0, 8), t: 0, dur: .9, dmg: T.runShoot.dmg, fk: e.kind }); }
       const dir = e.back ? -1 : 1, v = T.spd * SPD_X * WALK(e) * depth(e.y) * dir * (G.slowT > 0 ? .15 : 1) * (e.inTrench ? .5 : 1), ny = e.y + v * dt; fan(e, ny - e.y); e.y = ny; e.f = (e.f + dt * Math.abs(v) * .16) % 4;
       if (!e.back && e.y > WALL_Y - 40) e.back = true; else if (e.back && e.y < HZ + 60) e.back = false;
       continue;
@@ -1840,9 +1840,9 @@ function step(dt) {
       if (T.zig) e.x = clamp(e.x + Math.sin(G.t * 3 + e.ph) * 55 * dt, 16, W - 16);          // 衙役乱跑
     } else if (T.shoot) {
       e.f = 0; e.shootT -= dt;
-      if (e.shootT <= 0) { e.shootT = T.shoot.every * ACT_X; G.shots.push({ k: 'foeArrow', x: e.x, y: e.y - 22, x0: e.x, y0: e.y - 22, tx: clamp(e.x + R(-40, 40), 10, W - 10), ty: WALL_Y + R(0, 8), t: 0, dur: .9, dmg: T.shoot.dmg }); }
+      if (e.shootT <= 0) { e.shootT = T.shoot.every * ACT_X; G.shots.push({ k: 'foeArrow', x: e.x, y: e.y - 22, x0: e.x, y0: e.y - 22, tx: clamp(e.x + R(-40, 40), 10, W - 10), ty: WALL_Y + R(0, 8), t: 0, dur: .9, dmg: T.shoot.dmg, fk: e.kind }); }
     } else if (T.boss) {
-      e.atk = true; e.f = (e.f + dt * 5) % 4; G.wall -= T.dps * SPD_X * (e.dpsMul || 1) * dt;
+      e.atk = true; e.f = (e.f + dt * 5) % 4; G.wall -= wBy(e.kind, T.dps * SPD_X * (e.dpsMul || 1) * dt);
       if (rnd() < dt * 2) G.fx.push({ k: 'dust', t: 0, x: e.x + R(-10, 10), y: WALL_Y + R(-4, 4) });
     } else {
       // 小兵冲到城下：举兵器撞一下城墙（扣固定城防），随后被城上的守军打散，不给军功；旗手旗下撞得更狠
@@ -1850,7 +1850,7 @@ function step(dt) {
       if (e.ram >= .6) {
         let n = T.leak * (near(e, 100, f => FOES[f.kind].flag).length ? 1.5 : 1);
         if (e.chargeT > 0 && G.chg[e.ch]) { const c = G.chg[e.ch], x = Math.min(n * (CHARGE.ram - 1), Math.max(0, CHARGE.cap - (c.hit || 0))); c.hit = (c.hit || 0) + x; n += x; }   // 冲阵撞城加倍，一队最多多扣 cap
-        G.wall -= n; G.leaked++; sfx('wall'); G.leakLog.push({ t: G.t, k: e.kind, x: e.x, w: e.w, n, g: e.g }); e.dead = true; G.fx.push({ k: 'dust', t: 0, x: e.x, y: WALL_Y }); G.fx.push({ k: 'leak', t: 0, x: e.x, y: WALL_Y - 18, n: Math.round(n) }); if (G.focus === e) G.focus = null;
+        G.wall -= wBy(e.kind, n); G.leaked++; sfx('wall'); G.leakLog.push({ t: G.t, k: e.kind, x: e.x, w: e.w, n, g: e.g }); e.dead = true; G.fx.push({ k: 'dust', t: 0, x: e.x, y: WALL_Y }); G.fx.push({ k: 'leak', t: 0, x: e.x, y: WALL_Y - 18, n: Math.round(n) }); if (G.focus === e) G.focus = null;
       }
     }
   }
@@ -2043,6 +2043,8 @@ const duelGap = e => G.lv.gap * TIMEX.v * (e.raged ? G.lv.rage.gap : 1), heavyOf
 // 推演：__sg.lampPol = 'smart'（默认，开拜 0.8 秒后点最近的灯）| 'none'（不点灯）
 const QX_POS = [[52, 286], [58, 322], [110, 326], [106, 290], [162, 284], [216, 294], [272, 282]];   // 天枢、天璇、天玑、天权、玉衡、开阳、摇光
 const lampHunt = () => !!((G.focus && G.focus.lamp) || (G.focusBy && Object.values(G.focusBy).some(f => f && f.lamp)));
+// 11-11 用户：「加上敌人伤害吧，那么玩家知道要对付谁」——城防每次掉血记在是谁打的名下（敌人种类，敌计记计名），结算页列前三；只记账，原来的扣法一个数都不改
+const wBy = (k, n) => { if (G.wallBy) G.wallBy[k] = (G.wallBy[k] || 0) + n; return n; };
 function stepQixing(dt) {
   const Q = G.RU.qixing, X = G.qx, b = G.duel;
   if (X.T > 0) {
@@ -2050,7 +2052,7 @@ function stepQixing(dt) {
     if (G.sim && (window.__sg.lampPol || 'smart') === 'smart' && G.t - X.t0 > .8 && lit.length && !lampHunt()) G.focus = lit.sort((a, c) => Math.abs(a.x - HX) - Math.abs(c.x - HX))[0];
     if (!lit.length) { X.T = 0; X.after(); if (!G.sim) G.fx.push({ k: 'banner', t: 0, text: '七星尽灭', sub: '张角拜斗不成' }); return; }
     if (X.T <= 0) { const n = lit.length, dw = n >= QX_POS.length ? Q.all : Q.hit * n; for (const e of lit) e.dead = true; if (lampHunt()) { G.focus = b; G.focusBy = {}; }
-      G.wall -= dw; b.hp = Math.min(b.max, b.hp + b.max * Q.heal * n); G.shake = .5; X.after();
+      G.wall -= wBy(b.kind, dw); b.hp = Math.min(b.max, b.hp + b.max * Q.heal * n); G.shake = .5; X.after();
       if (!G.sim) { G.fx.push({ k: 'banner', t: 0, text: n >= QX_POS.length ? '天门大开' : '七星灯余 ' + n + ' 盏', sub: '城防 -' + dw + '，张角回血 ' + Math.round(Q.heal * n * 100) + '%' }); for (const e of lit) G.fx.push({ k: 'bolt', t: 0, x: clamp(e.x, 40, 320), bx: e.x, by: e.y }); } }
     return;
   }
@@ -2075,10 +2077,10 @@ function resolveMove(e, k) {
   if (k === 'guard') { e.guardT2 = 6 * TIMEX.v; G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 120, text: '护罩：伤害减半，喝晕才破', size: 16, color: CINNABAR }); return; }
   if (k === 'heavy') {
     const uns = e.mv && e.mv.uns;
-    if (uns) { G.wall -= Math.max(UNS_HIT, heavyOf(e) * 2.2) * (e.buffT > 0 ? 1.5 : 1); if (!G.sim) { G.fx.push({ k: 'bossult', t: 0, dur: 1.8, boss: e.kind, bx: e.x, by: e.y, blocked: false, fired: {} }); G.fx.push({ k: 'lunge', t: 0, x: clamp(e.x + R(-60, 60), 40, 320), bx: e.x, by: e.y }); } G.shake = .6; return; }
+    if (uns) { G.wall -= wBy(e.kind, Math.max(UNS_HIT, heavyOf(e) * 2.2) * (e.buffT > 0 ? 1.5 : 1)); if (!G.sim) { G.fx.push({ k: 'bossult', t: 0, dur: 1.8, boss: e.kind, bx: e.x, by: e.y, blocked: false, fired: {} }); G.fx.push({ k: 'lunge', t: 0, x: clamp(e.x + R(-60, 60), 40, 320), bx: e.x, by: e.y }); } G.shake = .6; return; }
     if (!G.sim) G.fx.push({ k: 'bossult', t: 0, dur: 1.8, boss: e.kind, bx: e.x, by: e.y, blocked: G.shieldT > 0, fired: {} });   /* 敌将重招的大范围华彩（10-27 用户：「敌人的首领将领的法术还不够绚丽，要范围很大，绚丽」） */
     if (G.shieldT > 0) { G.counterT = 3; G.blocks = (G.blocks || 0) + 1; G.fx.push({ k: 'blocked', t: 0 }); spPlay('dome', W / 2, WALL_Y + 20, 440, { fps: 22, alpha: .85, fitW: W }); G.shieldT = 0; G.shieldCd = 0; }   /* 挡下了冷却清零：连斩第二下马上能再举 */
-    else { G.wall -= heavyOf(e) * (e.buffT > 0 ? 1.5 : 1); G.fx.push({ k: e.kind === 'zhangjiao' ? 'bolt' : 'lunge', t: 0, x: clamp(e.x + R(-60, 60), 40, 320), bx: e.x, by: e.y }); G.shake = .4; }
+    else { G.wall -= wBy(e.kind, heavyOf(e) * (e.buffT > 0 ? 1.5 : 1)); G.fx.push({ k: e.kind === 'zhangjiao' ? 'bolt' : 'lunge', t: 0, x: clamp(e.x + R(-60, 60), 40, 320), bx: e.x, by: e.y }); G.shake = .4; }
   } else if (k === 'summon') {
     for (const [kind, n] of L.adds) for (let i = 0; i < n * ENEMY_X; i++) { const sx = L.side ? (i % 2 ? R(14, 60) : R(300, 346)) : clamp(e.x + R(-130, 130), 30, 330); spawn({ kind, x: sx, lane: false }, L.side ? R(240, 300) : e.y + R(-6, 24)); G.total++; }   // side：张辽两翼包抄，从两边半路杀出
   } else if (k === 'seal') {
@@ -2179,7 +2181,7 @@ function stepShot(s, dt) {
     } else { s.x += dx / d * v; s.y += dy / d * v; s.ang = Math.atan2(dy, dx); }
   } else if (s.k === 'foeArrow') {
     s.t += dt; const u = s.t / s.dur; s.x = s.x0 + (s.tx - s.x0) * u; s.y = s.y0 + (s.ty - s.y0) * u - Math.sin(Math.PI * u) * 40;
-    if (u >= 1) { G.wall -= s.dmg; G.fx.push({ k: 'dust', t: 0, x: s.tx, y: s.ty }); s.done = true; }
+    if (u >= 1) { G.wall -= wBy(s.fk || '?', s.dmg); G.fx.push({ k: 'dust', t: 0, x: s.tx, y: s.ty }); s.done = true; }
   }
 }
 function stepGenerals(dt, al) {
@@ -6189,9 +6191,10 @@ function drawResult() {
   const sandSub = PREP && PREP.li === G.li && PREP.last ? `沙盘推演预计 ${PREP.last.stars.toFixed(1)} 星 · 实际 ${r.stars} 星` : null;
   const sub = sandSub || (r.first && G.lv.reward ? G.lv.reward : '');
   { const gs = r.goals || [], gy = sub ? 298 : 278;   // 10-30 用户：「padding大一些，和上面的3星的margin也大一点」   // 三颗星各一行：几颗星 + 条件，做到的金字，没做到的朱红带「未达成」（10-30 用户：「看不出来3颗星对应的哪个完成了，或者哪个没完成」；原来只写一行）
-    gs.forEach((g, k) => { const y = gy + k * 18, ln = g.text + (g.ok ? '' : ' · 未达成'), sz = fitSize(ln, 12, W - 60 - 44, 99, FONT, 3), x0 = 30 + 44;
-      for (let q = 0; q <= k; q++) uiStar(36 + q * 13, y, 5.5, g.ok);   // 11-02 用户：「这里靠左对齐」——星从左边排起，字一律从 x0 开始
-      uiText(ln, x0, y, sz, g.ok ? '#ffe08a' : '#ff8a6a', 'left', FONT, { lw: 3 }); }); }
+    gs.forEach((g, k) => { const lock = k > 0 && g.ok && gs.slice(0, k).some(q => !q.ok);   // 11-11 用户问二星没到、三星条件做到了「这种情况怎么算星」——星是一颗颗往上算的，前面那颗没拿到，这行做到了也不算：灰着写「要先拿到二星」
+      const y = gy + k * 18, ln = g.text + (lock ? (k === 2 ? ' · 要先拿到二星' : ' · 要先拿到一星') : g.ok ? '' : ' · 未达成'), sz = fitSize(ln, 12, W - 60 - 44, 99, FONT, 3), x0 = 30 + 44;
+      for (let q = 0; q <= k; q++) uiStar(36 + q * 13, y, 5.5, g.ok && !lock);   // 11-02 用户：「这里靠左对齐」——星从左边排起，字一律从 x0 开始
+      uiText(ln, x0, y, sz, lock ? 'rgba(244,230,196,.5)' : g.ok ? '#ffe08a' : '#ff8a6a', 'left', FONT, { lw: 3 }); }); }
   const lootR = !!(G.advLog || []).some(a => a.bad) && r.loot && r.loot.length;          // 军师认错占了下面那格时，战利品缩小放到这一行右边
   if (sub) { const mw = lootR ? W - 150 : W - 70, sz = fitSize(sub, 12, mw, 99, FONT, 3), cx = W / 2 - (lootR ? 36 : 0), first = r.first && !sandSub; ctx.font = `${fpx(sz)}px ${FONT}`; const sw2 = ctx.measureText(sub).width;
     if (first) uiSeal(cx - sw2 / 2 - 4, 266, 18, '首', UIC.red);
@@ -6206,7 +6209,12 @@ function drawResult() {
   gains.forEach((g, k) => drawGainMini(g, 14 + k * (gw + 10), y0, gw, gh, t - (t1 + k * gap)));
   // 下面一格：听了军师荐错的卡，军师自己认错（10-25 夜用户：「低智军师常常犯错……事后会以逗比方式告诉用户，这是军师的问题」）；没有就摆战利品
   const tb = t1 + gains.length * gap + (gains.length ? 1.4 : .2), ba = clamp((t - (tb - .4)) / .3, 0, 1), armed = t >= tb, al = ba * (armed ? 1 : .5);
-  let by = y0 + (gains.length ? gh + 22 : 0); const li = G.li, next = win && li + 1 < LEVELS.length;
+  let by = y0 + (gains.length ? gh + 22 : 0);
+  { const wb = Object.entries(G.wallBy || {}).map(([k, n]) => [k, Math.min(100, Math.round(n / G.wallMax * 100))]).filter(([, p]) => p >= 1).sort((a, b) => b[1] - a[1]).slice(0, 3);   // 城防被谁打掉（占城防的几成），前三
+    const u = clamp((t - (t1 + gains.length * gap + .3)) / .3, 0, 1);
+    if (wb.length) { if (u > 0) { ctx.save(); ctx.globalAlpha = u; const segs = [['城防损失', 'rgba(244,230,196,.6)'], ['  ', '#fff']];
+        wb.forEach(([k, p], j) => { if (j) segs.push(['  ·  ', 'rgba(244,230,196,.4)']); segs.push([FOES[k] ? FOES[k].name : k, '#ffd0a0'], [' -' + p + '%', '#ff8a6a']); });
+        segText(segs, W / 2, by - 6, 11, PLAIN, { lw: 3 }); ctx.restore(); } by += 18; } } const li = G.li, next = win && li + 1 < LEVELS.length;
   const blame = r.blame !== undefined ? r.blame : (r.blame = counselBlame(r));
   const tot = {}; if (r.loot) { for (const o of r.loot) if (o.n) tot[o.k] = (tot[o.k] || 0) + o.n; if (r.tasks.length) tot.残页 = (tot.残页 || 0) + r.tasks.length * TASK_PAY; } for (const [k, n] of r.achGot || []) tot[k] = (tot[k] || 0) + n;
   const caps = (r.loot || []).filter(o => o.capped && !tot[o.k]).map(o => o.k), ents = [...Object.entries(tot), ...caps.map(k => [k, 0])];
