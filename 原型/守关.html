@@ -6626,8 +6626,10 @@ function drawArmory2() {
     ctx.save(); ctx.beginPath(); ctx.rect(20, y + 6, 70, 100); ctx.clip(); drawWeapon(id, wpnVis(wl + 1), 55, y + 56, 96, WPN_ROT[id], t, false); ctx.restore();
     uiText(`下一级 · ${WPN_TIER[wpnVis(wl + 1)]} +${wl + 1}`, 100, y + 20, 15, UIC.gold2, 'left', FONT, { stroke: false });
     uiText(UPS[AK].desc(wl + 1), 100, y + 40, 11, UIC.cream, 'left', PLAIN, { stroke: false, maxW: W - 140 });
-    Object.entries(cost).forEach(([it, n], j) => { const have = INV.it[it] || 0, yy = y + 60 + j * 16;
-      uiText(`${it} ${Math.min(have, n)}/${n}`, 100, yy, 12, ITEM_C[it], 'left', PLAIN, { stroke: false }); uiBar('arm_' + it, 170, yy - 3, 90, 6, have / n, '#8a5a14', '#ffd76e', { edge: 'rgba(0,0,0,0)' }); });
+    // 11-11 用户圈着英文版这几行：「重叠了」——材料名英文长（Dragon Scale 2/2），原来进度条固定从 170 起、压在字上。改成：字一栏（100–196，放不下就缩字），
+    // 进度条一栏（200–254，短一点），右边 262 起留给「打造」钮／还要几天，三栏互不相压
+    Object.entries(cost).forEach(([it, n], j) => { const have = INV.it[it] || 0, yy = y + 60 + j * 15;
+      uiText(`${it} ${Math.min(have, n)}/${n}`, 100, yy, 11, ITEM_C[it], 'left', PLAIN, { stroke: false, maxW: 94 }); uiBar('arm_' + it, 200, yy - 3, 54, 6, have / n, '#8a5a14', '#ffd76e', { edge: 'rgba(0,0,0,0)' }); });
     if (canUp(AK)) pill(W - 98, y + 66, 76, 30, '打造', () => { doUp(AK); ARM.forge = { t0: uiNow(), id, lv: INV.up[AK], hit: 0 }; sfx('anvil'); });
     else uiText(e.d >= 99 && cost[MAT[id].name] ? `先打到${lvName(MAT[id].lv[0])}` : etaText(e.d, e.lack), W - 24, y + 94, 12, etaColor(e.d), 'right', FONT, { stroke: false }); }   // 出材料的关还没打过：算不出天数
   /* 10-26 用户圈了「三人的兵器一起精炼」：「去掉这句」 */
