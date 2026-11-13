@@ -1412,7 +1412,7 @@ function monImgs(k) { const bk = 'bg_' + HMON[k].map; if (!IMG[bk]) { IMG[bk] = 
   for (let n = 1; n <= 3; n++) for (const v of ['', 'a', 'b']) { const key = 'mon_' + k + n + v; if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } }
   if (!GFALL.meta && !GFALL.req) { GFALL.req = 1; fetch('img/gfall.json' + BUST).then(r => r.json()).then(j => { GFALL.meta = j; for (const id of Object.keys(j)) { const key = 'gfall_' + id; IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } }).catch(() => {}); }   // 武将倒地动作（Veo 录的），进讨伐才载
   if (!MSP.meta && !MSP.req) { MSP.req = 1; fetch('img/msp.json' + BUST).then(r => r.json()).then(j => { MSP.meta = j; }).catch(() => {}); }
-  for (let n = 0; n < 3; n++) { const key = 'msp_' + k + '_' + n; if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } }
+  for (const n of [0, 1, 2, 'ba']) { const key = 'msp_' + k + '_' + n; if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } }
   if (!HMON[k].anim && !HMON[k].animReq) { HMON[k].animReq = 1; fetch('img/monv_' + k + '.json' + BUST).then(r => r.json()).then(j => { HMON[k].anim = j; }).catch(() => {}); } monSheet(k, 1); }
 // 11-13 Veo 录的逐帧动作（用户：「怪物的战斗动作呢」→「做」）：每个形态一张 6×4 的图集（24 帧：待机、蓄力、出手、收回），一张两千多像素见方，只留当前形态那张，换形态时放掉旧的
 // 11-13 用户：「我们有那么多招数，在法术平台那个chat，要让老虎有法术啊」——怪物每招配一个法术（法术售卖平台那套，工具/vfx/hunt_spells.py 切出打中目标那一段），出手前约三分之一秒起播在挨打的武将身上，命中那一帧正好对上扣血
@@ -1420,7 +1420,7 @@ const MSP = { meta: null, req: 0 }, GFALL = { meta: null, req: 0 };
 function monSpell(e, T, mv) { if (G.sim || !MSP.meta) return; const key = T.mon + '_' + HMON[T.mon].moves.indexOf(mv), A = MSP.meta[key]; if (!A) return; const P = heroPos(), dur = A.n / A.fps;
   if (mv.tgt === 'all') G.fx.push({ k: 'monsp', t: 0, dur, key, x: W / 2, y: GY + 4, w: 250 });
   else for (const i of (e.aimPos ? e.aimPos.map(p => P[p]) : [G.order.indexOf(e.aimId)])) if (i >= 0 && G.order[i]) G.fx.push({ k: 'monsp', t: 0, dur, key, x: genX(i), y: GY + 4, w: 150 }); }
-function drawMonSp(f) { const A = MSP.meta && MSP.meta[f.key], im = IMG['msp_' + f.key]; if (!A || !ready(im)) return; const j = Math.min(A.n - 1, Math.floor(f.t * A.fps)), sc = f.w / A.fw;
+function drawMonSp(f) { const A = MSP.meta && MSP.meta[f.key], im = IMG['msp_' + f.key]; if (!A || !ready(im)) return; const j = Math.min(A.n - 1, Math.floor(f.t * A.fps * (f.sp || 1))), sc = f.w / A.fw;
   ctx.drawImage(im, (j % A.cols) * A.fw, Math.floor(j / A.cols) * A.fh, A.fw, A.fh, f.x - A.ax * sc, f.y - A.ay * sc, A.fw * sc, A.fh * sc); }
 function monSheet(k, n) { for (let m = 1; m <= 3; m++) { const key = 'monv_' + k + m; if (m === n) { if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } } else if (IMG[key] && m < n) { IMG[key].src = ''; delete IMG[key]; } } }
 function huntLv() {
@@ -1460,7 +1460,11 @@ function stepMon(e, T, dt) {
   if (e.strikeT > 0) e.strikeT -= dt;
   if (G.monWeakT > 0) { G.monWeakT -= dt; return; }
   const fm = e.form || 0, nm = id => GEN[id].name, P = heroPos(), up = P.filter(i => heroUp(G.order[i])); if (!up.length) return;
-  if (!(e.windT3 > 0)) { e.baT = (e.baT ?? 2.5) - dt; if (e.baT <= 0) { e.baT = MON_BA_CD; const i = up[Math.floor(rnd() * up.length)]; heroHurt(G.order[i], MON_BA * (1 + .3 * fm)); e.strikeT = .3; e.strikeX = genX(i); e.ba = 1; } }
+  // 普攻：用户「不是普通的碰一下打一下，要法术效果」——每下在被打的人身上播一个小法术（巨灵陨火、山君十字爪痕、蛟潮珠，1.6 倍速），伤害等法术命中那一帧才扣
+  if (e.baQ) { e.baQ.t -= dt; if (e.baQ.t <= 0) { heroHurt(e.baQ.id, e.baQ.d); e.baQ = null; } }
+  if (!(e.windT3 > 0)) { e.baT = (e.baT ?? 2.5) - dt; if (e.baT <= 0) { e.baT = MON_BA_CD; const i = up[Math.floor(rnd() * up.length)], key = T.mon + '_ba', A = MSP.meta && MSP.meta[key], sp = 1.6, d = MON_BA * (1 + .3 * fm);
+      if (A && !G.sim) G.fx.push({ k: 'monsp', t: 0, dur: A.n / A.fps / sp, key, x: genX(i), y: GY + 4, w: 120, sp });
+      e.baQ = { id: G.order[i], d, t: A ? A.hit / A.fps / sp : .2 }; e.strikeT = .3; e.strikeX = genX(i); e.ba = 1; } }
   if (e.windT3 > 0) { e.windT3 -= dt; if (!e.fxOn && e.windT3 <= .33) { e.fxOn = 1; monSpell(e, T, e.mv); } if (e.windT3 > 0) return; const mv = e.mv, dmg = mv.dmg * (1 + .3 * fm); e.strikeT = .55; e.ba = 0; G.shake = .3; G.monStomp = (G.monStomp || 0) + 1;   // 出手
     const who = mv.tgt === 'all' ? up.map(i => G.order[i]) : mv.tgt === 'pos' || mv.tgt === 'pos2' ? e.aimPos.map(p => G.order[P[p]]).filter(heroUp) : [e.aimId].filter(heroUp);
     if (who.length) e.strikeX = mv.tgt === 'all' ? e.x : genX(G.order.indexOf(who[0]));

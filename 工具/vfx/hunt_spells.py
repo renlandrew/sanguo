@@ -6,14 +6,16 @@
 """
 import json, os
 from pathlib import Path
-from PIL import Image
+import numpy as np
+from PIL import Image, ImageChops
 R = Path(__file__).resolve().parents[2]; SRC = R.parent / 'spell-store' / 'fight'; OUT = R / '原型' / 'img'
 DB = json.load(open(SRC / 'spells_db.json')); LEAD, STEP, CELL, COLS = .32, 2, 300, 6
 PICK = {  # 招 → 法术
  'juling_0': 'earth_shatter', 'juling_1': 'flame_fist', 'juling_2': 'bone_grasp',
  'shanjun_0': 'white_tiger', 'shanjun_1': 'resounding_peal', 'shanjun_2': 'shadow_claws',
- 'jiao_0': 'breaching_whale', 'jiao_1': 'moonpull_tide', 'jiao_2': 'geyser_chain' }
-meta = {}
+ 'jiao_0': 'breaching_whale', 'jiao_1': 'moonpull_tide', 'jiao_2': 'geyser_chain',
+ 'juling_ba': 'comet_strike', 'shanjun_ba': 'cross_slash', 'jiao_ba': 'tide_pearls' }   # _ba：普攻用的小法术（用户：「不是普通的碰一下打一下，要法术效果」）
+meta = {}; FADE = 90; EDGE = None
 for key, sp in PICK.items():
     v = DB[sp]; W, H = v['size']; n = v['n']; fps = n / v['dur']; hit = min(h['t'] for h in v['hits']); i0 = max(0, round((hit - LEAD) * fps)); tx, ty = v['tx'], v['ty']
     x0, x1, y0, y1 = max(0, tx - 330), min(W, tx + 330), max(0, ty - 460), min(H, ty + 130); fr = []
@@ -22,7 +24,12 @@ for key, sp in PICK.items():
         for L in 'bf':
             o = v[L][i] if i < len(v[L]) else None; p = SRC / 'fx' / sp / f'{L}_{i + 1:03d}.png'
             if o and p.exists(): cv.alpha_composite(Image.open(p).convert('RGBA'), (o[0], o[1]))
-        fr.append(cv.crop((x0, y0, x1, y1)))
+        c = cv.crop((x0, y0, x1, y1))
+        # 11-13 用户：「很多法术还是有明显的直线边缘」——飞行的拖尾、地缝、烟超出裁切窗的地方原来被一刀切平：靠近窗边 FADE 像素内按距离渐隐（四边都做）
+        if EDGE is None or EDGE.size != c.size:
+            w, h = c.size; xs = np.minimum(np.arange(w), w - 1 - np.arange(w)); ys = np.minimum(np.arange(h), h - 1 - np.arange(h))
+            m = np.clip(np.minimum.outer(ys, xs) / FADE, 0, 1); EDGE = Image.fromarray((m * m * (3 - 2 * m) * 255).astype(np.uint8))
+        c.putalpha(ImageChops.multiply(c.getchannel('A'), EDGE)); fr.append(c)
     bb = None
     for f in fr:
         b = f.getbbox()
