@@ -34,4 +34,18 @@ T = {
 '九十秒到': '90 seconds up', '本局伤害': 'Damage this run', '新纪录！': 'New record!', '三档全过': 'all three tiers cleared', '今天这几档的奖励已经领过': "Today's rewards for these tiers already claimed",
 '今天三档奖励已领': "today's three tier rewards claimed", '九十秒比伤害': '90s damage race', '打过第四关开放': 'Opens after Stage 4',
 '怪物打不死，也不撞城。九十秒里打出多少伤害算多少，记最高纪录；伤害过一档它就换一个更凶的样子。巨灵身上有护体符：打碎一层，八秒内伤害加倍，把大招留到这时候。它举拳时张飞一喝能喝住': "The monster cannot be killed and never attacks the wall. Deal as much damage as you can in 90 seconds; your best is recorded. Each damage tier makes it change into a fiercer form. The Colossus wears a talisman ward: break a layer and it takes double damage for 8 seconds — save your big skills for that. When it raises its fist, Zhang Fei's Roar can stop it.",
+# 11-12 讨伐另外两只：山君、蛟
+'山君': 'Mountain Lord', '蛟': 'River Serpent', '蛟身': 'Serpent Coil', '山君遁走了': 'The Mountain Lord withdrew', '蛟遁走了': 'The Serpent withdrew',
+'打翻了！五秒内伤害加倍': 'Knocked down! Double damage for 5s', '打断了！六秒内伤害加倍': 'Interrupted! Double damage for 6s',
+'巨灵举拳！张飞一喝能喝住': "Fist raised! Zhang Fei's Roar can stop it", '蛟喷水：普攻减半': 'Water blast: attack damage halved', '蛟昂首蓄水！点蛟头集火打断': 'The Serpent rears up! Tap its head and focus fire',
+'蓄水 · 集火蛟头': 'Charging · Focus the head', '被盯上 · 放招式': 'Targeted · Cast a skill',
+'盯上 刘备': 'Eyes on Liu Bei', '盯上 关羽': 'Eyes on Guan Yu', '盯上 张飞': 'Eyes on Zhang Fei', '盯上 赵云': 'Eyes on Zhao Yun',
+'刘备被扑倒，四秒动不了': 'Liu Bei is pinned for 4s', '关羽被扑倒，四秒动不了': 'Guan Yu is pinned for 4s', '张飞被扑倒，四秒动不了': 'Zhang Fei is pinned for 4s', '赵云被扑倒，四秒动不了': 'Zhao Yun is pinned for 4s',
+'山君盯上了刘备！让刘备放招式迎击': 'The Mountain Lord eyes Liu Bei! Cast his skill to counter', '山君盯上了关羽！让关羽放招式迎击': 'The Mountain Lord eyes Guan Yu! Cast his skill to counter',
+'山君盯上了张飞！让张飞放招式迎击': 'The Mountain Lord eyes Zhang Fei! Cast his skill to counter', '山君盯上了赵云！让赵云放招式迎击': 'The Mountain Lord eyes Zhao Yun! Cast his skill to counter',
+'怪物打不死，也不撞城。九十秒里打出多少伤害算多少，记最高纪录；伤害过一档它就换一个更凶的样子。山君会盯上一名武将扑过去，被扑倒的四秒动不了。在它扑到之前，让被盯上的那名武将放出招式打中它，就能把它打翻，五秒内伤害加倍': "The monster cannot be killed and never attacks the wall. Deal as much damage as you can in 90 seconds; your best is recorded. Each damage tier makes it change into a fiercer form. The Mountain Lord picks one hero and pounces — a pinned hero cannot act for 4 seconds. Before it lands, have that hero hit it with a skill to knock it down for 5 seconds of double damage.",
+'怪物打不死，也不撞城。九十秒里打出多少伤害算多少，记最高纪录；伤害过一档它就换一个更凶的样子。蛟身子长，横在场上分五段，范围招一次能打到好几段。它昂首蓄水时点蛟头集火，打够了就打断它，六秒内伤害加倍；没打断它就喷水，普攻减半四秒': "The monster cannot be killed and never attacks the wall. Deal as much damage as you can in 90 seconds; your best is recorded. Each damage tier makes it change into a fiercer form. The Serpent's long body lies across the field in five segments, so area skills hit several at once. When it rears up to charge, tap its head and focus fire: enough damage interrupts it for 6 seconds of double damage; otherwise it blasts water and halves attack damage for 4 seconds.",
+'怪物打不死，也不撞城。九十秒里打出多少伤害算多少，记最高纪录；伤害过一档它就换一个更凶的样子。巨灵身上有护体符：打碎一层，八秒内伤害加倍，把大招留到这时候。它举拳时张飞一喝能喝住': "The monster cannot be killed and never attacks the wall. Deal as much damage as you can in 90 seconds; your best is recorded. Each damage tier makes it change into a fiercer form. The Colossus wears a talisman ward: break a layer and it takes double damage for 8 seconds — save your big skills for that. When it raises its fist, Zhang Fei's Roar can stop it.",
+'巨灵震地：普攻慢一半': 'Ground slam: attacks slowed by half',
+'扑倒': 'Pinned', '扑倒 #': 'Pinned #',
 }
