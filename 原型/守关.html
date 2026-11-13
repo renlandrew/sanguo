@@ -7280,9 +7280,10 @@ function drawCampaignMap(mim, t) {
   /* 11-12 用户：「这里不要黑，露出后面的图」「黑色再去掉一点，上下都是。然后用渐隐过渡」——图铺满整屏：图本身 68–608，上下不够的地方把图沿边翻过去接上，再从屏幕上下边往里渐隐，没有一条硬边；页头标题、上下的钮都压在图上 */
   ctx.save(); const mh = W * mim.height / mim.width, y0 = MAP_TOP + (MAP_BOT - MAP_TOP - mh) / 2, y1 = y0 + mh, im = inkBg(mim);
   ctx.drawImage(im, 0, y0, W, mh);
-  for (const [ye, a, b] of [[y0, 0, y0], [y1, y1, H]]) { if (b - a < 1) continue; ctx.save(); ctx.beginPath(); ctx.rect(0, a, W, b - a); ctx.clip(); ctx.translate(0, 2 * ye); ctx.scale(1, -1); ctx.drawImage(im, 0, y0, W, mh); ctx.restore(); }
-  let fd = ctx.createLinearGradient(0, 0, 0, 104); fd.addColorStop(0, 'rgba(8,5,4,.97)'); fd.addColorStop(.42, 'rgba(8,5,4,.86)'); fd.addColorStop(.66, 'rgba(8,5,4,.5)'); fd.addColorStop(1, 'rgba(8,5,4,0)'); ctx.fillStyle = fd; ctx.fillRect(0, 0, W, 104);
-  fd = ctx.createLinearGradient(0, 556, 0, H); fd.addColorStop(0, 'rgba(8,5,4,0)'); fd.addColorStop(.45, 'rgba(8,5,4,.5)'); fd.addColorStop(.7, 'rgba(8,5,4,.86)'); fd.addColorStop(1, 'rgba(8,5,4,.97)'); ctx.fillStyle = fd; ctx.fillRect(0, 556, W, H - 556);
+  /* 用户：「上面的渐隐再加重一点……不要出现任何倒映」——不再把图翻过去接；图外面（68 以上、608 以下）涂实底色，再从图的上下沿往里渐隐到透明，接缝处两边同色所以没有线 */
+  const DK = '8,5,4'; ctx.fillStyle = `rgb(${DK})`; ctx.fillRect(0, 0, W, y0 + .5); ctx.fillRect(0, y1 - .5, W, H - y1 + 1);
+  let fd = ctx.createLinearGradient(0, y0, 0, y0 + 62); fd.addColorStop(0, `rgba(${DK},1)`); fd.addColorStop(.3, `rgba(${DK},.8)`); fd.addColorStop(.65, `rgba(${DK},.35)`); fd.addColorStop(1, `rgba(${DK},0)`); ctx.fillStyle = fd; ctx.fillRect(0, y0, W, 62);
+  fd = ctx.createLinearGradient(0, y1 - 56, 0, y1); fd.addColorStop(0, `rgba(${DK},0)`); fd.addColorStop(.4, `rgba(${DK},.4)`); fd.addColorStop(.75, `rgba(${DK},.85)`); fd.addColorStop(1, `rgba(${DK},1)`); ctx.fillStyle = fd; ctx.fillRect(0, y1 - 56, W, 56);
   const N = MAP_NODE[MENU.seg], base = MENU.seg * 10, open = i => i === 0 || BEST[LEVELS[i - 1].id] || window.__sg.all;
   /* 不画连线：图上本来就画了行军的土路；直线来回交叉又乱又像几何图形 */
   ctx.restore();
@@ -7344,7 +7345,7 @@ function drawLvPop(t) {                                                         
 }
 // 11-12 用户：「放在战役页里面，残是什么？」——先放底下「返回」两边；用户圈图：「反过来无尽和残放上面，前后三十关用箭头」——挪到页头两角（印 + 全名），换章的箭头改到地图左右两边中间
 function lvModeBtns(t) {   // 11-12 用户圈图「这个布局」：页签那一行左「无尽守城」、中间当前这一段、右「每日残局」；前一段、后一段的名字放底下「返回」两边（跨章也这样翻，不再另画换章箭头）
-  const tab = (x, nm, on, fn, dim) => { const y = 66, tim = on ? IMG.ui2_tab_red : IMG.ui2_tab_dark; ctx.save(); if (dim) ctx.globalAlpha = .55;
+  const tab = (x, nm, on, fn, dim) => { const y = 73,   /* 用户：「2个btn往下一点点」66 → 73 */ tim = on ? IMG.ui2_tab_red : IMG.ui2_tab_dark; ctx.save(); if (dim) ctx.globalAlpha = .55;
     if (ready(tim)) draw9(tim, x, y, 108, 30, 90, 90, 0, 0, 30 / 189); else uiPanel(x, y, 108, 30, { r: 15, top: on ? '#c0402a' : '#3a2b1f', bot: on ? '#6e140c' : UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.6)', single: true });
     uiText(nm, x + 54, y + 15, fitSize(nm, 15, 108 - 30 - 4), on ? '#fff2dc' : UIC.cream, 'center', FONT, { stroke: false }); ctx.restore(); if (fn) hit(x, y, 108, 30, fn); };
   /* 用户：「不，上面完全不要普通关卡」——中间不放当前这一段的页签；这一段叫什么写进页头标题 */
