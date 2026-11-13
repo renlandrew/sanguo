@@ -1394,7 +1394,7 @@ const HMON = {
     say: '蛟身子长，横在场上分五段，范围招一次能打到好几段。它昂首蓄水时点蛟头集火，打够了就打断它，六秒内伤害加倍；没打断它就喷水，普攻减半四秒' },
 };
 const HUNT_PAY = [[['资历', 1]], [['资历', 1], ['残页', 1]], [['残页', 1]]], HUNT_ORDER = ['juling', 'shanjun', 'jiao'];
-const huntOpen = () => cjOpen(), huntMon = () => (window.__sg && window.__sg.huntForce) || HUNT_ORDER[Math.round(new Date(dayStr() + 'T00:00:00Z').getTime() / 864e5) % 3];   // 三只按日期轮
+const huntOpen = () => endlessOpen(), huntMon = () => (window.__sg && window.__sg.huntForce) || HUNT_ORDER[Math.round(new Date(dayStr() + 'T00:00:00Z').getTime() / 864e5) % 3];   // 三只按日期轮
 const monTier = (M, d) => M.tiers.filter(v => d >= v).length;
 function monImgs(k) { const bk = 'bg_' + HMON[k].map; if (!IMG[bk]) { IMG[bk] = new Image(); IMG[bk].src = 'img/' + bk + '.jpg' + BUST; }   // 讨伐自己的底图（没有城墙），进这个模式才载
   for (let n = 1; n <= 3; n++) for (const v of ['', 'a', 'b']) { const key = 'mon_' + k + n + v; if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } }
@@ -1402,7 +1402,7 @@ function monImgs(k) { const bk = 'bg_' + HMON[k].map; if (!IMG[bk]) { IMG[bk] = 
 // 11-13 Veo 录的逐帧动作（用户：「怪物的战斗动作呢」→「做」）：每个形态一张 6×4 的图集（24 帧：待机、蓄力、出手、收回），一张两千多像素见方，只留当前形态那张，换形态时放掉旧的
 function monSheet(k, n) { for (let m = 1; m <= 3; m++) { const key = 'monv_' + k + m; if (m === n) { if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } } else if (IMG[key] && m < n) { IMG[key].src = ''; delete IMG[key]; } } }
 function huntLv() {
-  const B = modeBases().filter(b => b.lv.id >= 4); if (!B.length) return null; const b = B[B.length - 1], k = huntMon(), M = HMON[k]; monImgs(k);
+  const B = modeBases(); if (!B.length) return null; const b = B[B.length - 1], k = huntMon(), M = HMON[k]; monImgs(k);   // 11-13 用户第四关没过，战役页「看不到」讨伐——门槛和无尽守城一样，打过第三关就开
   return { li: b.i, mon: k, lv: { ...b.lv, mode: 'hunt', mon: k, map: M.map, hpMul: 1, seal: modeSeal('hunt'), name: '讨伐 · ' + M.name, sub: '九十秒，打得越多越好', rules: { timed: { t: HUNT_T, label: '讨伐', text: '时辰到', sub: M.name + '遁走了' } }, waves: [[1, k, 1, 0, 'rand']], tips: [], join: [], wait: 2, tx: 1, charge: undefined, s3: null, reward: null } };
 }
 const monSay = (text, big, row) => { if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: W / 2, y: row ? 458 : 436, text, size: big ? 20 : 16, color: big ? CINNABAR : INK, dur: big ? 1.8 : 1.6 }); };
@@ -6688,7 +6688,7 @@ function drawCamp() {
       pill(W - 92, y + 13, 64, 24, '开打', () => { screen = 'menu'; startMode('endless', 'camp'); }); y += 56; }
     { const ok = huntOpen(), k = huntMon(), M = HMON[k], tr1 = DAILY.huntTier || 0, best = (INV.huntBest || {})[k] || 0; ctx.save(); if (!ok || tr1 >= 3) ctx.globalAlpha = .55; plate(14, y, W - 28, 50); ctx.restore(); uiSeal(36, y + 25, 26, modeSeal('hunt'), '#6a4a14');   // 11-12 每日残局换成讨伐
       uiText('讨伐 · ' + M.name, 56, y + 16, fitSize('讨伐 · ' + M.name, 14, W - 160, 99, FONT), UIC.cream, 'left', FONT, { stroke: false });
-      const s2 = !ok ? '打过第四关开放' : (best ? `最好 ${fmtDmg(best)} · ` : '九十秒比伤害 · ') + (tr1 >= 3 ? '今天三档奖励已领' : `今天已领 ${tr1}/3 档`); uiText(s2, 56, y + 35, fitSize(s2, 10, W - 140, 99, PLAIN), 'rgba(240,217,160,.7)', 'left', PLAIN, { stroke: false });
+      const s2 = !ok ? '打过第三关开放' : (best ? `最好 ${fmtDmg(best)} · ` : '九十秒比伤害 · ') + (tr1 >= 3 ? '今天三档奖励已领' : `今天已领 ${tr1}/3 档`); uiText(s2, 56, y + 35, fitSize(s2, 10, W - 140, 99, PLAIN), 'rgba(240,217,160,.7)', 'left', PLAIN, { stroke: false });
       if (ok) pill(W - 92, y + 13, 64, 24, tr1 >= 3 ? '再打' : '开打', () => { screen = 'menu'; startMode('hunt', 'camp'); }, tr1 < 3); y += 60; } }
   { const id = visitWho(), left = DAILY.visitN - DAILY.visits, vr0 = CAMP.visit && uiNow() - CAMP.visit.t0 < 2.6 ? CAMP.visit : null;   // 出外探访
     ctx.save(); if (!left) ctx.globalAlpha = .5; plate(14, y, W - 28, 58, !!(vr0 && vr0.god)); ctx.restore();
