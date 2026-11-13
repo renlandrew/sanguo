@@ -2001,7 +2001,7 @@ window.EN = {
 "今天的残局奖励已发": "Today's puzzle reward granted",
 "今天已经领过奖励，明天换一局": "Reward already claimed — a new puzzle tomorrow",
 "可以再来，明天换一局": "Try again — a new puzzle tomorrow",
-"每守过三波存一次进度、得精铁": "Saves every 3 waves cleared, with Steel",
+"每守过三波存一次进度": "Saves every 3 waves cleared",
 "今天已扫荡": "swept today",
 "今天可扫荡一次": "sweep ready",
 "重置扫荡": "Reset Sweep",

@@ -19,7 +19,7 @@ T = {
 '今天再斩到 # 得精铁 +#': 'Reach # kills today for Steel +#', '今天再斩到 # 得残页 +#': 'Reach # kills today for Pages +#', '今天的奖励都拿到了': "All of today's rewards earned",
 '残局破了': 'Puzzle solved', '没守住': 'Failed',
 '今天的残局奖励已发': "Today's puzzle reward granted", '今天已经领过奖励，明天换一局': 'Reward already claimed — a new puzzle tomorrow', '可以再来，明天换一局': 'Try again — a new puzzle tomorrow',
-'每守过三波存一次进度、得精铁': 'Saves every 3 waves cleared, with Steel', '已守过 # 波': '# waves cleared', '今天已扫荡': 'swept today', '今天可扫荡一次': 'sweep ready',
+'每守过三波存一次进度': 'Saves every 3 waves cleared', '已守过 # 波': '# waves cleared', '今天已扫荡': 'swept today', '今天可扫荡一次': 'sweep ready',
 '重置扫荡': 'Reset Sweep', '前 # 波的东西全收了': 'Collected everything from the first # waves',
 '从第 # 波打起': 'From wave #', '本局守过 # 波': 'Cleared # waves', '斩敌 #': 'Kills #', '进度存到第 # 波': 'Progress saved: wave #', '进度第 # 波': 'Progress: wave #', '再守过 # 波才存': 'clear # more to save',
 '下局从第 # 波打起': 'Next run starts at wave #', '接着打': 'Continue', '守满五分钟': 'Held five minutes',

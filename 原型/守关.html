@@ -15,7 +15,7 @@
 <body>
 <canvas id="bgv" width="36" height="64" style="display:none"></canvas><canvas id="cv"></canvas>
 <script src="墨流.js?v=20261030"></script>
-<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261112c"><\/script>');</script>
+<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261112d"><\/script>');</script>
 <script>
 // 群雄逐鹿 · 守关原型（10-24）：敌军从上面一波波冲下来，刘关张站在城头各自普攻（10-24 起不设主角），招式按出手顺序轮流放，
 // 杀敌攒军功、升级三选一战法，守住城门过关。规则、数值、关卡见 ../设计/方案初稿.md「守关」一节。
@@ -1335,7 +1335,7 @@ function settleLoot(win) {
 // 无尽守城：一波一波连着打，每守过三波存一次进度、发一次那一档的东西，下局从存的那波接着打；每三十波换一个场景；每天能扫荡一次，把已经存过的各档再收一遍
 // 每日残局：按日期挑一关打过的关，加一条限制（城防只剩四成／敌兵血厚／敌兵急行／不准自动出招）；当天第一次打赢给资历和残页
 const MODE_T = 200, END_N = 8, END_GROW = 1.2, END_SAVE = 3, END_SCENE = 30;   // 一局最多 MODE_T×1.5 = 300 秒；每 3 波一档、每 30 波换场景；主兵每波 8–11 队（×2 人）
-const endPay = c => [['精铁', 1], ...(c % 5 ? [] : [['残页', 1]])];   // 每档（三波）精铁 1，逢第五档再加残页 1
+const endPay = c => [...(c % 4 ? [] : [['精铁', 1]]), ...(c % 20 ? [] : [['残页', 1]])];   // 11-12 经济推演后用户：「降到四档一块」——每四档（12 波）精铁 1，每二十档（60 波）残页 1；原来每档精铁 1、每五档残页 1，到通关多发 680 精铁花不掉
 const CJ_PAY = [['资历', 2], ['残页', 2]];
 const CJ_TWIST = {
   wall:   { name: '城防只剩四成', say: '开局城防只剩四成，守住就算赢', fn: lv => { lv.rules = { ...(lv.rules || {}), wall: 40 }; } },
@@ -6570,7 +6570,7 @@ function drawCamp() {
   if (endlessOpen()) { y += 8; uiText('演武', 18, y + 8, 16, UIC.gold2, 'left', FONT, { stroke: false }); uiText('不花体力', W - 18, y + 8, 12, 'rgba(244,230,196,.6)', 'right', PLAIN, { stroke: false }); y += 22;
     { plate(14, y, W - 28, 50); uiSeal(36, y + 25, 26, modeSeal('endless'), UIC.red);
       const m = INV.endMax || 0, mw = m * END_SAVE, canSw = m > 0 && !DAILY.endSwept; uiText(`无尽守城 · 第 ${mw + 1} 波`, 56, y + 16, 14, UIC.cream, 'left', FONT, { stroke: false, maxW: canSw ? 118 : 180 });
-      const s2 = !m ? '每守过三波存一次进度、得精铁' : DAILY.endSwept ? `已守过 ${mw} 波 · 今天已扫荡` : `已守过 ${mw} 波 · 今天可扫荡一次`; uiText(s2, 56, y + 35, 10, 'rgba(240,217,160,.7)', 'left', PLAIN, { stroke: false, maxW: canSw ? 138 : 190 });
+      const s2 = !m ? '每守过三波存一次进度' : DAILY.endSwept ? `已守过 ${mw} 波 · 今天已扫荡` : `已守过 ${mw} 波 · 今天可扫荡一次`; uiText(s2, 56, y + 35, 10, 'rgba(240,217,160,.7)', 'left', PLAIN, { stroke: false, maxW: canSw ? 138 : 190 });
       if (canSw) pill(W - 160, y + 13, 62, 24, '扫荡', () => { const g = endSweep(); if (g) showReward('重置扫荡 · 无尽守城', [`前 ${mw} 波的东西全收了`], ['guan', 'zhang', 'liu'], true, g); }, false);
       pill(W - 92, y + 13, 64, 24, '开打', () => { screen = 'menu'; startMode('endless'); }); y += 56; }
     { const c = cjOpen() ? cjToday() : null; ctx.save(); if (!c || DAILY.cjWin) ctx.globalAlpha = .55; plate(14, y, W - 28, 50); ctx.restore(); uiSeal(36, y + 25, 26, modeSeal('daily'), '#6a4a14');

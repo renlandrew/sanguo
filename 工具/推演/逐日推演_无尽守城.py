@@ -2,12 +2,13 @@
 看精铁、残页多出多少，兵器、通关天数变不变。数字按守关.html 11-12 现行：体力 120+20+20、打赢一关 10 体力掉精铁 1（刷材料关再掉 1 份专属）、
 杂务 70 体力、资历 16/16/36/48/52/56 且一天只能晋一阶；兵器有钱就升（上限 +10）。首通、功绩、战功星的奖励沿用 逐日推演.py 的估法。
 无尽守城：存的档数 ≈ 2×打过的非斗将关 + 2（机器人第十二关底卡在 65–70 波 ≈ 22 档）；每档精铁 1、逢五档残页 1；第二天起每天扫荡收回全部已存档。
-用法：python3 三国志/工具/推演/逐日推演_无尽守城.py [体力=160/120] [每档精铁=1] [扫荡=1/0]
+用法：python3 三国志/工具/推演/逐日推演_无尽守城.py [体力=160/120] [每次精铁=1] [扫荡=1/0] [几档发一次=4]
 """
 import math, sys
 STA = int(sys.argv[1]) if len(sys.argv) > 1 else 160
 CK_IRON = float(sys.argv[2]) if len(sys.argv) > 2 else 1
 SWEEP = int(sys.argv[3]) if len(sys.argv) > 3 else 1
+CK_EVERY = int(sys.argv[4]) if len(sys.argv) > 4 else 4   # 几档发一次（11-12 定四档一块；原来是 1）
 WPN_IRON = [4, 4, 10, 10, 15, 15, 20, 20, 25, 25]
 MAT_NEED = {6: 2, 7: 2, 8: 3, 9: 3, 10: 4}
 def wpn_cost(k): return dict(精铁=3 * math.ceil(WPN_IRON[k - 1] / 3), 陨铁=1 if k >= 4 and k % 2 == 0 else 0, 专属=3 * MAT_NEED.get(k, 0))
@@ -19,7 +20,7 @@ WIN_WPN = {13: 2, 15: 4, 20: 6, 21: 2, 23: 6, 24: 2, 25: 8, 28: 2, 29: 4, 30: 10
 DUEL = {5, 15, 20, 25, 30}
 def ck_of(cleared): return 0 if cleared < 3 else 2 * (cleared - len([d for d in DUEL if d <= cleared])) + 2
 def ck_pay(a, b):   # 第 a+1…b 档
-    return (b - a) * CK_IRON, len([c for c in range(a + 1, b + 1) if c % 5 == 0])
+    return len([c for c in range(a + 1, b + 1) if c % CK_EVERY == 0]) * CK_IRON, len([c for c in range(a + 1, b + 1) if c % (5 * CK_EVERY) == 0])
 
 def run(endless, days=20):
     inv = dict(精铁=0, 残页=0, 机缘=0, 陨铁=0, 将印=0, 资历=0, 专属=0); fort = 0
