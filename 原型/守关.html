@@ -7257,10 +7257,7 @@ function drawMenu() {
   if (!open1 && MENU.lockT && t - MENU.lockT < 1.8) { const a = clamp((1.8 - (t - MENU.lockT)) / .4, 0, 1); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(20,12,6,.88)'; rr(W / 2 - 90, CARD_Y - 32, 180, 26, 10); ctx.fill();
     uiText('打完第一关「桃园结义」开放', W / 2, CARD_Y - 19, 13, UIC.gold2, 'center', FONT, { lw: 3 }); ctx.restore(); }
   navBtn(330, '系统', navIco('ui_nav_sys'), () => { screen = 'system'; }, false);
-  // 11-12 用户问「从哪里进入无尽模式？」「想办法放首页？」——一颗朱印钮，点了直接开打（先放关卡牌右上方，用户：「那里不好」，挪到右上角月卡下面排成一列），打完回主页；军帐「演武」里那一行照旧
-  if (open1 && endlessOpen()) { const ex = W - 26, ey = MONTH_SHOW ? 82 : 28, br = .5 + .5 * Math.sin(t * 2.6);
-    ctx.save(); ctx.shadowColor = `rgba(255,190,90,${.35 + .3 * br})`; ctx.shadowBlur = 10; uiSeal(ex, ey, 28, modeSeal('endless'), UIC.red); ctx.restore();
-    uiText('无尽守城', ex, ey + 21, 10, UIC.gold2, 'center', FONT, { lw: 3, maxW: 50 }); hit(ex - 24, ey - 18, 48, 46, () => { startMode('endless', 'menu'); }); }
+  // 11-12 首页的无尽守城钮试过两个位置，用户：「放在战役页里面」——挪到战役页底下（lvModeBtns）
   drawMenuTip(t);
   // 右上角月卡
   if (MONTH_SHOW) { const im = IMG.ui_nav_month, cx = W - 26, cy = 28, br = .5 + .5 * Math.sin(t * 2.4); if (ready(im)) { const f = 28 / Math.max(im.width, im.height);   /* 10-25 夜用户：「这有点太大，小一点」 40 → 28 */ ctx.save(); ctx.shadowColor = `rgba(255,200,90,${.35 + .3 * br})`; ctx.shadowBlur = 10; ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); ctx.restore(); } else uiSeal(cx, cy, 22, '月', UIC.red);
@@ -7342,6 +7339,12 @@ function drawLvPop(t) {                                                         
     uiText(why, sx + bw / 2, by + bh + 12, 10, ok ? '#9be0a0' : 'rgba(244,230,196,.55)', 'center', PLAIN, { stroke: false, maxW: 150 });
     if (ok) hit(sx, by, bw, bh, () => { MENU.lvPop = null; sweepLevel(i); }); }
 }
+// 11-12 用户：「放在战役页里面，残是什么？」——战役页底下「返回」两边各一块牌匾，字写全（无尽守城／每日残局），不再只盖一个字的印；打完回战役页
+function lvModeBtns() {
+  if (!endlessOpen()) return;
+  plaque3(8, 590, 98, 34, '无尽守城', () => { startMode('endless', 'levels'); }, true);
+  if (cjOpen()) { ctx.save(); if (DAILY.cjWin) ctx.globalAlpha = .6; plaque3(254, 590, 98, 34, '每日残局', () => { startMode('daily', 'levels'); }, false); ctx.restore(); }
+}
 function drawLevels() {
   drawBg(); const t = uiNow();
   const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, 'rgba(8,5,4,.55)'); bg.addColorStop(1, 'rgba(6,4,3,.9)'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
@@ -7356,7 +7359,7 @@ function drawLevels() {
     if (ready(tim)) draw9(tim, x, y, 108, 30, 90, 90, 0, 0, 30 / 189); else uiPanel(x, y, 108, 30, { r: 15, top: on ? '#c0402a' : '#3a2b1f', bot: on ? '#6e140c' : UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.6)', single: true });
     uiText(nm, x + 54, y + 15, fitSize(nm, 15, 108 - 30 - 4), on ? '#fff2dc' : UIC.cream, 'center', FONT, { stroke: false }); hit(x, y, 108, 30, () => { MENU.seg = k; }); });
   const mim = IMG['map_' + (MENU.seg + 1)];
-  if (ready(mim)) { drawCampaignMap(mim, t); plaque(112, 590, 136, 34, '返回', () => { screen = 'menu'; }, false); drawLvPop(t); if (REWARD) drawReward(); return; }
+  if (ready(mim)) { drawCampaignMap(mim, t); plaque(112, 590, 136, 34, '返回', () => { screen = 'menu'; }, false); lvModeBtns(); drawLvPop(t); if (REWARD) drawReward(); return; }
   LEVELS.forEach((lv, i) => {
     if (Math.floor(i / 10) !== MENU.seg) return; const j = i % 10;
     const x = j % 2 ? 186 : 18, y = 108 + Math.floor(j / 2) * 64, w = 156, h = 58, unlocked = i === 0 || BEST[LEVELS[i - 1].id] || window.__sg.all;
@@ -7373,7 +7376,7 @@ function drawLevels() {
     if (unlocked) hit(x, y, w, h, () => { MENU.lvPop = i; });
   });
   plaque(112, 590, 136, 34, '返回', () => { screen = 'menu'; }, false);
-  drawLvPop(t); if (REWARD) drawReward();
+  lvModeBtns(); drawLvPop(t); if (REWARD) drawReward();
 }
 
 // ---------- 输入 ----------
