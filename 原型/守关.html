@@ -15,7 +15,7 @@
 <body>
 <canvas id="bgv" width="36" height="64" style="display:none"></canvas><canvas id="cv"></canvas>
 <script src="墨流.js?v=20261030"></script>
-<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261110c"><\/script>');</script>
+<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261112"><\/script>');</script>
 <script>
 // 群雄逐鹿 · 守关原型（10-24）：敌军从上面一波波冲下来，刘关张站在城头各自普攻（10-24 起不设主角），招式按出手顺序轮流放，
 // 杀敌攒军功、升级三选一战法，守住城门过关。规则、数值、关卡见 ../设计/方案初稿.md「守关」一节。
@@ -916,7 +916,7 @@ function buildQueue(lv) {
   for (let [t0, kind, n, dur, form, o] of (lv.waves || [])) {
     wi++; o = o || {}; if (!o.lead && !FOES[kind].boss && !FOES[kind].civ) n = Math.max(1, Math.round(n * ENEMY_X * (TUNE.n || 1)));   // 百姓不加倍
     t0 *= TIMEX.v * (lv.tx || 1); dur *= TIMEX.v * (lv.tx || 1);                    // lv.tx：整关出兵时间压缩（前三关 .6，10-26 用户：「前三关太久了」）
-    const ch = picks.includes(wi) ? wi : null, push = (t, x) => q.push({ t, kind, x, g: o.g, lead: !!o.lead, ch });
+    const ch = picks.includes(wi) ? wi : null, push = (t, x) => q.push({ t, kind, x, g: o.g, lead: !!o.lead, ch, hk: o.hk });
     if (o.lead || FOES[kind].boss) { push(t0, HX + R(-40, 40)); continue; }
     const LANE = { L: [30, 120], M: [140, 220], R: [240, 330] }[o.lane];
     if (LANE) { for (let i = 0; i < n; i++) push(t0 + (n > 1 ? dur * i / (n - 1) : 0), R(...LANE)); continue; }
@@ -1228,7 +1228,7 @@ function dailyTick() {
     const gap = DAILY.day ? Math.max(1, dayNum(td) - dayNum(DAILY.day)) : 1, packs = 1 + Math.min(monthLeft() > 0 ? 6 : 2, gap - 1), got = { 精铁: 2 * packs };   // 月卡：补领七天
     INV.it.精铁 += 2 * packs;
     staNow(); INV.sta.v = Math.max(INV.sta.v, STA_MAX); DAILY.staGot = [];   // 点卯：体力补满到 120（领多了的不扣）
-    DAILY.day = td; DAILY.met = {}; DAILY.taskN = 3 * packs; DAILY.tasks = genTasks(td, DAILY.taskN); DAILY.caps = { 精铁: 0 }; DAILY.visits = 0; DAILY.visitN = 2 * packs; DAILY.chores = false; DAILY.cd = CHORES.map(() => false);
+    DAILY.day = td; DAILY.met = {}; DAILY.taskN = 3 * packs; DAILY.tasks = genTasks(td, DAILY.taskN); DAILY.caps = { 精铁: 0 }; DAILY.visits = 0; DAILY.visitN = 2 * packs; DAILY.chores = false; DAILY.cd = CHORES.map(() => false); DAILY.endTier = 0; DAILY.cjWin = false;
     if (DAILY.week !== weekKey(td)) { DAILY.week = weekKey(td); DAILY.weekN = 0; DAILY.weekSeal = false; }
     if (monthLeft() > 0) doChores();                                             // 月卡：日常杂务一上线就做完
     note = { packs, got }; saveInv(); saveDaily();
@@ -1330,6 +1330,87 @@ function settleLoot(win) {
   if (win) { const M = DAILY.met = DAILY.met || {}, have = new Set(M[lv.id] || []); for (const [k, T] of Object.entries(TASKS)) { try { if (!T.gone && T.ok(lv) && T.check(r, G)) have.add(k); } catch (e) {} } M[lv.id] = [...have]; }   // 今天这关做到过哪些军务条件
   saveInv(); saveDaily();
 }
+// ===== 冲关以外的玩法（11-12 用户：「增加每天冲关外的玩法，可以打发下时间」「先做无尽守城加每日残局」）=====
+// 两种都借打过的关当底（兵种、地图、血量、我方等级招式照旧），不花体力、不记星、不碰军务和首通；G.lv.mode 标着，结算走 endMode
+// 无尽守城：打过的最高一关的兵一波比一波多、血一波比一波厚，城破或撑满 5 分钟结束，按斩敌数算；当天斩敌越过一档发一档奖（再打破纪录补发差的那几档）
+// 每日残局：按日期挑一关打过的关，加一条限制（城防只剩四成／敌兵血厚／敌兵急行／不准自动出招）；当天第一次打赢给资历和残页
+const MODE_T = 200;   // ×TIMEX 1.5 = 300 秒（一局不超过 5 分钟）
+const END_TIERS = [[3, '精铁', 1], [6, '精铁', 1], [10, '残页', 1], [15, '精铁', 2], [20, '残页', 2]];   // 当天一局推进几波
+const END_HK = 1, END_N = 8, END_GROW = 1.12, END_CK = [['精铁', 2], ['残页', 1]];   // 每波主兵 8–11 队（×2 人）；每存一次进度（5 波）发 END_CK
+const CJ_PAY = [['资历', 2], ['残页', 2]];
+const CJ_TWIST = {
+  wall:   { name: '城防只剩四成', say: '开局城防只剩四成，守住就算赢', fn: lv => { lv.rules = { ...(lv.rules || {}), wall: 40 }; } },
+  thick:  { name: '敌兵血厚三成', say: '敌兵个个血厚三成，打赢就算过', fn: lv => { lv.hpMul = (lv.hpMul || 1) * 1.3; } },
+  fast:   { name: '敌兵急行军', say: '敌兵走得快三成，别让他们冲到城下', fn: lv => { lv.walk = (lv.walk || 1) * 1.3; } },
+  manual: { name: '不准自动出招', say: '这一局招式只能自己点，敌兵也厚一成半', fn: lv => { lv.noAuto = true; lv.hpMul = (lv.hpMul || 1) * 1.15; } },
+};
+const modeSeal = k => k === 'endless' ? (EN_ON ? '∞' : '守') : (EN_ON ? 'D' : '残');   // 英文印里不放「Hold」那种长字
+const modeBases = () => LEVELS.map((lv, i) => ({ lv, i })).filter(({ lv }) => BEST[lv.id] && lv.kind !== 'duel' && !lv.solo && fighters(lv).length >= 3 && lv.id >= 3);
+const endlessOpen = () => modeBases().length > 0, cjOpen = () => modeBases().some(b => b.lv.id >= 4);
+// 11-12 用户：「如果玩家不断重复之前的简单关，会无聊，应该保持进度，随着玩家强度上升，能持续前进」——第 k 波照第 ⌊k/2⌋+1 个打过的关出兵（兵种、血量），
+// 过了打过的最高关再每波 ×END_GROW；每推进 5 波存一次进度（INV.endCk），下局从那里接着打
+function endTpl() { const out = []; for (const lv of LEVELS) { if (!BEST[lv.id] || lv.kind === 'duel') continue; const ks = [], seen = new Set(); const cnt = {};
+    for (const w of lv.waves || []) { const T = FOES[w[1]], o = w[5] || {}; if (T && !T.boss && !T.civ && !T.duel && !T.taunt && !T.invuln && !o.lead) cnt[w[1]] = (cnt[w[1]] || 0) + w[2]; }
+    const kinds = Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(e => e[0]); if (kinds.length) out.push({ lv, kinds }); }
+  return out; }
+const END_BACK = 6, endStart = () => Math.max(0, (INV.endCk || 0) - END_BACK);   // 从存的进度往回退 6 波开打：一局的战法要边打边拿，直接从最难那波起手上什么都没有
+function endlessLv() {
+  const B = modeBases(), b = B[B.length - 1], base = b.lv, tp = endTpl(), n = tp.length, w0 = window.__sg && window.__sg.endFrom != null ? window.__sg.endFrom : endStart(), forms = ['rand', 'wedge', 'line'], waves = [];
+  for (let q = 0; q < 40; q++) { const k = w0 + q, P = tp[Math.min(n - 1, k >> 1)], grow = k >= 2 * n ? Math.pow(END_GROW, k - 2 * n + 1) : 1, hk = (P.lv.hpMul || 1) * END_HK * grow, t0 = q * WAVE_LEN;
+    waves.push([t0, P.kinds[0], END_N + (k % 4), q % 3 ? 0 : 6, forms[q % 3], { hk }]);
+    if (P.kinds.length > 1) waves.push([t0 + 3, P.kinds[1 + (k % (P.kinds.length - 1))], 3 + (k % 3), 4, 'rand', { hk }]); }
+  return { li: b.i, lv: { ...base, mode: 'endless', w0, hpMul: 1, seal: modeSeal('endless'), name: '无尽守城', sub: '敌军一波强过一波，能撑多久', rules: { timed: { t: MODE_T, label: '守城', text: '守满五分钟', sub: '敌军退了' } }, waves, tips: [], join: [], wait: 3, tx: 1, charge: undefined, s3: null, reward: null } };
+}
+function cjToday() {
+  const B = modeBases().filter(b => b.lv.id >= 4); if (!B.length) return null;
+  const day = dayStr(); let sd = 7; for (const ch of day) sd = (sd * 131 + ch.charCodeAt(0)) >>> 0; const rn = () => ((sd = (sd * 1103515245 + 12345) >>> 0) / 4294967296);
+  const pool = B.slice(-8), keys = Object.keys(CJ_TWIST), F = window.__sg && window.__sg.cjForce; let b = pool[Math.floor(rn() * pool.length)], tw = keys[Math.floor(rn() * keys.length)];
+  if (F) { b = B.find(x => x.i === F.li) || b; tw = F.tw || tw; }   // 推演用：指定哪关、哪条限制
+  const lv = { ...b.lv, rules: { ...(b.lv.rules || {}) }, mode: 'daily', seal: modeSeal('daily'), twist: tw, name: '每日残局 · ' + b.lv.name, sub: CJ_TWIST[tw].name, tips: [], reward: null };
+  CJ_TWIST[tw].fn(lv); return { li: b.i, lv, base: b.lv, tw };
+}
+let MODE = null;
+function startMode(k) {
+  const m = k === 'endless' ? endlessLv() : cjToday(); if (!m) return; MODE = k; BACKTO = 'camp'; PREP = null; startLevel(m.li, m.lv);
+}
+function endMode(win, why) {
+  G.state = 'over'; sfx(win ? 'win' : 'lose'); const lv = G.lv, r = G.result = { win, why, mode: lv.mode, time: G.t, kills: G.killed, wave: (lv.w0 || 0) + Math.max(1, G.wave + 1), adv: G.passed || 0, pay: [] };
+  G.fx = G.fx.filter(f => !['wave', 'banner', 'txt', 'leak'].includes(f.k)); if (G.sim) return;
+  const pay = (k, n) => { if (k === '资历') addPrep(n); else INV.it[k] = (INV.it[k] || 0) + n; const o = r.pay.find(p => p[0] === k); if (o) o[1] += n; else r.pay.push([k, n]); };
+  if (lv.mode === 'endless') { const reached = (lv.w0 || 0) + r.adv, ck0 = INV.endCk || 0, ck1 = Math.max(ck0, Math.floor(reached / 5) * 5);
+    r.best0 = INV.endBest || 0; INV.endBest = Math.max(r.best0, reached); r.rec = reached > r.best0; r.ck0 = ck0; r.ck = ck1; INV.endCk = ck1;
+    for (let c = ck0 + 5; c <= ck1; c += 5) for (const [k, n] of END_CK) pay(k, n);
+    const t0 = DAILY.endTier || 0; let t1 = t0; while (t1 < END_TIERS.length && r.adv >= END_TIERS[t1][0]) { pay(END_TIERS[t1][1], END_TIERS[t1][2]); t1++; } DAILY.endTier = Math.max(t0, t1); r.tier = DAILY.endTier; }
+  else if (win && !DAILY.cjWin) { DAILY.cjWin = true; for (const [k, n] of CJ_PAY) pay(k, n); r.first = true; }
+  saveInv(); saveDaily();
+}
+function drawModeResult() {
+  const r = G.result; r.t0 ??= uiNow(); const t = uiNow() - r.t0, al = clamp((t - .5) / .3, 0, 1), endless = r.mode === 'endless';
+  const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, `rgba(8,5,4,${Math.min(.6, t * 2)})`); bg.addColorStop(.4, `rgba(10,6,5,${Math.min(.86, t * 2.4)})`); bg.addColorStop(1, `rgba(6,4,3,${Math.min(.97, t * 3)})`); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  const good = endless ? r.kills > 0 : r.win, cu = clamp(t / .3, 0, 1), sc = 1.5 - .5 * ease(cu), cy = 132;
+  const gl = ctx.createRadialGradient(W / 2, cy, 0, W / 2, cy, 170); gl.addColorStop(0, good ? 'rgba(255,196,90,.32)' : 'rgba(190,46,28,.24)'); gl.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gl; ctx.fillRect(0, 0, W, 320);
+  ctx.save(); ctx.globalAlpha = cu; ctx.translate(W / 2, cy); ctx.scale(sc, sc); uiSeal(0, 0, 70, endless ? modeSeal('endless') : r.win ? (EN_ON ? 'D' : '破') : '败', good ? UIC.red : '#5a1d12'); ctx.restore();
+  uiText(G.lv.name, W / 2, 196, 22, UIC.gold2, 'center', FONT, { lw: 4 });
+  ctx.save(); ctx.globalAlpha = al;
+  let y = 232;
+  if (endless) {
+    const head = r.win ? '守满五分钟' : r.why === '退军了' ? '退军了' : '城破了';
+    uiText(head, W / 2, y, 14, 'rgba(244,230,196,.75)', 'center', PLAIN, { stroke: false }); y += 44;
+    segText(EN_ON ? [['Wave', UIC.cream], [' ' + r.wave, '#ffe08a']] : [['第', UIC.cream], [' ' + r.wave + ' ', '#ffe08a'], ['波', UIC.cream]], W / 2, y, 30, FONT, { lw: 5 }); y += 30; uiText('斩敌 ' + r.kills, W / 2, y, 13, UIC.cream, 'center', PLAIN, { stroke: false }); y += 22;
+    uiText(`本局守过 ${r.adv} 波 · ${Math.floor(r.time / 60)}:${String(Math.floor(r.time % 60)).padStart(2, '0')}`, W / 2, y, 13, UIC.cream, 'center', PLAIN, { stroke: false }); y += 24;
+    uiText(r.ck > r.ck0 ? `进度存到第 ${r.ck} 波 · 下局从第 ${endStart() + 1} 波打起` : `进度第 ${r.ck} 波 · 下局从第 ${endStart() + 1} 波打起`, W / 2, y, 13, r.ck > r.ck0 ? '#ffe08a' : 'rgba(244,230,196,.6)', 'center', r.ck > r.ck0 ? FONT : PLAIN, { lw: 3 }); y += 34;
+    const nx = END_TIERS[r.tier]; uiText(nx ? `今天一局守过 ${nx[0]} 波得${nx[1]} +${nx[2]}` : '今天的奖励都拿到了', W / 2, y, 12, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false }); y += 16;
+  } else {
+    uiText(G.lv.sub, W / 2, y, 14, '#ff9a7a', 'center', FONT, { lw: 3 }); y += 40;
+    uiText(r.win ? '残局破了' : r.why === '退军了' ? '退军了' : '没守住', W / 2, y, 28, r.win ? '#ffe08a' : UIC.red2, 'center', FONT, { lw: 5 }); y += 40;
+    uiText(r.win ? (r.first ? '今天的残局奖励已发' : '今天已经领过奖励，明天换一局') : '可以再来，明天换一局', W / 2, y, 12, 'rgba(244,230,196,.65)', 'center', PLAIN, { stroke: false }); y += 20;
+  }
+  if (r.pay.length) { uiText('本局奖励', W / 2, y + 14, 12, UIC.gold2, 'center', FONT, { stroke: false }); y += 22; const n = r.pay.length, x0 = W / 2 - (n - 1) * 36; r.pay.forEach(([k, v], i) => { const x = x0 + i * 72; if (k === '资历') uiSeal(x, y + 30, 26, '资', '#6a4a14', true); else drawItemIcon(k, x, y + 30, 32); uiText(`${k} +${v}`, x, y + 60, 12, UIC.cream, 'center', PLAIN, { stroke: false }); }); }
+  ctx.restore();
+  const yb = H - 54, back = () => { G = null; MODE = null; BACKTO = null; screen = 'camp'; CAMP.t0 = uiNow(); }, again = () => { const k = r.mode; G = null; startMode(k); };
+  plaque(54, yb, 120, 46, '再来', again, false, al); plaque(186, yb, 120, 46, '返回', back, true, al);
+}
+
 // 这一关上阵时各人按几级算：机器人按推荐等级；玩家按存档；网址带 ?all 跳关试玩时，低于推荐的按推荐算（不然跳到后面会打不过）
 const levelFor = (i, id, sim) => sim || !ROSTER[id] ? EXPECT[i][id] : window.__sg.all ? Math.max(ROSTER[id].lv, EXPECT[i][id]) : ROSTER[id].lv;
 
@@ -1343,10 +1424,11 @@ let ML = null;
 // 张角身后的墨烟（10-25 用户：「背景白色有点太厚，可以改为那种墨色的烟？有点像之前我们做的青龙斩那种墨」）：图集外那圈纸色光晕去掉了（工具/veo/dehalo_sheet.py），
 // 换成第二层墨流（黑墨调色，和青龙斩的青金墨分开）画在敌人后面：从他身上往外、往上冒一缕缕墨烟，约一秒淡掉
 let MLB = null;
-function startLevel(i) {
+function startLevel(i, lvX) {
   if (!window.__sg.simming) demoEv('start', LEVELS[i].id);
   sheetPrune(i); if (!window.__sg.simming) { MAPL = {}; SPR = {}; SPRHIT = {}; for (const k in SPDV) delete SPDV[k]; INKBG.clear(); G && (G.spW = null); }   // 上一关的垫底画布、染色副本放掉 if (ML) ML.clear(); if (MLB) MLB.clear();
-  const lv = LEVELS[i], RU = lv.rules || {};
+  const lv = lvX || LEVELS[i], RU = lv.rules || {};   // lvX：无尽守城、每日残局借第 i 关改出来的关
+  if (!lv.mode) MODE = null;
   if (!window.__sg.simming) { CUR_LV = i; const js = JSON.stringify(lv); for (const k in BGC) if (k !== lv.map && k !== MAP_ALIAS[lv.map]) delete BGC[k]; if (!BGC[lv.map]) ready(IMG['bg_' + lv.map]); if (!IMG['bg_' + lv.map] && MAP_ALIAS[lv.map] && !BGC[MAP_ALIAS[lv.map]]) ready(IMG['bg_' + MAP_ALIAS[lv.map]]);   // 用到才加载的图：开打前先把这关的兵种图集、底图、敌将华彩叫起来，免得头几个兵看不见
     for (const [k, T] of Object.entries(FOES)) if (js.includes('"' + k + '"')) for (const n of [T.sheet || T.alt, T.sheet && T.sheet + '_back', ...(T.sheet === 'qibing' ? [1, 2, 3, 4, 5, 6, 7].map(d => 'qibing_' + d) : [])]) if (n) { ready(IMG[n]); if (BVFX[k]) ready(BVFX[k].im); }
     { const aw = (INV.up || {}).awake ? INV.awake || 'guan' : null; if (aw && ULT[aw]) ready(ultIm(aw, true)); for (const k of ULT_FOE) if (js.includes('"' + k + '"')) ready(ULT[k].im); }   // 这关会演的大招特写
@@ -1356,7 +1438,7 @@ function startLevel(i) {
   G = { li: i, lv, RU, t: 0, foes: [], shots: [], fx: [], decals: [], logs: [], st: freshStats(), wall: 100, wallMax: 100, exp: 0, rank: 0, perks: {},
     castN: 0, advLog: [], queue, chg, qi: 0, total: queue.filter(q => !FOES[q.kind].civ).length, saved: 0, civLost: 0, misfire: 0, civTotal: queue.filter(q => FOES[q.kind].civ).length, wave: -1, waveT0: 0, waveClear: null, nWaves: queue.nWaves || 0, killed: 0, leaked: 0, routed: 0, order: [...lv.slots, null, null].slice(0, NS), ready: Array(NS).fill(0), turn: 0, cast: null, atkT: [.5, .8, 1.1, 1.4, 1.7], anim: Array(NS).fill(null), lastAtk: [], parts: [], vt: 0, logT: 0, nuT: 0, freeze: 0, shake: 0,
     tips: lv.tips.map(([t, s]) => [t * TIMEX.v, s]), tip: null, joins: lv.join.map(([t, id]) => [t * TIMEX.v, id]), state: 'play', pick: null, sel: -1, focus: null, endT: 0, result: null,
-    seal: Array(NS).fill(0), windT: 0, shieldT: 0, shieldCd: 0, counterT: 0, casts: RU.casts || 0, autoCast: lv.id <= 3 || !!INV.autoCast, volT: RU.volley ? 4 : 0, stabs: 0, rageT: 0, wanN: 0, seq: [], jiNext: false, roarT: -9, huts: (RU.huts || []).map(([x, y]) => ({ x, y, lit: false, age: 0, burnt: false, spread: false })) };
+    seal: Array(NS).fill(0), windT: 0, shieldT: 0, shieldCd: 0, counterT: 0, casts: RU.casts || 0, autoCast: !lv.noAuto && (lv.id <= 3 || !!INV.autoCast), volT: RU.volley ? 4 : 0, stabs: 0, rageT: 0, wanN: 0, seq: [], jiNext: false, roarT: -9, huts: (RU.huts || []).map(([x, y]) => ({ x, y, lit: false, age: 0, burnt: false, spread: false })) };
   // 五维（10-25）：只看比一级多出来的那部分，一级时和原来一样
   const sim = !!window.__sg.simming, team = fighters(lv); G.fighters = team; G.lvs = {}; G.pow = {}; G.lead = {}; G.cdg = {}; G.dmgBy = { guan: 0, zhang: 0, liu: 0, zhao: 0 }; G.dmgSk = { guan: 0, zhang: 0, liu: 0, zhao: 0 };
   let pol = 0, cha = 0;
@@ -1412,7 +1494,7 @@ function spawn(q, y) {
   if (G.RU.pass && q.lane !== false) q = { ...q, x: HX + (q.x - HX) * .62 };
   if (T.civ && y == null) y = R(250, 320);                                            // 百姓从半路的废墟里跑出来                     // 关隘：两边是山崖，敌人挤在中间
   // 10-29 敌军师分兵用计：普通兵血 ×0.92（机器人不会看提醒，不补就有关输）
-  const hp = T.hp * HPX * HP_X * (G.lv.hpMul || 1) * (TUNE.hp || 1) * (G.foeCs && !T.boss && !T.duel ? .92 : 1), e = { kind: q.kind, x: q.x, y: y ?? HZ + R(0, 6), hp, max: hp, stun: 0, knock: 0, burnT: 0, burnDps: 0, hitT: 0, f: R(0, 4), shootT: R(.5, 1.5), jit: R(-18, 18), dead: false, atk: false,
+  const hp = T.hp * HPX * HP_X * (G.lv.hpMul || 1) * (TUNE.hp || 1) * (G.foeCs && !T.boss && !T.duel ? .92 : 1) * (q.hk || 1), e = { kind: q.kind, x: q.x, y: y ?? HZ + R(0, 6), hp, max: hp, stun: 0, knock: 0, burnT: 0, burnDps: 0, hitT: 0, f: R(0, 4), shootT: R(.5, 1.5), jit: R(-18, 18), dead: false, atk: false,
     duel: !!T.duel, g: q.g, lead: !!q.lead, w: q.w ?? -1, ch: q.ch ?? null, chargeT: 0, healT: R(1, 3), windT2: (T.wind || 0) * .6, guardT: 2, shield: 0, ph: R(0, 6.28) };
   const ms = MAP_SPAWN[G.lv.map]; if (ms && y == null) e.y = ms.y + R(0, 4);
   if (q.lane !== false) e.x = VPX + (q.x - VPX) * depth(e.y);
@@ -1512,12 +1594,14 @@ function stepCharge() {
     }
   }
 }
+const waveCn = n => { const D = '零一二三四五六七八九', a = Math.floor(n / 10), b = n % 10; return n < 10 ? D[n] : n >= 100 ? String(n) : (a > 1 ? D[a] : '') + '十' + (b ? D[b] : ''); };   // 无尽守城过了十五波
 function nextWave() {
   G.wave = G.queue[G.qi].w; G.waveT0 = G.t; G.waveClear = null; (G.waveLog = G.waveLog || []).push([G.t, G.wave]);
-  const last = G.wave === G.nWaves - 1; if (G.nWaves > 1) sfx('horn'); if (G.nWaves > 1) G.fx.push({ k: 'wave', t: 0, dur: 1.6, text: last ? '最后一波' : '第' + CN[G.wave] + '波', last });
+  const last = G.wave === G.nWaves - 1; if (G.nWaves > 1) sfx('horn'); if (G.nWaves > 1) G.fx.push({ k: 'wave', t: 0, dur: 1.6, text: last ? '最后一波' : '第' + (G.lv.w0 ? waveCn(G.lv.w0 + G.wave + 1) : CN[G.wave] || waveCn(G.wave + 1)) + '波', last });
   if (last && G.nWaves > 1 && !G.sim) G.waveHold = { t: 0, dur: 1.6 };   // 11-02 用户：「最后一波出现时游戏要暂停」「那个字出来时」——横幅演完前战场停住
 }
 function stepWaves() {
+  if (G.lv.mode === 'endless' && !G.timedDone && G.wave >= 0) { let p = G.qi >= G.queue.length || G.queue[G.qi].w !== G.wave ? G.wave + 1 : G.wave; for (const e of G.foes) if (!e.dead && !e.rout && e.w >= 0 && e.w < p) p = e.w; G.passed = p; }   // 无尽守城：清干净了几波（超时压上来的不算）
   if (G.slowT > 0) { G.waveT0 += DT; if (G.waveClear != null) G.waveClear += DT; return; }   // 缓兵之计：援军也停下
   if (G.qi >= G.queue.length) return;
   if (G.wave < 0) nextWave();
@@ -1715,7 +1799,7 @@ function goalLines(lv, amb) {
     ['★★', wall + (cart ? '和' + (lv.rules.cart.label || '车驾') : '') + '都剩一半以上'],
     ['★★★', '两星之上，再' + star3(lv, amb).text]];
 }
-function showGoals() { if (!G) return; G.teach = { key: null, title: '本关目标', goals: goalLines(G.lv, G.amb), t0: uiNow() }; }
+function showGoals() { if (!G) return; if (G.lv.mode) { G.teach = { key: null, title: G.lv.mode === 'endless' ? '无尽守城' : '每日残局 · ' + CJ_TWIST[G.lv.twist].name, text: G.lv.mode === 'endless' ? '每一波照一关的敌军出兵，越往后越强。每推进五波存一次进度，下局从那里接着打；城破或守满五分钟结束' : CJ_TWIST[G.lv.twist].say + '。今天第一次打赢给资历和残页', t0: uiNow() }; return; } G.teach = { key: null, title: '本关目标', goals: goalLines(G.lv, G.amb), t0: uiNow() }; }
 function teach(key) {
   if (G.sim || window.__sg.simming || window.__sg.auto || !TEACH[key]) return; INV.taught = INV.taught || {}; if (INV.taught[key] || G.teach) return;
   G.teach = { key, title: TEACH[key][0], text: TEACH[key][1], t0: uiNow() };
@@ -1732,7 +1816,7 @@ function drawTeach() {
   ctx.restore();
 }
 function step(dt) {
-  if (!G.sim && !G.goal0) { G.goal0 = true; if (!BEST[G.lv.id]) showGoals(); }   // 第一次打这关：开战先亮本关目标
+  if (!G.sim && !G.goal0) { G.goal0 = true; if (!BEST[G.lv.id] || G.lv.mode) showGoals(); }   // 第一次打这关：开战先亮本关目标
   if (!G.sim && !G.teach0 && !G.teach) { G.teach0 = true; teach({ 1: 'basic', 2: 'skill', 4: 'manual', 5: 'duel' }[G.lv.id]); }
   if (!G.sim && G.foeCs && !G.csShown && !G.teach && !window.__sg.auto) { G.csShown = true; foeTacIntro(); }   // 敌军师：每局开战前报一次（看破了报计，看不破说看不透）
   if (G.paused || G.panel || G.teach) return;                                       // 暂停、看军功、教学说明时整个战场停住
@@ -2550,6 +2634,7 @@ function drawAmbushBtn() {
 // 11-02 用户：「点击退军显示失败的界面，也不扣体力」——退军按打输结算（出结算页、标题「退军了」，不给经验、不记星；打仗本来就不花体力）
 function retreat() { if (!G) return; if (G.state === 'play' || G.state === 'pick') { G.pick = null; G.state = 'play'; G.teach = null; G.ult = null; end(false, '退军了'); } else { screen = 'menu'; G = null; } }
 function end(win, why) {
+  if (G.lv.mode) { endMode(win, why); return; }
   G.state = 'over'; sfx(win ? 'win' : 'lose'); const achOk0 = G.sim ? null : new Set(achList().filter(a => a.ok).map(a => a.id));   // 这局之前已达成的功绩（结算页只报新达成的）
   const frac = Math.min(G.wall / G.wallMax, G.cart && !G.RU.cart.optional ? G.cart.hp / G.cart.max : 1);
   let stars = win ? 1 + (frac >= .5) : 0; const s3 = star3(G.lv, G.amb), ok3 = win && !!s3.check({ win, frac }, G);
@@ -5246,12 +5331,12 @@ function drawFocusChip(by) {
 function drawHud() {
   // 顶栏、底栏、血条改成简洁版（10-25 用户：「btn 不要过于繁杂，会感觉堆在一起」「图2就繁杂了」）：乌漆一块，只下沿一条细金线；条是细金边圆角槽，不再带祥云
   if (ready(IMG.ui2_top)) draw9(IMG.ui2_top, -24, -6, W + 48, TOP - 2, 40, 40, 8, 12, .5); else uiPanel(-4, -4, W + 8, TOP - 10, { r: 0, alpha: .92 });
-  uiSeal(24, 30, 32, CNUM(lvNo(G.lv)), G.lv.kind === 'duel' ? '#8a1c10' : UIC.red);
+  uiSeal(24, 30, 32, G.lv.mode ? G.lv.seal : CNUM(lvNo(G.lv)), G.lv.kind === 'duel' ? '#8a1c10' : UIC.red);
   uiText(G.lv.name, 46, 24, G.lv.name.length > 5 ? 20 : 24, UIC.cream, 'left', FONT, { glow: 'rgba(242,190,90,.35)' });
-  uiText(CHAP[chOf(G.lv)].no + ' ' + CHAP[chOf(G.lv)].name, 46, 50, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false, maxW: 140 });   // 11-02 用户：「第几波就在左上或者右上角想办法」——波数挪到战场左上角（下面 st 那段）
-  const left = Math.max(0, G.total - G.killed - G.leaked - (G.routed || 0));
+  uiText(G.lv.mode ? G.lv.sub : CHAP[chOf(G.lv)].no + ' ' + CHAP[chOf(G.lv)].name, 46, 50, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false, maxW: 140 });   // 11-02 用户：「第几波就在左上或者右上角想办法」——波数挪到战场左上角（下面 st 那段）
+  const endl = G.lv.mode === 'endless', left = Math.max(0, G.total - G.killed - G.leaked - (G.routed || 0)), barF = endl ? Math.max(0, 1 - G.t / (MODE_T * TIMEX.v)) : left / Math.max(1, G.total), barT = endl ? '斩敌 ' + G.killed : '敌 ' + left;   // 无尽守城：条是剩下的时间，字写斩了几个
   if (ready(IMG.ui2_slot)) {                                                      // 细金边槽（凹槽挖空对准条），敌军数压在条上
-    const k = 18 / 33; uiBar('foe', HB_X + 5 * k, 13 + 6 * k, HB_W - 12 * k, 20 * k, left / Math.max(1, G.total), '#8a1a10', '#e2563a', { edge: 'rgba(0,0,0,0)' }); draw9(IMG.ui2_slot, HB_X, 13, HB_W, 18, 18, 18, 0, 0, k); uiText('敌 ' + left, HB_X + HB_W / 2, 22, 11, UIC.cream, 'center', PLAIN, { maxW: HB_W - 8 });
+    const k = 18 / 33; uiBar('foe', HB_X + 5 * k, 13 + 6 * k, HB_W - 12 * k, 20 * k, barF, '#8a1a10', '#e2563a', { edge: 'rgba(0,0,0,0)' }); draw9(IMG.ui2_slot, HB_X, 13, HB_W, 18, 18, 18, 0, 0, k); uiText(barT, HB_X + HB_W / 2, 22, 11, UIC.cream, 'center', PLAIN, { maxW: HB_W - 8 });
   } else { uiText('敌', 190, 22, 15, UIC.red2, 'center'); uiBar('foe', 202, 15, 96, 12, left / Math.max(1, G.total), '#8a1a10', '#e2563a'); uiText(String(left), 302, 21, 12, UIC.cream, 'left', PLAIN); }
   // 军功：一个小圆徽章写等级，旁边金条
   const gArt = ready(IMG.ui2_slot), k2 = 15 / 33;
@@ -5280,7 +5365,7 @@ function drawHud() {
   if (G.flags) st.push(['将旗 ' + G.flags.filter(f => f.up).length + '/' + G.flags.length, UIC.cream]);
   if (G.cart && G.cart.hp > 0) st.push([(G.cart.label || (G.cart.kind === 'ram' ? '冲车' : '车驾')) + ' ' + Math.ceil(G.cart.hp * SHOWX) + ' · ' + Math.round((G.cart.y - G.RU.cart.y0) / (G.RU.cart.y1 - G.RU.cart.y0) * 100) + '%', G.cart.hp < G.cart.max * .35 ? UIC.red2 : UIC.cream]);
   const by = G.boss && !G.boss.dead ? TOP + 30 : TOP - 4;
-  if (G.nWaves > 1) { const t = `第 ${Math.max(1, G.wave + 1)}/${G.nWaves} 波`; ctx.font = `12px ${PLAIN}`; const w = ctx.measureText(t).width + 22; uiPanel(8, by + 4, w, 19, { r: 9.5, single: true, lw: 1, alpha: .86 }); uiText(t, 8 + w / 2, by + 14, 12, UIC.gold2, 'center', PLAIN, { stroke: false }); }   // 波数：战场左上角一块小牌，和右边的状态小牌同一排
+  if (G.nWaves > 1) { const t = endl ? `第 ${(G.lv.w0 || 0) + Math.max(1, G.wave + 1)} 波` : `第 ${Math.max(1, G.wave + 1)}/${G.nWaves} 波`; ctx.font = `12px ${PLAIN}`; const w = ctx.measureText(t).width + 22; uiPanel(8, by + 4, w, 19, { r: 9.5, single: true, lw: 1, alpha: .86 }); uiText(t, 8 + w / 2, by + 14, 12, UIC.gold2, 'center', PLAIN, { stroke: false }); }   // 波数：战场左上角一块小牌，和右边的状态小牌同一排
   const fy = drawFocusChip(by) ? 32 : 0;                                        // 点中的敌人：右上角一块小牌（头像 + 名字），状态小牌排在它下面
   G.hudChips = Math.max(Math.ceil((fy + st.length * 22) / 22), G.nWaves > 1 ? 1 : 0);   // 提示卷轴挪到这几块小牌下面，不压住
   st.forEach(([t, c], k) => { ctx.font = `12px ${PLAIN}`; const w = ctx.measureText(t).width + 22; uiPanel(W - w - 8, by + 4 + fy + k * 22, w, 19, { r: 9.5, single: true, lw: 1, alpha: .86 }); uiText(t, W - 8 - w / 2, by + 14 + fy + k * 22, 12, c, 'center', PLAIN, { stroke: false }); });
@@ -5501,7 +5586,7 @@ function drawBattleBtns() {
   // 暂停挪到战场右边、城墙上面（10-25 夜用户圈的位置）；有军师站城头时放在军师上面。暂停上面一颗二倍速，第五关起才有（10-25 夜用户：「暂停上面再来个2倍速，但第五关才开启」）
   const px = W - 24, py = G.adv ? WALL_Y - 128 : WALL_Y - 26;
   roundBtn(px, py, 16, '', '', () => { G.paused = true; }, false); ctx.fillStyle = UIC.gold2; ctx.fillRect(px - 5, py - 6, 3, 12); ctx.fillRect(px + 2, py - 6, 3, 12);
-  if (G.lv.id >= 4 && !G.RU.casts) { const on = !!G.autoCast, ay = py - (spdOpen() ? 84 : 42); ctx.save(); if (on) { ctx.shadowColor = 'rgba(255,200,90,.7)'; ctx.shadowBlur = 12; } roundBtn(px, ay, 16, '', '', () => { G.autoCast = INV.autoCast = !on; saveInv(); }, false); ctx.restore();   // 自动出招开关
+  if (G.lv.id >= 4 && !G.RU.casts && !G.lv.noAuto) { const on = !!G.autoCast, ay = py - (spdOpen() ? 84 : 42); ctx.save(); if (on) { ctx.shadowColor = 'rgba(255,200,90,.7)'; ctx.shadowBlur = 12; } roundBtn(px, ay, 16, '', '', () => { G.autoCast = INV.autoCast = !on; saveInv(); }, false); ctx.restore();   // 自动出招开关
     uiText('自动', px, ay + 1, 11, on ? UIC.gold2 : 'rgba(244,230,196,.55)', 'center', PLAIN, { lw: 3 }); }
   if (spdOpen()) { const on = (INV.spd || 1) > 1, sy = py - 42; ctx.save(); if (on) { ctx.shadowColor = `rgba(255,200,90,${.5 + .3 * Math.sin(uiNow() * 4)})`; ctx.shadowBlur = 12; } roundBtn(px, sy, 16, '', '', () => { INV.spd = on ? 1 : 2; saveInv(); }, false); ctx.restore();
     uiText(on ? '×2' : '×1', px, sy + 1, 12, on ? UIC.gold2 : UIC.cream, 'center', PLAIN, { lw: 3 }); }
@@ -6133,6 +6218,7 @@ function drawGainCard(g, x, y, w, h, tt, win, top) {
   ctx.restore();
 }
 function drawResult() {
+  if (G.result.mode) { drawModeResult(); return; }
   const r = G.result; r.t0 ??= uiNow(); const t = uiNow() - r.t0, win = r.win, gains = r.gains || []; if (r.story && !r.storyPre) { r.storyPre = 1; storyPre(r.story); }   // 剧情图趁结算时先下载
   // 整屏压暗：上面透一点战场，越往下越黑
   const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, `rgba(8,5,4,${Math.min(.6, t * 2)})`); bg.addColorStop(.4, `rgba(10,6,5,${Math.min(.84, t * 2.4)})`); bg.addColorStop(1, `rgba(6,4,3,${Math.min(.97, t * 3)})`);
@@ -6479,6 +6565,16 @@ function drawCamp() {
     if (t.done) uiSeal(W - 42, y + 20, 26, '毕', UIC.red, true); else pill(W - 92, y + 8, 64, 24, '去打', () => { screen = 'menu'; BACKTO = 'camp'; openLevel(li); });
   });
   let y = 264 + TOPY + (ts.length ? shown.length * 44 : 92);
+  // 11-12 冲关以外的玩法：无尽守城、每日残局，各一行（不花体力）
+  if (endlessOpen()) { y += 8; uiText('演武', 18, y + 8, 16, UIC.gold2, 'left', FONT, { stroke: false }); uiText('不花体力', W - 18, y + 8, 12, 'rgba(244,230,196,.6)', 'right', PLAIN, { stroke: false }); y += 22;
+    { plate(14, y, W - 28, 50); uiSeal(36, y + 25, 26, modeSeal('endless'), UIC.red);
+      uiText('无尽守城', 56, y + 16, 14, UIC.cream, 'left', FONT, { stroke: false }); const nx = END_TIERS[DAILY.endTier || 0];
+      const s2 = `进度第 ${INV.endCk || 0} 波 · ` + (nx ? `今天一局守过 ${nx[0]} 波得${nx[1]} +${nx[2]}` : '今天奖励已领完'); uiText(s2, 56, y + 35, fitSize(s2, 10, W - 140, 99, PLAIN), 'rgba(240,217,160,.7)', 'left', PLAIN, { stroke: false });
+      pill(W - 92, y + 13, 64, 24, '开打', () => { screen = 'menu'; startMode('endless'); }); y += 56; }
+    { const c = cjOpen() ? cjToday() : null; ctx.save(); if (!c || DAILY.cjWin) ctx.globalAlpha = .55; plate(14, y, W - 28, 50); ctx.restore(); uiSeal(36, y + 25, 26, modeSeal('daily'), '#6a4a14');
+      uiText(c ? '每日残局 · ' + c.base.name : '每日残局', 56, y + 16, fitSize(c ? '每日残局 · ' + c.base.name : '每日残局', 14, W - 160, 99, FONT), UIC.cream, 'left', FONT, { stroke: false });
+      const s2 = !c ? '打过第四关开放' : CJ_TWIST[c.tw].name + (DAILY.cjWin ? ' · 今天已破' : ' · 打赢得资历 +2、残页 +2'); uiText(s2, 56, y + 35, fitSize(s2, 10, W - 140, 99, PLAIN), 'rgba(240,217,160,.7)', 'left', PLAIN, { stroke: false });
+      if (c) pill(W - 92, y + 13, 64, 24, DAILY.cjWin ? '再打' : '开打', () => { screen = 'menu'; startMode('daily'); }, !DAILY.cjWin); y += 60; } }
   { const id = visitWho(), left = DAILY.visitN - DAILY.visits, vr0 = CAMP.visit && uiNow() - CAMP.visit.t0 < 2.6 ? CAMP.visit : null;   // 出外探访
     ctx.save(); if (!left) ctx.globalAlpha = .5; plate(14, y, W - 28, 58, !!(vr0 && vr0.god)); ctx.restore();
     ctx.save(); rr(22, y + 6, 32, 32, 6); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], 22, y + 6, 32, 32); ctx.restore();
@@ -7319,6 +7415,8 @@ window.__sg = {
           this.forceC = null; takePerk(autoPick()); } else step(DT); n++; } }
     this.seed = 0; this.auto = false; return Object.fromEntries(Object.entries(out).map(([k, [a, b]]) => [k, '荐错 ' + Math.round(a / b * 100) + '% (' + b + ')'])); }, ult: (k, foe) => playUlt(k, foe, true), get inv() { return INV; }, get daily() { return DAILY; }, get cloud() { return { on: CLOUD_ON, ns: CLOUD_NS, api: CLOUD_API, framed: FRAMED, st: CLOUD.st, me: CLOUD.me, claim: cloudClaim, copy: cloudCopy }; },   /* 11-10 存档码（工具/itch/check_itch.py 核对用） */ dayOff: 0, tick: () => dailyTick(), gateLack: id => gateLack(id), nextGate: () => nextGate(), get scr() { return screen; }, set scr(v) { screen = v; }, get scmax() { return SCMAX; },
   // 不画面，直接跑：一直到这一关结束（auto 时自动选战法），返回结果
+  mode: k => startMode(k),   // 11-12 无尽守城、每日残局（试玩核对用）
+  simMode(k, maxT = 400) { const m = k === 'endless' ? endlessLv() : cjToday(); this.auto = true; this.simming = true; startLevel(m.li, m.lv); this.simming = false; G.sim = true; let n = 0; while (G.state !== 'over' && G.t < maxT && n < 1e6) { if (G.state === 'pick') takePerk(autoPick()); step(DT); n++; } return { win: G.result && G.result.win, kills: G.killed, passed: G.passed, wave: (G.lv.w0 || 0) + G.wave + 1, t: Math.round(G.t), wall: Math.round(G.wall), li: m.li }; },
   sim(i, maxT = 300) { this.auto = true; this.simming = true; startLevel(i); this.simming = false; G.sim = true; let n = 0; while (G.state !== 'over' && G.t < maxT && n < 1e6) { if (G.state === 'pick') takePerk(autoPick()); if (this.hook) this.hook(G); step(DT); n++; } return { win: G.result && G.result.win, stars: G.result && G.result.stars, wall: Math.round(G.wall), t: Math.round(G.t), killed: G.killed, leaked: G.leaked, total: G.total, rank: G.rank, perks: G.perks }; },
   // 每关换 n 个种子各跑一遍：平均星数、胜场、城防、用时、撞城的兵、输的原因（调平衡用）
   bench(levels = LEVELS.map((_, i) => i), n = 6, naive = false) {

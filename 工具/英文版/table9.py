@@ -1,0 +1,25 @@
+# -*- coding: utf-8 -*-
+# 11-12 英文版文字表（九）：无尽守城、每日残局（军帐「演武」两行、战斗里的说明和小牌、结算页）
+T = {
+'演武': 'Challenges', '不花体力': 'No stamina', '开打': 'Fight', '再打': 'Again', '本局奖励': 'Rewards',
+'无尽守城': 'Endless Siege', '每日残局': 'Daily Puzzle',
+'敌军一波强过一波，能撑多久': 'Every wave stronger — how long can you hold?',
+'最好斩敌 #': 'Best: # kills', '今天斩到 # 得精铁 +#': 'Today: # kills → Steel +#', '今天斩到 # 得残页 +#': 'Today: # kills → Pages +#',
+'今天奖励已领完': "Today's rewards claimed", '打过第四关开放': 'Opens after Stage 4', '今天已破': 'Cleared today', '打赢得资历 +#、残页 +#': 'Win: Merit +#, Pages +#',
+'守城': 'Hold', '守城 # 秒': 'Hold #s', '守满五分钟': 'Held five minutes', '敌军退了': 'The enemy fell back',
+'斩敌': 'Kills', '斩敌 #': 'Kills #', '第 # 波': 'Wave #',
+'敌军一波强过一波，城破或守满五分钟结束。斩敌越多，今天的奖励越多': 'Each wave is stronger than the last. It ends when the wall falls or after five minutes. The more you kill, the more you earn today.',
+'城防只剩四成': 'Wall starts at 40%', '敌兵血厚三成': 'Foes +30% HP', '敌兵急行军': 'Forced march', '不准自动出招': 'No auto-cast',
+'开局城防只剩四成，守住就算赢。今天第一次打赢给资历和残页': 'The wall starts at 40% — hold out to win. Your first win today gives Merit and Pages.',
+'敌兵个个血厚三成，打赢就算过。今天第一次打赢给资历和残页': 'Every foe has 30% more HP — just win. Your first win today gives Merit and Pages.',
+'敌兵走得快三成，别让他们冲到城下。今天第一次打赢给资历和残页': 'Foes march 30% faster — keep them off the wall. Your first win today gives Merit and Pages.',
+'这一局招式只能自己点，敌兵也厚一成半。今天第一次打赢给资历和残页': 'Cast every skill yourself, and foes have 15% more HP. Your first win today gives Merit and Pages.',
+'撑到第 # 波': 'Reached wave #',
+'新纪录！以前最好 #': 'New record! Previous best #', '最好纪录 #': 'Best #',
+'今天再斩到 # 得精铁 +#': 'Reach # kills today for Steel +#', '今天再斩到 # 得残页 +#': 'Reach # kills today for Pages +#', '今天的奖励都拿到了': "All of today's rewards earned",
+'残局破了': 'Puzzle solved', '没守住': 'Failed',
+'今天的残局奖励已发': "Today's puzzle reward granted", '今天已经领过奖励，明天换一局': 'Reward already claimed — a new puzzle tomorrow', '可以再来，明天换一局': 'Try again — a new puzzle tomorrow',
+'进度第 # 波': 'Progress: wave #', '本局守过 # 波': 'Cleared # waves', '进度存到第 # 波': 'Progress saved: wave #', '下局从第 # 波打起': 'Next run starts at wave #',
+'今天一局守过 # 波得精铁 +#': 'Clear # waves in one run today: Steel +#', '今天一局守过 # 波得残页 +#': 'Clear # waves in one run today: Pages +#',
+'每一波照一关的敌军出兵，越往后越强。每推进五波存一次进度，下局从那里接着打；城破或守满五分钟结束': 'Each wave fields the army of one stage, stronger the further you go. Progress saves every five waves and the next run picks up near it. Ends when the wall falls or after five minutes.',
+}
