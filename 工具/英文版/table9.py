@@ -24,4 +24,6 @@ T = {
 '从第 # 波打起': 'From wave #', '本局守过 # 波': 'Cleared # waves', '斩敌 #': 'Kills #', '进度存到第 # 波': 'Progress saved: wave #', '进度第 # 波': 'Progress: wave #', '再守过 # 波才存': 'clear # more to save',
 '下局从第 # 波打起': 'Next run starts at wave #', '接着打': 'Continue', '守满五分钟': 'Held five minutes',
 '敌军一波强过一波。每守过三波存一次进度，下局从那里接着打；每三十波换一个场景。城破或守满五分钟结束': 'Each wave is stronger than the last. Progress saves every three waves cleared and the next run continues from there; the battlefield changes every thirty waves. A run ends when the wall falls or after five minutes.',
+'未学会': 'Locked', '晋阶义军队正学会': 'Unlocks at rank Volunteer Sergeant', '晋阶讨贼队正学会': 'Unlocks at rank Rebel-Hunter Sergeant', '晋阶讨贼副尉学会': 'Unlocks at rank Deputy Commandant',
+'打过第一关学会': 'Unlocks after Stage 1', '打过第二关学会': 'Unlocks after Stage 2', '打过第三关学会': 'Unlocks after Stage 3', '打过第四关简雍来投': 'Jian Yong joins after Stage 4', '打过第九关卢植来投': 'Lu Zhi joins after Stage 9',
 }

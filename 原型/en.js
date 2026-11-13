@@ -2006,7 +2006,16 @@ window.EN = {
 "今天可扫荡一次": "sweep ready",
 "重置扫荡": "Reset Sweep",
 "接着打": "Continue",
-"敌军一波强过一波。每守过三波存一次进度，下局从那里接着打；每三十波换一个场景。城破或守满五分钟结束": "Each wave is stronger than the last. Progress saves every three waves cleared and the next run continues from there; the battlefield changes every thirty waves. A run ends when the wall falls or after five minutes."
+"敌军一波强过一波。每守过三波存一次进度，下局从那里接着打；每三十波换一个场景。城破或守满五分钟结束": "Each wave is stronger than the last. Progress saves every three waves cleared and the next run continues from there; the battlefield changes every thirty waves. A run ends when the wall falls or after five minutes.",
+"未学会": "Locked",
+"晋阶义军队正学会": "Unlocks at rank Volunteer Sergeant",
+"晋阶讨贼队正学会": "Unlocks at rank Rebel-Hunter Sergeant",
+"晋阶讨贼副尉学会": "Unlocks at rank Deputy Commandant",
+"打过第一关学会": "Unlocks after Stage 1",
+"打过第二关学会": "Unlocks after Stage 2",
+"打过第三关学会": "Unlocks after Stage 3",
+"打过第四关简雍来投": "Jian Yong joins after Stage 4",
+"打过第九关卢植来投": "Lu Zhi joins after Stage 9"
 };
 window.EN_RX = [[new RegExp("^张飞喝后\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 秒内青龙斩：扫到的每人\\ ([+-]?\\d+(?:\\.\\d+)?)\\.([+-]?\\d+(?:\\.\\d+)?)\\ 倍（砍晕的本来就有\\ ([+-]?\\d+(?:\\.\\d+)?)\\.([+-]?\\d+(?:\\.\\d+)?)\\ 倍）、范围\\ \\+([+-]?\\d+(?:\\.\\d+)?)%，清一片$"), "Dragon Slash within $1s of the Roar: $2.$3× to each foe hit (normally $4.$5× on stunned), range +$6%."],
 [new RegExp("^普攻\\ \\+([+-]?\\d+(?:\\.\\d+)?)%\\ ·\\ 招式\\ \\+([+-]?\\d+(?:\\.\\d+)?)%\\ ·\\ 冷却\\ ([+-]?\\d+(?:\\.\\d+)?)%\\ ·\\ 城防\\ \\+([+-]?\\d+(?:\\.\\d+)?)%$"), "Attack +$1% · Skills +$2% · Cooldown $3% · Wall +$4%"],

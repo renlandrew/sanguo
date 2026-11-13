@@ -15,7 +15,7 @@
 <body>
 <canvas id="bgv" width="36" height="64" style="display:none"></canvas><canvas id="cv"></canvas>
 <script src="墨流.js?v=20261030"></script>
-<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261112d"><\/script>');</script>
+<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261112e"><\/script>');</script>
 <script>
 // 群雄逐鹿 · 守关原型（10-24）：敌军从上面一波波冲下来，刘关张站在城头各自普攻（10-24 起不设主角），招式按出手顺序轮流放，
 // 杀敌攒军功、升级三选一战法，守住城门过关。规则、数值、关卡见 ../设计/方案初稿.md「守关」一节。
@@ -1374,9 +1374,9 @@ function cjToday() {
   const lv = { ...b.lv, rules: { ...(b.lv.rules || {}) }, mode: 'daily', seal: modeSeal('daily'), twist: tw, name: '每日残局 · ' + b.lv.name, sub: CJ_TWIST[tw].name, tips: [], reward: null };
   CJ_TWIST[tw].fn(lv); return { li: b.i, lv, base: b.lv, tw };
 }
-let MODE = null;
-function startMode(k) {
-  const m = k === 'endless' ? endlessLv() : cjToday(); if (!m) return; MODE = k; BACKTO = 'camp'; PREP = null; startLevel(m.li, m.lv);
+let MODE = null, MODE_FROM = 'camp';
+function startMode(k, from) {
+  const m = k === 'endless' ? endlessLv() : cjToday(); if (!m) return; MODE = k; if (from) MODE_FROM = from; BACKTO = MODE_FROM; PREP = null; startLevel(m.li, m.lv);
 }
 function endMode(win, why) {
   G.state = 'over'; sfx(win ? 'win' : 'lose'); const lv = G.lv, r = G.result = { win, why, mode: lv.mode, time: G.t, kills: G.killed, wave: (lv.w0 || 0) + Math.max(1, G.wave + 1), adv: G.passed || 0, pay: [] };
@@ -1408,7 +1408,7 @@ function drawModeResult() {
   }
   if (r.pay.length) { uiText('本局奖励', W / 2, y + 14, 12, UIC.gold2, 'center', FONT, { stroke: false }); y += 22; const n = r.pay.length, x0 = W / 2 - (n - 1) * 36; r.pay.forEach(([k, v], i) => { const x = x0 + i * 72; if (k === '资历') uiSeal(x, y + 30, 26, '资', '#6a4a14', true); else drawItemIcon(k, x, y + 30, 32); uiText(`${k} +${v}`, x, y + 60, 12, UIC.cream, 'center', PLAIN, { stroke: false }); }); }
   ctx.restore();
-  const yb = H - 54, back = () => { G = null; MODE = null; BACKTO = null; screen = 'camp'; CAMP.t0 = uiNow(); }, again = () => { const k = r.mode; G = null; startMode(k); };
+  const yb = H - 54, back = () => { G = null; MODE = null; BACKTO = null; screen = MODE_FROM; CAMP.t0 = uiNow(); }, again = () => { const k = r.mode; G = null; startMode(k); };
   const nxt = endless && r.ck > r.ck0; plaque(54, yb, 120, 46, nxt ? '接着打' : '再来', again, nxt, al); plaque(186, yb, 120, 46, '返回', back, !nxt, al);
 }
 
@@ -6496,15 +6496,24 @@ const QM_LIST = [
   ['我方计', [['ambush', '伏兵', '简雍', '计', '两侧河沟藏乡勇，看准时机点令旗'], ['ploy', '缓兵之计', '简雍', '控', '逼退城前的兵，全军停步 6 秒'], ['ditch', '凿堑', '卢植', '控', '城前深堑 8 秒：过堑慢一半、骑兵落马'], ['jiji', '将计就计', '卢植', '计', '敌军师头一个计当场破掉']]],
   ['敌方计', [['foe_ambush', '伏兵', '张宝 · 李儒', '攻', '5–6 骑从侧翼杀出'], ['foe_fire', '火箭', '李儒', '攻', '城防 -5%，拒马烧掉'], ['foe_lijian', '离间', '张宝 · 李儒', '控', '封关羽或刘备的招式 6 秒'], ['foe_jijiang', '激将', '李儒', '控', '城下骂阵：三人普攻慢一半 6 秒'],
     ['foe_rush', '急行', '张宝 · 李儒', '增', '敌军快三成，10 秒'], ['foe_reinf', '援军', '张宝 · 李儒', '增', '最后一波多来 8 个兵'], ['foe_yaoshu', '妖术回春', '张宝', '增', '场上黄巾回三成血']]] ];
+// 11-12 用户：「没学的都灰度好吗」——大招、我方计里还没学会／军师还没来投的卡：插画去色压暗，画上盖一条写怎么学；敌方计不管
+const QM_WHO = { 简雍: 'jianyong', 卢植: 'luzhi' };
+function qmLock(c) {
+  if (window.__sg.all) return null; const [key, , who] = c;
+  for (const [id, S] of Object.entries(SKILLS)) if (S.act[key]) { const u = S.act[key].rank; if (u && rankNow() < u) return '晋阶' + RANKS[u].name + '学会'; if (LEARN[id] && !BEST[LEARN[id] - 1]) return '打过' + lvName(LEARN[id] - 1) + '学会'; return null; }
+  const ck = QM_WHO[who]; if (ck && COUNSEL[ck] && !counselOK(ck)) return '打过' + lvName(COUNSEL[ck].unlock) + COUNSEL[ck].name + '来投'; return null;
+}
 function drawQmCard(c, x, y, w, sel, ext = 0) {                                  // 卡框 342×513：插画窗口约 (21,21)–(321,348)，纸色说明栏约 y 350–487
   // 11-11 用户看放大的卡：「这些招数可以下面高一些，留多点位置」（英文说明三行被底边吃掉）——放大时 ext：把框的纸面中段（框图 y 420–450）竖着拉长 ext，说明最多四行
   const [key, name, who, tag, desc] = c, h = w * 1.5 + ext, k = w / 342, art = IMG['card_' + key], fr = IMG.card_frame;
   ctx.save(); if (sel) { ctx.shadowColor = 'rgba(255,210,120,.8)'; ctx.shadowBlur = 14; }
   if (sel && ext) { ctx.fillStyle = '#1a120a'; ctx.fillRect(x + 4, y + 4, w - 8, h - 8); ctx.shadowBlur = 0; }   // 拉长的框分三段画，每段各带光晕会在接缝处亮出横线：光晕只垫一次
   if (ready(art)) { const sw = art.width, sh = sw * 328 / 300; ctx.drawImage(art, 0, 0, sw, Math.min(sh, art.height), x + 21 * k, y + 21 * k, 300 * k, 328 * k); }   // 插画取上半，填满窗口
+  const lock = qmLock(c); if (lock) { ctx.save(); ctx.shadowBlur = 0; ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = '#000'; ctx.fillRect(x + 21 * k, y + 21 * k, 300 * k, 328 * k); ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(8,6,4,.45)'; ctx.fillRect(x + 21 * k, y + 21 * k, 300 * k, 328 * k); ctx.restore(); }
   if (ready(fr)) { if (!ext) ctx.drawImage(fr, x, y, w, h); else { const q = fr.height / 513, a = 420, b = 450;
     ctx.drawImage(fr, 0, 0, fr.width, a * q, x, y, w, a * k); ctx.drawImage(fr, 0, a * q, fr.width, (b - a) * q, x, y + a * k - .5, w, (b - a) * k + ext + 1); ctx.drawImage(fr, 0, b * q, fr.width, (513 - b) * q, x, y + b * k + ext, w, (513 - b) * k); } } ctx.restore();
   const py = y + 350 * k, T = QM_TAG[tag];
+  if (lock) { const big = w >= 150, bh = (big ? 44 : 52) * k, ly = y + 349 * k - bh; ctx.fillStyle = 'rgba(8,6,4,.78)'; ctx.fillRect(x + 21 * k, ly, 300 * k, bh); uiText(big ? lock : '未学会', x + w / 2, ly + bh / 2 + .5, big ? 13 : 10, '#f0d9a0', 'center', PLAIN, { stroke: false, maxW: 290 * k }); }
   const eo = EN_ON && w < 150 ? 16 * k : 0;   // 英文小卡：招名可折两行，标签和人名往下挪
   uiText(name, x + w / 2, py + 22 * k + eo * .7, Math.max(11, 30 * k), '#2a1a0e', 'center', FONT, { stroke: false, maxW: w - 30 * k, wrap: true, minFz: 11, wrapFz: 10.5 });
   { const tz = Math.max(8, 18 * k), tw = EN_ON ? Math.max(70 * k, (ctx.font = `${fpx(tz)}px ${PLAIN}`, rawMeasure(tr(T[0])).width) + 6) : 70 * k;
@@ -6572,11 +6581,11 @@ function drawCamp() {
       const m = INV.endMax || 0, mw = m * END_SAVE, canSw = m > 0 && !DAILY.endSwept; uiText(`无尽守城 · 第 ${mw + 1} 波`, 56, y + 16, 14, UIC.cream, 'left', FONT, { stroke: false, maxW: canSw ? 118 : 180 });
       const s2 = !m ? '每守过三波存一次进度' : DAILY.endSwept ? `已守过 ${mw} 波 · 今天已扫荡` : `已守过 ${mw} 波 · 今天可扫荡一次`; uiText(s2, 56, y + 35, 10, 'rgba(240,217,160,.7)', 'left', PLAIN, { stroke: false, maxW: canSw ? 138 : 190 });
       if (canSw) pill(W - 160, y + 13, 62, 24, '扫荡', () => { const g = endSweep(); if (g) showReward('重置扫荡 · 无尽守城', [`前 ${mw} 波的东西全收了`], ['guan', 'zhang', 'liu'], true, g); }, false);
-      pill(W - 92, y + 13, 64, 24, '开打', () => { screen = 'menu'; startMode('endless'); }); y += 56; }
+      pill(W - 92, y + 13, 64, 24, '开打', () => { screen = 'menu'; startMode('endless', 'camp'); }); y += 56; }
     { const c = cjOpen() ? cjToday() : null; ctx.save(); if (!c || DAILY.cjWin) ctx.globalAlpha = .55; plate(14, y, W - 28, 50); ctx.restore(); uiSeal(36, y + 25, 26, modeSeal('daily'), '#6a4a14');
       uiText(c ? '每日残局 · ' + c.base.name : '每日残局', 56, y + 16, fitSize(c ? '每日残局 · ' + c.base.name : '每日残局', 14, W - 160, 99, FONT), UIC.cream, 'left', FONT, { stroke: false });
       const s2 = !c ? '打过第四关开放' : CJ_TWIST[c.tw].name + (DAILY.cjWin ? ' · 今天已破' : ' · 打赢得资历 +2、残页 +2'); uiText(s2, 56, y + 35, fitSize(s2, 10, W - 140, 99, PLAIN), 'rgba(240,217,160,.7)', 'left', PLAIN, { stroke: false });
-      if (c) pill(W - 92, y + 13, 64, 24, DAILY.cjWin ? '再打' : '开打', () => { screen = 'menu'; startMode('daily'); }, !DAILY.cjWin); y += 60; } }
+      if (c) pill(W - 92, y + 13, 64, 24, DAILY.cjWin ? '再打' : '开打', () => { screen = 'menu'; startMode('daily', 'camp'); }, !DAILY.cjWin); y += 60; } }
   { const id = visitWho(), left = DAILY.visitN - DAILY.visits, vr0 = CAMP.visit && uiNow() - CAMP.visit.t0 < 2.6 ? CAMP.visit : null;   // 出外探访
     ctx.save(); if (!left) ctx.globalAlpha = .5; plate(14, y, W - 28, 58, !!(vr0 && vr0.god)); ctx.restore();
     ctx.save(); rr(22, y + 6, 32, 32, 6); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], 22, y + 6, 32, 32); ctx.restore();
@@ -7248,6 +7257,10 @@ function drawMenu() {
   if (!open1 && MENU.lockT && t - MENU.lockT < 1.8) { const a = clamp((1.8 - (t - MENU.lockT)) / .4, 0, 1); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(20,12,6,.88)'; rr(W / 2 - 90, CARD_Y - 32, 180, 26, 10); ctx.fill();
     uiText('打完第一关「桃园结义」开放', W / 2, CARD_Y - 19, 13, UIC.gold2, 'center', FONT, { lw: 3 }); ctx.restore(); }
   navBtn(330, '系统', navIco('ui_nav_sys'), () => { screen = 'system'; }, false);
+  // 11-12 用户问「从哪里进入无尽模式？」「想办法放首页？」——关卡牌右上方一颗朱印钮（和左边军师头像对称），点了直接开打，打完回主页；军帐「演武」里那一行照旧
+  if (open1 && endlessOpen()) { const ex = W - 40, ey = CARD_Y - 34, br = .5 + .5 * Math.sin(t * 2.6);
+    ctx.save(); ctx.shadowColor = `rgba(255,190,90,${.35 + .3 * br})`; ctx.shadowBlur = 10; uiSeal(ex, ey, 28, modeSeal('endless'), UIC.red); ctx.restore();
+    uiText('无尽守城', ex, ey + 21, 9, UIC.gold2, 'center', FONT, { lw: 3, maxW: 60 }); hit(ex - 26, ey - 18, 52, 46, () => { startMode('endless', 'menu'); }); }
   drawMenuTip(t);
   // 右上角月卡
   if (MONTH_SHOW) { const im = IMG.ui_nav_month, cx = W - 26, cy = 28, br = .5 + .5 * Math.sin(t * 2.4); if (ready(im)) { const f = 28 / Math.max(im.width, im.height);   /* 10-25 夜用户：「这有点太大，小一点」 40 → 28 */ ctx.save(); ctx.shadowColor = `rgba(255,200,90,${.35 + .3 * br})`; ctx.shadowBlur = 10; ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); ctx.restore(); } else uiSeal(cx, cy, 22, '月', UIC.red);
