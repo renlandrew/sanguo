@@ -7181,7 +7181,7 @@ function drawMenuTip(t) {
   if (MENU.tipOpen) { const ks = .74, tx = hx - 38 * ks, ty = hy - 26 * ks;   // 11-02 用户：「头像和说话都留在左边」——点开后头像不挪，话从头像右边展开
     ctx.save(); ctx.translate(tx, ty); ctx.scale(ks, ks); drawCounselSay(ck, C, T.say, 0, a); ctx.restore();
     hit(tx + 60 * ks, ty - 4, (W - 66) * ks, 48, () => { MENU.tipOpen = false; tipDone(T.k); }); }
-  const by = H - 90 + 3 * Math.sin(t * 6); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#ffd76e'; ctx.shadowColor = 'rgba(255,190,80,.8)'; ctx.shadowBlur = 8;   // 往下指着该点的钮，一上一下地跳
+  const by = H - 82 + 3 * Math.sin(t * 6); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#ffd76e'; ctx.shadowColor = 'rgba(255,190,80,.8)'; ctx.shadowBlur = 8;   // 往下指着该点的钮，一上一下地跳
   ctx.beginPath(); ctx.moveTo(T.x - 9, by - 10); ctx.lineTo(T.x + 9, by - 10); ctx.lineTo(T.x, by); ctx.closePath(); ctx.fill(); ctx.restore();
 }
 const TRIO_H = 292, TRIO_FOOT = 498, CARD_Y = 518, TIP_Y = 136, BG_UP = 86;   // 主页三兄弟画多高、脚在哪（城头步道）；关卡牌在脚下；TIP_Y 现在只给点卯横幅用
@@ -7212,7 +7212,7 @@ function drawMenu() {
   hit(8, 10, 176, 46, () => { screen = 'camp'; CAMP.t0 = uiNow(); });
   // 当前目标卡：下一关、门槛还差什么、出征
   // 11-02 用户：「把这个弄小」——关卡牌缩成一条（84 → 52 高、两边收窄），挪到标题下面，不挡站在城头的三兄弟
-  const ni = frontier(), lv = LEVELS[ni], duel = lv.kind === 'duel', cy0 = CARD_Y, cx0 = 26, cw = W - 52, chh = 28;   // 11-02 用户：「这个一半高就差不多了」——52 → 28，一行：关序印、关名、阶段小字、出征
+  const ni = frontier(), lv = LEVELS[ni], duel = lv.kind === 'duel', cy0 = CARD_Y - 8, cx0 = 26, cw = W - 52, chh = 36;   /* 11-12 用户：「上下留点padding」——28 → 36，印和出征钮不变大，上下各多 4 */   // 11-02 用户：「这个一半高就差不多了」——52 → 28，一行：关序印、关名、阶段小字、出征
   plate(cx0, cy0, cw, chh, true);
   uiSeal(cx0 + 16, cy0 + chh / 2, 20, CNUM(lvNo(lv)), duel ? '#8a1c10' : UIC.red);
   const nz = fitSize(lv.name, 15, 110, 99, FONT, 3); uiText(lv.name, cx0 + 32, cy0 + chh / 2 + 1, nz, UIC.cream, 'left', FONT, { lw: 3 });
