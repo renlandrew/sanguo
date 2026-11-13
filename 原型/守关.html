@@ -15,7 +15,7 @@
 <body>
 <canvas id="bgv" width="36" height="64" style="display:none"></canvas><canvas id="cv"></canvas>
 <script src="墨流.js?v=20261030"></script>
-<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261113a"><\/script>');</script>
+<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261113b"><\/script>');</script>
 <script>
 // 群雄逐鹿 · 守关原型（10-24）：敌军从上面一波波冲下来，刘关张站在城头各自普攻（10-24 起不设主角），招式按出手顺序轮流放，
 // 杀敌攒军功、升级三选一战法，守住城门过关。规则、数值、关卡见 ../设计/方案初稿.md「守关」一节。
@@ -442,6 +442,7 @@ const PERKS = [
   { id: 'jinshu', name: '驱邪符', desc: '黄巾术士的符水失效，回不了血、加不了速', max: 1, fn: s => s.noHeal = true },
   { id: 'order', anySk: true, name: '军令如山', desc: '三人出招冷却 -12%', max: 3, fn: s => s.cdMul *= .88 },
   { id: 'mend', name: '修补城墙', desc: '城防回 25%', max: 9, fn: () => { G.wall = Math.min(G.wallMax, G.wall + G.wallMax * .25); } },
+  { id: 'huntHeal', name: '金疮药', desc: '还站着的武将各回三成血', max: 9, fn: () => { if (G.hhp) for (const id of G.order) if (id && !G.hdown[id]) G.hhp[id] = Math.min(G.hmax[id], G.hhp[id] + G.hmax[id] * .3); } },   // 只在讨伐里出（不在 GEAR 里，平常关不会抽到）
 ];
 // ---------- 配招（10-29 方案 设计/成长方案_Claude_20261029.md）：每人带 1 个主动（他那张牌的按钮）＋最多 2 个被动 ----------
 // unlock：打过这一关（BEST）才学会；被动格：打过第 9 关开第 1 格、第 24 关开第 2 格（官阶做好后改按官阶）。默认带原来的招、不带被动，30 关平衡不变
@@ -1386,12 +1387,21 @@ function cjToday() {
 // 11-12 用户：「怪物的战斗动作呢」——每个形态另有两张姿势图：a 蓄力（举拳／伏身／昂首）、b 出手（砸地／前扑／喷水），蓄力和出手时换图，再加后仰、前冲的位移
 const HUNT_T = 60, MON_Y = 372;   /* 11-13 用户圈图：「太大了，红框那么大就可以」——怪物缩到原来四成多（身高 220 → 100 上下），站位往场中挪；「敌人不攻击的？」——出手间隔缩短（巨灵 14 → 8 秒，山君 11 → 7，蛟 13 → 9），开场 4 秒就来第一下；「不要出现打不死三个字」——封号换掉 */   // 60 × 1.5 = 90 秒
 const HMON = {
-  juling:  { name: '黄巾巨灵', type: 'fu', tiers: [40000, 80000, 130000], fu: 4500, weak: 8, map: 'hunt_altar', every: [8, 7, 6], wind: 1.6, h: [100, 106, 112], sh: [34, 7], lunge: 10,
-    say: '巨灵身上有护体符：打碎一层，八秒内伤害加倍，把大招留到这时候。它举拳时张飞一喝能喝住' },
-  shanjun: { name: '山君', type: 'pounce', tiers: [30000, 60000, 100000], weak: 5, map: 'hunt_forest', every: [7, 6, 5], wind: 2.4, h: [76, 82, 88], sh: [44, 8], lunge: 50,
-    say: '山君会盯上一名武将扑过去，被扑倒的四秒动不了。在它扑到之前，让被盯上的那名武将放出招式打中它，就能把它打翻，五秒内伤害加倍' },
-  jiao:    { name: '蛟', type: 'coil', tiers: [50000, 95000, 150000], weak: 6, brk: 1500, map: 'hunt_river', every: [9, 8, 7], wind: 3, h: [84, 88, 90], sh: [64, 8], lunge: 12, seg: [-58, -29, 29, 58],
-    say: '蛟身子长，横在场上分五段，范围招一次能打到好几段。它昂首蓄水时点蛟头集火，打够了就打断它，六秒内伤害加倍；没打断它就喷水，普攻减半四秒' },
+  juling:  { name: '黄巾巨灵', type: 'fu', tiers: [40000, 80000, 130000], fu: 4500, weak: 8, map: 'hunt_altar', every: [6, 5.5, 5], wind: 1.6, h: [100, 106, 112], sh: [34, 7], lunge: 10,
+    moves: [{ name: '震地', tgt: 'all', wind: 1.6, dmg: 26, slow: 4, counter: 'roar', lab: '举拳！', tell: '巨灵举拳震地！张飞一喝能喝住', hit: '震地：都挨了一下，普攻慢一半' },
+            { name: '重拳', tgt: 'pos', wind: 1.9, dmg: 80, lab: '重拳', tell: '巨灵抡拳砸过来！拖牌换个血厚的去顶', hit: '挨了一记重拳' },
+            { name: '擒拿', tgt: 'low', wind: 1.6, dmg: 42, pin: 3, lab: '擒拿', tell: '巨灵伸手去抓血最少的', hit: '被攥住，三秒动不了' }],
+    say: '巨灵身上有护体符：打碎一层，八秒内伤害加倍。它会震地（张飞一喝能喝住）、抡重拳砸一个位置（拖牌换血厚的去顶）、伸手抓血最少的人' },
+  shanjun: { name: '山君', type: 'pounce', tiers: [30000, 60000, 100000], weak: 5, map: 'hunt_forest', every: [6, 5.5, 5], wind: 2.4, h: [76, 82, 88], sh: [44, 8], lunge: 50,
+    moves: [{ name: '扑击', tgt: 'one', wind: 2.4, dmg: 56, pin: 4, counter: 'aim', lab: '盯上', tell: '山君盯上了{who}！让{who}放招式迎击', hit: '被扑倒，四秒动不了' },
+            { name: '虎啸', tgt: 'all', wind: 1.4, dmg: 22, slow: 3, lab: '虎啸', tell: '山君仰头要啸', hit: '虎啸：都挨了一下，普攻慢一半' },
+            { name: '甩尾', tgt: 'pos2', wind: 1.7, dmg: 44, lab: '甩尾', tell: '山君甩尾扫两个位置！拖牌让血厚的去挨', hit: '被尾巴扫中' }],
+    say: '山君会盯上一名武将扑过去——在它扑到之前让那名武将放招式打中它，就能把它打翻，五秒内伤害加倍。它还会虎啸震全场、甩尾扫相邻两个位置（拖牌换人去挨）' },
+  jiao:    { name: '蛟', type: 'coil', tiers: [50000, 95000, 150000], weak: 6, brk: 1500, map: 'hunt_river', every: [7, 6.5, 6], wind: 3, h: [84, 88, 90], sh: [64, 8], lunge: 12, seg: [-58, -29, 29, 58],
+    moves: [{ name: '喷水', tgt: 'all', wind: 3, dmg: 32, half: 4, counter: 'brk', lab: '蓄水 · 集火蛟头', tell: '蛟昂首蓄水！点蛟头集火打断', hit: '喷水：都挨了一下，普攻减半' },
+            { name: '缠身', tgt: 'one', wind: 1.8, dmg: 42, pin: 4, lab: '缠身', tell: '蛟盯上了{who}，要缠上去', hit: '被缠住，四秒动不了' },
+            { name: '扫尾', tgt: 'pos2', wind: 1.7, dmg: 44, lab: '扫尾', tell: '蛟甩尾扫两个位置！拖牌让血厚的去挨', hit: '被尾巴扫中' }],
+    say: '蛟身子长，横在场上分五段，范围招一次能打到好几段。它昂首蓄水时点蛟头集火，打够了就打断它，六秒内伤害加倍。它还会缠住一个人、甩尾扫相邻两个位置（拖牌换人去挨）' },
 };
 const HUNT_PAY = [[['资历', 1]], [['资历', 1], ['残页', 1]], [['残页', 1]]], HUNT_ORDER = ['juling', 'shanjun', 'jiao'];
 const huntOpen = () => endlessOpen(), huntMon = () => (window.__sg && window.__sg.huntForce) || HUNT_ORDER[Math.round(new Date(dayStr() + 'T00:00:00Z').getTime() / 864e5) % 3];   // 三只按日期轮
@@ -1407,13 +1417,24 @@ function huntLv() {
 }
 const monSay = (text, big, row) => { if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: W / 2, y: row ? 458 : 436, text, size: big ? 20 : 16, color: big ? CINNABAR : INK, dur: big ? 1.8 : 1.6 }); };
 function monOpen(H, M) { H.windT3 = 0; H.aimId = null; G.monWeakT = M.weak; G.monStop = (G.monStop || 0) + 1; G.shake = .25; }   // 打出破绽
-function monHit(e, d, src) {   // hurt() 里扣完血调：血补回去（打不死），记总伤害、各自的破绽条件、形态
-  const T = FOES[e.kind], M = HMON[T.mon], H = T.part ? G.boss || e : e; e.hp = e.max; G.monDmg = (G.monDmg || 0) + d;
-  if (M.type === 'fu') {
-    if (src === 'roar' && H.windT3 > 0) { H.windT3 = 0; G.monStop = (G.monStop || 0) + 1; monSay('喝住了！', true); }
-    if (!(G.monWeakT > 0) && src !== 'burn') { H.fu -= d; if (H.fu <= 0) { H.fuN = (H.fuN || 0) + 1; H.fuMax = H.fu = M.fu * Math.pow(1.25, H.fuN); monOpen(H, M); G.monStop--; monSay('符碎了！八秒内伤害加倍', true); } }
-  } else if (M.type === 'pounce') { if (H.windT3 > 0 && BIGSRC.has(src) && WHO[src] === H.aimId) { monOpen(H, M); monSay('打翻了！五秒内伤害加倍', true); }
-  } else if (M.type === 'coil') { if (H.windT3 > 0 && !T.part && src !== 'burn') { H.brk -= d; if (H.brk <= 0) { H.brkN = (H.brkN || 0) + 1; monOpen(H, M); monSay('打断了！六秒内伤害加倍', true); } } }
+// 11-13 用户：「加上武将血量，根据等级和属性，怪物要有各种招数」——只在讨伐里：每人血 = 120 + 10×(等级−1) + 统率 + 武力÷2；怪物每只三种招数轮着用（全体、砸一个位置、盯一个人），
+// 伤害随形态 ×1／1.3／1.6；血打光的倒下（这一局不再出手），三人都倒下提前结束，按已打出的伤害结算。砸位置的招可以拖底下的牌换人去挨
+const heroPos = () => G.order.map((id, i) => id ? i : -1).filter(i => i >= 0), heroUp = id => id && !G.hdown[id];
+function heroInit() { G.hhp = {}; G.hmax = {}; G.hdown = {}; G.hhitT = {}; for (const id of G.order) if (id) { const st = statOf(id, G.lvs[id] || 1); G.hmax[id] = G.hhp[id] = Math.round(120 + 10 * ((G.lvs[id] || 1) - 1) + st[0] + st[1] * .5); } }
+function heroHurt(id, d, pin) {
+  if (!heroUp(id)) return; d = Math.round(d); G.hhp[id] -= d; G.hhitT[id] = G.vt || 0; const i = G.order.indexOf(id);
+  if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: genX(i), y: GY - 70, text: '-' + fmtDmg(d), size: 18, color: CINNABAR });
+  if (G.hhp[id] <= 0) { G.hhp[id] = 0; G.hdown[id] = true; monSay(GEN[id].name + '倒下了', true, 1); if (!G.order.some(heroUp)) G.huntWipe = true; }
+  else if (pin) G.seal[i] = Math.max(G.seal[i] || 0, pin);
+}
+function monHit(e, d, src) {   // hurt() 里扣完血调：血补回去，记总伤害、各自的破绽条件、形态
+  const T = FOES[e.kind], M = HMON[T.mon], H = T.part ? G.boss || e : e, mv = H.windT3 > 0 ? H.mv : null; e.hp = e.max; G.monDmg = (G.monDmg || 0) + d;
+  if (G.expK == null) { let need = 0; for (let r = G.rank; r < Math.min(RANK_MAX, G.rank + 6); r++) need += needOf(r); G.expK = need / M.tiers[1]; }   // 打出伤害就涨军功：打到第二档的伤害正好够升六次
+  G.exp += d * G.expK;
+  if (M.type === 'fu' && !(G.monWeakT > 0) && src !== 'burn') { H.fu -= d; if (H.fu <= 0) { H.fuN = (H.fuN || 0) + 1; H.fuMax = H.fu = M.fu * Math.pow(1.25, H.fuN); monOpen(H, M); G.monStop--; monSay('符碎了！八秒内伤害加倍', true); } }
+  if (mv && mv.counter === 'roar' && src === 'roar') { H.windT3 = 0; G.monStop = (G.monStop || 0) + 1; monSay('喝住了！', true); }
+  else if (mv && mv.counter === 'aim' && BIGSRC.has(src) && WHO[src] === H.aimId) { monOpen(H, M); monSay('打翻了！五秒内伤害加倍', true); }
+  else if (mv && mv.counter === 'brk' && !T.part && src !== 'burn') { H.brk -= d; if (H.brk <= 0) { H.brkN = (H.brkN || 0) + 1; monOpen(H, M); monSay('打断了！六秒内伤害加倍', true); } }
   const f1 = Math.min(2, monTier(M, G.monDmg)); if (f1 > (H.form || 0)) { H.form = f1; H.formT = G.t; G.shake = .3; if (!G.sim) monSheet(T.mon, f1 + 1); if (!G.sim) G.fx.push({ k: 'banner', t: 0, text: M.name, sub: f1 === 1 ? '被打怒了' : '狂暴' }); }
 }
 function stepMon(e, T, dt) {
@@ -1421,21 +1442,27 @@ function stepMon(e, T, dt) {
   if (T.part) { e.x = HX + e.dx; e.y = MON_Y; return; }
   e.x += (HX - e.x) * Math.min(1, dt * 3); e.y = e.y < MON_Y ? Math.min(MON_Y, e.y + 170 * dt) : MON_Y;
   if (M.type === 'fu' && e.fu == null) e.fuMax = e.fu = M.fu;
+  if (!G.hhp) heroInit(); for (let i = 0; i < NS; i++) if (G.order[i] && G.hdown[G.order[i]]) G.seal[i] = Math.max(G.seal[i], .5);   // 倒下的一直不能出手（牌拖到别的格也跟着）
   if (e.y < MON_Y) return;
   if (M.seg && !e.segs) { e.segs = 1; for (const dx of M.seg) { const b = spawn({ kind: T.mon + 'B', x: HX + dx, lane: false }, MON_Y); b.dx = dx; b.x = HX + dx; G.total++; } }
   if (e.strikeT > 0) e.strikeT -= dt;
   if (G.monWeakT > 0) { G.monWeakT -= dt; return; }
-  const fm = e.form || 0, nm = id => GEN[id].name;
-  if (e.windT3 > 0) { e.windT3 -= dt; if (e.windT3 > 0) return; e.strikeT = .55; G.shake = .3; G.monStomp = (G.monStomp || 0) + 1;   // 出手
-    if (M.type === 'fu') { G.tauntT = Math.max(G.tauntT || 0, 4); if (!G.sim) G.fx.push({ k: 'dust', t: 0, x: e.x, y: e.y }); monSay('巨灵震地：普攻慢一半', false, 1); }
-    else if (M.type === 'pounce') { const i = G.order.indexOf(e.aimId); if (i >= 0) { G.seal[i] = Math.max(G.seal[i] || 0, 4); e.strikeX = genX(i); if (!G.sim) G.fx.push({ k: 'dust', t: 0, x: genX(i), y: GY }); monSay(nm(e.aimId) + '被扑倒，四秒动不了', false, 1); } e.aimId = null; }
-    else if (M.type === 'coil') { G.windT = Math.max(G.windT || 0, 4); if (!G.sim) G.fx.push({ k: 'wind', t: 0 }); monSay('蛟喷水：普攻减半', false, 1); }
-    return; }
+  const fm = e.form || 0, nm = id => GEN[id].name, P = heroPos(), up = P.filter(i => heroUp(G.order[i])); if (!up.length) return;
+  if (e.windT3 > 0) { e.windT3 -= dt; if (e.windT3 > 0) return; const mv = e.mv, dmg = mv.dmg * (1 + .3 * fm); e.strikeT = .55; G.shake = .3; G.monStomp = (G.monStomp || 0) + 1;   // 出手
+    const who = mv.tgt === 'all' ? up.map(i => G.order[i]) : mv.tgt === 'pos' || mv.tgt === 'pos2' ? e.aimPos.map(p => G.order[P[p]]).filter(heroUp) : [e.aimId].filter(heroUp);
+    if (who.length) e.strikeX = mv.tgt === 'all' ? e.x : genX(G.order.indexOf(who[0]));
+    for (const id of who) heroHurt(id, dmg, mv.pin);
+    if (mv.slow) G.tauntT = Math.max(G.tauntT || 0, mv.slow); if (mv.half) { G.windT = Math.max(G.windT || 0, mv.half); if (!G.sim) G.fx.push({ k: 'wind', t: 0 }); }
+    if (!G.sim) G.fx.push({ k: 'dust', t: 0, x: mv.tgt === 'all' ? e.x : e.strikeX, y: mv.tgt === 'all' ? e.y : GY });
+    if (who.length) monSay(mv.tgt === 'all' ? mv.hit : who.map(nm).join('、') + mv.hit, false, 1); e.aimId = null; e.aimPos = null; return; }
   e.actCd = (e.actCd ?? 4) - dt; if (e.actCd > 0) return;
-  e.actCd = M.every[fm] * ACT_X; e.windT3 = M.wind;   // 蓄力
-  if (M.type === 'fu') monSay('巨灵举拳！张飞一喝能喝住');
-  else if (M.type === 'pounce') { const ids = G.order.filter((id, i) => id && G.seal[i] <= 0); if (!ids.length) { e.windT3 = 0; return; } e.aimId = ids[Math.floor(rnd() * ids.length)]; monSay(`山君盯上了${nm(e.aimId)}！让${nm(e.aimId)}放招式迎击`); }
-  else if (M.type === 'coil') { e.brkMax = e.brk = M.brk * Math.pow(1.2, e.brkN || 0) * (1 + .3 * fm); monSay('蛟昂首蓄水！点蛟头集火打断'); }
+  const mv = e.mv = M.moves[(e.mvN = (e.mvN ?? -1) + 1) % M.moves.length]; e.actCd = M.every[fm]; e.windT3 = mv.wind; e.aimId = null; e.aimPos = null;   // 蓄力：三种招数轮着来
+  if (mv.tgt === 'one') e.aimId = G.order[up[Math.floor(rnd() * up.length)]];
+  else if (mv.tgt === 'low') e.aimId = up.map(i => G.order[i]).sort((a, b) => G.hhp[a] - G.hhp[b])[0];
+  else if (mv.tgt === 'pos') e.aimPos = [P.indexOf(up[Math.floor(rnd() * up.length)])];
+  else if (mv.tgt === 'pos2') { const p = Math.floor(rnd() * Math.max(1, P.length - 1)); e.aimPos = [p, p + 1].filter(q => q < P.length); }
+  if (mv.counter === 'brk') e.brkMax = e.brk = M.brk * Math.pow(1.2, e.brkN || 0) * (1 + .3 * fm);
+  monSay(mv.tell.replace(/\{who\}/g, e.aimId ? nm(e.aimId) : ''));
 }
 function drawMon(e, T) {
   if (T.part) return;   // 蛟身的四段只是挨打的位置，整条蛟由蛟头画
@@ -1458,11 +1485,15 @@ function drawMon(e, T) {
   else { ctx.fillStyle = weak ? '#c9843a' : '#8a6a3a'; rr(-20, -h, 40, h, 8); ctx.fill(); }   // 图还没到：先画一块土色
   ctx.restore();
   if (e.rout || e.y < MON_Y) return; const by = Math.max(124, y - (sheet && (wind || strike) ? Math.max(M.h[fm], A.ay * (M.h[fm] / A.h0)) : M.h[fm]) - 12), bw = 84,   /* 蓄力出手时人立、昂首比立绘高：提示条跟着抬到这一段动作的最高处，不压脸，也不顶进上面的血条 */ lab = (s, big, c) => uiText(s, x, by - 9, big ? 13 : 11, c || (big ? UIC.red2 : UIC.cream), 'center', big ? FONT : PLAIN, { lw: 3 }), meter = (f, c) => bar(x - bw / 2, by, bw, 5, clamp(f, 0, 1), c, 'rgba(20,12,6,.6)');
+  const mv = wind ? e.mv : null, P = G.hhp ? heroPos() : [], mark = (gx, text) => { const pu = .5 + .5 * Math.sin(t * 12); ctx.save(); ctx.globalAlpha = .35 + .3 * pu; ctx.fillStyle = CINNABAR; ctx.beginPath(); ctx.ellipse(gx, GY + 2, 28, 8, 0, 0, 6.283); ctx.fill(); ctx.restore(); uiText(text, gx, GY - 98, 11, '#ffe08a', 'center', FONT, { lw: 3 }); };
   if (weak) { meter(G.monWeakT / M.weak, CINNABAR); lab('破绽 · 伤害加倍', true, '#ffe08a'); }
-  else if (M.type === 'fu') { meter(e.fu / e.fuMax, '#e8c24a'); lab(wind ? '举拳！' : '护体符', wind); }
-  else if (wind && M.type === 'pounce') { meter(e.windT3 / M.wind, CINNABAR); lab('盯上 ' + GEN[e.aimId].name, true);
-    const i = G.order.indexOf(e.aimId), gx = genX(i), pu = .5 + .5 * Math.sin(t * 12); ctx.save(); ctx.globalAlpha = .35 + .3 * pu; ctx.fillStyle = CINNABAR; ctx.beginPath(); ctx.ellipse(gx, GY + 2, 28, 8, 0, 0, 6.283); ctx.fill(); ctx.restore(); uiText('被盯上 · 放招式', gx, GY - 92, 11, '#ffe08a', 'center', FONT, { lw: 3 }); }
-  else if (wind && M.type === 'coil') { meter(e.brk / e.brkMax, '#5fc8e8'); lab('蓄水 · 集火蛟头', true); }
+  else if (mv) { meter(mv.counter === 'brk' ? e.brk / e.brkMax : e.windT3 / mv.wind, mv.counter === 'brk' ? '#5fc8e8' : CINNABAR); lab(mv.lab + (e.aimId && mv.lab.length <= 2 ? ' ' + GEN[e.aimId].name : ''), true);
+    if (e.aimId) mark(genX(G.order.indexOf(e.aimId)), mv.counter === 'aim' ? '被盯上 · 放招式' : '被盯上');
+    if (e.aimPos) for (const p of e.aimPos) mark(genX(P[p]), '砸这里 · 可换人'); }
+  else if (M.type === 'fu') { meter(e.fu / e.fuMax, '#e8c24a'); lab('护体符'); }
+  if (G.hhp) for (const i of P) { const id = G.order[i], gx = genX(i), f = G.hhp[id] / G.hmax[id], hot = (G.vt || 0) - (G.hhitT[id] ?? -9) < .25;   // 武将血条：脚下一条
+    bar(gx - 22, GY - 86, 44, 5, f, hot ? '#fff2dc' : f > .5 ? '#5fd39a' : f > .25 ? '#e8c24a' : '#ff6a3a', 'rgba(20,12,6,.7)');
+    if (G.hdown[id]) uiText('倒下', gx, GY - 97, 13, UIC.red2, 'center', FONT, { lw: 3 }); }
 }
 let MODE = null, MODE_FROM = 'camp';
 function startMode(k, from) {
@@ -1489,7 +1520,7 @@ function drawModeResult() {
   let y = 232;
   const hunt = r.mode === 'hunt';
   if (hunt) { const M = HMON[G.lv.mon], nx = M.tiers[r.tier], rec = r.dmg > r.best0;
-    uiText(r.why === '退军了' ? '退军了' : '九十秒到', W / 2, y, 14, 'rgba(244,230,196,.75)', 'center', PLAIN, { stroke: false }); y += 46;
+    uiText(r.why === '退军了' ? '退军了' : r.why === '都倒下了' ? '武将都倒下了' : '九十秒到', W / 2, y, 14, 'rgba(244,230,196,.75)', 'center', PLAIN, { stroke: false }); y += 46;
     uiText(fmtDmg(r.dmg), W / 2, y, 40, '#ffe08a', 'center', FONT, { lw: 6, glow: 'rgba(255,190,80,.5)', glowR: 12 }); y += 34;
     uiText('本局伤害', W / 2, y, 12, 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false }); y += 24;
     uiText(rec ? (r.best0 ? `新纪录！以前最好 ${fmtDmg(r.best0)}` : '新纪录！') : `最好纪录 ${fmtDmg(r.best0)}`, W / 2, y, 13, rec ? '#ffe08a' : 'rgba(244,230,196,.6)', 'center', rec ? FONT : PLAIN, { lw: 3 }); y += 22;
@@ -1674,7 +1705,7 @@ function hurt(e, d, src) {
   if (e.duel) G.exp += Math.min(d, e.hp) / e.max * 40;                                                                  // 斗将：砍敌将也给军功（一场约 40）
   e.hp -= d; if (src !== 'burn') e.hitT = .1; if (T0.mon) monHit(e, d, src);
   if (!G.sim) { const vd = G.visDelay ? G.visDelay(e) : 0; if (src !== 'burn') { e.flash = .12; e.flashDelay = vd; e.kickPend = (e.kickPend || 0) + (src === 'slash' || src === 'roar' ? 10 : BIGSRC.has(src) ? 7 : 3.5); if (src === 'roar') e.shkPend = true; if (!vd) { e.kick = Math.min(10, (e.kick || 0) + e.kickPend); e.kickPend = 0; if (e.shkPend) { e.shk = .22; e.shkPend = false; } } }   /* 11-08 后仰分轻重：青龙斩、一喝重；被喝的先抖一下 */ popDmg(e, d, src, vd); }
-  if (e.hp <= 0) die(e, src); else if (e.duel && G.state === 'play') checkRank();
+  if (e.hp <= 0) die(e, src); else if ((e.duel || T0.mon) && G.state === 'play') checkRank();   // 讨伐的怪物不死，军功靠打出的伤害涨，这里查升级
 }
 // 溃散：转身逃走，不撞城、不给军功
 // 波次：这一波按各自的时差出完；场上这一波的人都没了（死了、逃了、撞完城）喘一口气来下一波，拖太久也来
@@ -1751,10 +1782,11 @@ function availPerks() {
 function choose3() {
   const here = id => G.order.includes(id);   // 10-30 用户：「没出现人物，不准出现他的战法」——第一关刘备、张飞半路才上城，没上来以前不出他们的卡
   const out = [], heroes = (G.fighters || []).filter(id => here(id) && SKILLS[id] && G.act && G.act[id] && knows(id) && (G.shi[id] || 0) < SHI_MAX), ok = availPerks().filter(p => (!p.gen || here(p.gen)) && (!p.combo || p.combo.every(here)));   // 10-30 用户：「确保没学到技能时，不要出现该技能的军功」——还没学会招的人不出势卡
-  const gear = ok.filter(p => GEAR.includes(p.id)), cc = G.lv.id >= UNC_FROM ? gear.filter(p => COUNTER_OF[p.id] && traitOpen(COUNTER_OF[p.id])) : [];
-  const mendNow = G.wall < G.wallMax * .5 && gear.find(p => p.id === 'mend');
-  const trap = PERKS.find(p => p.trap), zj = counselNow()[0] === 'zoujing' && (G.perks[trap.id] || 0) < trap.max;
-  const g = mendNow || (cc.length ? cc[Math.floor(rnd() * cc.length)] : gear.filter(p => p.id !== 'mend')[Math.floor(rnd() * Math.max(1, gear.length - 1))]);   // 军械最多一张：对症优先，城防低先补墙
+  // 11-13 讨伐（用户：「打到一定的血会有军功，可以加强技能，但是那些不符合的，马索之类的就不要了」）：只出各人的势卡，军械只留火油、军令和金疮药（有人血不到一半先出药）；绊马索、拒马、破阵弩、驱邪符、滚木、修城墙、邹靖的坑卡都不出
+  const hunt = G.lv.mode === 'hunt', gear = hunt ? ok.filter(p => ['fire', 'order', 'huntHeal'].includes(p.id)) : ok.filter(p => GEAR.includes(p.id)), cc = !hunt && G.lv.id >= UNC_FROM ? gear.filter(p => COUNTER_OF[p.id] && traitOpen(COUNTER_OF[p.id])) : [];
+  const mendNow = hunt ? G.hhp && G.order.some(id => id && !G.hdown[id] && G.hhp[id] < G.hmax[id] * .5) && gear.find(p => p.id === 'huntHeal') : G.wall < G.wallMax * .5 && gear.find(p => p.id === 'mend');
+  const trap = PERKS.find(p => p.trap), zj = !hunt && counselNow()[0] === 'zoujing' && (G.perks[trap.id] || 0) < trap.max;
+  const g = mendNow || (cc.length ? cc[Math.floor(rnd() * cc.length)] : gear.filter(p => p.id !== 'mend' && p.id !== 'huntHeal')[Math.floor(rnd() * Math.max(1, gear.length - 1))]);   // 军械最多一张：对症优先，城防低先补墙
   const pool = heroes.slice(), w = id => 1 + 1.5 * (G.shi[id] || 0);                                                       // 选过的人出现得更多，方便集中培养
   const nShi = Math.max(1, 3 - (g ? 1 : 0) - (zj ? 1 : 0));   // 10-29：邹靖的坑卡改占一张势卡。原来占掉唯一那张军械，邹靖又是默认军师，结果破阵弩、绊马索这类对症军械从不出现（举盾、骑兵关机器人要把血砍到四成才赢）
   while (out.length < nShi && pool.length) { let r = rnd() * pool.reduce((a, id) => a + w(id), 0), k = 0; while (k < pool.length - 1 && (r -= w(pool[k])) > 0) k++; out.push(shiCard(pool.splice(k, 1)[0])); }
@@ -1901,7 +1933,7 @@ function goalLines(lv, amb) {
     ['★★', wall + (cart ? '和' + (lv.rules.cart.label || '车驾') : '') + '都剩一半以上'],
     ['★★★', '两星之上，再' + star3(lv, amb).text]];
 }
-function showGoals() { if (!G) return; if (G.lv.mode === 'hunt') { G.teach = { key: null, title: G.lv.name, text: '怪物不撞城。九十秒里打出多少伤害算多少，记最高纪录；伤害过一档它就换一个更凶的样子。' + HMON[G.lv.mon].say, t0: uiNow() }; return; } if (G.lv.mode) { G.teach = { key: null, title: G.lv.mode === 'endless' ? '无尽守城' : '每日残局 · ' + CJ_TWIST[G.lv.twist].name, text: G.lv.mode === 'endless' ? '敌军一波强过一波。每守过三波存一次进度，下局从那里接着打；每三十波换一个场景。城破或守满五分钟结束' : CJ_TWIST[G.lv.twist].say + '。今天第一次打赢给资历和残页', t0: uiNow() }; return; } G.teach = { key: null, title: '本关目标', goals: goalLines(G.lv, G.amb), t0: uiNow() }; }
+function showGoals() { if (!G) return; if (G.lv.mode === 'hunt') { G.teach = { key: null, title: G.lv.name, text: '九十秒里打出多少伤害算多少，记最高纪录；伤害过一档怪物就换一个更凶的样子。武将有血（看等级、统率、武力），三人都倒下就提前结束。' + HMON[G.lv.mon].say, t0: uiNow() }; return; } if (G.lv.mode) { G.teach = { key: null, title: G.lv.mode === 'endless' ? '无尽守城' : '每日残局 · ' + CJ_TWIST[G.lv.twist].name, text: G.lv.mode === 'endless' ? '敌军一波强过一波。每守过三波存一次进度，下局从那里接着打；每三十波换一个场景。城破或守满五分钟结束' : CJ_TWIST[G.lv.twist].say + '。今天第一次打赢给资历和残页', t0: uiNow() }; return; } G.teach = { key: null, title: '本关目标', goals: goalLines(G.lv, G.amb), t0: uiNow() }; }
 function teach(key) {
   if (G.sim || window.__sg.simming || window.__sg.auto || !TEACH[key]) return; INV.taught = INV.taught || {}; if (INV.taught[key] || G.teach) return;
   G.teach = { key, title: TEACH[key][0], text: TEACH[key][1], t0: uiNow() };
@@ -2069,7 +2101,8 @@ function step(dt) {
   G.shots = G.shots.filter(s => !s.done);
   G.foes = G.foes.filter(e => !e.dead);
   // 胜负
-  if (G.wall <= 0) { G.wall = 0; end(false); }
+  if (G.huntWipe && G.state === 'play') end(false, '都倒下了');   // 讨伐：三人都倒下，提前结束
+  else if (G.wall <= 0) { G.wall = 0; end(false); }
   else if (G.cart && G.cart.hp <= 0 && !RU0().cart.optional) { G.cart.hp = 0; if (G.cart.kind === 'ram' && !G.sim && ready(RAM.dead) && RAM.push.every(ready)) G.cart.brkT = 0; else end(false, RU0().cart.lose || '车驾被毁'); }
   else if (G.ally && G.ally.hp <= 0 && G.ally.must) { end(false, G.ally.name + '阵亡'); }
   else if (G.qi >= G.queue.length && G.foes.length && G.foes.every(e => FOES[e.kind].taunt || FOES[e.kind].invuln)) { for (const e of G.foes) routFoe(e, true); }   // 只剩叫阵的华雄、打不死的吕布：撤了
@@ -5533,7 +5566,7 @@ function drawSlots() {
     ctx.restore();
     if (!learnt || ok || casting) uiText(learnt ? skName(id) : '未学招式', x + w / 2, y + lift + h - 11, fitSize(learnt ? skName(id) : '未学招式', learnt ? 13 : 11, w - 6, 99, FONT, 3), ok ? UIC.gold2 : learnt ? UIC.cream : 'rgba(244,230,196,.6)', 'center', FONT, { lw: 3, maxW: w - 4, wrap: true, minFz: 12, wrapFz: 12, wrapUp: true });   // 英文招名放不下就折两行往上叠
     if (frac > 0) uiText(remain.toFixed(1), x + w / 2, y + lift + 30, 20, '#fff', 'center', PLAIN, { lw: 4 });
-    if (G.seal[i] > 0) uiText((G.lv.mode === 'hunt' ? '扑倒 ' : '迷魂 ') + G.seal[i].toFixed(1), x + w / 2, y + lift + 30, 14, '#ffd0ff', 'center', PLAIN);
+    if (G.seal[i] > 0) uiText(G.lv.mode === 'hunt' ? (G.hdown && G.hdown[G.order[i]] ? '倒下' : '定住 ' + G.seal[i].toFixed(1)) : '迷魂 ' + G.seal[i].toFixed(1), x + w / 2, y + lift + 30, 14, '#ffd0ff', 'center', PLAIN);
     else if (G.RU.casts && G.casts <= 0) uiText('招式用完', x + w / 2, y + lift + 30, 12, UIC.cream, 'center', PLAIN);
     const breathe = .55 + .45 * Math.sin(now * 5 + i);
     ctx.save(); ctx.lineWidth = casting ? 3 : ok ? 2.2 : 1.4; ctx.strokeStyle = casting ? gc : G.sel === i ? '#8fd0ff' : ok ? UIC.gold2 : 'rgba(217,166,64,.55)';
@@ -7540,7 +7573,7 @@ window.__sg = {
     this.seed = 0; this.auto = false; return Object.fromEntries(Object.entries(out).map(([k, [a, b]]) => [k, '荐错 ' + Math.round(a / b * 100) + '% (' + b + ')'])); }, ult: (k, foe) => playUlt(k, foe, true), get inv() { return INV; }, get daily() { return DAILY; }, get cloud() { return { on: CLOUD_ON, ns: CLOUD_NS, api: CLOUD_API, framed: FRAMED, st: CLOUD.st, me: CLOUD.me, claim: cloudClaim, copy: cloudCopy }; },   /* 11-10 存档码（工具/itch/check_itch.py 核对用） */ dayOff: 0, tick: () => dailyTick(), gateLack: id => gateLack(id), nextGate: () => nextGate(), get scr() { return screen; }, set scr(v) { screen = v; }, get scmax() { return SCMAX; },
   // 不画面，直接跑：一直到这一关结束（auto 时自动选战法），返回结果
   mode: k => startMode(k),   // 11-12 无尽守城、每日残局（试玩核对用）
-  simMode(k, maxT = 400) { const m = k === 'endless' ? endlessLv() : k === 'hunt' ? huntLv() : cjToday(); this.auto = true; this.simming = true; startLevel(m.li, m.lv); this.simming = false; G.sim = true; let n = 0; while (G.state !== 'over' && G.t < maxT && n < 1e6) { if (G.state === 'pick') takePerk(autoPick()); step(DT); n++; } return { win: G.result && G.result.win, kills: G.killed, passed: G.passed, wave: G.lv.w0 + G.wave + 1, map: G.lv.map, t: Math.round(G.t), wall: Math.round(G.wall), li: m.li, dmg: Math.round(G.monDmg || 0), fuN: G.foes[0] && G.foes[0].fuN, stomp: G.monStomp, stop: G.monStop }; },
+  simMode(k, maxT = 400) { const m = k === 'endless' ? endlessLv() : k === 'hunt' ? huntLv() : cjToday(); this.auto = true; this.simming = true; startLevel(m.li, m.lv); this.simming = false; G.sim = true; let n = 0; while (G.state !== 'over' && G.t < maxT && n < 1e6) { if (G.state === 'pick') takePerk(autoPick()); step(DT); n++; } return { win: G.result && G.result.win, kills: G.killed, passed: G.passed, wave: G.lv.w0 + G.wave + 1, map: G.lv.map, t: Math.round(G.t), wall: Math.round(G.wall), li: m.li, dmg: Math.round(G.monDmg || 0), stomp: G.monStomp, stop: G.monStop, hp: G.hhp && Object.entries(G.hhp).map(([k, v]) => k[0] + Math.round(v) + '/' + G.hmax[k]).join(' ') }; },
   sim(i, maxT = 300) { this.auto = true; this.simming = true; startLevel(i); this.simming = false; G.sim = true; let n = 0; while (G.state !== 'over' && G.t < maxT && n < 1e6) { if (G.state === 'pick') takePerk(autoPick()); if (this.hook) this.hook(G); step(DT); n++; } return { win: G.result && G.result.win, stars: G.result && G.result.stars, wall: Math.round(G.wall), t: Math.round(G.t), killed: G.killed, leaked: G.leaked, total: G.total, rank: G.rank, perks: G.perks }; },
   // 每关换 n 个种子各跑一遍：平均星数、胜场、城防、用时、撞城的兵、输的原因（调平衡用）
   bench(levels = LEVELS.map((_, i) => i), n = 6, naive = false) {
