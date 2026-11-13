@@ -7339,27 +7339,29 @@ function drawLvPop(t) {                                                         
     uiText(why, sx + bw / 2, by + bh + 12, 10, ok ? '#9be0a0' : 'rgba(244,230,196,.55)', 'center', PLAIN, { stroke: false, maxW: 150 });
     if (ok) hit(sx, by, bw, bh, () => { MENU.lvPop = null; sweepLevel(i); }); }
 }
-// 11-12 用户：「放在战役页里面，残是什么？」——战役页底下「返回」两边各一块牌匾，字写全（无尽守城／每日残局），不再只盖一个字的印；打完回战役页
-function lvModeBtns() {
+// 11-12 用户：「放在战役页里面，残是什么？」——先放底下「返回」两边；用户圈图：「反过来无尽和残放上面，前后三十关用箭头」——挪到页头两角（印 + 全名），换章的箭头改到地图左右两边中间
+function lvModeBtns(t) {
   if (!endlessOpen()) return;
-  plaque3(8, 590, 98, 34, '无尽守城', () => { startMode('endless', 'levels'); }, true);
-  if (cjOpen()) { ctx.save(); if (DAILY.cjWin) ctx.globalAlpha = .6; plaque3(254, 590, 98, 34, '每日残局', () => { startMode('daily', 'levels'); }, false); ctx.restore(); }
+  const one = (x, k, name, col, dim) => { const br = .5 + .5 * Math.sin(t * 2.6); ctx.save(); if (dim) ctx.globalAlpha = .6; else { ctx.shadowColor = `rgba(255,190,90,${.3 + .3 * br})`; ctx.shadowBlur = 10; }
+    uiSeal(x, 26, 26, modeSeal(k), col); ctx.shadowBlur = 0; uiText(name, x, 49, 10, UIC.gold2, 'center', FONT, { lw: 3, maxW: 62 }); ctx.restore(); hit(x - 32, 6, 64, 54, () => { startMode(k, 'levels'); }); };
+  one(34, 'endless', '无尽守城', UIC.red);
+  if (cjOpen()) one(W - 34, 'daily', '每日残局', '#6a4a14', DAILY.cjWin);
 }
 function drawLevels() {
   drawBg(); const t = uiNow();
   const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, 'rgba(8,5,4,.55)'); bg.addColorStop(1, 'rgba(6,4,3,.9)'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
   const ch = Math.floor(MENU.seg / 3), nCh = Math.ceil(LEVELS.length / 30), chOpen = c => c === 0 || window.__sg.all || !!BEST[c * 30];   // 打完上一章最后一关开下一章
-  uiText(CHAP[ch].no + ' · ' + CHAP[ch].name, W / 2, 34, 26, goldGrad(34, 26), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 });
-  for (const [d, x] of [[-1, 30], [1, W - 30]]) { const c = ch + d; if (c < 0 || c >= nCh) continue; const ok = chOpen(c); ctx.save(); if (!ok) ctx.globalAlpha = .4;
-    chevBtn(x, 31, 13, d); uiText(CHAP[c].no, x, 55, 9, 'rgba(244,230,196,.8)', 'center', PLAIN, { lw: 2.5 }); ctx.restore();
-    hit(x - 26, 12, 52, 48, () => { if (ok) MENU.seg = c * 3; else { MENU.chLockT = uiNow(); } }); }
+  uiText(CHAP[ch].no + ' · ' + CHAP[ch].name, W / 2, 34, fitSize(CHAP[ch].no + ' · ' + CHAP[ch].name, 26, 216, 99, FONT, 6), goldGrad(34, 26), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 });
+  const arrows = () => { for (const [d, x] of [[-1, 17], [1, W - 17]]) { const ay = 338;   /* 11-12 换章箭头挪到两边中间 */ const c = ch + d; if (c < 0 || c >= nCh) continue; const ok = chOpen(c); ctx.save(); if (!ok) ctx.globalAlpha = .4;
+    chevBtn(x, ay, 13, d); uiText(CHAP[c].no, d < 0 ? 4 : W - 4, ay + 22, 9, 'rgba(244,230,196,.9)', d < 0 ? 'left' : 'right', PLAIN, { lw: 3 }); ctx.restore();
+    hit(x - 20, ay - 26, 40, 62, () => { if (ok) MENU.seg = c * 3; else { MENU.chLockT = uiNow(); } }); } };   // 画在地图上面，所以等地图画完再调
   if (MENU.chLockT && uiNow() - MENU.chLockT < 1.6) uiText(`打完${CHAP[ch].no}最后一关开放`, W / 2, 58, 11, UIC.red2, 'center', PLAIN, { lw: 3 });
   SEGS.slice(ch * 3, ch * 3 + 3).forEach((nm, k0) => { const k = ch * 3 + k0, x = 14 + k0 * 112, y = 66, on = MENU.seg === k;
     const tim = on ? IMG.ui2_tab_red : IMG.ui2_tab_dark;
     if (ready(tim)) draw9(tim, x, y, 108, 30, 90, 90, 0, 0, 30 / 189); else uiPanel(x, y, 108, 30, { r: 15, top: on ? '#c0402a' : '#3a2b1f', bot: on ? '#6e140c' : UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.6)', single: true });
     uiText(nm, x + 54, y + 15, fitSize(nm, 15, 108 - 30 - 4), on ? '#fff2dc' : UIC.cream, 'center', FONT, { stroke: false }); hit(x, y, 108, 30, () => { MENU.seg = k; }); });
   const mim = IMG['map_' + (MENU.seg + 1)];
-  if (ready(mim)) { drawCampaignMap(mim, t); plaque(112, 590, 136, 34, '返回', () => { screen = 'menu'; }, false); lvModeBtns(); drawLvPop(t); if (REWARD) drawReward(); return; }
+  if (ready(mim)) { drawCampaignMap(mim, t); plaque(112, 590, 136, 34, '返回', () => { screen = 'menu'; }, false); arrows(); lvModeBtns(t); drawLvPop(t); if (REWARD) drawReward(); return; }
   LEVELS.forEach((lv, i) => {
     if (Math.floor(i / 10) !== MENU.seg) return; const j = i % 10;
     const x = j % 2 ? 186 : 18, y = 108 + Math.floor(j / 2) * 64, w = 156, h = 58, unlocked = i === 0 || BEST[LEVELS[i - 1].id] || window.__sg.all;
@@ -7376,7 +7378,7 @@ function drawLevels() {
     if (unlocked) hit(x, y, w, h, () => { MENU.lvPop = i; });
   });
   plaque(112, 590, 136, 34, '返回', () => { screen = 'menu'; }, false);
-  lvModeBtns(); drawLvPop(t); if (REWARD) drawReward();
+  arrows(); lvModeBtns(t); drawLvPop(t); if (REWARD) drawReward();
 }
 
 // ---------- 输入 ----------
