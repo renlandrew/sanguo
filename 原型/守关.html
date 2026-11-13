@@ -7344,7 +7344,7 @@ function lvModeBtns(t) {   // 11-12 用户圈图「这个布局」：页签那�
   const tab = (x, nm, on, fn, dim) => { const y = 66, tim = on ? IMG.ui2_tab_red : IMG.ui2_tab_dark; ctx.save(); if (dim) ctx.globalAlpha = .55;
     if (ready(tim)) draw9(tim, x, y, 108, 30, 90, 90, 0, 0, 30 / 189); else uiPanel(x, y, 108, 30, { r: 15, top: on ? '#c0402a' : '#3a2b1f', bot: on ? '#6e140c' : UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.6)', single: true });
     uiText(nm, x + 54, y + 15, fitSize(nm, 15, 108 - 30 - 4), on ? '#fff2dc' : UIC.cream, 'center', FONT, { stroke: false }); ctx.restore(); if (fn) hit(x, y, 108, 30, fn); };
-  tab(126, SEGS[MENU.seg], true);
+  /* 用户：「不，上面完全不要普通关卡」——中间不放当前这一段的页签；这一段叫什么写进页头标题 */
   if (endlessOpen()) { tab(14, '无尽守城', false, () => { startMode('endless', 'levels'); }); if (cjOpen()) tab(238, '每日残局', false, () => { startMode('daily', 'levels'); }, DAILY.cjWin); }
   const nSeg = Math.ceil(LEVELS.length / 10), chOpen = c => c === 0 || window.__sg.all || !!BEST[c * 30];
   for (const [d, x] of [[-1, 8], [1, 254]]) { const k = MENU.seg + d; if (k < 0 || k >= nSeg || !SEGS[k]) continue; const ok = chOpen(Math.floor(k / 3));
@@ -7354,7 +7354,7 @@ function drawLevels() {
   drawBg(); const t = uiNow();
   const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, 'rgba(8,5,4,.55)'); bg.addColorStop(1, 'rgba(6,4,3,.9)'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
   const ch = Math.floor(MENU.seg / 3), nCh = Math.ceil(LEVELS.length / 30), chOpen = c => c === 0 || window.__sg.all || !!BEST[c * 30];   // 打完上一章最后一关开下一章
-  uiText(CHAP[ch].no + ' · ' + CHAP[ch].name, W / 2, 34, 26, goldGrad(34, 26), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 });
+  { const ttl = EN_ON ? tr(SEGS[MENU.seg]) : CHAP[ch].no + ' · ' + SEGS[MENU.seg]; uiText(ttl, W / 2, 34, fitSize(ttl, 26, W - 40, 99, FONT, 6), goldGrad(34, 26), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 }); }
   if (MENU.chLockT && uiNow() - MENU.chLockT < 1.6) uiText(`打完${CHAP[ch].no}最后一关开放`, W / 2, 58, 11, UIC.red2, 'center', PLAIN, { lw: 3 });
   const mim = IMG['map_' + (MENU.seg + 1)];
   if (ready(mim)) { drawCampaignMap(mim, t); plaque(112, 590, 136, 34, '返回', () => { screen = 'menu'; }, false); lvModeBtns(t); drawLvPop(t); if (REWARD) drawReward(); return; }
