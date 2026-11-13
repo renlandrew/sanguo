@@ -7257,10 +7257,10 @@ function drawMenu() {
   if (!open1 && MENU.lockT && t - MENU.lockT < 1.8) { const a = clamp((1.8 - (t - MENU.lockT)) / .4, 0, 1); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(20,12,6,.88)'; rr(W / 2 - 90, CARD_Y - 32, 180, 26, 10); ctx.fill();
     uiText('打完第一关「桃园结义」开放', W / 2, CARD_Y - 19, 13, UIC.gold2, 'center', FONT, { lw: 3 }); ctx.restore(); }
   navBtn(330, '系统', navIco('ui_nav_sys'), () => { screen = 'system'; }, false);
-  // 11-12 用户问「从哪里进入无尽模式？」「想办法放首页？」——关卡牌右上方一颗朱印钮（和左边军师头像对称），点了直接开打，打完回主页；军帐「演武」里那一行照旧
-  if (open1 && endlessOpen()) { const ex = W - 40, ey = CARD_Y - 34, br = .5 + .5 * Math.sin(t * 2.6);
+  // 11-12 用户问「从哪里进入无尽模式？」「想办法放首页？」——一颗朱印钮，点了直接开打（先放关卡牌右上方，用户：「那里不好」，挪到右上角月卡下面排成一列），打完回主页；军帐「演武」里那一行照旧
+  if (open1 && endlessOpen()) { const ex = W - 26, ey = MONTH_SHOW ? 82 : 28, br = .5 + .5 * Math.sin(t * 2.6);
     ctx.save(); ctx.shadowColor = `rgba(255,190,90,${.35 + .3 * br})`; ctx.shadowBlur = 10; uiSeal(ex, ey, 28, modeSeal('endless'), UIC.red); ctx.restore();
-    uiText('无尽守城', ex, ey + 21, 9, UIC.gold2, 'center', FONT, { lw: 3, maxW: 60 }); hit(ex - 26, ey - 18, 52, 46, () => { startMode('endless', 'menu'); }); }
+    uiText('无尽守城', ex, ey + 21, 10, UIC.gold2, 'center', FONT, { lw: 3, maxW: 50 }); hit(ex - 24, ey - 18, 48, 46, () => { startMode('endless', 'menu'); }); }
   drawMenuTip(t);
   // 右上角月卡
   if (MONTH_SHOW) { const im = IMG.ui_nav_month, cx = W - 26, cy = 28, br = .5 + .5 * Math.sin(t * 2.4); if (ready(im)) { const f = 28 / Math.max(im.width, im.height);   /* 10-25 夜用户：「这有点太大，小一点」 40 → 28 */ ctx.save(); ctx.shadowColor = `rgba(255,200,90,${.35 + .3 * br})`; ctx.shadowBlur = 10; ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); ctx.restore(); } else uiSeal(cx, cy, 22, '月', UIC.red);
