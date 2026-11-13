@@ -2037,7 +2037,7 @@ window.EN = {
 "今天这几档的奖励已经领过": "Today's rewards for these tiers already claimed",
 "今天三档奖励已领": "today's three tier rewards claimed",
 "九十秒比伤害": "90s damage race",
-"怪物打不死，也不撞城。九十秒里打出多少伤害算多少，记最高纪录；伤害过一档它就换一个更凶的样子。巨灵身上有护体符：打碎一层，八秒内伤害加倍，把大招留到这时候。它举拳时张飞一喝能喝住": "The monster cannot be killed and never attacks the wall. Deal as much damage as you can in 90 seconds; your best is recorded. Each damage tier makes it change into a fiercer form. The Colossus wears a talisman ward: break a layer and it takes double damage for 8 seconds — save your big skills for that. When it raises its fist, Zhang Fei's Roar can stop it.",
+"怪物不撞城。九十秒里打出多少伤害算多少，记最高纪录；伤害过一档它就换一个更凶的样子。巨灵身上有护体符：打碎一层，八秒内伤害加倍，把大招留到这时候。它举拳时张飞一喝能喝住": "The monster never attacks the wall. Deal as much damage as you can in 90 seconds; your best is recorded. Each damage tier makes it change into a fiercer form. The Colossus wears a talisman ward: break a layer and it takes double damage for 8 seconds — save your big skills for that. When it raises its fist, Zhang Fei's Roar can stop it.",
 "山君": "Mountain Lord",
 "蛟": "River Serpent",
 "蛟身": "Serpent Coil",
@@ -2061,9 +2061,12 @@ window.EN = {
 "山君盯上了关羽！让关羽放招式迎击": "The Mountain Lord eyes Guan Yu! Cast his skill to counter",
 "山君盯上了张飞！让张飞放招式迎击": "The Mountain Lord eyes Zhang Fei! Cast his skill to counter",
 "山君盯上了赵云！让赵云放招式迎击": "The Mountain Lord eyes Zhao Yun! Cast his skill to counter",
-"怪物打不死，也不撞城。九十秒里打出多少伤害算多少，记最高纪录；伤害过一档它就换一个更凶的样子。山君会盯上一名武将扑过去，被扑倒的四秒动不了。在它扑到之前，让被盯上的那名武将放出招式打中它，就能把它打翻，五秒内伤害加倍": "The monster cannot be killed and never attacks the wall. Deal as much damage as you can in 90 seconds; your best is recorded. Each damage tier makes it change into a fiercer form. The Mountain Lord picks one hero and pounces — a pinned hero cannot act for 4 seconds. Before it lands, have that hero hit it with a skill to knock it down for 5 seconds of double damage.",
-"怪物打不死，也不撞城。九十秒里打出多少伤害算多少，记最高纪录；伤害过一档它就换一个更凶的样子。蛟身子长，横在场上分五段，范围招一次能打到好几段。它昂首蓄水时点蛟头集火，打够了就打断它，六秒内伤害加倍；没打断它就喷水，普攻减半四秒": "The monster cannot be killed and never attacks the wall. Deal as much damage as you can in 90 seconds; your best is recorded. Each damage tier makes it change into a fiercer form. The Serpent's long body lies across the field in five segments, so area skills hit several at once. When it rears up to charge, tap its head and focus fire: enough damage interrupts it for 6 seconds of double damage; otherwise it blasts water and halves attack damage for 4 seconds.",
-"扑倒": "Pinned"
+"怪物不撞城。九十秒里打出多少伤害算多少，记最高纪录；伤害过一档它就换一个更凶的样子。山君会盯上一名武将扑过去，被扑倒的四秒动不了。在它扑到之前，让被盯上的那名武将放出招式打中它，就能把它打翻，五秒内伤害加倍": "The monster never attacks the wall. Deal as much damage as you can in 90 seconds; your best is recorded. Each damage tier makes it change into a fiercer form. The Mountain Lord picks one hero and pounces — a pinned hero cannot act for 4 seconds. Before it lands, have that hero hit it with a skill to knock it down for 5 seconds of double damage.",
+"怪物不撞城。九十秒里打出多少伤害算多少，记最高纪录；伤害过一档它就换一个更凶的样子。蛟身子长，横在场上分五段，范围招一次能打到好几段。它昂首蓄水时点蛟头集火，打够了就打断它，六秒内伤害加倍；没打断它就喷水，普攻减半四秒": "The monster never attacks the wall. Deal as much damage as you can in 90 seconds; your best is recorded. Each damage tier makes it change into a fiercer form. The Serpent's long body lies across the field in five segments, so area skills hit several at once. When it rears up to charge, tap its head and focus fire: enough damage interrupts it for 6 seconds of double damage; otherwise it blasts water and halves attack damage for 4 seconds.",
+"扑倒": "Pinned",
+"深山虎精": "Tiger Spirit",
+"大河蛟龙": "River Dragon",
+"符水所化": "Born of Talisman Water"
 };
 window.EN_RX = [[new RegExp("^张飞喝后\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 秒内青龙斩：扫到的每人\\ ([+-]?\\d+(?:\\.\\d+)?)\\.([+-]?\\d+(?:\\.\\d+)?)\\ 倍（砍晕的本来就有\\ ([+-]?\\d+(?:\\.\\d+)?)\\.([+-]?\\d+(?:\\.\\d+)?)\\ 倍）、范围\\ \\+([+-]?\\d+(?:\\.\\d+)?)%，清一片$"), "Dragon Slash within $1s of the Roar: $2.$3× to each foe hit (normally $4.$5× on stunned), range +$6%."],
 [new RegExp("^普攻\\ \\+([+-]?\\d+(?:\\.\\d+)?)%\\ ·\\ 招式\\ \\+([+-]?\\d+(?:\\.\\d+)?)%\\ ·\\ 冷却\\ ([+-]?\\d+(?:\\.\\d+)?)%\\ ·\\ 城防\\ \\+([+-]?\\d+(?:\\.\\d+)?)%$"), "Attack +$1% · Skills +$2% · Cooldown $3% · Wall +$4%"],
