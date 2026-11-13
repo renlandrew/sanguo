@@ -28,7 +28,10 @@ for key, sp in PICK.items():
         # 11-13 用户：「很多法术还是有明显的直线边缘」——飞行的拖尾、地缝、烟超出裁切窗的地方原来被一刀切平：靠近窗边 FADE 像素内按距离渐隐（四边都做）
         if EDGE is None or EDGE.size != c.size:
             w, h = c.size; xs = np.minimum(np.arange(w), w - 1 - np.arange(w)); ys = np.minimum(np.arange(h), h - 1 - np.arange(h))
-            m = np.clip(np.minimum.outer(ys, xs) / FADE, 0, 1); EDGE = Image.fromarray((m * m * (3 - 2 * m) * 255).astype(np.uint8))
+            m = np.clip(np.minimum.outer(ys, xs) / FADE, 0, 1); m = m * m * (3 - 2 * m)
+            # 再压一个椭圆：方窗四边各自渐隐后，铺满整窗的法术（声浪、影爪的烟）看上去仍是一块软边的方块；按到窗心的椭圆距离 0.62–1 淡出，四角收圆，就没有直的边了
+            r = np.sqrt((((np.arange(w) + .5) / w * 2 - 1) ** 2)[None, :] + (((np.arange(h) + .5) / h * 2 - 1) ** 2)[:, None]); e = np.clip((1 - r) / .38, 0, 1); e = e * e * (3 - 2 * e)
+            EDGE = Image.fromarray((np.minimum(m, e) * 255).astype(np.uint8))
         c.putalpha(ImageChops.multiply(c.getchannel('A'), EDGE)); fr.append(c)
     bb = None
     for f in fr:
