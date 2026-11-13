@@ -15,7 +15,7 @@
 <body>
 <canvas id="bgv" width="36" height="64" style="display:none"></canvas><canvas id="cv"></canvas>
 <script src="墨流.js?v=20261030"></script>
-<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261112"><\/script>');</script>
+<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261112c"><\/script>');</script>
 <script>
 // 群雄逐鹿 · 守关原型（10-24）：敌军从上面一波波冲下来，刘关张站在城头各自普攻（10-24 起不设主角），招式按出手顺序轮流放，
 // 杀敌攒军功、升级三选一战法，守住城门过关。规则、数值、关卡见 ../设计/方案初稿.md「守关」一节。
@@ -1228,7 +1228,7 @@ function dailyTick() {
     const gap = DAILY.day ? Math.max(1, dayNum(td) - dayNum(DAILY.day)) : 1, packs = 1 + Math.min(monthLeft() > 0 ? 6 : 2, gap - 1), got = { 精铁: 2 * packs };   // 月卡：补领七天
     INV.it.精铁 += 2 * packs;
     staNow(); INV.sta.v = Math.max(INV.sta.v, STA_MAX); DAILY.staGot = [];   // 点卯：体力补满到 120（领多了的不扣）
-    DAILY.day = td; DAILY.met = {}; DAILY.taskN = 3 * packs; DAILY.tasks = genTasks(td, DAILY.taskN); DAILY.caps = { 精铁: 0 }; DAILY.visits = 0; DAILY.visitN = 2 * packs; DAILY.chores = false; DAILY.cd = CHORES.map(() => false); DAILY.endTier = 0; DAILY.cjWin = false;
+    DAILY.day = td; DAILY.met = {}; DAILY.taskN = 3 * packs; DAILY.tasks = genTasks(td, DAILY.taskN); DAILY.caps = { 精铁: 0 }; DAILY.visits = 0; DAILY.visitN = 2 * packs; DAILY.chores = false; DAILY.cd = CHORES.map(() => false); DAILY.endSwept = false; DAILY.cjWin = false;
     if (DAILY.week !== weekKey(td)) { DAILY.week = weekKey(td); DAILY.weekN = 0; DAILY.weekSeal = false; }
     if (monthLeft() > 0) doChores();                                             // 月卡：日常杂务一上线就做完
     note = { packs, got }; saveInv(); saveDaily();
@@ -1332,11 +1332,10 @@ function settleLoot(win) {
 }
 // ===== 冲关以外的玩法（11-12 用户：「增加每天冲关外的玩法，可以打发下时间」「先做无尽守城加每日残局」）=====
 // 两种都借打过的关当底（兵种、地图、血量、我方等级招式照旧），不花体力、不记星、不碰军务和首通；G.lv.mode 标着，结算走 endMode
-// 无尽守城：打过的最高一关的兵一波比一波多、血一波比一波厚，城破或撑满 5 分钟结束，按斩敌数算；当天斩敌越过一档发一档奖（再打破纪录补发差的那几档）
+// 无尽守城：一波一波连着打，每守过三波存一次进度、发一次那一档的东西，下局从存的那波接着打；每三十波换一个场景；每天能扫荡一次，把已经存过的各档再收一遍
 // 每日残局：按日期挑一关打过的关，加一条限制（城防只剩四成／敌兵血厚／敌兵急行／不准自动出招）；当天第一次打赢给资历和残页
-const MODE_T = 200;   // ×TIMEX 1.5 = 300 秒（一局不超过 5 分钟）
-const END_TIERS = [[3, '精铁', 1], [6, '精铁', 1], [10, '残页', 1], [15, '精铁', 2], [20, '残页', 2]];   // 当天一局推进几波
-const END_HK = 1, END_N = 8, END_GROW = 1.12, END_CK = [['精铁', 2], ['残页', 1]];   // 每波主兵 8–11 队（×2 人）；每存一次进度（5 波）发 END_CK
+const MODE_T = 200, END_N = 8, END_GROW = 1.2, END_SAVE = 3, END_SCENE = 30;   // 一局最多 MODE_T×1.5 = 300 秒；每 3 波一档、每 30 波换场景；主兵每波 8–11 队（×2 人）
+const endPay = c => [['精铁', 1], ...(c % 5 ? [] : [['残页', 1]])];   // 每档（三波）精铁 1，逢第五档再加残页 1
 const CJ_PAY = [['资历', 2], ['残页', 2]];
 const CJ_TWIST = {
   wall:   { name: '城防只剩四成', say: '开局城防只剩四成，守住就算赢', fn: lv => { lv.rules = { ...(lv.rules || {}), wall: 40 }; } },
@@ -1347,19 +1346,25 @@ const CJ_TWIST = {
 const modeSeal = k => k === 'endless' ? (EN_ON ? '∞' : '守') : (EN_ON ? 'D' : '残');   // 英文印里不放「Hold」那种长字
 const modeBases = () => LEVELS.map((lv, i) => ({ lv, i })).filter(({ lv }) => BEST[lv.id] && lv.kind !== 'duel' && !lv.solo && fighters(lv).length >= 3 && lv.id >= 3);
 const endlessOpen = () => modeBases().length > 0, cjOpen = () => modeBases().some(b => b.lv.id >= 4);
-// 11-12 用户：「如果玩家不断重复之前的简单关，会无聊，应该保持进度，随着玩家强度上升，能持续前进」——第 k 波照第 ⌊k/2⌋+1 个打过的关出兵（兵种、血量），
-// 过了打过的最高关再每波 ×END_GROW；每推进 5 波存一次进度（INV.endCk），下局从那里接着打
-function endTpl() { const out = []; for (const lv of LEVELS) { if (!BEST[lv.id] || lv.kind === 'duel') continue; const ks = [], seen = new Set(); const cnt = {};
+// 11-12 用户：「如果玩家不断重复之前的简单关，会无聊，应该保持进度，随着玩家强度上升，能持续前进」「不需要每 5 波存一次进度，过一关就保存一关，每天可以有一次重置，重置就自动扫荡前面，到卡住的那关，前面物品全部收集」
+// 第 f 关照第 ⌈f/2⌉ 个打过的非斗将关出兵（兵种、血量；同一关的第二次血厚一成半），过了打过的最高关再每关 ×END_GROW；INV.endMax 记过了几关
+function endTpl() { const out = []; for (const lv of LEVELS) { if (!BEST[lv.id] || lv.kind === 'duel') continue; const cnt = {};
     for (const w of lv.waves || []) { const T = FOES[w[1]], o = w[5] || {}; if (T && !T.boss && !T.civ && !T.duel && !T.taunt && !T.invuln && !o.lead) cnt[w[1]] = (cnt[w[1]] || 0) + w[2]; }
     const kinds = Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(e => e[0]); if (kinds.length) out.push({ lv, kinds }); }
   return out; }
-const END_BACK = 6, endStart = () => Math.max(0, (INV.endCk || 0) - END_BACK);   // 从存的进度往回退 6 波开打：一局的战法要边打边拿，直接从最难那波起手上什么都没有
+// 11-12 用户又定：「还是一波波吧，每3波一保存，每30波换一个场景」——INV.endMax 记存了几档（×3 就是波数）；第 g 波属于第 ⌊g/3⌋ 档，照第 ⌈档/2⌉ 个打过的关出兵
+function endScenes() { const out = []; for (const lv of LEVELS) if (BEST[lv.id] && lv.kind !== 'duel' && !(lv.rules && (lv.rules.night || lv.rules.pass || lv.rules.flood)) && lv.map !== 'canyon' && !out.includes(lv.map)) out.push(lv.map); return out; }
 function endlessLv() {
-  const B = modeBases(), b = B[B.length - 1], base = b.lv, tp = endTpl(), n = tp.length, w0 = window.__sg && window.__sg.endFrom != null ? window.__sg.endFrom : endStart(), forms = ['rand', 'wedge', 'line'], waves = [];
-  for (let q = 0; q < 40; q++) { const k = w0 + q, P = tp[Math.min(n - 1, k >> 1)], grow = k >= 2 * n ? Math.pow(END_GROW, k - 2 * n + 1) : 1, hk = (P.lv.hpMul || 1) * END_HK * grow, t0 = q * WAVE_LEN;
-    waves.push([t0, P.kinds[0], END_N + (k % 4), q % 3 ? 0 : 6, forms[q % 3], { hk }]);
-    if (P.kinds.length > 1) waves.push([t0 + 3, P.kinds[1 + (k % (P.kinds.length - 1))], 3 + (k % 3), 4, 'rand', { hk }]); }
-  return { li: b.i, lv: { ...base, mode: 'endless', w0, hpMul: 1, seal: modeSeal('endless'), name: '无尽守城', sub: '敌军一波强过一波，能撑多久', rules: { timed: { t: MODE_T, label: '守城', text: '守满五分钟', sub: '敌军退了' } }, waves, tips: [], join: [], wait: 3, tx: 1, charge: undefined, s3: null, reward: null } };
+  const B = modeBases(), b = B[B.length - 1], base = b.lv, tp = endTpl(), n = tp.length, ck = window.__sg && window.__sg.endFrom != null ? window.__sg.endFrom : INV.endMax || 0, w0 = ck * END_SAVE, forms = ['rand', 'wedge', 'line'], waves = [];
+  for (let q = 0; q < 40; q++) { const g = w0 + q, k = Math.floor(g / END_SAVE), P = tp[Math.min(n - 1, k >> 1)], hk = (P.lv.hpMul || 1) * (k % 2 ? 1.15 : 1) * (k >= 2 * n ? Math.pow(END_GROW, k - 2 * n + 1) : 1), t0 = q * WAVE_LEN;
+    waves.push([t0 + 2, P.kinds[0], END_N + (g % 4), q % 3 ? 0 : 6, forms[g % 3], { hk }]);
+    if (P.kinds.length > 1) waves.push([t0 + 5, P.kinds[1 + (g % (P.kinds.length - 1))], 3 + (g % 3), 4, 'rand', { hk }]); }
+  const sc = endScenes(), map = sc.length ? sc[Math.floor(w0 / END_SCENE) % sc.length] : base.map;
+  return { li: b.i, lv: { ...base, map, mode: 'endless', w0, hpMul: 1, seal: modeSeal('endless'), name: '无尽守城', sub: `从第 ${w0 + 1} 波打起`, rules: { timed: { t: MODE_T, label: '守城', text: '守满五分钟', sub: '敌军退了' } }, waves, tips: [], join: [], wait: 4, tx: 1, charge: undefined, s3: null, reward: null } };
+}
+function endSweep() {   // 每天一次：已经过的关的东西全收一遍
+  const m = INV.endMax || 0; if (!m || DAILY.endSwept) return null; const got = {}; for (let f = 1; f <= m; f++) for (const [k, n] of endPay(f)) got[k] = (got[k] || 0) + n;
+  for (const [k, n] of Object.entries(got)) INV.it[k] = (INV.it[k] || 0) + n; DAILY.endSwept = true; saveInv(); saveDaily(); return Object.entries(got);
 }
 function cjToday() {
   const B = modeBases().filter(b => b.lv.id >= 4); if (!B.length) return null;
@@ -1377,29 +1382,25 @@ function endMode(win, why) {
   G.state = 'over'; sfx(win ? 'win' : 'lose'); const lv = G.lv, r = G.result = { win, why, mode: lv.mode, time: G.t, kills: G.killed, wave: (lv.w0 || 0) + Math.max(1, G.wave + 1), adv: G.passed || 0, pay: [] };
   G.fx = G.fx.filter(f => !['wave', 'banner', 'txt', 'leak'].includes(f.k)); if (G.sim) return;
   const pay = (k, n) => { if (k === '资历') addPrep(n); else INV.it[k] = (INV.it[k] || 0) + n; const o = r.pay.find(p => p[0] === k); if (o) o[1] += n; else r.pay.push([k, n]); };
-  if (lv.mode === 'endless') { const reached = (lv.w0 || 0) + r.adv, ck0 = INV.endCk || 0, ck1 = Math.max(ck0, Math.floor(reached / 5) * 5);
-    r.best0 = INV.endBest || 0; INV.endBest = Math.max(r.best0, reached); r.rec = reached > r.best0; r.ck0 = ck0; r.ck = ck1; INV.endCk = ck1;
-    for (let c = ck0 + 5; c <= ck1; c += 5) for (const [k, n] of END_CK) pay(k, n);
-    const t0 = DAILY.endTier || 0; let t1 = t0; while (t1 < END_TIERS.length && r.adv >= END_TIERS[t1][0]) { pay(END_TIERS[t1][1], END_TIERS[t1][2]); t1++; } DAILY.endTier = Math.max(t0, t1); r.tier = DAILY.endTier; }
+  if (lv.mode === 'endless') { const c0 = INV.endMax || 0, c1 = Math.max(c0, Math.floor(lv.w0 / END_SAVE) + Math.floor(r.adv / END_SAVE)); r.ck0 = c0 * END_SAVE; r.ck = c1 * END_SAVE; INV.endMax = c1; for (let c = c0 + 1; c <= c1; c++) for (const [k, n] of endPay(c)) pay(k, n); }
   else if (win && !DAILY.cjWin) { DAILY.cjWin = true; for (const [k, n] of CJ_PAY) pay(k, n); r.first = true; }
   saveInv(); saveDaily();
 }
 function drawModeResult() {
   const r = G.result; r.t0 ??= uiNow(); const t = uiNow() - r.t0, al = clamp((t - .5) / .3, 0, 1), endless = r.mode === 'endless';
   const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, `rgba(8,5,4,${Math.min(.6, t * 2)})`); bg.addColorStop(.4, `rgba(10,6,5,${Math.min(.86, t * 2.4)})`); bg.addColorStop(1, `rgba(6,4,3,${Math.min(.97, t * 3)})`); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  const good = endless ? r.kills > 0 : r.win, cu = clamp(t / .3, 0, 1), sc = 1.5 - .5 * ease(cu), cy = 132;
+  const good = endless ? r.adv > 0 : r.win, cu = clamp(t / .3, 0, 1), sc = 1.5 - .5 * ease(cu), cy = 132;
   const gl = ctx.createRadialGradient(W / 2, cy, 0, W / 2, cy, 170); gl.addColorStop(0, good ? 'rgba(255,196,90,.32)' : 'rgba(190,46,28,.24)'); gl.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gl; ctx.fillRect(0, 0, W, 320);
   ctx.save(); ctx.globalAlpha = cu; ctx.translate(W / 2, cy); ctx.scale(sc, sc); uiSeal(0, 0, 70, endless ? modeSeal('endless') : r.win ? (EN_ON ? 'D' : '破') : '败', good ? UIC.red : '#5a1d12'); ctx.restore();
   uiText(G.lv.name, W / 2, 196, 22, UIC.gold2, 'center', FONT, { lw: 4 });
   ctx.save(); ctx.globalAlpha = al;
   let y = 232;
   if (endless) {
-    const head = r.win ? '守满五分钟' : r.why === '退军了' ? '退军了' : '城破了';
-    uiText(head, W / 2, y, 14, 'rgba(244,230,196,.75)', 'center', PLAIN, { stroke: false }); y += 44;
-    segText(EN_ON ? [['Wave', UIC.cream], [' ' + r.wave, '#ffe08a']] : [['第', UIC.cream], [' ' + r.wave + ' ', '#ffe08a'], ['波', UIC.cream]], W / 2, y, 30, FONT, { lw: 5 }); y += 30; uiText('斩敌 ' + r.kills, W / 2, y, 13, UIC.cream, 'center', PLAIN, { stroke: false }); y += 22;
-    uiText(`本局守过 ${r.adv} 波 · ${Math.floor(r.time / 60)}:${String(Math.floor(r.time % 60)).padStart(2, '0')}`, W / 2, y, 13, UIC.cream, 'center', PLAIN, { stroke: false }); y += 24;
-    uiText(r.ck > r.ck0 ? `进度存到第 ${r.ck} 波 · 下局从第 ${endStart() + 1} 波打起` : `进度第 ${r.ck} 波 · 下局从第 ${endStart() + 1} 波打起`, W / 2, y, 13, r.ck > r.ck0 ? '#ffe08a' : 'rgba(244,230,196,.6)', 'center', r.ck > r.ck0 ? FONT : PLAIN, { lw: 3 }); y += 34;
-    const nx = END_TIERS[r.tier]; uiText(nx ? `今天一局守过 ${nx[0]} 波得${nx[1]} +${nx[2]}` : '今天的奖励都拿到了', W / 2, y, 12, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false }); y += 16;
+    uiText(r.win ? '守满五分钟' : r.why === '退军了' ? '退军了' : '城破了', W / 2, y, 14, 'rgba(244,230,196,.75)', 'center', PLAIN, { stroke: false }); y += 44;
+    segText(EN_ON ? [['Wave', UIC.cream], [' ' + r.wave, '#ffe08a']] : [['第', UIC.cream], [' ' + r.wave + ' ', '#ffe08a'], ['波', UIC.cream]], W / 2, y, 30, FONT, { lw: 5 }); y += 32;
+    uiText(`本局守过 ${r.adv} 波 · 斩敌 ${r.kills}`, W / 2, y, 13, UIC.cream, 'center', PLAIN, { stroke: false }); y += 24;
+    uiText(r.ck > r.ck0 ? `进度存到第 ${r.ck} 波` : `进度第 ${r.ck} 波 · 再守过 ${END_SAVE} 波才存`, W / 2, y, 13, r.ck > r.ck0 ? '#ffe08a' : 'rgba(244,230,196,.6)', 'center', r.ck > r.ck0 ? FONT : PLAIN, { lw: 3 }); y += 22;
+    uiText(`下局从第 ${r.ck + 1} 波打起`, W / 2, y, 12, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false }); y += 16;
   } else {
     uiText(G.lv.sub, W / 2, y, 14, '#ff9a7a', 'center', FONT, { lw: 3 }); y += 40;
     uiText(r.win ? '残局破了' : r.why === '退军了' ? '退军了' : '没守住', W / 2, y, 28, r.win ? '#ffe08a' : UIC.red2, 'center', FONT, { lw: 5 }); y += 40;
@@ -1408,7 +1409,7 @@ function drawModeResult() {
   if (r.pay.length) { uiText('本局奖励', W / 2, y + 14, 12, UIC.gold2, 'center', FONT, { stroke: false }); y += 22; const n = r.pay.length, x0 = W / 2 - (n - 1) * 36; r.pay.forEach(([k, v], i) => { const x = x0 + i * 72; if (k === '资历') uiSeal(x, y + 30, 26, '资', '#6a4a14', true); else drawItemIcon(k, x, y + 30, 32); uiText(`${k} +${v}`, x, y + 60, 12, UIC.cream, 'center', PLAIN, { stroke: false }); }); }
   ctx.restore();
   const yb = H - 54, back = () => { G = null; MODE = null; BACKTO = null; screen = 'camp'; CAMP.t0 = uiNow(); }, again = () => { const k = r.mode; G = null; startMode(k); };
-  plaque(54, yb, 120, 46, '再来', again, false, al); plaque(186, yb, 120, 46, '返回', back, true, al);
+  const nxt = endless && r.ck > r.ck0; plaque(54, yb, 120, 46, nxt ? '接着打' : '再来', again, nxt, al); plaque(186, yb, 120, 46, '返回', back, !nxt, al);
 }
 
 // 这一关上阵时各人按几级算：机器人按推荐等级；玩家按存档；网址带 ?all 跳关试玩时，低于推荐的按推荐算（不然跳到后面会打不过）
@@ -1799,7 +1800,7 @@ function goalLines(lv, amb) {
     ['★★', wall + (cart ? '和' + (lv.rules.cart.label || '车驾') : '') + '都剩一半以上'],
     ['★★★', '两星之上，再' + star3(lv, amb).text]];
 }
-function showGoals() { if (!G) return; if (G.lv.mode) { G.teach = { key: null, title: G.lv.mode === 'endless' ? '无尽守城' : '每日残局 · ' + CJ_TWIST[G.lv.twist].name, text: G.lv.mode === 'endless' ? '每一波照一关的敌军出兵，越往后越强。每推进五波存一次进度，下局从那里接着打；城破或守满五分钟结束' : CJ_TWIST[G.lv.twist].say + '。今天第一次打赢给资历和残页', t0: uiNow() }; return; } G.teach = { key: null, title: '本关目标', goals: goalLines(G.lv, G.amb), t0: uiNow() }; }
+function showGoals() { if (!G) return; if (G.lv.mode) { G.teach = { key: null, title: G.lv.mode === 'endless' ? '无尽守城' : '每日残局 · ' + CJ_TWIST[G.lv.twist].name, text: G.lv.mode === 'endless' ? '敌军一波强过一波。每守过三波存一次进度，下局从那里接着打；每三十波换一个场景。城破或守满五分钟结束' : CJ_TWIST[G.lv.twist].say + '。今天第一次打赢给资历和残页', t0: uiNow() }; return; } G.teach = { key: null, title: '本关目标', goals: goalLines(G.lv, G.amb), t0: uiNow() }; }
 function teach(key) {
   if (G.sim || window.__sg.simming || window.__sg.auto || !TEACH[key]) return; INV.taught = INV.taught || {}; if (INV.taught[key] || G.teach) return;
   G.teach = { key, title: TEACH[key][0], text: TEACH[key][1], t0: uiNow() };
@@ -5334,7 +5335,7 @@ function drawHud() {
   uiSeal(24, 30, 32, G.lv.mode ? G.lv.seal : CNUM(lvNo(G.lv)), G.lv.kind === 'duel' ? '#8a1c10' : UIC.red);
   uiText(G.lv.name, 46, 24, G.lv.name.length > 5 ? 20 : 24, UIC.cream, 'left', FONT, { glow: 'rgba(242,190,90,.35)' });
   uiText(G.lv.mode ? G.lv.sub : CHAP[chOf(G.lv)].no + ' ' + CHAP[chOf(G.lv)].name, 46, 50, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false, maxW: 140 });   // 11-02 用户：「第几波就在左上或者右上角想办法」——波数挪到战场左上角（下面 st 那段）
-  const endl = G.lv.mode === 'endless', left = Math.max(0, G.total - G.killed - G.leaked - (G.routed || 0)), barF = endl ? Math.max(0, 1 - G.t / (MODE_T * TIMEX.v)) : left / Math.max(1, G.total), barT = endl ? '斩敌 ' + G.killed : '敌 ' + left;   // 无尽守城：条是剩下的时间，字写斩了几个
+  const left = Math.max(0, G.total - G.killed - G.leaked - (G.routed || 0)), barF = left / Math.max(1, G.total), barT = '敌 ' + left;
   if (ready(IMG.ui2_slot)) {                                                      // 细金边槽（凹槽挖空对准条），敌军数压在条上
     const k = 18 / 33; uiBar('foe', HB_X + 5 * k, 13 + 6 * k, HB_W - 12 * k, 20 * k, barF, '#8a1a10', '#e2563a', { edge: 'rgba(0,0,0,0)' }); draw9(IMG.ui2_slot, HB_X, 13, HB_W, 18, 18, 18, 0, 0, k); uiText(barT, HB_X + HB_W / 2, 22, 11, UIC.cream, 'center', PLAIN, { maxW: HB_W - 8 });
   } else { uiText('敌', 190, 22, 15, UIC.red2, 'center'); uiBar('foe', 202, 15, 96, 12, left / Math.max(1, G.total), '#8a1a10', '#e2563a'); uiText(String(left), 302, 21, 12, UIC.cream, 'left', PLAIN); }
@@ -5365,7 +5366,7 @@ function drawHud() {
   if (G.flags) st.push(['将旗 ' + G.flags.filter(f => f.up).length + '/' + G.flags.length, UIC.cream]);
   if (G.cart && G.cart.hp > 0) st.push([(G.cart.label || (G.cart.kind === 'ram' ? '冲车' : '车驾')) + ' ' + Math.ceil(G.cart.hp * SHOWX) + ' · ' + Math.round((G.cart.y - G.RU.cart.y0) / (G.RU.cart.y1 - G.RU.cart.y0) * 100) + '%', G.cart.hp < G.cart.max * .35 ? UIC.red2 : UIC.cream]);
   const by = G.boss && !G.boss.dead ? TOP + 30 : TOP - 4;
-  if (G.nWaves > 1) { const t = endl ? `第 ${(G.lv.w0 || 0) + Math.max(1, G.wave + 1)} 波` : `第 ${Math.max(1, G.wave + 1)}/${G.nWaves} 波`; ctx.font = `12px ${PLAIN}`; const w = ctx.measureText(t).width + 22; uiPanel(8, by + 4, w, 19, { r: 9.5, single: true, lw: 1, alpha: .86 }); uiText(t, 8 + w / 2, by + 14, 12, UIC.gold2, 'center', PLAIN, { stroke: false }); }   // 波数：战场左上角一块小牌，和右边的状态小牌同一排
+  if (G.nWaves > 1) { const t = G.lv.mode === 'endless' ? `第 ${G.lv.w0 + Math.max(1, G.wave + 1)} 波` : `第 ${Math.max(1, G.wave + 1)}/${G.nWaves} 波`; ctx.font = `12px ${PLAIN}`; const w = ctx.measureText(t).width + 22; uiPanel(8, by + 4, w, 19, { r: 9.5, single: true, lw: 1, alpha: .86 }); uiText(t, 8 + w / 2, by + 14, 12, UIC.gold2, 'center', PLAIN, { stroke: false }); }   // 波数：战场左上角一块小牌，和右边的状态小牌同一排
   const fy = drawFocusChip(by) ? 32 : 0;                                        // 点中的敌人：右上角一块小牌（头像 + 名字），状态小牌排在它下面
   G.hudChips = Math.max(Math.ceil((fy + st.length * 22) / 22), G.nWaves > 1 ? 1 : 0);   // 提示卷轴挪到这几块小牌下面，不压住
   st.forEach(([t, c], k) => { ctx.font = `12px ${PLAIN}`; const w = ctx.measureText(t).width + 22; uiPanel(W - w - 8, by + 4 + fy + k * 22, w, 19, { r: 9.5, single: true, lw: 1, alpha: .86 }); uiText(t, W - 8 - w / 2, by + 14 + fy + k * 22, 12, c, 'center', PLAIN, { stroke: false }); });
@@ -6568,8 +6569,9 @@ function drawCamp() {
   // 11-12 冲关以外的玩法：无尽守城、每日残局，各一行（不花体力）
   if (endlessOpen()) { y += 8; uiText('演武', 18, y + 8, 16, UIC.gold2, 'left', FONT, { stroke: false }); uiText('不花体力', W - 18, y + 8, 12, 'rgba(244,230,196,.6)', 'right', PLAIN, { stroke: false }); y += 22;
     { plate(14, y, W - 28, 50); uiSeal(36, y + 25, 26, modeSeal('endless'), UIC.red);
-      uiText('无尽守城', 56, y + 16, 14, UIC.cream, 'left', FONT, { stroke: false }); const nx = END_TIERS[DAILY.endTier || 0];
-      const s2 = `进度第 ${INV.endCk || 0} 波 · ` + (nx ? `今天一局守过 ${nx[0]} 波得${nx[1]} +${nx[2]}` : '今天奖励已领完'); uiText(s2, 56, y + 35, fitSize(s2, 10, W - 140, 99, PLAIN), 'rgba(240,217,160,.7)', 'left', PLAIN, { stroke: false });
+      const m = INV.endMax || 0, mw = m * END_SAVE, canSw = m > 0 && !DAILY.endSwept; uiText(`无尽守城 · 第 ${mw + 1} 波`, 56, y + 16, 14, UIC.cream, 'left', FONT, { stroke: false, maxW: canSw ? 118 : 180 });
+      const s2 = !m ? '每守过三波存一次进度、得精铁' : DAILY.endSwept ? `已守过 ${mw} 波 · 今天已扫荡` : `已守过 ${mw} 波 · 今天可扫荡一次`; uiText(s2, 56, y + 35, 10, 'rgba(240,217,160,.7)', 'left', PLAIN, { stroke: false, maxW: canSw ? 138 : 190 });
+      if (canSw) pill(W - 160, y + 13, 62, 24, '扫荡', () => { const g = endSweep(); if (g) showReward('重置扫荡 · 无尽守城', [`前 ${mw} 波的东西全收了`], ['guan', 'zhang', 'liu'], true, g); }, false);
       pill(W - 92, y + 13, 64, 24, '开打', () => { screen = 'menu'; startMode('endless'); }); y += 56; }
     { const c = cjOpen() ? cjToday() : null; ctx.save(); if (!c || DAILY.cjWin) ctx.globalAlpha = .55; plate(14, y, W - 28, 50); ctx.restore(); uiSeal(36, y + 25, 26, modeSeal('daily'), '#6a4a14');
       uiText(c ? '每日残局 · ' + c.base.name : '每日残局', 56, y + 16, fitSize(c ? '每日残局 · ' + c.base.name : '每日残局', 14, W - 160, 99, FONT), UIC.cream, 'left', FONT, { stroke: false });
@@ -7416,7 +7418,7 @@ window.__sg = {
     this.seed = 0; this.auto = false; return Object.fromEntries(Object.entries(out).map(([k, [a, b]]) => [k, '荐错 ' + Math.round(a / b * 100) + '% (' + b + ')'])); }, ult: (k, foe) => playUlt(k, foe, true), get inv() { return INV; }, get daily() { return DAILY; }, get cloud() { return { on: CLOUD_ON, ns: CLOUD_NS, api: CLOUD_API, framed: FRAMED, st: CLOUD.st, me: CLOUD.me, claim: cloudClaim, copy: cloudCopy }; },   /* 11-10 存档码（工具/itch/check_itch.py 核对用） */ dayOff: 0, tick: () => dailyTick(), gateLack: id => gateLack(id), nextGate: () => nextGate(), get scr() { return screen; }, set scr(v) { screen = v; }, get scmax() { return SCMAX; },
   // 不画面，直接跑：一直到这一关结束（auto 时自动选战法），返回结果
   mode: k => startMode(k),   // 11-12 无尽守城、每日残局（试玩核对用）
-  simMode(k, maxT = 400) { const m = k === 'endless' ? endlessLv() : cjToday(); this.auto = true; this.simming = true; startLevel(m.li, m.lv); this.simming = false; G.sim = true; let n = 0; while (G.state !== 'over' && G.t < maxT && n < 1e6) { if (G.state === 'pick') takePerk(autoPick()); step(DT); n++; } return { win: G.result && G.result.win, kills: G.killed, passed: G.passed, wave: (G.lv.w0 || 0) + G.wave + 1, t: Math.round(G.t), wall: Math.round(G.wall), li: m.li }; },
+  simMode(k, maxT = 400) { const m = k === 'endless' ? endlessLv() : cjToday(); this.auto = true; this.simming = true; startLevel(m.li, m.lv); this.simming = false; G.sim = true; let n = 0; while (G.state !== 'over' && G.t < maxT && n < 1e6) { if (G.state === 'pick') takePerk(autoPick()); step(DT); n++; } return { win: G.result && G.result.win, kills: G.killed, passed: G.passed, wave: G.lv.w0 + G.wave + 1, map: G.lv.map, t: Math.round(G.t), wall: Math.round(G.wall), li: m.li }; },
   sim(i, maxT = 300) { this.auto = true; this.simming = true; startLevel(i); this.simming = false; G.sim = true; let n = 0; while (G.state !== 'over' && G.t < maxT && n < 1e6) { if (G.state === 'pick') takePerk(autoPick()); if (this.hook) this.hook(G); step(DT); n++; } return { win: G.result && G.result.win, stars: G.result && G.result.stars, wall: Math.round(G.wall), t: Math.round(G.t), killed: G.killed, leaked: G.leaked, total: G.total, rank: G.rank, perks: G.perks }; },
   // 每关换 n 个种子各跑一遍：平均星数、胜场、城防、用时、撞城的兵、输的原因（调平衡用）
   bench(levels = LEVELS.map((_, i) => i), n = 6, naive = false) {

@@ -19,7 +19,9 @@ T = {
 '今天再斩到 # 得精铁 +#': 'Reach # kills today for Steel +#', '今天再斩到 # 得残页 +#': 'Reach # kills today for Pages +#', '今天的奖励都拿到了': "All of today's rewards earned",
 '残局破了': 'Puzzle solved', '没守住': 'Failed',
 '今天的残局奖励已发': "Today's puzzle reward granted", '今天已经领过奖励，明天换一局': 'Reward already claimed — a new puzzle tomorrow', '可以再来，明天换一局': 'Try again — a new puzzle tomorrow',
-'进度第 # 波': 'Progress: wave #', '本局守过 # 波': 'Cleared # waves', '进度存到第 # 波': 'Progress saved: wave #', '下局从第 # 波打起': 'Next run starts at wave #',
-'今天一局守过 # 波得精铁 +#': 'Clear # waves in one run today: Steel +#', '今天一局守过 # 波得残页 +#': 'Clear # waves in one run today: Pages +#',
-'每一波照一关的敌军出兵，越往后越强。每推进五波存一次进度，下局从那里接着打；城破或守满五分钟结束': 'Each wave fields the army of one stage, stronger the further you go. Progress saves every five waves and the next run picks up near it. Ends when the wall falls or after five minutes.',
+'每守过三波存一次进度、得精铁': 'Saves every 3 waves cleared, with Steel', '已守过 # 波': '# waves cleared', '今天已扫荡': 'swept today', '今天可扫荡一次': 'sweep ready',
+'重置扫荡': 'Reset Sweep', '前 # 波的东西全收了': 'Collected everything from the first # waves',
+'从第 # 波打起': 'From wave #', '本局守过 # 波': 'Cleared # waves', '斩敌 #': 'Kills #', '进度存到第 # 波': 'Progress saved: wave #', '进度第 # 波': 'Progress: wave #', '再守过 # 波才存': 'clear # more to save',
+'下局从第 # 波打起': 'Next run starts at wave #', '接着打': 'Continue', '守满五分钟': 'Held five minutes',
+'敌军一波强过一波。每守过三波存一次进度，下局从那里接着打；每三十波换一个场景。城破或守满五分钟结束': 'Each wave is stronger than the last. Progress saves every three waves cleared and the next run continues from there; the battlefield changes every thirty waves. A run ends when the wall falls or after five minutes.',
 }
