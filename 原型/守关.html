@@ -15,7 +15,7 @@
 <body>
 <canvas id="bgv" width="36" height="64" style="display:none"></canvas><canvas id="cv"></canvas>
 <script src="墨流.js?v=20261030"></script>
-<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261113b"><\/script>');</script>
+<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261113c"><\/script>');</script>
 <script>
 // 群雄逐鹿 · 守关原型（10-24）：敌军从上面一波波冲下来，刘关张站在城头各自普攻（10-24 起不设主角），招式按出手顺序轮流放，
 // 杀敌攒军功、升级三选一战法，守住城门过关。规则、数值、关卡见 ../设计/方案初稿.md「守关」一节。
@@ -1395,21 +1395,30 @@ const HMON = {
   shanjun: { name: '山君', type: 'pounce', tiers: [30000, 60000, 100000], weak: 5, map: 'hunt_forest', every: [6, 5.5, 5], wind: 2.4, h: [76, 82, 88], sh: [44, 8], lunge: 50,
     moves: [{ name: '扑击', tgt: 'one', wind: 2.4, dmg: 56, pin: 4, counter: 'aim', lab: '盯上', tell: '山君盯上了{who}！让{who}放招式迎击', hit: '被扑倒，四秒动不了' },
             { name: '虎啸', tgt: 'all', wind: 1.4, dmg: 22, slow: 3, lab: '虎啸', tell: '山君仰头要啸', hit: '虎啸：都挨了一下，普攻慢一半' },
-            { name: '甩尾', tgt: 'pos2', wind: 1.7, dmg: 44, lab: '甩尾', tell: '山君甩尾扫两个位置！拖牌让血厚的去挨', hit: '被尾巴扫中' }],
-    say: '山君会盯上一名武将扑过去——在它扑到之前让那名武将放招式打中它，就能把它打翻，五秒内伤害加倍。它还会虎啸震全场、甩尾扫相邻两个位置（拖牌换人去挨）' },
+            { name: '利爪', tgt: 'pos2', wind: 1.7, dmg: 44, lab: '利爪', tell: '山君亮爪扫两个位置！拖牌让血厚的去挨', hit: '被利爪扫中' }],
+    say: '山君会盯上一名武将扑过去——在它扑到之前让那名武将放招式打中它，就能把它打翻，五秒内伤害加倍。它还会虎啸震全场、亮爪扫相邻两个位置（拖牌换人去挨）' },
   jiao:    { name: '蛟', type: 'coil', tiers: [50000, 95000, 150000], weak: 6, brk: 1500, map: 'hunt_river', every: [7, 6.5, 6], wind: 3, h: [84, 88, 90], sh: [64, 8], lunge: 12, seg: [-58, -29, 29, 58],
     moves: [{ name: '喷水', tgt: 'all', wind: 3, dmg: 32, half: 4, counter: 'brk', lab: '蓄水 · 集火蛟头', tell: '蛟昂首蓄水！点蛟头集火打断', hit: '喷水：都挨了一下，普攻减半' },
             { name: '缠身', tgt: 'one', wind: 1.8, dmg: 42, pin: 4, lab: '缠身', tell: '蛟盯上了{who}，要缠上去', hit: '被缠住，四秒动不了' },
-            { name: '扫尾', tgt: 'pos2', wind: 1.7, dmg: 44, lab: '扫尾', tell: '蛟甩尾扫两个位置！拖牌让血厚的去挨', hit: '被尾巴扫中' }],
-    say: '蛟身子长，横在场上分五段，范围招一次能打到好几段。它昂首蓄水时点蛟头集火，打够了就打断它，六秒内伤害加倍。它还会缠住一个人、甩尾扫相邻两个位置（拖牌换人去挨）' },
+            { name: '涌泉', tgt: 'pos2', wind: 1.7, dmg: 44, lab: '涌泉', tell: '蛟引水冲两个位置！拖牌让血厚的去挨', hit: '被涌泉冲中' }],
+    say: '蛟身子长，横在场上分五段，范围招一次能打到好几段。它昂首蓄水时点蛟头集火，打够了就打断它，六秒内伤害加倍。它还会缠住一个人、引水冲相邻两个位置（拖牌换人去挨）' },
 };
 const HUNT_PAY = [[['资历', 1]], [['资历', 1], ['残页', 1]], [['残页', 1]]], HUNT_ORDER = ['juling', 'shanjun', 'jiao'];
 const huntOpen = () => endlessOpen(), huntMon = () => (window.__sg && window.__sg.huntForce) || HUNT_ORDER[Math.round(new Date(dayStr() + 'T00:00:00Z').getTime() / 864e5) % 3];   // 三只按日期轮
 const monTier = (M, d) => M.tiers.filter(v => d >= v).length;
 function monImgs(k) { const bk = 'bg_' + HMON[k].map; if (!IMG[bk]) { IMG[bk] = new Image(); IMG[bk].src = 'img/' + bk + '.jpg' + BUST; }   // 讨伐自己的底图（没有城墙），进这个模式才载
   for (let n = 1; n <= 3; n++) for (const v of ['', 'a', 'b']) { const key = 'mon_' + k + n + v; if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } }
+  if (!MSP.meta && !MSP.req) { MSP.req = 1; fetch('img/msp.json' + BUST).then(r => r.json()).then(j => { MSP.meta = j; }).catch(() => {}); }
+  for (let n = 0; n < 3; n++) { const key = 'msp_' + k + '_' + n; if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } }
   if (!HMON[k].anim && !HMON[k].animReq) { HMON[k].animReq = 1; fetch('img/monv_' + k + '.json' + BUST).then(r => r.json()).then(j => { HMON[k].anim = j; }).catch(() => {}); } monSheet(k, 1); }
 // 11-13 Veo 录的逐帧动作（用户：「怪物的战斗动作呢」→「做」）：每个形态一张 6×4 的图集（24 帧：待机、蓄力、出手、收回），一张两千多像素见方，只留当前形态那张，换形态时放掉旧的
+// 11-13 用户：「我们有那么多招数，在法术平台那个chat，要让老虎有法术啊」——怪物每招配一个法术（法术售卖平台那套，工具/vfx/hunt_spells.py 切出打中目标那一段），出手前约三分之一秒起播在挨打的武将身上，命中那一帧正好对上扣血
+const MSP = { meta: null, req: 0 };
+function monSpell(e, T, mv) { if (G.sim || !MSP.meta) return; const key = T.mon + '_' + HMON[T.mon].moves.indexOf(mv), A = MSP.meta[key]; if (!A) return; const P = heroPos(), dur = A.n / A.fps;
+  if (mv.tgt === 'all') G.fx.push({ k: 'monsp', t: 0, dur, key, x: W / 2, y: GY + 4, w: 250 });
+  else for (const i of (e.aimPos ? e.aimPos.map(p => P[p]) : [G.order.indexOf(e.aimId)])) if (i >= 0 && G.order[i]) G.fx.push({ k: 'monsp', t: 0, dur, key, x: genX(i), y: GY + 4, w: 150 }); }
+function drawMonSp(f) { const A = MSP.meta && MSP.meta[f.key], im = IMG['msp_' + f.key]; if (!A || !ready(im)) return; const j = Math.min(A.n - 1, Math.floor(f.t * A.fps)), sc = f.w / A.fw;
+  ctx.drawImage(im, (j % A.cols) * A.fw, Math.floor(j / A.cols) * A.fh, A.fw, A.fh, f.x - A.ax * sc, f.y - A.ay * sc, A.fw * sc, A.fh * sc); }
 function monSheet(k, n) { for (let m = 1; m <= 3; m++) { const key = 'monv_' + k + m; if (m === n) { if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } } else if (IMG[key] && m < n) { IMG[key].src = ''; delete IMG[key]; } } }
 function huntLv() {
   const B = modeBases(); if (!B.length) return null; const b = B[B.length - 1], k = huntMon(), M = HMON[k]; monImgs(k);   // 11-13 用户第四关没过，战役页「看不到」讨伐——门槛和无尽守城一样，打过第三关就开
@@ -1420,11 +1429,11 @@ function monOpen(H, M) { H.windT3 = 0; H.aimId = null; G.monWeakT = M.weak; G.mo
 // 11-13 用户：「加上武将血量，根据等级和属性，怪物要有各种招数」——只在讨伐里：每人血 = 120 + 10×(等级−1) + 统率 + 武力÷2；怪物每只三种招数轮着用（全体、砸一个位置、盯一个人），
 // 伤害随形态 ×1／1.3／1.6；血打光的倒下（这一局不再出手），三人都倒下提前结束，按已打出的伤害结算。砸位置的招可以拖底下的牌换人去挨
 const heroPos = () => G.order.map((id, i) => id ? i : -1).filter(i => i >= 0), heroUp = id => id && !G.hdown[id];
-function heroInit() { G.hhp = {}; G.hmax = {}; G.hdown = {}; G.hhitT = {}; for (const id of G.order) if (id) { const st = statOf(id, G.lvs[id] || 1); G.hmax[id] = G.hhp[id] = Math.round(120 + 10 * ((G.lvs[id] || 1) - 1) + st[0] + st[1] * .5); } }
+function heroInit() { G.hhp = {}; G.hmax = {}; G.hdown = {}; G.hhitT = {}; G.hdownT = {}; for (const id of G.order) if (id) { const st = statOf(id, G.lvs[id] || 1); G.hmax[id] = G.hhp[id] = Math.round(120 + 10 * ((G.lvs[id] || 1) - 1) + st[0] + st[1] * .5); } }
 function heroHurt(id, d, pin) {
   if (!heroUp(id)) return; d = Math.round(d); G.hhp[id] -= d; G.hhitT[id] = G.vt || 0; const i = G.order.indexOf(id);
   if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: genX(i), y: GY - 70, text: '-' + fmtDmg(d), size: 18, color: CINNABAR });
-  if (G.hhp[id] <= 0) { G.hhp[id] = 0; G.hdown[id] = true; monSay(GEN[id].name + '倒下了', true, 1); if (!G.order.some(heroUp)) G.huntWipe = true; }
+  if (G.hhp[id] <= 0) { G.hhp[id] = 0; G.hdown[id] = true; G.hdownT[id] = G.vt || 0; if (!G.sim) G.fx.push({ k: 'dust', t: 0, x: genX(i), y: GY }); monSay(GEN[id].name + '倒下了', true, 1); if (!G.order.some(heroUp)) G.huntWipe = true; }
   else if (pin) G.seal[i] = Math.max(G.seal[i] || 0, pin);
 }
 function monHit(e, d, src) {   // hurt() 里扣完血调：血补回去，记总伤害、各自的破绽条件、形态
@@ -1448,7 +1457,7 @@ function stepMon(e, T, dt) {
   if (e.strikeT > 0) e.strikeT -= dt;
   if (G.monWeakT > 0) { G.monWeakT -= dt; return; }
   const fm = e.form || 0, nm = id => GEN[id].name, P = heroPos(), up = P.filter(i => heroUp(G.order[i])); if (!up.length) return;
-  if (e.windT3 > 0) { e.windT3 -= dt; if (e.windT3 > 0) return; const mv = e.mv, dmg = mv.dmg * (1 + .3 * fm); e.strikeT = .55; G.shake = .3; G.monStomp = (G.monStomp || 0) + 1;   // 出手
+  if (e.windT3 > 0) { e.windT3 -= dt; if (!e.fxOn && e.windT3 <= .33) { e.fxOn = 1; monSpell(e, T, e.mv); } if (e.windT3 > 0) return; const mv = e.mv, dmg = mv.dmg * (1 + .3 * fm); e.strikeT = .55; G.shake = .3; G.monStomp = (G.monStomp || 0) + 1;   // 出手
     const who = mv.tgt === 'all' ? up.map(i => G.order[i]) : mv.tgt === 'pos' || mv.tgt === 'pos2' ? e.aimPos.map(p => G.order[P[p]]).filter(heroUp) : [e.aimId].filter(heroUp);
     if (who.length) e.strikeX = mv.tgt === 'all' ? e.x : genX(G.order.indexOf(who[0]));
     for (const id of who) heroHurt(id, dmg, mv.pin);
@@ -1456,7 +1465,7 @@ function stepMon(e, T, dt) {
     if (!G.sim) G.fx.push({ k: 'dust', t: 0, x: mv.tgt === 'all' ? e.x : e.strikeX, y: mv.tgt === 'all' ? e.y : GY });
     if (who.length) monSay(mv.tgt === 'all' ? mv.hit : who.map(nm).join('、') + mv.hit, false, 1); e.aimId = null; e.aimPos = null; return; }
   e.actCd = (e.actCd ?? 4) - dt; if (e.actCd > 0) return;
-  const mv = e.mv = M.moves[(e.mvN = (e.mvN ?? -1) + 1) % M.moves.length]; e.actCd = M.every[fm]; e.windT3 = mv.wind; e.aimId = null; e.aimPos = null;   // 蓄力：三种招数轮着来
+  const mv = e.mv = M.moves[(e.mvN = (e.mvN ?? -1) + 1) % M.moves.length]; e.actCd = M.every[fm]; e.windT3 = mv.wind; e.aimId = null; e.aimPos = null; e.fxOn = 0;   // 蓄力：三种招数轮着来
   if (mv.tgt === 'one') e.aimId = G.order[up[Math.floor(rnd() * up.length)]];
   else if (mv.tgt === 'low') e.aimId = up.map(i => G.order[i]).sort((a, b) => G.hhp[a] - G.hhp[b])[0];
   else if (mv.tgt === 'pos') e.aimPos = [P.indexOf(up[Math.floor(rnd() * up.length)])];
@@ -1492,8 +1501,8 @@ function drawMon(e, T) {
     if (e.aimPos) for (const p of e.aimPos) mark(genX(P[p]), '砸这里 · 可换人'); }
   else if (M.type === 'fu') { meter(e.fu / e.fuMax, '#e8c24a'); lab('护体符'); }
   if (G.hhp) for (const i of P) { const id = G.order[i], gx = genX(i), f = G.hhp[id] / G.hmax[id], hot = (G.vt || 0) - (G.hhitT[id] ?? -9) < .25;   // 武将血条：脚下一条
-    bar(gx - 22, GY - 86, 44, 5, f, hot ? '#fff2dc' : f > .5 ? '#5fd39a' : f > .25 ? '#e8c24a' : '#ff6a3a', 'rgba(20,12,6,.7)');
-    if (G.hdown[id]) uiText('倒下', gx, GY - 97, 13, UIC.red2, 'center', FONT, { lw: 3 }); }
+    if (!G.hdown[id]) bar(gx - 22, GY - 86, 44, 5, f, hot ? '#fff2dc' : f > .5 ? '#5fd39a' : f > .25 ? '#e8c24a' : '#ff6a3a', 'rgba(20,12,6,.7)');
+    if (G.hdown[id]) uiText('倒下', gx, GY - 34, 13, UIC.red2, 'center', FONT, { lw: 3 }); }
 }
 let MODE = null, MODE_FROM = 'camp';
 function startMode(k, from) {
@@ -3696,7 +3705,11 @@ function drawGenerals() {
       const sealed = G.seal[i] > 0, rage = id === 'zhang' && G.rageT > 0;
       if (rage) for (let k = 0; k < 5; k++) blot(ctx, gx + Math.sin(G.t * 9 + k * 1.3) * 18, GY - 20 - ((G.t * 60 + k * 15) % 70), 4, CINNABAR, .45, vr, 7);
       if (G.pickHero === id) { ctx.save(); const pc = HERO_COL[id], pu = .6 + .4 * Math.sin(G.t * 8); ctx.globalAlpha = pu; ctx.fillStyle = pc; ctx.shadowColor = pc; ctx.shadowBlur = 14; ctx.beginPath(); ctx.ellipse(gx, GY + 2, 26, 7, 0, 0, 6.283); ctx.fill(); ctx.restore(); txt('点敌人', gx, GY - GEN[id].sh * 1.12 - 8, 11, pc, 'center', FONT); }   // 选中：脚下一圈人物色，头上「点敌人」
-      drawSheet(sk, anim, sealed ? 0 : fr, gx, GY + 2, GEN[id].sh * 1.12 * ((G_FIX[id] || {})[anim] || 1) / SHEETS[sk].stand, sealed ? .45 : 1);   // 略放大 1.12 倍，好点（10-27 用户：「将领要略放大一点点，方便按」）
+      const downT = G.lv.mode === 'hunt' && G.hdown && G.hdown[id] ? (G.vt || 0) - (G.hdownT[id] ?? 0) : -1;
+      if (downT >= 0) {   // 11-13 用户截图讨伐里倒下的刘备（半透明站着）：「没有倒下的姿势吗？」——图集没有倒地动作，拿待机第一帧往外侧栽倒、躺平（半秒，落地弹一下）
+        const u = Math.min(1, downT / .45), e2 = u * u, dir = gx < W / 2 - 4 ? -1 : 1, bounce = u >= 1 ? Math.max(0, .1 - (downT - .45)) * Math.sin((downT - .45) * 40) : 0;
+        ctx.save(); ctx.translate(gx + dir * 10 * e2, GY + 2 - 6 * e2); ctx.rotate(dir * (1.5 * e2 + bounce)); drawSheet(sk, 'idle', 0, 0, 0, GEN[id].sh * 1.12 * ((G_FIX[id] || {}).idle || 1) / SHEETS[sk].stand, 1 - .25 * e2); ctx.restore(); }
+      else drawSheet(sk, anim, sealed ? 0 : fr, gx, GY + 2, GEN[id].sh * 1.12 * ((G_FIX[id] || {})[anim] || 1) / SHEETS[sk].stand, sealed ? (G.lv.mode === 'hunt' ? .75 : .45) : 1);   // 略放大 1.12 倍，好点（10-27 用户：「将领要略放大一点点，方便按」）
       if (G.state === 'play') hit(gx - 30, GY - 62, 60, 68, () => { G.pickHero = G.pickHero === id ? null : id; });
       if (sealed && G.lv.mode !== 'hunt') { ctx.save(); ctx.translate(gx, GY - 44); ctx.rotate(-.12); ctx.fillStyle = '#e8c96a'; ctx.fillRect(-7, -22, 14, 44); ctx.restore(); txt('迷', gx - 1, GY - 56, 11, CINNABAR, 'center'); txt('魂', gx + 1, GY - 38, 11, CINNABAR, 'center'); }
       continue;
@@ -5325,6 +5338,7 @@ function drawQiPass(f, back) {
   drawPaintLive('sword', x, y, 56 * RKX(), f.ang + Math.PI / 2, 1 - u * u, 1, f.age + f.t, .5, .16, 34); ctx.restore();
 }
 function drawFx(f) {
+  if (f.k === 'monsp') { drawMonSp(f); return; }
   if (f.k === 'skname') { drawSkName(f); return; }
   if (f.k === 'qiPass') { drawQiPass(f, false); return; }
   if (f.k === 'qlfly') { if (f.t < f.dur) drawQlFly(f); return; }

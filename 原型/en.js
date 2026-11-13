@@ -2104,7 +2104,13 @@ window.EN = {
 "蛟盯上了刘备，要缠上去": "The Serpent eyes Liu Bei",
 "蛟盯上了关羽，要缠上去": "The Serpent eyes Guan Yu",
 "蛟盯上了张飞，要缠上去": "The Serpent eyes Zhang Fei",
-"蛟盯上了赵云，要缠上去": "The Serpent eyes Zhao Yun"
+"蛟盯上了赵云，要缠上去": "The Serpent eyes Zhao Yun",
+"利爪": "Claws",
+"涌泉": "Geyser",
+"山君亮爪扫两个位置！拖牌让血厚的去挨": "Claw sweep on two spots! Drag cards so sturdier heroes take it",
+"被利爪扫中": " clawed",
+"蛟引水冲两个位置！拖牌让血厚的去挨": "A geyser will hit two spots! Drag cards so sturdier heroes take it",
+"被涌泉冲中": " hit by the geyser"
 };
 window.EN_RX = [[new RegExp("^张飞喝后\\ ([+-]?\\d+(?:\\.\\d+)?)\\ 秒内青龙斩：扫到的每人\\ ([+-]?\\d+(?:\\.\\d+)?)\\.([+-]?\\d+(?:\\.\\d+)?)\\ 倍（砍晕的本来就有\\ ([+-]?\\d+(?:\\.\\d+)?)\\.([+-]?\\d+(?:\\.\\d+)?)\\ 倍）、范围\\ \\+([+-]?\\d+(?:\\.\\d+)?)%，清一片$"), "Dragon Slash within $1s of the Roar: $2.$3× to each foe hit (normally $4.$5× on stunned), range +$6%."],
 [new RegExp("^普攻\\ \\+([+-]?\\d+(?:\\.\\d+)?)%\\ ·\\ 招式\\ \\+([+-]?\\d+(?:\\.\\d+)?)%\\ ·\\ 冷却\\ ([+-]?\\d+(?:\\.\\d+)?)%\\ ·\\ 城防\\ \\+([+-]?\\d+(?:\\.\\d+)?)%$"), "Attack +$1% · Skills +$2% · Cooldown $3% · Wall +$4%"],

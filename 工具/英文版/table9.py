@@ -59,4 +59,5 @@ T = {
 '山君甩尾扫两个位置！拖牌让血厚的去挨': 'Tail swipe on two spots! Drag cards so sturdier heroes take it', '被尾巴扫中': ' hit by the tail',
 '喷水：都挨了一下，普攻减半': 'Water blast: everyone is hit, attack damage halved', '被缠住，四秒动不了': ' is constricted for 4s', '蛟甩尾扫两个位置！拖牌让血厚的去挨': 'Tail sweep on two spots! Drag cards so sturdier heroes take it',
 '蛟盯上了刘备，要缠上去': 'The Serpent eyes Liu Bei', '蛟盯上了关羽，要缠上去': 'The Serpent eyes Guan Yu', '蛟盯上了张飞，要缠上去': 'The Serpent eyes Zhang Fei', '蛟盯上了赵云，要缠上去': 'The Serpent eyes Zhao Yun',
+'利爪': 'Claws', '涌泉': 'Geyser', '山君亮爪扫两个位置！拖牌让血厚的去挨': 'Claw sweep on two spots! Drag cards so sturdier heroes take it', '被利爪扫中': ' clawed', '蛟引水冲两个位置！拖牌让血厚的去挨': 'A geyser will hit two spots! Drag cards so sturdier heroes take it', '被涌泉冲中': ' hit by the geyser',
 }
