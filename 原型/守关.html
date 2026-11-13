@@ -7277,9 +7277,10 @@ const MAP_NODE = [                                                              
 ];
 const MAP_TOP = 100, MAP_BOT = 576;
 function drawCampaignMap(mim, t) {
-  ctx.save(); ctx.beginPath(); ctx.rect(0, MAP_TOP, W, MAP_BOT - MAP_TOP); ctx.clip();
+  const MT = 68;   /* 11-12 用户：「这里不要黑，露出后面的图」——地图从图本身的上沿（68）画起，不再在 100 截掉，上面那行钮直接压在图上 */
+  ctx.save(); ctx.beginPath(); ctx.rect(0, MT, W, MAP_BOT - MT); ctx.clip();
   const mh = W * mim.height / mim.width; ctx.drawImage(inkBg(mim), 0, MAP_TOP + (MAP_BOT - MAP_TOP - mh) / 2, W, mh);   // 10-29 配色收敛：战役地图也降饱和
-  const fd = ctx.createLinearGradient(0, MAP_TOP, 0, MAP_BOT); fd.addColorStop(0, 'rgba(8,5,4,.75)'); fd.addColorStop(.07, 'rgba(8,5,4,0)'); fd.addColorStop(.93, 'rgba(8,5,4,0)'); fd.addColorStop(1, 'rgba(8,5,4,.8)'); ctx.fillStyle = fd; ctx.fillRect(0, MAP_TOP, W, MAP_BOT - MAP_TOP);
+  const fd = ctx.createLinearGradient(0, MT, 0, MAP_BOT); fd.addColorStop(0, 'rgba(8,5,4,.6)'); fd.addColorStop(.025, 'rgba(8,5,4,0)'); fd.addColorStop(.935, 'rgba(8,5,4,0)'); fd.addColorStop(1, 'rgba(8,5,4,.8)'); ctx.fillStyle = fd; ctx.fillRect(0, MT, W, MAP_BOT - MT);
   const N = MAP_NODE[MENU.seg], base = MENU.seg * 10, open = i => i === 0 || BEST[LEVELS[i - 1].id] || window.__sg.all;
   /* 不画连线：图上本来就画了行军的土路；直线来回交叉又乱又像几何图形 */
   ctx.restore();
