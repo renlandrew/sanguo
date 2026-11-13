@@ -1390,14 +1390,17 @@ const HMON = {
     say: '巨灵身上有护体符：打碎一层，八秒内伤害加倍，把大招留到这时候。它举拳时张飞一喝能喝住' },
   shanjun: { name: '山君', type: 'pounce', tiers: [30000, 60000, 100000], weak: 5, map: 'hunt_forest', every: [11, 9, 7], wind: 2.4, h: [176, 188, 202], sh: [92, 15], lunge: 70,
     say: '山君会盯上一名武将扑过去，被扑倒的四秒动不了。在它扑到之前，让被盯上的那名武将放出招式打中它，就能把它打翻，五秒内伤害加倍' },
-  jiao:    { name: '蛟', type: 'coil', tiers: [50000, 95000, 150000], weak: 6, brk: 1500, map: 'hunt_river', every: [13, 11, 9], wind: 3, h: [196, 208, 222], sh: [150, 16], lunge: 30, seg: [-134, -68, 68, 134],
+  jiao:    { name: '蛟', type: 'coil', tiers: [50000, 95000, 150000], weak: 6, brk: 1500, map: 'hunt_river', every: [13, 11, 9], wind: 3, h: [196, 202, 204], sh: [150, 16], lunge: 30, seg: [-134, -68, 68, 134],
     say: '蛟身子长，横在场上分五段，范围招一次能打到好几段。它昂首蓄水时点蛟头集火，打够了就打断它，六秒内伤害加倍；没打断它就喷水，普攻减半四秒' },
 };
 const HUNT_PAY = [[['资历', 1]], [['资历', 1], ['残页', 1]], [['残页', 1]]], HUNT_ORDER = ['juling', 'shanjun', 'jiao'];
 const huntOpen = () => cjOpen(), huntMon = () => (window.__sg && window.__sg.huntForce) || HUNT_ORDER[Math.round(new Date(dayStr() + 'T00:00:00Z').getTime() / 864e5) % 3];   // 三只按日期轮
 const monTier = (M, d) => M.tiers.filter(v => d >= v).length;
 function monImgs(k) { const bk = 'bg_' + HMON[k].map; if (!IMG[bk]) { IMG[bk] = new Image(); IMG[bk].src = 'img/' + bk + '.jpg' + BUST; }   // 讨伐自己的底图（没有城墙），进这个模式才载
-  for (let n = 1; n <= 3; n++) for (const v of ['', 'a', 'b']) { const key = 'mon_' + k + n + v; if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } } }
+  for (let n = 1; n <= 3; n++) for (const v of ['', 'a', 'b']) { const key = 'mon_' + k + n + v; if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } }
+  if (!HMON[k].anim && !HMON[k].animReq) { HMON[k].animReq = 1; fetch('img/monv_' + k + '.json' + BUST).then(r => r.json()).then(j => { HMON[k].anim = j; }).catch(() => {}); } monSheet(k, 1); }
+// 11-13 Veo 录的逐帧动作（用户：「怪物的战斗动作呢」→「做」）：每个形态一张 6×4 的图集（24 帧：待机、蓄力、出手、收回），一张两千多像素见方，只留当前形态那张，换形态时放掉旧的
+function monSheet(k, n) { for (let m = 1; m <= 3; m++) { const key = 'monv_' + k + m; if (m === n) { if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } } else if (IMG[key] && m < n) { IMG[key].src = ''; delete IMG[key]; } } }
 function huntLv() {
   const B = modeBases().filter(b => b.lv.id >= 4); if (!B.length) return null; const b = B[B.length - 1], k = huntMon(), M = HMON[k]; monImgs(k);
   return { li: b.i, mon: k, lv: { ...b.lv, mode: 'hunt', mon: k, map: M.map, hpMul: 1, seal: modeSeal('hunt'), name: '讨伐 · ' + M.name, sub: '九十秒，打得越多越好', rules: { timed: { t: HUNT_T, label: '讨伐', text: '时辰到', sub: M.name + '遁走了' } }, waves: [[1, k, 1, 0, 'rand']], tips: [], join: [], wait: 2, tx: 1, charge: undefined, s3: null, reward: null } };
@@ -1411,7 +1414,7 @@ function monHit(e, d, src) {   // hurt() 里扣完血调：血补回去（打不
     if (!(G.monWeakT > 0) && src !== 'burn') { H.fu -= d; if (H.fu <= 0) { H.fuN = (H.fuN || 0) + 1; H.fuMax = H.fu = M.fu * Math.pow(1.25, H.fuN); monOpen(H, M); G.monStop--; monSay('符碎了！八秒内伤害加倍', true); } }
   } else if (M.type === 'pounce') { if (H.windT3 > 0 && BIGSRC.has(src) && WHO[src] === H.aimId) { monOpen(H, M); monSay('打翻了！五秒内伤害加倍', true); }
   } else if (M.type === 'coil') { if (H.windT3 > 0 && !T.part && src !== 'burn') { H.brk -= d; if (H.brk <= 0) { H.brkN = (H.brkN || 0) + 1; monOpen(H, M); monSay('打断了！六秒内伤害加倍', true); } } }
-  const f1 = Math.min(2, monTier(M, G.monDmg)); if (f1 > (H.form || 0)) { H.form = f1; H.formT = G.t; G.shake = .3; if (!G.sim) G.fx.push({ k: 'banner', t: 0, text: M.name, sub: f1 === 1 ? '被打怒了' : '狂暴' }); }
+  const f1 = Math.min(2, monTier(M, G.monDmg)); if (f1 > (H.form || 0)) { H.form = f1; H.formT = G.t; G.shake = .3; if (!G.sim) monSheet(T.mon, f1 + 1); if (!G.sim) G.fx.push({ k: 'banner', t: 0, text: M.name, sub: f1 === 1 ? '被打怒了' : '狂暴' }); }
 }
 function stepMon(e, T, dt) {
   const M = HMON[T.mon]; e.knock = 0; e.stun = 0; if (e.burnT > 0) { e.burnT -= dt; hurt(e, e.burnDps * dt, 'burn'); }
@@ -1438,16 +1441,23 @@ function drawMon(e, T) {
   if (T.part) return;   // 蛟身的四段只是挨打的位置，整条蛟由蛟头画
   const M = HMON[T.mon], fm = e.form || 0, x = e.x, y = e.y, t = (G.vt || G.t) + e.ph, weak = G.monWeakT > 0, wind = e.windT3 > 0, strike = !wind && e.strikeT > 0;
   let im = IMG['mon_' + T.mon + (fm + 1)]; const pose = !weak && (wind || strike) && IMG['mon_' + T.mon + (fm + 1) + (wind ? 'a' : 'b')]; if (pose && ready(pose)) im = pose;
+  const SH = IMG['monv_' + T.mon + (fm + 1)], A = M.anim && M.anim[fm], sheet = A && SH && ready(SH);   // 有逐帧图集就用它，没到之前用立绘和姿势图
   const up = wind ? 1 - e.windT3 / M.wind : 0, su = strike ? Math.sin((1 - e.strikeT / .55) * Math.PI) : 0, since = G.t - (e.formT ?? -9), pop = since < .5 ? Math.sin(since / .5 * Math.PI) * .12 : 0;
-  const h = M.h[fm] * (1 + pop + up * .06 + su * .08), br = 1 + .012 * Math.sin(t * 2.2), kx = (e.kick || 0) * .25 * Math.sin(t * 60) + (wind ? Math.sin(t * 40) * 1.2 * up : 0);
-  const al = clamp((y - HZ) / 16, .1, 1) * (e.rout ? .6 : 1), dx = su * ((e.strikeX ?? x) - x) * .55, dy = su * M.lunge - up * 8;
+  const h = M.h[fm] * (1 + pop + (sheet ? 0 : up * .06 + su * .08)), br = 1 + .012 * Math.sin(t * 2.2), kx = (e.kick || 0) * .25 * Math.sin(t * 60) + (wind ? Math.sin(t * 40) * 1.2 * up : 0);
+  const al = clamp((y - HZ) / 16, .1, 1) * (e.rout ? .6 : 1), dx = su * ((e.strikeX ?? x) - x) * (sheet ? .35 : .55), dy = sheet ? (M.type === 'pounce' ? su * 30 : 0) : su * M.lunge - up * 8;
   ctx.save(); ctx.globalAlpha = al * .35; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(x + dx * .6, y - 2, M.sh[0], M.sh[1], 0, 0, 6.283); ctx.fill(); ctx.restore();
   ctx.save(); ctx.translate(x + kx + dx, y + dy); ctx.scale(br, (2 - br) * (weak && M.type !== 'fu' ? .9 : 1)); if (weak && M.type !== 'fu') ctx.rotate(.05 * Math.sin(t * 3)); ctx.globalAlpha = al;
-  if (ready(im)) { const w = h * im.width / im.height; ctx.drawImage(im, -w / 2, -h, w, h);
-    const lit = (e.flash > .07 && !(e.flashDelay > 0) ? .45 : 0) + (weak ? .16 + .1 * Math.sin(t * 9) : 0); if (lit > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= lit; ctx.drawImage(im, -w / 2, -h, w, h); } }
+  const lit = (e.flash > .07 && !(e.flashDelay > 0) ? .45 : 0) + (weak ? .16 + .1 * Math.sin(t * 9) : 0);
+  if (sheet) { const [ws, hit, end] = A.mark, ni = Math.max(1, ws); let j;
+    if (weak) j = 0; else if (wind) j = ws + (hit - ws) * up; else if (strike) j = hit + (end - hit) * (1 - e.strikeT / .55);
+    else { j = (t * 6) % (2 * ni - 2 || 1); if (j > ni - 1) j = 2 * ni - 2 - j; }
+    j = clamp(Math.floor(j), 0, A.n - 1); const sc = h / A.h0, sx = (j % A.cols) * A.fw, sy = Math.floor(j / A.cols) * A.fh, blit = () => ctx.drawImage(SH, sx, sy, A.fw, A.fh, -A.ax * sc, -A.ay * sc, A.fw * sc, A.fh * sc);
+    blit(); if (lit > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= lit; blit(); } }
+  else if (ready(im)) { const w = h * im.width / im.height; ctx.drawImage(im, -w / 2, -h, w, h);
+    if (lit > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= lit; ctx.drawImage(im, -w / 2, -h, w, h); } }
   else { ctx.fillStyle = weak ? '#c9843a' : '#8a6a3a'; rr(-40, -h, 80, h, 16); ctx.fill(); }   // 图还没到：先画一块土色
   ctx.restore();
-  if (e.rout || e.y < MON_Y) return; const by = y - M.h[fm] - 12, bw = 84, lab = (s, big, c) => uiText(s, x, by - 9, big ? 13 : 11, c || (big ? UIC.red2 : UIC.cream), 'center', big ? FONT : PLAIN, { lw: 3 }), meter = (f, c) => bar(x - bw / 2, by, bw, 5, clamp(f, 0, 1), c, 'rgba(20,12,6,.6)');
+  if (e.rout || e.y < MON_Y) return; const by = Math.max(124, y - (sheet && (wind || strike) ? Math.max(M.h[fm], A.ay * (M.h[fm] / A.h0)) : M.h[fm]) - 12), bw = 84,   /* 蓄力出手时人立、昂首比立绘高：提示条跟着抬到这一段动作的最高处，不压脸，也不顶进上面的血条 */ lab = (s, big, c) => uiText(s, x, by - 9, big ? 13 : 11, c || (big ? UIC.red2 : UIC.cream), 'center', big ? FONT : PLAIN, { lw: 3 }), meter = (f, c) => bar(x - bw / 2, by, bw, 5, clamp(f, 0, 1), c, 'rgba(20,12,6,.6)');
   if (weak) { meter(G.monWeakT / M.weak, CINNABAR); lab('破绽 · 伤害加倍', true, '#ffe08a'); }
   else if (M.type === 'fu') { meter(e.fu / e.fuMax, '#e8c24a'); lab(wind ? '举拳！' : '护体符', wind); }
   else if (wind && M.type === 'pounce') { meter(e.windT3 / M.wind, CINNABAR); lab('盯上 ' + GEN[e.aimId].name, true);
