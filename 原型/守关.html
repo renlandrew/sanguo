@@ -15,7 +15,7 @@
 <body>
 <canvas id="bgv" width="36" height="64" style="display:none"></canvas><canvas id="cv"></canvas>
 <script src="墨流.js?v=20261030"></script>
-<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261112e"><\/script>');</script>
+<script>/* 11-09 英文版：网址带 ?lang=en 才读英文文字表 */ if (/[?&]lang=en\b/.test(location.search)) document.write('<script src="en.js?v=20261112f"><\/script>');</script>
 <script>
 // 群雄逐鹿 · 守关原型（10-24）：敌军从上面一波波冲下来，刘关张站在城头各自普攻（10-24 起不设主角），招式按出手顺序轮流放，
 // 杀敌攒军功、升级三选一战法，守住城门过关。规则、数值、关卡见 ../设计/方案初稿.md「守关」一节。
@@ -256,6 +256,7 @@ const FOES = {
   baixing:  { name: '百姓', hp: 40, spd: 58, leak: 0, exp: 0, r: 9, box: [34, 52], s: 1, wpn: 'none', sheet: 'baixing', alt: 'yayi', sh: 40, civ: true },         // 往城门跑，进了城算救下；我方招式打到算误伤，西凉兵追上算没救下
   gaoshun:  { name: '高顺', hp: 1300, spd: 14, dps: 14, exp: 18, r: 18, box: [76, 96], s: 1.9, wpn: 'spear', bulk: 11, boss: true, sheet: 'gaoshun', alt: 'xianzhen', sh: 74, title: '陷阵营主将', armor: .15 },
   huaxiongT: { name: '华雄', hp: 4000, spd: 14, dps: 0, exp: 25, r: 22, box: [76, 96], s: 1.9, wpn: 'blade', bulk: 11, boss: true, sheet: 'huaxiong', alt: 'cyz', sh: 94, title: '城下叫阵', tint: 'huaxiong', pt: 'huaxiong', taunt: { y: 300, every: 9, dur: 4 } },
+  juling:   { name: '黄巾巨灵', hp: 1e9, spd: 0, dps: 0, exp: 0, r: 30, box: [110, 150], s: 2, wpn: 'club', bulk: 11, boss: true, mon: 'juling', sh: 150, title: '打不死' },   // 11-12 讨伐的怪物：不走、不撞城、打不死，只记打了多少
   lvbuR:    { name: '吕布', hp: 1e9, spd: 40, dps: 0, exp: 0, r: 24, box: [76, 96], s: 2, wpn: 'blade', bulk: 11, boss: true, sheet: 'lvbu', alt: 'cyz', sh: 100, title: '打不死', tint: 'lvbu', pt: 'lvbu', invuln: true, rampage: true },
   // 斗将的敌将：站在场中不走，按招式表出招（duel）。胡轸、华雄、李傕、吕布 10-25 换成 Veo 录的图集，sh 比借图时大两成（原来的立绘画得比图集大 1.25 倍）
   dengmao: { name: '邓茂', hp: 2000, spd: 0, dps: 0, exp: 30, r: 22, box: [76, 96], s: 1.9, wpn: 'spear', bulk: 11, boss: true, duel: true, sheet: 'dengmao', sh: 76, title: '黄巾副将' },
@@ -530,7 +531,7 @@ const TAC = {   // 每个计：名字、看破时怎么报（T 是抽到的那�
   reinf:  { name: '援军', tell: T => `最后一波，再来 ${T.n} 个兵` },
   yaoshu: { name: '妖术回春', tell: T => `第${CN[T.w]}波，场上黄巾回三成血` } };
 function rollFoeTac(lv, sim) {
-  const ck = FOE_CS_LV[lv.id]; if (!ck || lv.kind === 'duel') return null; const C = FOE_CS[ck];
+  const ck = FOE_CS_LV[lv.id]; if (!ck || lv.kind === 'duel' || lv.mode === 'hunt') return null;   /* 讨伐：没有敌军师 */ const C = FOE_CS[ck];
   const rr = sim ? mulberry(lv.id * 131 + 17 + (window.__sg.seed || 0)) : Math.random, nW = G.queue[G.queue.length - 1].w + 1;
   const pool = C.pool.slice(), out = []; if (FOE_CS_MUST[lv.id]) { out.push(FOE_CS_MUST[lv.id]); pool.splice(pool.indexOf(FOE_CS_MUST[lv.id]), 1); }
   while (out.length < (FOE_CS_N[lv.id] || C.n) && pool.length) out.push(pool.splice(Math.floor(rr() * pool.length), 1)[0]);
@@ -1228,7 +1229,7 @@ function dailyTick() {
     const gap = DAILY.day ? Math.max(1, dayNum(td) - dayNum(DAILY.day)) : 1, packs = 1 + Math.min(monthLeft() > 0 ? 6 : 2, gap - 1), got = { 精铁: 2 * packs };   // 月卡：补领七天
     INV.it.精铁 += 2 * packs;
     staNow(); INV.sta.v = Math.max(INV.sta.v, STA_MAX); DAILY.staGot = [];   // 点卯：体力补满到 120（领多了的不扣）
-    DAILY.day = td; DAILY.met = {}; DAILY.taskN = 3 * packs; DAILY.tasks = genTasks(td, DAILY.taskN); DAILY.caps = { 精铁: 0 }; DAILY.visits = 0; DAILY.visitN = 2 * packs; DAILY.chores = false; DAILY.cd = CHORES.map(() => false); DAILY.endSwept = false; DAILY.cjWin = false;
+    DAILY.day = td; DAILY.met = {}; DAILY.taskN = 3 * packs; DAILY.tasks = genTasks(td, DAILY.taskN); DAILY.caps = { 精铁: 0 }; DAILY.visits = 0; DAILY.visitN = 2 * packs; DAILY.chores = false; DAILY.cd = CHORES.map(() => false); DAILY.endSwept = false; DAILY.cjWin = false; DAILY.huntTier = 0;
     if (DAILY.week !== weekKey(td)) { DAILY.week = weekKey(td); DAILY.weekN = 0; DAILY.weekSeal = false; }
     if (monthLeft() > 0) doChores();                                             // 月卡：日常杂务一上线就做完
     note = { packs, got }; saveInv(); saveDaily();
@@ -1343,7 +1344,7 @@ const CJ_TWIST = {
   fast:   { name: '敌兵急行军', say: '敌兵走得快三成，别让他们冲到城下', fn: lv => { lv.walk = (lv.walk || 1) * 1.3; } },
   manual: { name: '不准自动出招', say: '这一局招式只能自己点，敌兵也厚一成半', fn: lv => { lv.noAuto = true; lv.hpMul = (lv.hpMul || 1) * 1.15; } },
 };
-const modeSeal = k => k === 'endless' ? (EN_ON ? '∞' : '守') : (EN_ON ? 'D' : '残');   // 英文印里不放「Hold」那种长字
+const modeSeal = k => k === 'endless' ? (EN_ON ? '∞' : '守') : k === 'hunt' ? (EN_ON ? 'H' : '伐') : (EN_ON ? 'D' : '残');   // 英文印里不放「Hold」那种长字
 const modeBases = () => LEVELS.map((lv, i) => ({ lv, i })).filter(({ lv }) => BEST[lv.id] && lv.kind !== 'duel' && !lv.solo && fighters(lv).length >= 3 && lv.id >= 3);
 const endlessOpen = () => modeBases().length > 0, cjOpen = () => modeBases().some(b => b.lv.id >= 4);
 // 11-12 用户：「如果玩家不断重复之前的简单关，会无聊，应该保持进度，随着玩家强度上升，能持续前进」「不需要每 5 波存一次进度，过一关就保存一关，每天可以有一次重置，重置就自动扫荡前面，到卡住的那关，前面物品全部收集」
@@ -1374,28 +1375,81 @@ function cjToday() {
   const lv = { ...b.lv, rules: { ...(b.lv.rules || {}) }, mode: 'daily', seal: modeSeal('daily'), twist: tw, name: '每日残局 · ' + b.lv.name, sub: CJ_TWIST[tw].name, tips: [], reward: null };
   CJ_TWIST[tw].fn(lv); return { li: b.i, lv, base: b.lv, tw };
 }
+// ---------- 讨伐（11-12 用户：「残局和无尽差不多多少，没什么创新，打怪物吧，没有城墙了，改为打怪物的血最高值，90秒一局。第一章只有3个怪物，但属于打不死那种」）----------
+// 场上只有一只怪物，不走不撞城、打不死；九十秒里打出多少伤害算多少，记最高。伤害过一档怪物换一个更凶的形态；每天每档奖励只发一次（三档合计资历 2、残页 2，和原来的残局一样）
+// 黄巾巨灵（张角符水召出来的巨人；「黄巾力士」是已有的普通敌兵，键 lishi，别撞）：身上有护体符（一层血），打碎后 8 秒破绽、伤害加倍，再结一层更厚的；隔一阵举拳震地（普攻慢一半 4 秒），举拳那一下张飞一喝能喝住
+const HUNT_T = 60, MON_Y = 404, MON_WEAK = 8;   // 60 × 1.5 = 90 秒
+const HMON = { juling: { name: '黄巾巨灵', tiers: [40000, 80000, 130000], fu: 4500, map: 'hunt_altar', stomp: [14, 11, 8], say: '巨灵身上有护体符：打碎一层，八秒内伤害加倍，把大招留到这时候。它举拳时张飞一喝能喝住' } };
+const HUNT_PAY = [[['资历', 1]], [['资历', 1], ['残页', 1]], [['残页', 1]]];
+const huntOpen = () => cjOpen(), huntMon = () => 'juling';   // 另外两只（山君、蛟）做好后按日期轮
+const monTier = (M, d) => M.tiers.filter(v => d >= v).length;
+function monImgs(k) { const bk = 'bg_' + HMON[k].map; if (!IMG[bk]) { IMG[bk] = new Image(); IMG[bk].src = 'img/' + bk + '.jpg' + BUST; }   // 讨伐自己的底图（没有城墙），进这个模式才载
+  for (let n = 1; n <= 3; n++) { const key = 'mon_' + k + n; if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } } }
+function huntLv() {
+  const B = modeBases().filter(b => b.lv.id >= 4); if (!B.length) return null; const b = B[B.length - 1], k = huntMon(), M = HMON[k]; monImgs(k);
+  return { li: b.i, mon: k, lv: { ...b.lv, mode: 'hunt', mon: k, map: M.map, hpMul: 1, seal: modeSeal('hunt'), name: '讨伐 · ' + M.name, sub: '九十秒，打得越多越好', rules: { timed: { t: HUNT_T, label: '讨伐', text: '时辰到', sub: M.name + '遁走了' } }, waves: [[1, k, 1, 0, 'rand']], tips: [], join: [], wait: 2, tx: 1, charge: undefined, s3: null, reward: null } };
+}
+function monHit(e, d, src) {   // hurt() 里扣完血调：血补回去（打不死），记总伤害、护体符、形态
+  const M = HMON[FOES[e.kind].mon]; e.hp = e.max; G.monDmg = (G.monDmg || 0) + d;
+  if (src === 'roar' && e.windT3 > 0) { e.windT3 = 0; G.monStop = (G.monStop || 0) + 1; if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: W / 2, y: 436, text: '喝住了！', size: 20, color: CINNABAR }); }
+  if (!(e.weakT > 0) && src !== 'burn') { e.fu -= d; if (e.fu <= 0) { e.fuN = (e.fuN || 0) + 1; e.weakT = MON_WEAK; e.fuMax = e.fu = M.fu * Math.pow(1.25, e.fuN); e.windT3 = 0; G.shake = .2; if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: W / 2, y: 436, text: '符碎了！八秒内伤害加倍', size: 20, color: CINNABAR, dur: 1.8 }); } }
+  const f1 = Math.min(2, monTier(M, G.monDmg)); if (f1 > (e.form || 0)) { e.form = f1; e.formT = G.t; G.shake = .3; if (!G.sim) G.fx.push({ k: 'banner', t: 0, text: M.name, sub: f1 === 1 ? '被打怒了' : '狂暴' }); }
+}
+function stepMon(e, T, dt) {
+  const M = HMON[T.mon]; e.x += (HX - e.x) * Math.min(1, dt * 3); e.y = e.y < MON_Y ? Math.min(MON_Y, e.y + 170 * dt) : MON_Y; e.knock = 0; e.stun = 0;
+  if (e.fu == null) e.fuMax = e.fu = M.fu;
+  if (e.burnT > 0) { e.burnT -= dt; hurt(e, e.burnDps * dt, 'burn'); }
+  if (e.y < MON_Y) return;
+  if (e.weakT > 0) { e.weakT -= dt; return; }
+  if (e.windT3 > 0) { e.windT3 -= dt; if (e.windT3 <= 0) { G.tauntT = Math.max(G.tauntT || 0, 4); G.shake = .3; G.monStomp = (G.monStomp || 0) + 1; if (!G.sim) { G.fx.push({ k: 'dust', t: 0, x: e.x, y: e.y }); G.fx.push({ k: 'txt', t: 0, x: W / 2, y: 458, text: '巨灵震地：普攻慢一半', size: 16, color: INK, dur: 1.6 }); } } }
+  else { e.stompCd = (e.stompCd ?? 9) - dt; if (e.stompCd <= 0) { e.windT3 = 1.6; e.stompCd = M.stomp[e.form || 0] * ACT_X; if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: W / 2, y: 436, text: '巨灵举拳！张飞一喝能喝住', size: 16, color: INK, dur: 1.6 }); } }
+}
+function drawMon(e, T) {
+  const M = HMON[T.mon], fm = e.form || 0, im = IMG['mon_' + T.mon + (fm + 1)], ps = persp(e.y), x = e.x, y = e.y, t = (G.vt || G.t) + e.ph, weak = e.weakT > 0;
+  const up = e.windT3 > 0 ? 1 - e.windT3 / 1.6 : 0, since = G.t - (e.formT ?? -9), pop = since < .5 ? Math.sin(since / .5 * Math.PI) * .12 : 0;
+  const h = (220 + fm * 16) * (1 + pop + up * .08),   /* 不按远近缩：怪物就该占半个战场 */ br = 1 + .012 * Math.sin(t * 2.2), kx = (e.kick || 0) * .25 * Math.sin(t * 60);
+  ctx.save(); ctx.globalAlpha = clamp((y - HZ) / 16, .1, 1) * (e.rout ? .6 : 1) * .35; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(x, y - 2, 70, 13, 0, 0, 6.283); ctx.fill(); ctx.restore();
+  ctx.save(); ctx.translate(x + kx, y - up * 6); ctx.scale(br, 2 - br); ctx.globalAlpha = clamp((y - HZ) / 16, .1, 1) * (e.rout ? .6 : 1);
+  if (ready(im)) { const w = h * im.width / im.height; ctx.drawImage(im, -w / 2, -h, w, h);
+    const lit = (e.flash > .07 && !(e.flashDelay > 0) ? .45 : 0) + (weak ? .16 + .1 * Math.sin(t * 9) : 0); if (lit > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= lit; ctx.drawImage(im, -w / 2, -h, w, h); } }
+  else { ctx.fillStyle = weak ? '#c9843a' : '#8a6a3a'; rr(-34 * ps, -h, 68 * ps, h, 16); ctx.fill(); }   // 图还没到：先画一块土色
+  ctx.restore();
+  if (e.rout || e.y < MON_Y) return; const by = y - h - 12, bw = 84;
+  if (weak) { bar(x - bw / 2, by, bw, 5, e.weakT / MON_WEAK, CINNABAR, 'rgba(20,12,6,.6)'); uiText('破绽 · 伤害加倍', x, by - 9, 12, '#ffe08a', 'center', FONT, { lw: 3 }); }
+  else { bar(x - bw / 2, by, bw, 5, clamp(e.fu / e.fuMax, 0, 1), '#e8c24a', 'rgba(20,12,6,.6)'); uiText(e.windT3 > 0 ? '举拳！' : '护体符', x, by - 9, e.windT3 > 0 ? 13 : 11, e.windT3 > 0 ? UIC.red2 : UIC.cream, 'center', e.windT3 > 0 ? FONT : PLAIN, { lw: 3 }); }
+}
 let MODE = null, MODE_FROM = 'camp';
 function startMode(k, from) {
-  const m = k === 'endless' ? endlessLv() : cjToday(); if (!m) return; MODE = k; if (from) MODE_FROM = from; BACKTO = MODE_FROM; PREP = null; startLevel(m.li, m.lv);
+  const m = k === 'endless' ? endlessLv() : k === 'hunt' ? huntLv() : cjToday(); if (!m) return; MODE = k; if (from) MODE_FROM = from; BACKTO = MODE_FROM; PREP = null; startLevel(m.li, m.lv);
 }
 function endMode(win, why) {
   G.state = 'over'; sfx(win ? 'win' : 'lose'); const lv = G.lv, r = G.result = { win, why, mode: lv.mode, time: G.t, kills: G.killed, wave: (lv.w0 || 0) + Math.max(1, G.wave + 1), adv: G.passed || 0, pay: [] };
-  G.fx = G.fx.filter(f => !['wave', 'banner', 'txt', 'leak'].includes(f.k)); if (G.sim) { r.ck0 = r.ck = (INV.endMax || 0) * END_SAVE; return; }   // 推演不存档、不发奖；结算页要的数先填上
+  G.fx = G.fx.filter(f => !['wave', 'banner', 'txt', 'leak'].includes(f.k)); r.dmg = Math.round(G.monDmg || 0); if (G.sim) { r.ck0 = r.ck = (INV.endMax || 0) * END_SAVE; r.best0 = 0; r.tier0 = r.tier = lv.mode === 'hunt' ? monTier(HMON[lv.mon], r.dmg) : 0; return; }   // 推演不存档、不发奖；结算页要的数先填上
   const pay = (k, n) => { if (k === '资历') addPrep(n); else INV.it[k] = (INV.it[k] || 0) + n; const o = r.pay.find(p => p[0] === k); if (o) o[1] += n; else r.pay.push([k, n]); };
-  if (lv.mode === 'endless') { const c0 = INV.endMax || 0, c1 = Math.max(c0, Math.floor(lv.w0 / END_SAVE) + Math.floor(r.adv / END_SAVE)); r.ck0 = c0 * END_SAVE; r.ck = c1 * END_SAVE; INV.endMax = c1; for (let c = c0 + 1; c <= c1; c++) for (const [k, n] of endPay(c)) pay(k, n); }
+  if (lv.mode === 'hunt') { const M = HMON[lv.mon], d = r.dmg, tr0 = DAILY.huntTier || 0, tr1 = monTier(M, d); INV.huntBest = INV.huntBest || {}; r.best0 = INV.huntBest[lv.mon] || 0; if (d > r.best0) INV.huntBest[lv.mon] = d;
+    for (let k = tr0; k < tr1; k++) for (const [it, n] of HUNT_PAY[k]) pay(it, n); if (tr1 > tr0) DAILY.huntTier = tr1; r.tier0 = tr0; r.tier = tr1; }
+  else if (lv.mode === 'endless') { const c0 = INV.endMax || 0, c1 = Math.max(c0, Math.floor(lv.w0 / END_SAVE) + Math.floor(r.adv / END_SAVE)); r.ck0 = c0 * END_SAVE; r.ck = c1 * END_SAVE; INV.endMax = c1; for (let c = c0 + 1; c <= c1; c++) for (const [k, n] of endPay(c)) pay(k, n); }
   else if (win && !DAILY.cjWin) { DAILY.cjWin = true; for (const [k, n] of CJ_PAY) pay(k, n); r.first = true; }
   saveInv(); saveDaily();
 }
 function drawModeResult() {
   const r = G.result; r.t0 ??= uiNow(); const t = uiNow() - r.t0, al = clamp((t - .5) / .3, 0, 1), endless = r.mode === 'endless';
   const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, `rgba(8,5,4,${Math.min(.6, t * 2)})`); bg.addColorStop(.4, `rgba(10,6,5,${Math.min(.86, t * 2.4)})`); bg.addColorStop(1, `rgba(6,4,3,${Math.min(.97, t * 3)})`); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  const good = endless ? r.adv > 0 : r.win, cu = clamp(t / .3, 0, 1), sc = 1.5 - .5 * ease(cu), cy = 132;
+  const good = endless ? r.adv > 0 : r.mode === 'hunt' ? r.tier > r.tier0 || r.dmg > r.best0 : r.win, cu = clamp(t / .3, 0, 1), sc = 1.5 - .5 * ease(cu), cy = 132;
   const gl = ctx.createRadialGradient(W / 2, cy, 0, W / 2, cy, 170); gl.addColorStop(0, good ? 'rgba(255,196,90,.32)' : 'rgba(190,46,28,.24)'); gl.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gl; ctx.fillRect(0, 0, W, 320);
-  ctx.save(); ctx.globalAlpha = cu; ctx.translate(W / 2, cy); ctx.scale(sc, sc); uiSeal(0, 0, 70, endless ? modeSeal('endless') : r.win ? (EN_ON ? 'D' : '破') : '败', good ? UIC.red : '#5a1d12'); ctx.restore();
+  ctx.save(); ctx.globalAlpha = cu; ctx.translate(W / 2, cy); ctx.scale(sc, sc); uiSeal(0, 0, 70, endless ? modeSeal('endless') : r.mode === 'hunt' ? modeSeal('hunt') : r.win ? (EN_ON ? 'D' : '破') : '败', good ? UIC.red : '#5a1d12'); ctx.restore();
   uiText(G.lv.name, W / 2, 196, 22, UIC.gold2, 'center', FONT, { lw: 4 });
   ctx.save(); ctx.globalAlpha = al;
   let y = 232;
-  if (endless) {
+  const hunt = r.mode === 'hunt';
+  if (hunt) { const M = HMON[G.lv.mon], nx = M.tiers[r.tier], rec = r.dmg > r.best0;
+    uiText(r.why === '退军了' ? '退军了' : '九十秒到', W / 2, y, 14, 'rgba(244,230,196,.75)', 'center', PLAIN, { stroke: false }); y += 46;
+    uiText(fmtDmg(r.dmg), W / 2, y, 40, '#ffe08a', 'center', FONT, { lw: 6, glow: 'rgba(255,190,80,.5)', glowR: 12 }); y += 34;
+    uiText('本局伤害', W / 2, y, 12, 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false }); y += 24;
+    uiText(rec ? (r.best0 ? `新纪录！以前最好 ${fmtDmg(r.best0)}` : '新纪录！') : `最好纪录 ${fmtDmg(r.best0)}`, W / 2, y, 13, rec ? '#ffe08a' : 'rgba(244,230,196,.6)', 'center', rec ? FONT : PLAIN, { lw: 3 }); y += 22;
+    uiText(r.tier ? `打过了第 ${r.tier} 档` + (nx ? ` · 下一档 ${fmtDmg(nx)}` : ' · 三档全过') : `第一档要 ${fmtDmg(nx)}`, W / 2, y, 12, 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false }); y += 18;
+    if (!r.pay.length) { uiText(r.tier > 0 ? '今天这几档的奖励已经领过' : '', W / 2, y, 11, 'rgba(244,230,196,.5)', 'center', PLAIN, { stroke: false }); y += 14; }
+  } else if (endless) {
     uiText(r.win ? '守满五分钟' : r.why === '退军了' ? '退军了' : '城破了', W / 2, y, 14, 'rgba(244,230,196,.75)', 'center', PLAIN, { stroke: false }); y += 44;
     segText(EN_ON ? [['Wave', UIC.cream], [' ' + r.wave, '#ffe08a']] : [['第', UIC.cream], [' ' + r.wave + ' ', '#ffe08a'], ['波', UIC.cream]], W / 2, y, 30, FONT, { lw: 5 }); y += 32;
     uiText(`本局守过 ${r.adv} 波 · 斩敌 ${r.kills}`, W / 2, y, 13, UIC.cream, 'center', PLAIN, { stroke: false }); y += 24;
@@ -1547,6 +1601,7 @@ function hurt(e, d, src) {
   if (e.duel && G.counterT > 0 && (src === 'slash' || src === 'sword' || src === 'roar')) d *= 1.5;                      // 举盾挡下以后的反击
   const T0 = FOES[e.kind];
   if (T0.invuln) { if (!G.sim && (G.vt || 0) - (e.noT || -9) > .8) { e.noT = G.vt || 0; G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 96, text: '打不进', size: 16, color: INK }); } return; }
+  if (T0.mon && e.weakT > 0 && src !== 'burn') d *= 2;                                                                    // 讨伐：护体符碎了的破绽里伤害加倍
   if (T0.civ) { if (src !== 'slash' && src !== 'sword') return;   /* 普攻会绕开百姓、喝只是吓一跳；只有青龙斩、双股剑砍到算误伤 */ e.dead = true; G.misfire = (G.misfire || 0) + 1; G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 40, text: '误伤百姓', size: 16, color: CINNABAR }); return; }
   const brk = e.breakT > 0;                                                                                             // 龙鳞破甲：盾和甲失效、多受 20%
   if (T0.armor && !brk) d *= 1 - T0.armor;
@@ -1571,7 +1626,7 @@ function hurt(e, d, src) {
   if (who && G.wpnLv) d *= (1 + .08 * (G.wpnLv[who] || 0)) * (G.awake === who && BIGSRC.has(src) ? 1.2 : 1);   // 兵器精炼、觉醒
   if (who && G.dmgBy) { const dd = Math.max(0, Math.min(d, e.hp)); G.dmgBy[who] += dd; if (BIGSRC.has(src)) G.dmgSk[who] += dd; }   // 结算分开写招式、普攻各打了多少
   if (e.duel) G.exp += Math.min(d, e.hp) / e.max * 40;                                                                  // 斗将：砍敌将也给军功（一场约 40）
-  e.hp -= d; if (src !== 'burn') e.hitT = .1;
+  e.hp -= d; if (src !== 'burn') e.hitT = .1; if (T0.mon) monHit(e, d, src);
   if (!G.sim) { const vd = G.visDelay ? G.visDelay(e) : 0; if (src !== 'burn') { e.flash = .12; e.flashDelay = vd; e.kickPend = (e.kickPend || 0) + (src === 'slash' || src === 'roar' ? 10 : BIGSRC.has(src) ? 7 : 3.5); if (src === 'roar') e.shkPend = true; if (!vd) { e.kick = Math.min(10, (e.kick || 0) + e.kickPend); e.kickPend = 0; if (e.shkPend) { e.shk = .22; e.shkPend = false; } } }   /* 11-08 后仰分轻重：青龙斩、一喝重；被喝的先抖一下 */ popDmg(e, d, src, vd); }
   if (e.hp <= 0) die(e, src); else if (e.duel && G.state === 'play') checkRank();
 }
@@ -1800,7 +1855,7 @@ function goalLines(lv, amb) {
     ['★★', wall + (cart ? '和' + (lv.rules.cart.label || '车驾') : '') + '都剩一半以上'],
     ['★★★', '两星之上，再' + star3(lv, amb).text]];
 }
-function showGoals() { if (!G) return; if (G.lv.mode) { G.teach = { key: null, title: G.lv.mode === 'endless' ? '无尽守城' : '每日残局 · ' + CJ_TWIST[G.lv.twist].name, text: G.lv.mode === 'endless' ? '敌军一波强过一波。每守过三波存一次进度，下局从那里接着打；每三十波换一个场景。城破或守满五分钟结束' : CJ_TWIST[G.lv.twist].say + '。今天第一次打赢给资历和残页', t0: uiNow() }; return; } G.teach = { key: null, title: '本关目标', goals: goalLines(G.lv, G.amb), t0: uiNow() }; }
+function showGoals() { if (!G) return; if (G.lv.mode === 'hunt') { G.teach = { key: null, title: G.lv.name, text: '怪物打不死，也不撞城。九十秒里打出多少伤害算多少，记最高纪录；伤害过一档它就换一个更凶的样子。' + HMON[G.lv.mon].say, t0: uiNow() }; return; } if (G.lv.mode) { G.teach = { key: null, title: G.lv.mode === 'endless' ? '无尽守城' : '每日残局 · ' + CJ_TWIST[G.lv.twist].name, text: G.lv.mode === 'endless' ? '敌军一波强过一波。每守过三波存一次进度，下局从那里接着打；每三十波换一个场景。城破或守满五分钟结束' : CJ_TWIST[G.lv.twist].say + '。今天第一次打赢给资历和残页', t0: uiNow() }; return; } G.teach = { key: null, title: '本关目标', goals: goalLines(G.lv, G.amb), t0: uiNow() }; }
 function teach(key) {
   if (G.sim || window.__sg.simming || window.__sg.auto || !TEACH[key]) return; INV.taught = INV.taught || {}; if (INV.taught[key] || G.teach) return;
   G.teach = { key, title: TEACH[key][0], text: TEACH[key][1], t0: uiNow() };
@@ -1862,6 +1917,7 @@ function step(dt) {
       if (e.y < HZ + 2 || e.ra > 3.5) e.dead = true;
       continue;
     }
+    if (T.mon) { stepMon(e, T, dt); continue; }
     if (e.burnT > 0) { e.burnT -= dt; hurt(e, e.burnDps * dt, 'burn'); if (e.dead) continue; }
     if (e.knock > 0) { const k = Math.min(e.knock, 300 * dt), ny = Math.max(HZ, e.y - k); fan(e, ny - e.y); e.y = ny; e.knock -= k; }
     if (e.hasteT > 0) e.hasteT -= dt;
@@ -2757,7 +2813,8 @@ function renderScreen() {
   for (const f of G.fx) if (f.k === 'ambush') drawAmbushTroops(f);
   drawFieldThings(); drawCart(); drawNight(); drawQixingHud();
   if (G.windT > 0) { const a = Math.min(1, G.windT / .6); for (let k = 0; k < 9; k++) { const y = TOP + 40 + k * 44, x = ((G.t * 420 + k * 137) % (W + 200)) - 100; brush(ctx, [[x - 90, y], [x - 30, y - 6], [x + 40, y + 2]], 5, '#6e675d', .35 * a, u => Math.sin(Math.PI * u), .3, vr); } }
-  if (ready(IMG.wall)) ctx.drawImage(IMG.wall, 0, WALL_Y - 12, W, 78); else ctx.drawImage(WALL, 0, WALL_Y - 14, WALL.lw, WALL.lh);
+  if (G.lv.mode === 'hunt') {}   /* 11-12 用户：「没有城墙了」「gpt画3个新场景，不要城墙那种」——讨伐不画城墙，武将直接站在底图的地上 */
+  else if (ready(IMG.wall)) ctx.drawImage(IMG.wall, 0, WALL_Y - 12, W, 78); else ctx.drawImage(WALL, 0, WALL_Y - 14, WALL.lw, WALL.lh);
   drawGenerals(); drawAdviser();
   for (const s of G.shots) drawShot(s);
   if (SPX.ok) spxParts(); else drawParts();
@@ -2898,7 +2955,7 @@ const MOVE_ANIM = { heavy: ['heavy'], combo: ['combo', 'heavy'], rush: ['rush', 
 // 城墙外一排小图标（10-28 用户：「滚木，弩，挡马那些……直接显示在城墙外即可，小一些，不要挡视野」）：
 // 这一关拿到的军械、城防战法（滚木、连弩、拒马、绊马索、破阵弩……）和自动的赤帻、火把、举盾。画在敌人底下，敌人走过来会盖住它们；用掉了（滚木、连弩一关一次）变灰
 function drawWallProps() {
-  const items = []; G.propRects = [];
+  const items = []; G.propRects = []; if (G.lv.mode === 'hunt') return;
   for (const p of PERKS) if (G.perks[p.id] && !p.gen && !p.combo && p.id !== 'banma' && p.id !== 'log' && ready(IMG['ui_ico_' + p.id])) items.push({ im: IMG['ui_ico_' + p.id], n: G.perks[p.id], used: (p.id === 'log' && G.logUsed) || (p.id === 'nu' && G.nuUsed), name: p.name, desc: p.desc });
   // 11-11 用户：「左边有，右下不需要出现滚木了」——滚木已经有左边的滚木钮，城墙外这排不再画滚木（战法拿的和关卡送的都不画）
   if (G.st.nu > 0 && !G.perks.nu && ready(IMG.ui_ico_nu)) items.push({ im: IMG.ui_ico_nu, n: G.st.nu, used: G.nuUsed, name: '连弩', desc: '敌人最密时自己放，一列万箭齐发（一关一次）' });
@@ -2946,7 +3003,7 @@ function cavalrySheet(e, T, base) {
   return SHEETS[key] && ready(IMG[key]) ? key : base;
 }
 function drawFoe(e) {
-  if (e.lamp) return drawLamp(e);
+  if (e.lamp) return drawLamp(e); if (FOES[e.kind].mon) return drawMon(e, FOES[e.kind]);
   const T = FOES[e.kind], ps = persp(e.y), w = T.box[0] * ps, h = T.box[1] * ps, f = Math.floor(e.f) % 4;
   let x = e.x, y = e.y - (e.kick || 0) * ps;
   if (T.pt && !ownSheet(T) && ready(IMG['pt_' + T.pt])) drawPortrait(e, T, x, y, ps);
@@ -3315,7 +3372,7 @@ function drawBg() {
   else if (!ready(IMG.bg)) { ctx.drawImage(BG || (BG = bakeBg()), 0, 0, W, H); return; }
   ctx.drawImage(mc || inkBg(IMG.bg), 0, 0, W, H);
   const wg = ctx.createLinearGradient(0, TOP + 10, 0, TOP + 120); wg.addColorStop(0, 'rgba(236,228,210,0)'); wg.addColorStop(1, 'rgba(236,228,210,.32)');   // 战场中间再淡一层，小兵看得清；上沿渐变，不留横缝
-  ctx.fillStyle = wg; ctx.fillRect(0, TOP + 10, W, WALL_Y - TOP - 10);
+  ctx.fillStyle = wg; ctx.fillRect(0, TOP + 10, W, (G && G.lv.mode === 'hunt' ? H : WALL_Y) - TOP - 10);   // 讨伐没有城墙：这层淡色一直铺到底，不在城墙线上留一道边
 }
 const night = () => G && G.RU.night;
 // 夜战（10-25 用户：「确实要有夜战。夜战不只是图变了，战斗特点也要变」）：看得见的才打得到——城前一段、营里的火光、自己扔的火把、身上着火的、火沟边上；
@@ -5374,6 +5431,7 @@ function drawHud() {
     uiPanel(8, TOP - 6, W - 16, 30, { r: 6, alpha: .9, top: '#3a1610', bot: '#1e0c08' });
     uiText(T.name, 18, TOP + 9, 16, '#ffd9b0', 'left', FONT, EN_ON ? { glow: 'rgba(226,86,58,.6)', maxW: 98 } : { glow: 'rgba(226,86,58,.6)' }); const bw = (t, z, f) => (ctx.font = `${fpx(z)}px ${f}`, rawMeasure(tr(t)).width), tx = 18 + (EN_ON ? bw(T.name, 16, FONT) : 16 * T.name.length) + 6;   // 11-10 英文名字长：按实际宽度排，封号放不下（会压到血条）就不写，出场横幅里有
     if (T.title && (!EN_ON || tx + bw(T.title, 10, PLAIN) <= 116)) uiText(T.title, tx, TOP + 10, 10, 'rgba(255,220,190,.7)', 'left', PLAIN, { stroke: false });
+    if (T.mon) { const M = HMON[T.mon], d = G.monDmg || 0, k = monTier(M, d), lo = k ? M.tiers[k - 1] : 0, hi = M.tiers[k]; uiBar('boss', 120, TOP + 3, W - 136, 12, hi ? (d - lo) / (hi - lo) : 1, '#5a3a0c', '#ffd76e', {}); uiText(fmtDmg(d) + (hi ? ' / ' + fmtDmg(hi) : ''), 120 + (W - 136) / 2, TOP + 9.5, 11, '#fff6e0', 'center', PLAIN, { lw: 3 }); } else
     uiBar('boss', 120, TOP + 3, W - 136, 12, b.hp / b.max, '#6e0f08', '#e2563a', { seg: 10 });
     if (b.guardT2 > 0) uiText('护罩', W - 30, TOP + 9, 11, UIC.gold2, 'center', PLAIN);
   }
@@ -5382,7 +5440,7 @@ const FACE = { guan: [20, 0, 190], zhang: [25, 0, 190], liu: [10, 0, 190] };   /
 const GEN_BLOCK = { guan: '#1d4d34', zhang: '#6e2014', liu: '#1c3f60' };         // 名牌底色：关羽深绿、张飞深红、刘备深蓝，一眼分得开
 function drawSlots() {
   if (ready(IMG.ui2_top)) { const th = H - SLOT_Y + 17; ctx.save(); ctx.translate(0, SLOT_Y - 17 + th); ctx.scale(1, -1); draw9(IMG.ui2_top, -24, 0, W + 48, th, 40, 40, 8, 12, .5); ctx.restore();   // 顶栏那块倒过来：金线在上沿，加高一格放城防
-    if (G && screen === 'play') { const fr = G.wall / G.wallMax, low = fr <= .5, y0 = SLOT_Y - 15, bh = 10;   /* 往下挪到武将牌上方、矮一些（10-27 用户：「往下拉到红线位置，字小一些，不用那么高，上下两条金线细小，暗金」） */   // 金线加粗成一条血槽，城防写在槽里（10-27 用户：「加高这条金色线，里面好像HP」「数字写在里面，不要用这个色，看不清」）
+    if (G && screen === 'play' && G.lv.mode !== 'hunt') { const fr = G.wall / G.wallMax, low = fr <= .5, y0 = SLOT_Y - 15, bh = 10;   /* 往下挪到武将牌上方、矮一些（10-27 用户：「往下拉到红线位置，字小一些，不用那么高，上下两条金线细小，暗金」） */   // 金线加粗成一条血槽，城防写在槽里（10-27 用户：「加高这条金色线，里面好像HP」「数字写在里面，不要用这个色，看不清」）
       ctx.fillStyle = '#1a0c06'; ctx.fillRect(0, y0, W, bh); const g = ctx.createLinearGradient(0, y0, 0, y0 + bh); g.addColorStop(0, low ? '#ff8a5a' : '#e8604a'); g.addColorStop(.5, low ? '#c8280e' : '#b0201a'); g.addColorStop(1, low ? '#6a0c04' : '#5a0c0a');
       ctx.fillStyle = g; ctx.fillRect(0, y0, W * fr, bh); if (G.wallShield > 0) { ctx.fillStyle = 'rgba(120,190,255,.75)'; ctx.fillRect(W * fr, y0, Math.min(W * (1 - fr) + W * .02, W * G.wallShield / G.wallMax), bh); }   // 仁德护阵的护盾：城防条后面接一段蓝 ctx.fillStyle = '#9a7432'; ctx.fillRect(0, y0 - .8, W, .8); ctx.fillRect(0, y0 + bh, W, .8);
       uiText('城防  ' + Math.ceil(fr * 100) + '%', W / 2, y0 + bh / 2 + .5, 8.5, '#ffffff', 'center', PLAIN, { lw: 2 }); } }
@@ -6582,10 +6640,10 @@ function drawCamp() {
       const s2 = !m ? '每守过三波存一次进度' : DAILY.endSwept ? `已守过 ${mw} 波 · 今天已扫荡` : `已守过 ${mw} 波 · 今天可扫荡一次`; uiText(s2, 56, y + 35, 10, 'rgba(240,217,160,.7)', 'left', PLAIN, { stroke: false, maxW: canSw ? 138 : 190 });
       if (canSw) pill(W - 160, y + 13, 62, 24, '扫荡', () => { const g = endSweep(); if (g) showReward('重置扫荡 · 无尽守城', [`前 ${mw} 波的东西全收了`], ['guan', 'zhang', 'liu'], true, g); }, false);
       pill(W - 92, y + 13, 64, 24, '开打', () => { screen = 'menu'; startMode('endless', 'camp'); }); y += 56; }
-    { const c = cjOpen() ? cjToday() : null; ctx.save(); if (!c || DAILY.cjWin) ctx.globalAlpha = .55; plate(14, y, W - 28, 50); ctx.restore(); uiSeal(36, y + 25, 26, modeSeal('daily'), '#6a4a14');
-      uiText(c ? '每日残局 · ' + c.base.name : '每日残局', 56, y + 16, fitSize(c ? '每日残局 · ' + c.base.name : '每日残局', 14, W - 160, 99, FONT), UIC.cream, 'left', FONT, { stroke: false });
-      const s2 = !c ? '打过第四关开放' : CJ_TWIST[c.tw].name + (DAILY.cjWin ? ' · 今天已破' : ' · 打赢得资历 +2、残页 +2'); uiText(s2, 56, y + 35, fitSize(s2, 10, W - 140, 99, PLAIN), 'rgba(240,217,160,.7)', 'left', PLAIN, { stroke: false });
-      if (c) pill(W - 92, y + 13, 64, 24, DAILY.cjWin ? '再打' : '开打', () => { screen = 'menu'; startMode('daily', 'camp'); }, !DAILY.cjWin); y += 60; } }
+    { const ok = huntOpen(), k = huntMon(), M = HMON[k], tr1 = DAILY.huntTier || 0, best = (INV.huntBest || {})[k] || 0; ctx.save(); if (!ok || tr1 >= 3) ctx.globalAlpha = .55; plate(14, y, W - 28, 50); ctx.restore(); uiSeal(36, y + 25, 26, modeSeal('hunt'), '#6a4a14');   // 11-12 每日残局换成讨伐
+      uiText('讨伐 · ' + M.name, 56, y + 16, fitSize('讨伐 · ' + M.name, 14, W - 160, 99, FONT), UIC.cream, 'left', FONT, { stroke: false });
+      const s2 = !ok ? '打过第四关开放' : (best ? `最好 ${fmtDmg(best)} · ` : '九十秒比伤害 · ') + (tr1 >= 3 ? '今天三档奖励已领' : `今天已领 ${tr1}/3 档`); uiText(s2, 56, y + 35, fitSize(s2, 10, W - 140, 99, PLAIN), 'rgba(240,217,160,.7)', 'left', PLAIN, { stroke: false });
+      if (ok) pill(W - 92, y + 13, 64, 24, tr1 >= 3 ? '再打' : '开打', () => { screen = 'menu'; startMode('hunt', 'camp'); }, tr1 < 3); y += 60; } }
   { const id = visitWho(), left = DAILY.visitN - DAILY.visits, vr0 = CAMP.visit && uiNow() - CAMP.visit.t0 < 2.6 ? CAMP.visit : null;   // 出外探访
     ctx.save(); if (!left) ctx.globalAlpha = .5; plate(14, y, W - 28, 58, !!(vr0 && vr0.god)); ctx.restore();
     ctx.save(); rr(22, y + 6, 32, 32, 6); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], 22, y + 6, 32, 32); ctx.restore();
@@ -7349,7 +7407,7 @@ function lvModeBtns(t) {   // 11-12 用户圈图「这个布局」：页签那�
     if (ready(tim)) draw9(tim, x, y, 108, 30, 90, 90, 0, 0, 30 / 189); else uiPanel(x, y, 108, 30, { r: 15, top: on ? '#c0402a' : '#3a2b1f', bot: on ? '#6e140c' : UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.6)', single: true });
     uiText(nm, x + 54, y + 15, fitSize(nm, 15, 108 - 30 - 4), on ? '#fff2dc' : UIC.cream, 'center', FONT, { stroke: false }); ctx.restore(); if (fn) hit(x, y, 108, 30, fn); };
   /* 用户：「不，上面完全不要普通关卡」——中间不放当前这一段的页签；这一段叫什么写进页头标题 */
-  if (endlessOpen()) { tab(14, '无尽守城', false, () => { startMode('endless', 'levels'); }); if (cjOpen()) tab(238, '每日残局', false, () => { startMode('daily', 'levels'); }, DAILY.cjWin); }
+  if (endlessOpen()) { tab(14, '无尽守城', false, () => { startMode('endless', 'levels'); }); if (huntOpen()) tab(238, '讨伐', false, () => { startMode('hunt', 'levels'); }, (DAILY.huntTier || 0) >= 3); }
   const nSeg = Math.ceil(LEVELS.length / 10), chOpen = c => c === 0 || window.__sg.all || !!BEST[c * 30];
   for (const [d, x] of [[-1, 8], [1, 254]]) { const k = MENU.seg + d; if (k < 0 || k >= nSeg || !SEGS[k]) continue; const ok = chOpen(Math.floor(k / 3));
     ctx.save(); if (!ok) ctx.globalAlpha = .45; plaque3(x, 590, 98, 34, SEGS[k], () => { if (ok) MENU.seg = k; else MENU.chLockT = uiNow(); }, false); ctx.restore(); }
@@ -7436,7 +7494,7 @@ window.__sg = {
     this.seed = 0; this.auto = false; return Object.fromEntries(Object.entries(out).map(([k, [a, b]]) => [k, '荐错 ' + Math.round(a / b * 100) + '% (' + b + ')'])); }, ult: (k, foe) => playUlt(k, foe, true), get inv() { return INV; }, get daily() { return DAILY; }, get cloud() { return { on: CLOUD_ON, ns: CLOUD_NS, api: CLOUD_API, framed: FRAMED, st: CLOUD.st, me: CLOUD.me, claim: cloudClaim, copy: cloudCopy }; },   /* 11-10 存档码（工具/itch/check_itch.py 核对用） */ dayOff: 0, tick: () => dailyTick(), gateLack: id => gateLack(id), nextGate: () => nextGate(), get scr() { return screen; }, set scr(v) { screen = v; }, get scmax() { return SCMAX; },
   // 不画面，直接跑：一直到这一关结束（auto 时自动选战法），返回结果
   mode: k => startMode(k),   // 11-12 无尽守城、每日残局（试玩核对用）
-  simMode(k, maxT = 400) { const m = k === 'endless' ? endlessLv() : cjToday(); this.auto = true; this.simming = true; startLevel(m.li, m.lv); this.simming = false; G.sim = true; let n = 0; while (G.state !== 'over' && G.t < maxT && n < 1e6) { if (G.state === 'pick') takePerk(autoPick()); step(DT); n++; } return { win: G.result && G.result.win, kills: G.killed, passed: G.passed, wave: G.lv.w0 + G.wave + 1, map: G.lv.map, t: Math.round(G.t), wall: Math.round(G.wall), li: m.li }; },
+  simMode(k, maxT = 400) { const m = k === 'endless' ? endlessLv() : k === 'hunt' ? huntLv() : cjToday(); this.auto = true; this.simming = true; startLevel(m.li, m.lv); this.simming = false; G.sim = true; let n = 0; while (G.state !== 'over' && G.t < maxT && n < 1e6) { if (G.state === 'pick') takePerk(autoPick()); step(DT); n++; } return { win: G.result && G.result.win, kills: G.killed, passed: G.passed, wave: G.lv.w0 + G.wave + 1, map: G.lv.map, t: Math.round(G.t), wall: Math.round(G.wall), li: m.li, dmg: Math.round(G.monDmg || 0), fuN: G.foes[0] && G.foes[0].fuN, stomp: G.monStomp, stop: G.monStop }; },
   sim(i, maxT = 300) { this.auto = true; this.simming = true; startLevel(i); this.simming = false; G.sim = true; let n = 0; while (G.state !== 'over' && G.t < maxT && n < 1e6) { if (G.state === 'pick') takePerk(autoPick()); if (this.hook) this.hook(G); step(DT); n++; } return { win: G.result && G.result.win, stars: G.result && G.result.stars, wall: Math.round(G.wall), t: Math.round(G.t), killed: G.killed, leaked: G.leaked, total: G.total, rank: G.rank, perks: G.perks }; },
   // 每关换 n 个种子各跑一遍：平均星数、胜场、城防、用时、撞城的兵、输的原因（调平衡用）
   bench(levels = LEVELS.map((_, i) => i), n = 6, naive = false) {

@@ -26,4 +26,12 @@ T = {
 '敌军一波强过一波。每守过三波存一次进度，下局从那里接着打；每三十波换一个场景。城破或守满五分钟结束': 'Each wave is stronger than the last. Progress saves every three waves cleared and the next run continues from there; the battlefield changes every thirty waves. A run ends when the wall falls or after five minutes.',
 '未学会': 'Locked', '晋阶义军队正学会': 'Unlocks at rank Volunteer Sergeant', '晋阶讨贼队正学会': 'Unlocks at rank Rebel-Hunter Sergeant', '晋阶讨贼副尉学会': 'Unlocks at rank Deputy Commandant',
 '打过第一关学会': 'Unlocks after Stage 1', '打过第二关学会': 'Unlocks after Stage 2', '打过第三关学会': 'Unlocks after Stage 3', '打过第四关简雍来投': 'Jian Yong joins after Stage 4', '打过第九关卢植来投': 'Lu Zhi joins after Stage 9',
+# 11-12 讨伐（打不死的怪物，90 秒比伤害）
+'讨伐': 'Hunt', '黄巾巨灵': 'Turban Colossus', '打不死': 'Unkillable', '九十秒，打得越多越好': '90 seconds — deal as much damage as you can',
+'时辰到': "Time's up", '黄巾巨灵遁走了': 'The Colossus withdrew', '符碎了！八秒内伤害加倍': 'Talisman broken! Double damage for 8s',
+'巨灵震地：普攻慢一半': 'Ground slam: attacks slowed by half', '巨灵举拳！张飞一喝能喝住': "Fist raised! Zhang Fei's Roar can stop it", '喝住了！': 'Stopped!',
+'被打怒了': 'Enraged', '狂暴': 'Berserk', '破绽 · 伤害加倍': 'Exposed · Double damage', '护体符': 'Talisman', '举拳！': 'Fist raised!',
+'九十秒到': '90 seconds up', '本局伤害': 'Damage this run', '新纪录！': 'New record!', '三档全过': 'all three tiers cleared', '今天这几档的奖励已经领过': "Today's rewards for these tiers already claimed",
+'今天三档奖励已领': "today's three tier rewards claimed", '九十秒比伤害': '90s damage race', '打过第四关开放': 'Opens after Stage 4',
+'怪物打不死，也不撞城。九十秒里打出多少伤害算多少，记最高纪录；伤害过一档它就换一个更凶的样子。巨灵身上有护体符：打碎一层，八秒内伤害加倍，把大招留到这时候。它举拳时张飞一喝能喝住': "The monster cannot be killed and never attacks the wall. Deal as much damage as you can in 90 seconds; your best is recorded. Each damage tier makes it change into a fiercer form. The Colossus wears a talisman ward: break a layer and it takes double damage for 8 seconds — save your big skills for that. When it raises its fist, Zhang Fei's Roar can stop it.",
 }
