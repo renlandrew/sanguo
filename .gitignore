@@ -4,3 +4,5 @@ __pycache__/
 *.pyc
 # 发包临时目录
 outbox/
+
+美术/水墨版/
