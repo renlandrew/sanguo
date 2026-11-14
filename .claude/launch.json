@@ -1,0 +1,52 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "sanguo",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-I",
+        "-c",
+        "import http.server as h, functools; h.ThreadingHTTPServer(('127.0.0.1', 8766), functools.partial(h.SimpleHTTPRequestHandler, directory=\"/Volumes/andrew's SSD/Downloads/mindstone-game/\\u4e09\\u56fd\\u5fd7\")).serve_forever()"
+      ],
+      "port": 8766
+    },
+    {
+      "name": "sanguo-tmp",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-I",
+        "-m",
+        "http.server",
+        "8767",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "/private/tmp/claude-501/-Volumes-andrew-s-SSD-Downloads-mindstone-game----/5b973a7a-75a9-42ad-9e52-b7965149772e/scratchpad/sg"
+      ],
+      "port": 8767
+    },
+    {
+      "name": "sanguo-cloud",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-I",
+        "/private/tmp/claude-501/-Volumes-andrew-s-SSD-Downloads-mindstone-game----/5b973a7a-75a9-42ad-9e52-b7965149772e/scratchpad/sgsrv/dev_server.py",
+        "/private/tmp/claude-501/-Volumes-andrew-s-SSD-Downloads-mindstone-game----/5b973a7a-75a9-42ad-9e52-b7965149772e/scratchpad/sg/原型",
+        "8772",
+        "18094"
+      ],
+      "port": 8772
+    },
+    {
+      "name": "sanguo-h",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-I",
+        "-c",
+        "import http.server as h, functools; h.ThreadingHTTPServer(('127.0.0.1', 8788), functools.partial(h.SimpleHTTPRequestHandler, directory=\"/Volumes/andrew's SSD/Downloads/mindstone-game/\\u4e09\\u56fd\\u5fd7\")).serve_forever()"
+      ],
+      "port": 8788
+    }
+  ]
+}

@@ -12,7 +12,7 @@ from scipy import ndimage as ndi
 R = Path(__file__).resolve().parents[2]; SRC = R / '美术' / '讨伐' / '视频'; OUT = R / '原型' / 'img'
 STEP, COLS, SCALES = 4, 6, {'juling': .62, 'shanjun': .8, 'jiao': .9}
 MARK = {  # 图集帧号：[蓄力起, 打到, 收完]；待机 = 0 … 蓄力起-1 来回
- 'juling': [[7, 14, 20], [7, 13, 19], [6, 11, 19]], 'shanjun': [[5, 13, 19], [6, 15, 20], [5, 17, 21]], 'jiao': [[5, 14, 20], [5, 16, 21], [2, 16, 20]] }
+ 'juling': [[7, 11, 18]] * 3, 'shanjun': [[4, 8, 17]] * 3, 'jiao': [[5, 17, 22]] * 3 }   # 11-13 重标：原来 hit 标在动作保持的中段（巨灵砸完、山君立起来挥爪、蛟昂到最高），改成撞击那一瞬——巨灵拳头落地 44、山君扑爪前伸 32、蛟头探到底 68
 def matte(f, thin=False):
     rgb = f[..., ::-1].astype(np.float32); edge = np.concatenate([rgb[:6].reshape(-1, 3), rgb[-6:].reshape(-1, 3), rgb[:, :6].reshape(-1, 3), rgb[:, -6:].reshape(-1, 3)])
     bg = np.median(edge, axis=0); d = np.sqrt(((rgb - bg) ** 2).sum(axis=2)); mn, mx = rgb.min(axis=2), rgb.max(axis=2)
