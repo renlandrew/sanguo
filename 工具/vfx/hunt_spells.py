@@ -15,7 +15,7 @@ PICK = {  # 招 → 法术
  'shanjun_0': 'white_tiger', 'shanjun_1': 'resounding_peal', 'shanjun_2': 'shadow_claws',
  'jiao_0': 'breaching_whale', 'jiao_1': 'moonpull_tide', 'jiao_2': 'geyser_chain',
  'juling_ba': 'comet_strike', 'shanjun_ba': 'cross_slash', 'jiao_ba': 'tide_pearls' }   # _ba：普攻用的小法术（用户：「不是普通的碰一下打一下，要法术效果」）
-meta = {}; FADE = 90; EDGE = None
+meta = {}; FADE = 90; EDGE = None; FLYMAX = 190
 for key, sp in PICK.items():
     v = DB[sp]; W, H = v['size']; n = v['n']; fps = n / v['dur']; hit = min(h['t'] for h in v['hits']); i0 = max(0, round((hit - LEAD) * fps)); tx, ty = v['tx'], v['ty']
     x0, x1, y0, y1 = max(0, tx - 330), min(W, tx + 330), max(0, ty - 460), min(H, ty + 130); fr = []
@@ -41,6 +41,27 @@ for key, sp in PICK.items():
     sheet = Image.new('RGBA', (fw * COLS, fh * rows))
     for j, f in enumerate(fr): sheet.alpha_composite(f.crop(bb).resize((fw, fh), Image.Resampling.LANCZOS), ((j % COLS) * fw, (j // COLS) * fh))
     dst = OUT / f'msp_{key}.webp'; sheet.save(dst, quality=84, method=6)
-    meta[key] = {'n': len(fr), 'cols': COLS, 'fw': fw, 'fh': fh, 'ax': round((tx - x0 - bb[0]) * s, 1), 'ay': round((ty - y0 - bb[1]) * s, 1), 'fps': round(fps / STEP, 2), 'hit': round((hit * fps - i0) / STEP, 1), 'src': sp}
+    # 11-13 用户：「法术要从敌人那里发出最好」——再切一段「飞过来」：命中窗之前那些帧（多半是蓄起来的火球、金虎、铃、月轮、彗星、爪、水珠），
+    # 裁到内容外框、缩到 FLYMAX，游戏里从怪物身上朝挨打的人飞过去，按飞行方向转角度
+    fly = []
+    for i in range(0, i0, 2):
+        cv = Image.new('RGBA', (W, H))
+        for L in 'bf':
+            o = v[L][i] if i < len(v[L]) else None; q = SRC / 'fx' / sp / f'{L}_{i + 1:03d}.png'
+            if o and q.exists(): cv.alpha_composite(Image.open(q).convert('RGBA'), (o[0], o[1]))
+        fly.append(cv)
+    fbb = None
+    for f in fly:
+        b = f.getbbox()
+        if b: fbb = b if not fbb else (min(fbb[0], b[0]), min(fbb[1], b[1]), max(fbb[2], b[2]), max(fbb[3], b[3]))
+    if fly and fbb and (fbb[2] - fbb[0]) * (fbb[3] - fbb[1]) > 2000:
+        fly = [f.crop(fbb) for f in fly][-14:]
+        fs = min(1, FLYMAX / max(fbb[2] - fbb[0], fbb[3] - fbb[1])); fw2, fh2 = round((fbb[2] - fbb[0]) * fs), round((fbb[3] - fbb[1]) * fs)
+        rows2 = -(-len(fly) // COLS); fsh = Image.new('RGBA', (fw2 * COLS, fh2 * rows2))
+        for j, f in enumerate(fly): fsh.alpha_composite(f.resize((fw2, fh2), Image.Resampling.LANCZOS), ((j % COLS) * fw2, (j // COLS) * fh2))
+        fsh.save(OUT / f'msp_{key}_fly.webp', quality=84, method=6)
+        flym = {'n': len(fly), 'cols': COLS, 'fw': fw2, 'fh': fh2}
+    else: flym = None
+    meta[key] = {'n': len(fr), 'cols': COLS, 'fw': fw, 'fh': fh, 'ax': round((tx - x0 - bb[0]) * s, 1), 'ay': round((ty - y0 - bb[1]) * s, 1), 'fps': round(fps / STEP, 2), 'hit': round((hit * fps - i0) / STEP, 1), 'src': sp, 'fly': flym}
     print(key, sp, len(fr), '帧', (fw, fh), sheet.size, dst.stat().st_size // 1024, 'KB', meta[key])
 (OUT / 'msp.json').write_text(json.dumps(meta))

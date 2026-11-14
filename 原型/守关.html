@@ -1422,11 +1422,21 @@ function monImgs(k) { const bk = 'bg_' + HMON[k].map; if (!IMG[bk]) { IMG[bk] = 
 // 11-13 Veo 录的逐帧动作（用户：「怪物的战斗动作呢」→「做」）：每个形态一张 6×4 的图集（24 帧：待机、蓄力、出手、收回），一张两千多像素见方，只留当前形态那张，换形态时放掉旧的
 // 11-13 用户：「我们有那么多招数，在法术平台那个chat，要让老虎有法术啊」——怪物每招配一个法术（法术售卖平台那套，工具/vfx/hunt_spells.py 切出打中目标那一段），出手前约三分之一秒起播在挨打的武将身上，命中那一帧正好对上扣血
 const MSP = { meta: null, req: 0 }, GFALL = { meta: null, req: 0 };
-function monSpell(e, T, mv) { if (G.sim || !MSP.meta) return; const key = T.mon + '_' + HMON[T.mon].moves.indexOf(mv), A = MSP.meta[key]; if (!A) return; const P = heroPos(), dur = A.n / A.fps;
-  if (mv.tgt === 'all') G.fx.push({ k: 'monsp', t: 0, dur, key, x: W / 2, y: GY + 4, w: 250 });
-  else for (const i of (e.aimPos ? e.aimPos.map(p => P[p]) : [G.order.indexOf(e.aimId)])) if (i >= 0 && G.order[i]) G.fx.push({ k: 'monsp', t: 0, dur, key, x: genX(i), y: GY + 4, w: 150 }); }
-function drawMonSp(f) { const A = MSP.meta && MSP.meta[f.key], im = IMG['msp_' + f.key]; if (!A || !ready(im)) return; const j = Math.min(A.n - 1, Math.floor(f.t * A.fps * (f.sp || 1))), sc = f.w / A.fw;
+// 11-13 用户：「法术要从敌人那里发出最好」——先从怪物身上朝挨打的人飞过去（飞行段多半是蓄起来的火球、金虎、铃、月轮、彗星、水珠；没有飞行段的用命中图头几帧顶），落点上再炸开
+const MON_FLY = .3;
+function monFly(key, x0, y0, x1, y1, w) { const A = MSP.meta[key]; if (A && A.fly) { const ik = 'msp_' + key + '_fly'; if (!IMG[ik]) { IMG[ik] = new Image(); IMG[ik].src = 'img/' + ik + '.webp' + BUST; } }
+  G.fx.push({ k: 'monfly', t: 0, dur: MON_FLY, key, x0, y0, x1, y1, w }); }
+function monSpell(e, T, mv) { if (G.sim || !MSP.meta) return; const key = T.mon + '_' + HMON[T.mon].moves.indexOf(mv), A = MSP.meta[key]; if (!A) return; const P = heroPos(), dur = A.n / A.fps + MON_FLY, fy = e.y - 40;
+  const one = (x, w) => { monFly(key, e.x, fy, x, GY - 10, w * (mv.tgt === 'all' ? .5 : .78)); G.fx.push({ k: 'monsp', t: 0, d: MON_FLY, dur, key, x, y: GY + 4, w }); };
+  if (mv.tgt === 'all') one(W / 2, 250);
+  else for (const i of (e.aimPos ? e.aimPos.map(p => P[p]) : [G.order.indexOf(e.aimId)])) if (i >= 0 && G.order[i]) one(genX(i), 150); }
+function drawMonSp(f) { const A = MSP.meta && MSP.meta[f.key], im = IMG['msp_' + f.key]; if (!A || !ready(im)) return; const tt = f.t - (f.d || 0); if (tt < 0) return;
+  const j = Math.min(A.n - 1, Math.floor(tt * A.fps * (f.sp || 1))), sc = f.w / A.fw;
   ctx.drawImage(im, (j % A.cols) * A.fw, Math.floor(j / A.cols) * A.fh, A.fw, A.fh, f.x - A.ax * sc, f.y - A.ay * sc, A.fw * sc, A.fh * sc); }
+function drawMonFly(f) { const A = MSP.meta && MSP.meta[f.key]; if (!A) return; const F = A.fly, im = IMG['msp_' + f.key + (F ? '_fly' : '')]; if (!ready(im)) return;
+  const u = clamp(f.t / f.dur, 0, 1), uu = u * u, x = f.x0 + (f.x1 - f.x0) * uu, y = f.y0 + (f.y1 - f.y0) * uu, ang = Math.atan2(f.y1 - f.y0, f.x1 - f.x0);   // 越飞越快
+  const n = F ? F.n : 4, fw = F ? F.fw : A.fw, fh = F ? F.fh : A.fh, cols = F ? F.cols : A.cols, j = Math.min(n - 1, Math.floor(u * n)), sc = F ? f.w / Math.max(fw, fh) * 1.1 : f.w / A.fw * .55;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.globalAlpha = Math.min(1, u * 5) * (1 - .25 * uu); ctx.drawImage(im, (j % cols) * fw, Math.floor(j / cols) * fh, fw, fh, -fw * sc / 2, -fh * sc / 2, fw * sc, fh * sc); ctx.restore(); }
 const monForm = (k, fm) => { const A = HMON[k].anim; return A && (A.forms ? A.forms[fm] : [A[fm], A[fm], A[fm]]); };   // 老格式（每形态一条，三招共用）也认
 function monSheet(k, n) {   // 只留当前形态那三张（每招一张），换形态时放掉旧的
   const want = new Set((monForm(k, n - 1) || []).map(a => 'monv_' + (a.sheet || k + n)));
@@ -1473,9 +1483,9 @@ function stepMon(e, T, dt) {
   // 普攻：用户「不是普通的碰一下打一下，要法术效果」——每下在被打的人身上播一个小法术（巨灵陨火、山君十字爪痕、蛟潮珠，1.6 倍速），伤害等法术命中那一帧才扣
   if (e.baQ) { e.baQ.t -= dt; if (e.baQ.t <= 0) { heroHurt(e.baQ.id, e.baQ.d); e.baQ = null; } }
   if (!(e.windT3 > 0)) { e.baT = (e.baT ?? 2.5) - dt; if (e.baT <= 0) { e.baT = MON_BA_CD; const i = up[Math.floor(rnd() * up.length)], key = T.mon + '_ba', A = MSP.meta && MSP.meta[key], sp = 1.6, d = MON_BA * (1 + .3 * fm);
-      if (A && !G.sim) G.fx.push({ k: 'monsp', t: 0, dur: A.n / A.fps / sp, key, x: genX(i), y: GY + 4, w: 120, sp });
-      e.baQ = { id: G.order[i], d, t: A ? A.hit / A.fps / sp : .2 }; e.strikeT = .3; e.strikeX = genX(i); e.ba = 1; } }
-  if (e.windT3 > 0) { e.windT3 -= dt; if (!e.fxOn && e.windT3 <= .33) { e.fxOn = 1; monSpell(e, T, e.mv); } if (e.windT3 > 0) return; const mv = e.mv, dmg = mv.dmg * (1 + .3 * fm); e.strikeT = .55; e.ba = 0; G.shake = mv.anim === 'slam' ? .55 : mv.anim === 'lunge' ? .35 : .2; G.monStomp = (G.monStomp || 0) + 1;   // 出手
+      if (A && !G.sim) { monFly(key, e.x, e.y - 40, genX(i), GY - 10, 86); G.fx.push({ k: 'monsp', t: 0, d: MON_FLY, dur: MON_FLY + A.n / A.fps / sp, key, x: genX(i), y: GY + 4, w: 120, sp }); }
+      e.baQ = { id: G.order[i], d, t: MON_FLY + (A ? A.hit / A.fps / sp : .2) }; e.strikeT = .3; e.strikeX = genX(i); e.ba = 1; } }
+  if (e.windT3 > 0) { e.windT3 -= dt; if (!e.fxOn && e.windT3 <= .33 + MON_FLY) { e.fxOn = 1; monSpell(e, T, e.mv); } if (e.windT3 > 0) return; const mv = e.mv, dmg = mv.dmg * (1 + .3 * fm); e.strikeT = .55; e.ba = 0; G.shake = mv.anim === 'slam' ? .55 : mv.anim === 'lunge' ? .35 : .2; G.monStomp = (G.monStomp || 0) + 1;   // 出手
     const who = mv.tgt === 'all' ? up.map(i => G.order[i]) : mv.tgt === 'pos' || mv.tgt === 'pos2' ? e.aimPos.map(p => G.order[P[p]]).filter(heroUp) : [e.aimId].filter(heroUp);
     if (who.length) e.strikeX = mv.tgt === 'all' ? e.x : genX(G.order.indexOf(who[0]));
     for (const id of who) heroHurt(id, dmg, mv.pin);
@@ -5363,6 +5373,7 @@ function drawQiPass(f, back) {
 }
 function drawFx(f) {
   if (f.k === 'monsp') { drawMonSp(f); return; }
+  if (f.k === 'monfly') { drawMonFly(f); return; }
   if (f.k === 'skname') { drawSkName(f); return; }
   if (f.k === 'qiPass') { drawQiPass(f, false); return; }
   if (f.k === 'qlfly') { if (f.t < f.dur) drawQlFly(f); return; }
