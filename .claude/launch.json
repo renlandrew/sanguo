@@ -47,6 +47,16 @@
         "import http.server as h, functools; h.ThreadingHTTPServer(('127.0.0.1', 8788), functools.partial(h.SimpleHTTPRequestHandler, directory=\"/Volumes/andrew's SSD/Downloads/mindstone-game/\\u4e09\\u56fd\\u5fd7\")).serve_forever()"
       ],
       "port": 8788
+    },
+    {
+      "name": "sanguo-i",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-I",
+        "-c",
+        "import http.server as h, functools; h.ThreadingHTTPServer(('127.0.0.1', 8795), functools.partial(h.SimpleHTTPRequestHandler, directory=\"/Volumes/andrew's SSD/Downloads/mindstone-game/\\u4e09\\u56fd\\u5fd7\")).serve_forever()"
+      ],
+      "port": 8795
     }
   ]
 }

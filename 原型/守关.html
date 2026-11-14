@@ -1418,7 +1418,7 @@ function monImgs(k) { const bk = 'bg_' + HMON[k].map; if (!IMG[bk]) { IMG[bk] = 
   if (!GFALL.meta && !GFALL.req) { GFALL.req = 1; fetch('img/gfall.json' + BUST).then(r => r.json()).then(j => { GFALL.meta = j; for (const id of Object.keys(j)) { const key = 'gfall_' + id; IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } }).catch(() => {}); }   // 武将倒地动作（Veo 录的），进讨伐才载
   if (!MSP.meta && !MSP.req) { MSP.req = 1; fetch('img/msp.json' + BUST).then(r => r.json()).then(j => { MSP.meta = j; }).catch(() => {}); }
   for (const n of [0, 1, 2, 'ba']) { const key = 'msp_' + k + '_' + n; if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } }
-  if (!HMON[k].anim && !HMON[k].animReq) { HMON[k].animReq = 1; fetch('img/monv_' + k + '.json' + BUST).then(r => r.json()).then(j => { HMON[k].anim = j; }).catch(() => {}); } monSheet(k, 1); }
+  if (!HMON[k].anim && !HMON[k].animReq) { HMON[k].animReq = 1; fetch('img/monv_' + k + '.json' + BUST).then(r => r.json()).then(j => { HMON[k].anim = j; monSheet(k, 1); }).catch(() => {}); } else monSheet(k, 1); }
 // 11-13 Veo 录的逐帧动作（用户：「怪物的战斗动作呢」→「做」）：每个形态一张 6×4 的图集（24 帧：待机、蓄力、出手、收回），一张两千多像素见方，只留当前形态那张，换形态时放掉旧的
 // 11-13 用户：「我们有那么多招数，在法术平台那个chat，要让老虎有法术啊」——怪物每招配一个法术（法术售卖平台那套，工具/vfx/hunt_spells.py 切出打中目标那一段），出手前约三分之一秒起播在挨打的武将身上，命中那一帧正好对上扣血
 const MSP = { meta: null, req: 0 }, GFALL = { meta: null, req: 0 };
@@ -1427,7 +1427,12 @@ function monSpell(e, T, mv) { if (G.sim || !MSP.meta) return; const key = T.mon 
   else for (const i of (e.aimPos ? e.aimPos.map(p => P[p]) : [G.order.indexOf(e.aimId)])) if (i >= 0 && G.order[i]) G.fx.push({ k: 'monsp', t: 0, dur, key, x: genX(i), y: GY + 4, w: 150 }); }
 function drawMonSp(f) { const A = MSP.meta && MSP.meta[f.key], im = IMG['msp_' + f.key]; if (!A || !ready(im)) return; const j = Math.min(A.n - 1, Math.floor(f.t * A.fps * (f.sp || 1))), sc = f.w / A.fw;
   ctx.drawImage(im, (j % A.cols) * A.fw, Math.floor(j / A.cols) * A.fh, A.fw, A.fh, f.x - A.ax * sc, f.y - A.ay * sc, A.fw * sc, A.fh * sc); }
-function monSheet(k, n) { for (let m = 1; m <= 3; m++) { const key = 'monv_' + k + m; if (m === n) { if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; } } else if (IMG[key] && m < n) { IMG[key].src = ''; delete IMG[key]; } } }
+const monForm = (k, fm) => { const A = HMON[k].anim; return A && (A.forms ? A.forms[fm] : [A[fm], A[fm], A[fm]]); };   // 老格式（每形态一条，三招共用）也认
+function monSheet(k, n) {   // 只留当前形态那三张（每招一张），换形态时放掉旧的
+  const want = new Set((monForm(k, n - 1) || []).map(a => 'monv_' + (a.sheet || k + n)));
+  for (const key of Object.keys(IMG)) if (key.startsWith('monv_' + k) && !want.has(key)) { IMG[key].src = ''; delete IMG[key]; }
+  for (const key of want) if (!IMG[key]) { IMG[key] = new Image(); IMG[key].src = 'img/' + key + '.webp' + BUST; }
+}
 function huntLv() {
   const B = modeBases(); if (!B.length) return null; const b = B[B.length - 1], k = huntMon(), M = HMON[k]; monImgs(k);   // 11-13 用户第四关没过，战役页「看不到」讨伐——门槛和无尽守城一样，打过第三关就开
   return { li: b.i, mon: k, lv: { ...b.lv, mode: 'hunt', mon: k, map: M.map, hpMul: 1, seal: modeSeal('hunt'), name: '讨伐 · ' + M.name, sub: '九十秒，打得越多越好', rules: { timed: { t: HUNT_T, label: '讨伐', text: '时辰到', sub: M.name + '遁走了' } }, waves: [[1, k, 1, 0, 'rand']], tips: [], join: [], wait: 2, tx: 1, charge: undefined, s3: null, reward: null } };
@@ -1490,7 +1495,7 @@ function drawMon(e, T) {
   if (T.part) return;   // 蛟身的四段只是挨打的位置，整条蛟由蛟头画
   const M = HMON[T.mon], fm = e.form || 0, x = e.x, y = e.y, t = (G.vt || G.t) + e.ph, weak = G.monWeakT > 0, wind = e.windT3 > 0, strike = !wind && e.strikeT > 0;
   let im = IMG['mon_' + T.mon + (fm + 1)]; const pose = !weak && (wind || strike) && IMG['mon_' + T.mon + (fm + 1) + (wind ? 'a' : 'b')]; if (pose && ready(pose)) im = pose;
-  const SH = IMG['monv_' + T.mon + (fm + 1)], A = M.anim && M.anim[fm], sheet = A && SH && ready(SH);   // 有逐帧图集就用它，没到之前用立绘和姿势图
+  const F3 = monForm(T.mon, fm), mi = Math.max(0, M.moves.indexOf(e.mv)), A = F3 && (F3[(wind || strike) && !e.ba ? mi : 0] || F3[0]), SH = A && IMG['monv_' + (A.sheet || T.mon + (fm + 1))], sheet = A && SH && ready(SH);   // 按招取图集（待机、普攻用第一招那张）；图没到之前用立绘和姿势图
   const up = wind ? 1 - e.windT3 / M.wind : 0, su = strike ? Math.sin((1 - e.strikeT / .55) * Math.PI) : 0, since = G.t - (e.formT ?? -9), pop = since < .5 ? Math.sin(since / .5 * Math.PI) * .12 : 0;
   const h = M.h[fm] * (1 + pop + (sheet ? 0 : up * .06 + su * .08)), br = 1 + .012 * Math.sin(t * 2.2), AN = (wind || strike) && e.mv ? MON_ANIM[e.mv.anim] : null, kx = (e.kick || 0) * .25 * Math.sin(t * 60) + (wind ? Math.sin(t * 40) * 1.2 * up * (AN ? AN.wob : 1) : 0);
   const al = clamp((y - HZ) / 16, .1, 1) * (e.rout ? .6 : 1), lk = e.ba ? .3 : 1, toX = (e.strikeX ?? x) - x, sgn = toX < 0 ? -1 : 1;
