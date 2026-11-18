@@ -7456,11 +7456,17 @@ UI_STY[8] = P7('新中式 · 石青', 'rgba(24,38,58,.82)', 'rgba(26,44,70,.9)',
 UI_STY[9] = P7('新中式 · 青瓷', 'rgba(18,70,68,.82)', 'rgba(16,84,80,.9)', 'rgba(10,52,50,.6)', '8,40,38', ['14,62,60', '6,32,30'], { hair: '#e2c27e', tc: '#e2efe6' });
 UI_STY[10] = P7('新中式 · 墨金', 'rgba(16,15,14,.84)', 'rgba(24,22,20,.92)', 'rgba(12,11,10,.62)', '8,7,6', ['18,16,14', '6,5,4'], { hair: '#d8b670' });
 UI_STY[11] = P7('新中式 · 胭脂', 'rgba(72,18,22,.82)', 'rgba(96,22,24,.9)', 'rgba(50,12,14,.6)', '40,8,10', ['64,16,18', '30,6,8'], { seal: '#c9a25e', badge: '#c9a25e', dot: '#e8b04a' });
+// 11-18 用户：「有明亮些的吗」——同一版式的亮色版：浅色半透明面板 + 细金线 + 深色字（各页写给深木牌的浅字靠 LITE 自动换深），各页底压一层浅色，主钮实色
+const L7 = (name, card, pf, ptc, sf, tc, tg, sh, page, hair = '#bf9a58') => ({ ...UI_STY[7], name, lite: true, darkCard: false, card, pf, ptc, sf, tc, tg, sh, page, hair, navTxt: ['rgba(70,56,40,.78)', tg] });
+UI_STY[12] = L7('新中式 · 象牙', 'rgba(252,248,238,.92)', '#b8924e', '#fffaf0', 'rgba(255,252,244,.9)', '#5a4528', '#8a6428', '250,244,230', ['250,244,232', '238,228,206']);
+UI_STY[13] = L7('新中式 · 浅青瓷', 'rgba(228,244,239,.92)', '#3e9384', '#fffaf0', 'rgba(242,251,248,.9)', '#2e5850', '#2f7a6c', '214,238,232', ['222,242,236', '188,222,212'], '#c29a4e');
+UI_STY[14] = L7('新中式 · 月白', 'rgba(236,242,248,.92)', '#4a6f96', '#fffaf0', 'rgba(246,249,252,.9)', '#33465c', '#45688e', '226,234,244', ['232,240,248', '204,218,234'], '#bf9d5e');
+UI_STY[15] = L7('新中式 · 杏粉', 'rgba(251,238,230,.92)', '#bf5a4a', '#fff6ee', 'rgba(255,248,243,.9)', '#6a3a30', '#a24e3e', '250,234,224', ['252,238,228', '238,214,200'], '#c79a5a');
 var FS = (() => { const k = (/[?&]ui=(\d+)/.exec(location.search) || [])[1]; return (NEWUI && k && UI_STY[k]) || null; })();
 window.__uiSty = k => { FS = (NEWUI && UI_STY[k]) || null; return FS ? FS.name : '现在'; };   // 截图对比用：不重开页面换风格
 function fCard(x, y, w, h, r, o) {                                                   // 扁平面板：一块实色（或半透明）、细线或硬投影，不要渐变、金框、角饰
   r = Math.max(4, r + (FS.rAdd || 0)); ctx.save();
-  if (FS.darkCard) { rr(x, y, w, h, 4); ctx.fillStyle = FS.card; ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = FS.hair; ctx.globalAlpha = .7; rr(x + .5, y + .5, w - 1, h - 1, 4); ctx.stroke(); ctx.restore(); return; }   // 新中式：深色半透明 + 一道细金线
+  if (FS.darkCard || FS.lite) { rr(x, y, w, h, 4); ctx.fillStyle = o.dark && FS.lite ? FS.pf : FS.card; ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = FS.hair; ctx.globalAlpha = .7; rr(x + .5, y + .5, w - 1, h - 1, 4); ctx.stroke(); ctx.restore(); return; }   // 新中式：深色半透明 + 一道细金线
   if (FS.hard) { rr(x + FS.hard[0], y + FS.hard[1], w, h, r); ctx.fillStyle = FS.hard[2]; ctx.fill(); }
   else if (FS.shadow) { ctx.shadowBlur = FS.shadow[0]; ctx.shadowOffsetY = FS.shadow[1]; ctx.shadowColor = FS.shadow[2]; }
   if (FS.leaf) { leafRR(x, y + 3, w, h, Math.max(10, r * 1.6), 3); ctx.fillStyle = 'rgba(0,0,0,.16)'; ctx.fill(); ctx.restore(); ctx.save(); leafRR(x, y, w, h, Math.max(10, r * 1.6), 3); ctx.fillStyle = o.dark ? 'rgba(42,22,12,.88)' : FS.card; ctx.fill(); if (!o.dark) { ctx.fillStyle = paperPat(); ctx.fill(); } ctx.restore(); return; }
@@ -7469,10 +7475,10 @@ function fCard(x, y, w, h, r, o) {                                              
 }
 function fPill(x, y, w, h, label, kind, o) {
   if (FS.outline) { const pri = kind === 'pri', r = h / 2; ctx.save(); rr(x, y, w, h, r); ctx.fillStyle = pri ? FS.pf : FS.sf; ctx.fill();   // 新中式：金线描边的胶囊；主钮深古铜底 + 内外两道金线
-    ctx.lineWidth = pri ? 1.3 : 1; ctx.strokeStyle = FS.hair; rr(x + .5, y + .5, w - 1, h - 1, r - .5); ctx.stroke(); if (pri) { ctx.globalAlpha = .55; ctx.lineWidth = .8; rr(x + 3.5, y + 3.5, w - 7, h - 7, r - 3.5); ctx.stroke(); } ctx.restore(); liteMark(x - 2, y - 2, w + 4, h + 4, false);
+    ctx.lineWidth = pri ? 1.3 : 1; ctx.strokeStyle = FS.hair; rr(x + .5, y + .5, w - 1, h - 1, r - .5); ctx.stroke(); if (pri) { ctx.globalAlpha = .55; ctx.lineWidth = .8; if (FS.lite) ctx.strokeStyle = 'rgba(255,248,232,.85)'; rr(x + 3.5, y + 3.5, w - 7, h - 7, r - 3.5); ctx.stroke(); } ctx.restore(); liteMark(x - 2, y - 2, w + 4, h + 4, false);
     const f = FS.font, sp = FS.spacing * (h > 36 ? 2.5 : 1), fz = fitSize(label, o.fz || Math.min(15, h * .5), w - h * .7 - sp * label.length, 99, f, 0);
-    ctx.save(); try { ctx.letterSpacing = sp + 'px'; } catch (e) {} uiText(label, x + w / 2 + sp / 2, y + h / 2 + .5, fz, pri ? FS.tg : FS.tc, 'center', f, { stroke: false }); ctx.restore();
-    if (pri && w > 150) { ctx.font = fstr(fz, f); const tw = ctx.measureText(label).width + sp * label.length, cy = y + h / 2; ctx.save(); ctx.strokeStyle = FS.hair; ctx.fillStyle = FS.hair; ctx.lineWidth = 1; ctx.globalAlpha = .8;   // 字两边各一道细金线，末端一颗菱形（海报分隔线）
+    ctx.save(); try { ctx.letterSpacing = sp + 'px'; } catch (e) {} uiText(label, x + w / 2 + sp / 2, y + h / 2 + .5, fz, pri ? (FS.ptc || FS.tg) : FS.tc, 'center', f, { stroke: false }); ctx.restore();
+    if (pri && w > 150) { ctx.font = fstr(fz, f); const tw = ctx.measureText(label).width + sp * label.length, cy = y + h / 2; ctx.save(); ctx.strokeStyle = ctx.fillStyle = FS.lite ? 'rgba(255,248,232,.9)' : FS.hair; ctx.lineWidth = 1; ctx.globalAlpha = .8;   // 字两边各一道细金线，末端一颗菱形（海报分隔线）
       [[-1, x + w / 2 - tw / 2 - 12, x + 22], [1, x + w / 2 + tw / 2 + 12, x + w - 22]].forEach(([d, a, b]) => { ctx.beginPath(); ctx.moveTo(a, cy); ctx.lineTo(b, cy); ctx.stroke(); const q = 3; ctx.beginPath(); ctx.moveTo(b, cy - q); ctx.lineTo(b + q * d, cy); ctx.lineTo(b, cy + q); ctx.lineTo(b - q * d, cy); ctx.closePath(); ctx.fill(); }); ctx.restore(); }
     return; }
   const c = kind === 'pri' ? FS.pri : FS.sec, fill = o.fill || c[0], r = Math.min(h / 2, FS.pillR || h / 2); ctx.save();
@@ -7556,6 +7562,7 @@ function nPageBg(title) {
   const hb = IMG['home_' + HOME_BG];
   if (ready(hb)) { const k = Math.max(W / hb.width, H / hb.height), dw = hb.width * k, dh = hb.height * k; ctx.drawImage(hb, (W - dw) / 2, H - dh, dw, dh); } else drawBg();
   const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, `rgba(${FS && FS.page ? FS.page[0] : '44,20,8'},.62)`); g.addColorStop(1, `rgba(${FS && FS.page ? FS.page[1] : '26,11,4'},.82)`); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  if (FS && FS.lite) liteMark(0, 0, W, H, true);   // 亮色版：整页当浅色区，写给深底的浅字一律换深
   scrollBegin();
   if (FS && FS.navGrad) { const g = ctx.createLinearGradient(0, 0, 0, 64); g.addColorStop(0, `rgba(${FS.sh || '14,12,10'},.8)`); g.addColorStop(1, `rgba(${FS.sh || '14,12,10'},0)`); ctx.fillStyle = g; ctx.fillRect(0, 0, W, 64); }
   else if (FS) { ctx.fillStyle = FS.nav; ctx.fillRect(0, 0, W, 56); if (FS.navLine) { ctx.fillStyle = FS.navLine; ctx.fillRect(0, 55, W, 1); } } else { const hg = ctx.createLinearGradient(0, 0, 0, 56); hg.addColorStop(0, 'rgba(70,34,16,.96)'); hg.addColorStop(1, 'rgba(40,18,8,.9)'); ctx.fillStyle = hg; ctx.fillRect(0, 0, W, 56);
@@ -7708,7 +7715,7 @@ function posterStage(ni, lv, duel, open1) {                                     
   { const bs = 22; fBadge(sx, y0 - 31, bs, 0, FS.seal); uiText(String(lvNo(lv)), sx + bs / 2, y0 - 31 + bs / 2 + .5, 13, '#fbe9d0', 'center', F, { stroke: false }); }
   hairDiv(W / 2, y0 - 2, 110);
   { const tag = `${duel || EN_ON ? '' : '第' + lvNo(lv) + '关 · '}${SEGS[Math.floor(ni / 10)]} · ${levelTag(lv)}`, st = BEST[lv.id] || 0; ctx.save(); try { ctx.letterSpacing = '3px'; } catch (e) {}
-    uiText(tag + '   ' + '★'.repeat(st) + '☆'.repeat(3 - st), W / 2 + 1.5, y0 + 13, 11, 'rgba(240,226,196,.9)', 'center', F, { lw: 2.5, stroke: 'rgba(30,14,4,.5)' }); ctx.restore(); }
+    uiText(tag + '   ' + '★'.repeat(st) + '☆'.repeat(3 - st), W / 2 + 1.5, y0 + 13, 11, FS.lite ? FS.tc : 'rgba(240,226,196,.9)', 'center', F, { lw: 2.5, stroke: FS.lite ? `rgba(${FS.sh},.9)` : 'rgba(30,14,4,.5)' }); ctx.restore(); }
   { const bw = 40, bx = 16; rr(bx, by, bw, 40, 20); ctx.fillStyle = FS.sf; ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = FS.hair; rr(bx + .5, by + .5, bw - 1, 39, 19.5); ctx.stroke();   // 选关：金线圆钮 + 细线竹简
     ctx.save(); ctx.strokeStyle = FS.hair; ctx.lineWidth = 1.2; const cx = bx + bw / 2, cy = by + 20; for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(cx + k * 4, cy - 8); ctx.lineTo(cx + k * 4, cy + 8); ctx.stroke(); } [-4, 4].forEach(d => { ctx.beginPath(); ctx.moveTo(cx - 11, cy + d); ctx.lineTo(cx + 11, cy + d); ctx.stroke(); }); ctx.restore();
     liteMark(bx, by, bw, 40, false); hit(bx, by, bw, 40, () => { if (!open1) { MENU.lockT = uiNow(); return; } screen = 'levels'; MENU.seg = Math.floor(ni / 10); }); }
