@@ -7416,7 +7416,7 @@ function drawMenuTip(t) {
   const T = tipNow(); MENU.tip = T || null; if (!T || REWARD || (MENU.note && t - MENU.note.t0 < 3.2)) return;
   if (MENU.tipK !== T.k) { MENU.tipK = T.k; MENU.tipT = t; MENU.tipOpen = false; } const a = clamp((t - MENU.tipT - .4) / .3, 0, 1); if (a <= 0) return;
   // 11-02 用户：「军师提示感觉不好放」→「收成小头像点开看」：平时只在关卡牌左上角露军师小头像（固定不动、挂「!」），点开才说那句话；点话算看过
-  const [ck, C] = counselNow(), im = IMG['p_' + ck], hx = 40, hy = NEWUI ? H - 180 : CARD_Y - 30, hr = 15;// 11-02 用户：「固定在这个位置不要动」——不再一跳一跳
+  const [ck, C] = counselNow(), im = IMG['p_' + ck], hx = 40, hy = NEWUI ? (FS && FS.leaf ? H - 214 : H - 180) : CARD_Y - 30, hr = 15;// 11-02 用户：「固定在这个位置不要动」——不再一跳一跳
   if (!MENU.tipOpen) {   // 点开后卷轴自带头像，小头像先藏起来
   ctx.save(); ctx.globalAlpha = a; ctx.beginPath(); ctx.arc(hx, hy, hr, 0, 6.283); ctx.clip(); if (ready(im)) ctx.drawImage(im, hx - hr * 1.2, hy - hr, hr * 2.4, hr * 2.4); else { ctx.fillStyle = '#3a2b1f'; ctx.fill(); } ctx.restore();
   ctx.save(); ctx.globalAlpha = a; if (ready(IMG.ui_avatar_ring)) ctx.drawImage(IMG.ui_avatar_ring, hx - hr * 1.3, hy - hr * 1.3, hr * 2.6, hr * 2.6); else { ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(hx, hy, hr + 1, 0, 6.283); ctx.stroke(); }
@@ -7425,7 +7425,7 @@ function drawMenuTip(t) {
   if (MENU.tipOpen) { const ks = .74, tx = hx - 38 * ks, ty = hy - 26 * ks;   // 11-02 用户：「头像和说话都留在左边」——点开后头像不挪，话从头像右边展开
     ctx.save(); ctx.translate(tx, ty); ctx.scale(ks, ks); drawCounselSay(ck, C, T.say, 0, a); ctx.restore();
     hit(tx + 60 * ks, ty - 4, (W - 66) * ks, 48, () => { MENU.tipOpen = false; tipDone(T.k); }); }
-  const by = H - 82 + 3 * Math.sin(t * 6); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#ffd76e'; ctx.shadowColor = 'rgba(255,190,80,.8)'; ctx.shadowBlur = 8;   // 往下指着该点的钮，一上一下地跳
+  const by = (FS && FS.leaf ? H - 70 : H - 82) + 3 * Math.sin(t * 6); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#ffd76e'; ctx.shadowColor = 'rgba(255,190,80,.8)'; ctx.shadowBlur = 8;   // 往下指着该点的钮，一上一下地跳
   ctx.beginPath(); ctx.moveTo(T.x - 9, by - 10); ctx.lineTo(T.x + 9, by - 10); ctx.lineTo(T.x, by); ctx.closePath(); ctx.fill(); ctx.restore();
 }
 const TRIO_H = 292, TRIO_FOOT = 498, CARD_Y = 518, TIP_Y = 136, BG_UP = 86;   // 主页三兄弟画多高、脚在哪（城头步道）；关卡牌在脚下；TIP_Y 现在只给点卯横幅用
@@ -7442,7 +7442,7 @@ const UI_STY = {
   4: { name: '青瓷', card: '#f4f0e3', line: ['#9cc3b2', 1.5], shadow: [10, 3, 'rgba(10,40,30,.3)'], pillR: 10, pri: ['#2f8f73', '#fff'], sec: ['#23544a', '#e6f4ed'], badge: '#2f8f73', nav: 'rgba(22,52,46,.95)', navOn: 'rgba(140,220,190,.2)', navTxt: ['rgba(220,240,232,.7)', '#bff0dc'], navLine: 'rgba(160,220,200,.55)' },
   // 6：11-18 用户「你看看那个什么AFK游戏，那个很扁平」——看了 AFK Journey 游戏内实拍：米白纸面卡（无边框、小圆角、底下一道浅投影）、主钮扁平草绿白字、次钮也是米白纸片、
   // 字用衬线体（宋体）炭灰色、小标签和红点改橙色、底栏没有底板只从下往上压一道暗、底栏图标是单色浅灰剪影（选中更亮）
-  6: { name: 'AFK 纸面', card: '#f3efe7', shadow: [6, 2, 'rgba(0,0,0,.28)'], rAdd: -6, pillR: 6, paper: true, pri: ['#5fae6e', '#fff'], sec: ['#f3efe7', '#33302c'], badge: '#e8832a', dot: '#ff8a1f', ink: '#2f2c28', font: '!"Songti SC", "Noto Serif SC", "Noto Serif CJK SC", "STSong", "SimSun", serif', navGrad: true, mono: true, navTxt: ['rgba(235,235,235,.75)', '#ffe7a3'] },
+  6: { name: 'AFK 纸面', card: '#f3efe7', shadow: [6, 2, 'rgba(0,0,0,.28)'], rAdd: -6, pillR: 6, paper: true, leaf: true, pri: ['#5c9c5a', '#fff'], sec: ['#f3efe7', '#33302c'], badge: '#e8832a', dot: '#ff8a1f', ink: '#2f2c28', font: '!"Songti SC", "Noto Serif SC", "Noto Serif CJK SC", "STSong", "SimSun", serif', navGrad: true, mono: true, navTxt: ['rgba(235,235,235,.75)', '#ffe7a3'] },
   5: { name: '半透明玻璃', card: 'rgba(255,248,236,.74)', line: ['rgba(255,255,255,.9)', 1], rAdd: 2, pri: ['#f7c548', '#3a2208'], sec: ['rgba(40,20,10,.55)', '#fff'], secLine: 'rgba(255,255,255,.55)', sans: true, nav: 'rgba(30,14,6,.55)', navOn: 'rgba(255,255,255,.18)', navTxt: ['rgba(255,255,255,.75)', '#fff'], navLine: 'rgba(255,255,255,.3)' },
 };
 let FS = (() => { const k = (/[?&]ui=(\d)/.exec(location.search) || [])[1]; return (NEWUI && k && UI_STY[k]) || null; })();
@@ -7451,20 +7451,36 @@ function fCard(x, y, w, h, r, o) {                                              
   r = Math.max(4, r + (FS.rAdd || 0)); ctx.save();
   if (FS.hard) { rr(x + FS.hard[0], y + FS.hard[1], w, h, r); ctx.fillStyle = FS.hard[2]; ctx.fill(); }
   else if (FS.shadow) { ctx.shadowBlur = FS.shadow[0]; ctx.shadowOffsetY = FS.shadow[1]; ctx.shadowColor = FS.shadow[2]; }
+  if (FS.leaf) { leafRR(x, y + 3, w, h, Math.max(10, r * 1.6), 3); ctx.fillStyle = 'rgba(0,0,0,.16)'; ctx.fill(); ctx.restore(); ctx.save(); leafRR(x, y, w, h, Math.max(10, r * 1.6), 3); ctx.fillStyle = o.dark ? 'rgba(42,22,12,.88)' : FS.card; ctx.fill(); if (!o.dark) { ctx.fillStyle = paperPat(); ctx.fill(); } ctx.restore(); return; }
   rr(x, y, w, h, r); ctx.fillStyle = o.dark ? 'rgba(42,22,12,.88)' : FS.card; ctx.fill(); ctx.restore();
   if (FS.line) { ctx.save(); ctx.lineWidth = FS.line[1]; ctx.strokeStyle = o.dark ? 'rgba(255,220,160,.3)' : FS.line[0]; rr(x, y, w, h, r); ctx.stroke(); ctx.restore(); }
 }
 function fPill(x, y, w, h, label, kind, o) {
   const c = kind === 'pri' ? FS.pri : FS.sec, fill = o.fill || c[0], r = Math.min(h / 2, FS.pillR || h / 2); ctx.save();
   if (FS.hard) { rr(x + 2, y + 3, w, h, r); ctx.fillStyle = FS.hard[2]; ctx.fill(); }
-  if (FS.paper) { ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 4; ctx.shadowOffsetY = 2; }
-  rr(x, y, w, h, r); ctx.fillStyle = fill; ctx.fill(); ctx.shadowColor = 'rgba(0,0,0,0)';
-  const ln = FS.hard ? [FS.hard[2], 2] : kind !== 'pri' && FS.secLine ? [FS.secLine, 1] : null; if (ln) { ctx.lineWidth = ln[1]; ctx.strokeStyle = ln[0]; rr(x, y, w, h, r); ctx.stroke(); }
+  if (FS.leaf) { const R = Math.min(h * .48, 16); leafRR(x, y + 3, w, h, R, 3); ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fill(); leafRR(x, y, w, h, R, 3); ctx.fillStyle = fill; ctx.fill();
+    ctx.save(); ctx.clip(); if (kind === 'pri') halftone(x, y, w, h, 'rgba(130,214,110,.55)'); else { ctx.fillStyle = paperPat(); ctx.fillRect(x, y, w, h); } ctx.restore(); }
+  else { if (FS.paper) { ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 4; ctx.shadowOffsetY = 2; }
+  rr(x, y, w, h, r); ctx.fillStyle = fill; ctx.fill(); ctx.shadowColor = 'rgba(0,0,0,0)'; }
+  const ln = FS.hard ? [FS.hard[2], 2] : kind !== 'pri' && FS.secLine ? [FS.secLine, 1] : null; if (ln && !FS.leaf) { ctx.lineWidth = ln[1]; ctx.strokeStyle = ln[0]; rr(x, y, w, h, r); ctx.stroke(); }
   ctx.restore(); liteMark(x - 2, y - 2, w + 4, h + 4, false);
   const f = FS.font || o.font || UIF, fz = fitSize(label, o.fz || Math.min(15, h * .52), w - h * .7, 99, f, 0);
   uiText(label, x + w / 2, y + h / 2 + .5, fz, o.col || c[1], 'center', f, { stroke: false });
 }
-function fBadge(x0, y0, s, r, c) { ctx.save(); if (FS.hard) { rr(x0 + 1.5, y0 + 2, s, s, r); ctx.fillStyle = FS.hard[2]; ctx.fill(); } rr(x0, y0, s, s, r); ctx.fillStyle = FS.badge && c === UIC.red ? FS.badge : c; ctx.fill();
+// 11-18 用户圈 AFK 底部「← Enter」：「它的好看」——看放大图：①叶形圆角（左上、右下大圆，右上、左下几乎直角），②钮底下一道不模糊的暗带，
+// ③绿钮右端一片由大到小的菱形网点渐隐，④米白底有极淡的斜向纸纹，⑤返回是旁边单独一块米白方片。这几样都加进第 6 种
+function leafRR(x, y, w, h, R, r) { R = Math.min(R, h / 2, w / 2); r = Math.min(r, R); ctx.beginPath(); ctx.moveTo(x + R, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, R); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, R); ctx.closePath(); }
+let PAPER_PAT = null;
+function paperPat() {                                                                 // 斜向细纹（像亚麻纸），做成小图样铺
+  if (PAPER_PAT) return PAPER_PAT; const c = document.createElement('canvas'); c.width = c.height = 48; const g = c.getContext('2d'); g.strokeStyle = 'rgba(120,100,70,.065)'; g.lineWidth = 1;
+  for (let k = -48; k < 96; k += 7) { g.beginPath(); for (let t = 0; t <= 48; t += 4) { const px = k + t, py = 48 - t + Math.sin(t * .35 + k) * 1.2; t ? g.lineTo(px, py) : g.moveTo(px, py); } g.stroke(); }
+  return (PAPER_PAT = ctx.createPattern(c, 'repeat'));
+}
+function halftone(x, y, w, h, col) {                                                  // 右端菱形网点：越往右越大，往左渐小到没有（调用前已 clip 在钮里）
+  const span = Math.min(w * .42, 120), st = 6.5; ctx.fillStyle = col;
+  for (let px = x + w; px > x + w - span; px -= st) { const k = 1 - (x + w - px) / span; for (let py = y + ((px / st) % 2 ? 0 : st / 2); py < y + h + st; py += st) { const q = 2.9 * k; ctx.beginPath(); ctx.moveTo(px, py - q); ctx.lineTo(px + q, py); ctx.lineTo(px, py + q); ctx.lineTo(px - q, py); ctx.closePath(); ctx.fill(); } }
+}
+function fBadge(x0, y0, s, r, c) { ctx.save(); if (FS.hard) { rr(x0 + 1.5, y0 + 2, s, s, r); ctx.fillStyle = FS.hard[2]; ctx.fill(); } if (FS.leaf) leafRR(x0, y0, s, s, s * .42, 2); else rr(x0, y0, s, s, r); ctx.fillStyle = FS.badge && c === UIC.red ? FS.badge : c; ctx.fill();
   if (FS.hard) { ctx.lineWidth = 1.8; ctx.strokeStyle = FS.hard[2]; rr(x0, y0, s, s, r); ctx.stroke(); } ctx.restore(); liteMark(x0 - 1, y0 - 1, s + 2, s + 2, false); }
 function nCard(x, y, w, h, r = 14, o = {}) {
   if (FS) return fCard(x, y, w, h, r, o);
@@ -7650,6 +7666,17 @@ function nNav(cx, label, draw, fn, badge, on, locked) {                         
   if (badge && !locked) nDot(cx + 14, cy - 13);
   hit(cx - 29, cy - 28, 58, 58, () => { if (MENU.tip && MENU.tip.x === cx) tipDone(MENU.tip.k); fn(); });
 }
+function afkStage(ni, lv, duel, open1) {                                            // 第 6 种的主页出征区：照 AFK 底部——关名直接写在场景上，下面一排「选关方片 + 通栏绿钮」
+  const y0 = H - 134, bh = 46, x0 = 14, tw = 48, F = FS.font;
+  { const bs = 28; fBadge(x0, y0 - 46, bs, 0, duel ? '#d9532a' : FS.badge); uiText(String(lvNo(lv)), x0 + bs / 2, y0 - 46 + bs / 2 + .5, 17, '#fff', 'center', F, { stroke: false }); }
+  uiText(lv.name, x0 + 36, y0 - 32, fitSize(lv.name, 22, 170, 99, F, 0), '#fbf6ea', 'left', F, { lw: 3.5, stroke: 'rgba(20,14,8,.55)' });
+  { const tag = `${duel || EN_ON ? '' : '第' + lvNo(lv) + '关 · '}${SEGS[Math.floor(ni / 10)]} · ${levelTag(lv)}`; uiText(tag, x0 + 36, y0 - 13, 11, 'rgba(250,244,230,.85)', 'left', F, { lw: 3, stroke: 'rgba(20,14,8,.5)' });
+    const st = BEST[lv.id] || 0; for (let s = 0; s < 3; s++) uiStar(W - 22 - (2 - s) * 16, y0 - 32, 7, s < st); }
+  { leafRR(x0, y0 + 3, tw, bh, 16, 3); ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fill(); leafRR(x0, y0, tw, bh, 16, 3); ctx.fillStyle = FS.card; ctx.fill(); ctx.fillStyle = paperPat(); ctx.fill();   // 选关方片：三道横线（列表）
+    ctx.save(); ctx.strokeStyle = '#4a4540'; ctx.lineWidth = 2.4; ctx.lineCap = 'round'; for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(x0 + 15, y0 + bh / 2 + k * 7); ctx.lineTo(x0 + tw - 13, y0 + bh / 2 + k * 7); ctx.stroke(); } ctx.restore();
+    liteMark(x0, y0, tw, bh, false); hit(x0, y0, tw, bh, () => { if (!open1) { MENU.lockT = uiNow(); return; } screen = 'levels'; MENU.seg = Math.floor(ni / 10); }); }
+  fPill(x0 + tw + 8, y0, W - x0 * 2 - tw - 8, bh, '出 征', 'pri', { fz: 22 }); hit(x0 + tw + 8, y0, W - x0 * 2 - tw - 8, bh, () => { BACKTO = null; openLevel(ni); });
+}
 function drawMenu2() {
   const open1 = open1st(), t = uiNow();
   if (!BEST[1] && !MENU.autoGo && !window.__sg.all) { MENU.autoGo = true; openLevel(0); if (screen !== 'menu') return; }
@@ -7684,6 +7711,7 @@ function drawMenu2() {
     const ch = CHAP[chOf(LEVELS[frontier()])].no + ' · ' + SEGS[Math.floor(frontier() / 10)]; uiText(DEMO ? '试玩版 · 前十关' : ch, W - 8, 40, 10, NC.dim, 'right', UIF, { stroke: false }); }
   // 底部出征卡：关号牌 + 关名 + 阶段 + 大出征钮
   const ni = frontier(), lv = LEVELS[ni], duel = lv.kind === 'duel', cx0 = 14, cw = W - 28, cy0 = H - 158, chh = 62;
+  if (FS && FS.leaf) afkStage(ni, lv, duel, open1); else {
   nCard(cx0, cy0, cw, chh, 16);
   { const bs = 40, bx = cx0 + 11, by = cy0 + (chh - bs) / 2;                         // 关号：圆角方牌（印章改的），斗将用红
     if (FS) fBadge(bx, by, bs, FS.pillR ? 8 : 12, FS.badge || (duel ? '#d23a24' : '#e8642a')); else { ctx.save(); const g = ctx.createLinearGradient(0, by, 0, by + bs); if (duel) { g.addColorStop(0, '#ff7a63'); g.addColorStop(1, '#a3170a'); } else { g.addColorStop(0, '#ff9c55'); g.addColorStop(1, '#c2361a'); }   /* 紫色关号牌改朱红：米黄面板上冷紫最跳 */
@@ -7702,7 +7730,7 @@ function drawMenu2() {
     uiText(tag, cx0 + 68, cy0 + 41.5, fz, NC.ink2, 'left', UIF, { stroke: false });
     const st = BEST[lv.id] || 0; for (let s = 0; s < 3; s++) uiStar(cx0 + 70 + tw + 14 + s * 14, cy0 + 41.5, 6, s < st); }   // 三颗星：打过几星亮几颗
   hit(cx0, cy0, cw - 108, chh, () => { if (!open1) { MENU.lockT = uiNow(); return; } screen = 'levels'; MENU.seg = Math.floor(ni / 10); });
-  nBtn(cx0 + cw - 100, cy0 + 16, 88, 34, '出征', () => { BACKTO = null; openLevel(ni); }, { fz: 20 });
+  nBtn(cx0 + cw - 100, cy0 + 16, 88, 34, '出征', () => { BACKTO = null; openLevel(ni); }, { fz: 20 }); }
   // 底栏
   if (FS && FS.navGrad) { const g = ctx.createLinearGradient(0, H - 96, 0, H); g.addColorStop(0, 'rgba(14,12,10,0)'); g.addColorStop(.45, 'rgba(14,12,10,.55)'); g.addColorStop(1, 'rgba(14,12,10,.82)'); ctx.fillStyle = g; ctx.fillRect(0, H - 96, W, 96); }
   else if (FS) { ctx.save(); if (!FS.hard) { ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = -2; } rr(-10, H - 76, W + 20, 100, FS.hard ? 0 : 20); ctx.fillStyle = FS.nav; ctx.fill(); ctx.restore(); if (FS.navLine) { ctx.fillStyle = FS.navLine; ctx.fillRect(0, H - 76, W, 1); } }
