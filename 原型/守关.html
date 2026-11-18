@@ -7440,6 +7440,9 @@ const UI_STY = {
   2: { name: '白卡朱红', card: 'rgba(255,253,248,.97)', shadow: [18, 6, 'rgba(0,0,0,.28)'], rAdd: 4, pri: ['#e8452c', '#fff'], sec: ['#2f2522', '#fff'], badge: '#e8452c', sans: true, nav: 'rgba(255,253,248,.97)', navOn: 'rgba(232,69,44,.13)', navTxt: ['#8a7a70', '#e8452c'] },
   3: { name: '国潮硬影', card: '#fff1d0', line: ['#2a1406', 2.4], hard: [3, 4, '#2a1406'], rAdd: -4, pillR: 7, pri: ['#ffb627', '#2a1406'], sec: ['#c7372a', '#fff3dc'], badge: '#c7372a', nav: '#2a1406', navOn: '#ffb627', navTxt: ['rgba(255,240,220,.72)', '#2a1406'] },
   4: { name: '青瓷', card: '#f4f0e3', line: ['#9cc3b2', 1.5], shadow: [10, 3, 'rgba(10,40,30,.3)'], pillR: 10, pri: ['#2f8f73', '#fff'], sec: ['#23544a', '#e6f4ed'], badge: '#2f8f73', nav: 'rgba(22,52,46,.95)', navOn: 'rgba(140,220,190,.2)', navTxt: ['rgba(220,240,232,.7)', '#bff0dc'], navLine: 'rgba(160,220,200,.55)' },
+  // 6：11-18 用户「你看看那个什么AFK游戏，那个很扁平」——看了 AFK Journey 游戏内实拍：米白纸面卡（无边框、小圆角、底下一道浅投影）、主钮扁平草绿白字、次钮也是米白纸片、
+  // 字用衬线体（宋体）炭灰色、小标签和红点改橙色、底栏没有底板只从下往上压一道暗、底栏图标是单色浅灰剪影（选中更亮）
+  6: { name: 'AFK 纸面', card: '#f3efe7', shadow: [6, 2, 'rgba(0,0,0,.28)'], rAdd: -6, pillR: 6, paper: true, pri: ['#5fae6e', '#fff'], sec: ['#f3efe7', '#33302c'], badge: '#e8832a', dot: '#ff8a1f', ink: '#2f2c28', font: '!"Songti SC", "Noto Serif SC", "Noto Serif CJK SC", "STSong", "SimSun", serif', navGrad: true, mono: true, navTxt: ['rgba(235,235,235,.75)', '#ffe7a3'] },
   5: { name: '半透明玻璃', card: 'rgba(255,248,236,.74)', line: ['rgba(255,255,255,.9)', 1], rAdd: 2, pri: ['#f7c548', '#3a2208'], sec: ['rgba(40,20,10,.55)', '#fff'], secLine: 'rgba(255,255,255,.55)', sans: true, nav: 'rgba(30,14,6,.55)', navOn: 'rgba(255,255,255,.18)', navTxt: ['rgba(255,255,255,.75)', '#fff'], navLine: 'rgba(255,255,255,.3)' },
 };
 let FS = (() => { const k = (/[?&]ui=(\d)/.exec(location.search) || [])[1]; return (NEWUI && k && UI_STY[k]) || null; })();
@@ -7454,10 +7457,11 @@ function fCard(x, y, w, h, r, o) {                                              
 function fPill(x, y, w, h, label, kind, o) {
   const c = kind === 'pri' ? FS.pri : FS.sec, fill = o.fill || c[0], r = Math.min(h / 2, FS.pillR || h / 2); ctx.save();
   if (FS.hard) { rr(x + 2, y + 3, w, h, r); ctx.fillStyle = FS.hard[2]; ctx.fill(); }
-  rr(x, y, w, h, r); ctx.fillStyle = fill; ctx.fill();
+  if (FS.paper) { ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 4; ctx.shadowOffsetY = 2; }
+  rr(x, y, w, h, r); ctx.fillStyle = fill; ctx.fill(); ctx.shadowColor = 'rgba(0,0,0,0)';
   const ln = FS.hard ? [FS.hard[2], 2] : kind !== 'pri' && FS.secLine ? [FS.secLine, 1] : null; if (ln) { ctx.lineWidth = ln[1]; ctx.strokeStyle = ln[0]; rr(x, y, w, h, r); ctx.stroke(); }
   ctx.restore(); liteMark(x - 2, y - 2, w + 4, h + 4, false);
-  const f = o.font || UIF, fz = fitSize(label, o.fz || Math.min(15, h * .52), w - h * .7, 99, f, 0);
+  const f = FS.font || o.font || UIF, fz = fitSize(label, o.fz || Math.min(15, h * .52), w - h * .7, 99, f, 0);
   uiText(label, x + w / 2, y + h / 2 + .5, fz, o.col || c[1], 'center', f, { stroke: false });
 }
 function fBadge(x0, y0, s, r, c) { ctx.save(); if (FS.hard) { rr(x0 + 1.5, y0 + 2, s, s, r); ctx.fillStyle = FS.hard[2]; ctx.fill(); } rr(x0, y0, s, s, r); ctx.fillStyle = FS.badge && c === UIC.red ? FS.badge : c; ctx.fill();
@@ -7495,7 +7499,7 @@ const CNUM_BACK = new Map(Array.from({ length: 60 }, (_, i) => [CNUM(i + 1), Str
 function nBadge(x, y, s, t, c = UIC.red, round = false) {
   t = CNUM_BACK.get(t) || t;
   const r = round ? s / 2 : s * .28, x0 = x - s / 2, y0 = y - s / 2;
-  if (FS) { fBadge(x0, y0, s, r, c); uiText(t, x, y + .5, s * (String(t).length > 1 ? .42 : .6), '#fff', 'center', UIF, { stroke: false }); return; }
+  if (FS) { fBadge(x0, y0, s, r, c); uiText(t, x, y + .5, s * (String(t).length > 1 ? .42 : .6), '#fff', 'center', FS.font || UIF, { stroke: false }); return; }
   ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1; rr(x0 - 1, y0 - 1, s + 2, s + 2, r + 1); ctx.fillStyle = '#f2c46a'; ctx.fill(); ctx.restore();
   const g = ctx.createLinearGradient(0, y0, 0, y0 + s); g.addColorStop(0, lighten(c, .28)); g.addColorStop(1, c); rr(x0, y0, s, s, r); ctx.fillStyle = g; ctx.fill();
   ctx.save(); const hg = ctx.createLinearGradient(0, y0, 0, y0 + s * .5); hg.addColorStop(0, 'rgba(255,255,255,.4)'); hg.addColorStop(1, 'rgba(255,255,255,0)'); rr(x0 + 1.5, y0 + 1, s - 3, s * .45, Math.max(1, r - 1.5)); ctx.fillStyle = hg; ctx.fill(); ctx.restore();
@@ -7509,9 +7513,10 @@ function nPageBg(title) {
   if (ready(hb)) { const k = Math.max(W / hb.width, H / hb.height), dw = hb.width * k, dh = hb.height * k; ctx.drawImage(hb, (W - dw) / 2, H - dh, dw, dh); } else drawBg();
   const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(44,20,8,.62)'); g.addColorStop(1, 'rgba(26,11,4,.82)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   scrollBegin();
-  if (FS) { ctx.fillStyle = FS.nav; ctx.fillRect(0, 0, W, 56); if (FS.navLine) { ctx.fillStyle = FS.navLine; ctx.fillRect(0, 55, W, 1); } } else { const hg = ctx.createLinearGradient(0, 0, 0, 56); hg.addColorStop(0, 'rgba(70,34,16,.96)'); hg.addColorStop(1, 'rgba(40,18,8,.9)'); ctx.fillStyle = hg; ctx.fillRect(0, 0, W, 56);
+  if (FS && FS.navGrad) { const g = ctx.createLinearGradient(0, 0, 0, 64); g.addColorStop(0, 'rgba(14,12,10,.8)'); g.addColorStop(1, 'rgba(14,12,10,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, 64); }
+  else if (FS) { ctx.fillStyle = FS.nav; ctx.fillRect(0, 0, W, 56); if (FS.navLine) { ctx.fillStyle = FS.navLine; ctx.fillRect(0, 55, W, 1); } } else { const hg = ctx.createLinearGradient(0, 0, 0, 56); hg.addColorStop(0, 'rgba(70,34,16,.96)'); hg.addColorStop(1, 'rgba(40,18,8,.9)'); ctx.fillStyle = hg; ctx.fillRect(0, 0, W, 56);
     const lg = ctx.createLinearGradient(0, 0, W, 0); lg.addColorStop(0, 'rgba(255,214,140,0)'); lg.addColorStop(.5, 'rgba(255,226,160,.9)'); lg.addColorStop(1, 'rgba(255,214,140,0)'); ctx.fillStyle = lg; ctx.fillRect(0, 55, W, 1.4); }
-  if (FS && FS.navTxt[0][0] === '#') uiText(title, W / 2, 30, 26, '#3a2010', 'center', FONT, { stroke: false }); else uiText(title, W / 2, 30, 26, goldGrad(30, 26), 'center', FONT, { lw: 5, stroke: 'rgba(40,14,2,.95)' });
+  if (FS && FS.font) uiText(title, W / 2, 30, 24, '#f6f1e6', 'center', FS.font, { lw: 3, stroke: 'rgba(0,0,0,.45)' }); else if (FS && FS.navTxt[0][0] === '#') uiText(title, W / 2, 30, 26, '#3a2010', 'center', FONT, { stroke: false }); else uiText(title, W / 2, 30, 26, goldGrad(30, 26), 'center', FONT, { lw: 5, stroke: 'rgba(40,14,2,.95)' });
 }
 function nRound(cx, cy, r, ch, label, badge) {                                       // 圆钮：暖褐渐变 + 金框 + 高光
   if (FS) { ctx.save(); if (FS.hard) { ctx.beginPath(); ctx.arc(cx + 2, cy + 3, r, 0, 6.283); ctx.fillStyle = FS.hard[2]; ctx.fill(); } ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.fillStyle = FS.sec[0]; ctx.fill(); ctx.restore(); liteMark(cx - r, cy - r, r * 2, r * 2, false);
@@ -7526,7 +7531,7 @@ function nRound(cx, cy, r, ch, label, badge) {                                  
   if (badge) nDot(cx + r * .74, cy - r * .7);
 }
 function nBtn(x, y, w, h, label, fn, o = {}) {                                    // 主钮：下沿一道深色唇、金橙渐变、顶上一条高光、外面一圈呼吸光；字是深褐色粗体（比描边白字干净）
-  if (FS) { fPill(x, y, w, h, label, 'pri', { font: FS.sans ? UIF : (o.font || FONT), fz: o.fz || 18, fill: o.c2, col: o.col }); hit(x, y, w, h, fn); return; }
+  if (FS) { fPill(x, y, w, h, label, 'pri', { font: FS.font || (FS.sans ? UIF : (o.font || FONT)), fz: o.fz || 18, fill: o.c2, col: o.col }); hit(x, y, w, h, fn); return; }
   const pu = .5 + .5 * Math.sin(uiNow() * 3), r = h / 2;
   ctx.save(); if (o.glow !== false) { ctx.shadowColor = `rgba(255,170,60,${.30 + .28 * pu})`; ctx.shadowBlur = 16; }   // 外金框（11-18「不够精美」：钮要有一圈金属框才像游戏钮）：深色外线 + 金渐变框，钮身嵌在里面
   rr(x - 3, y - 3, w + 6, h + 8.5, r + 3); ctx.fillStyle = '#2a1404'; ctx.fill(); ctx.restore();
@@ -7548,7 +7553,7 @@ function nBtn(x, y, w, h, label, fn, o = {}) {                                  
   hit(x, y, w, h, fn);
 }
 function nDot(cx, cy, n) {                                                          // 红点角标（代替「!」印章）
-  ctx.save(); ctx.shadowColor = 'rgba(255,60,40,.85)'; ctx.shadowBlur = 7; ctx.beginPath(); ctx.arc(cx, cy, n ? 7 : 5, 0, 6.283); ctx.fillStyle = NC.red; ctx.fill(); ctx.restore();
+  ctx.save(); ctx.shadowColor = 'rgba(255,60,40,.85)'; ctx.shadowBlur = 7; ctx.beginPath(); ctx.arc(cx, cy, n ? 7 : 5, 0, 6.283); ctx.fillStyle = (FS && FS.dot) || NC.red; ctx.fill(); ctx.restore();
   ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.arc(cx, cy, n ? 7 : 5, 0, 6.283); ctx.stroke();
   if (n) uiText(String(n), cx, cy + .5, 9, '#fff', 'center', UIF, { stroke: false });
 }
@@ -7634,13 +7639,13 @@ const navP = (k, vk) => (cx, cy, s, col, on) => { const im = IMG['ui_n_' + k]; i
   ctx.drawImage(im, cx - d / 2, cy - d / 2 - (on ? 3 : 0), d, d); ctx.restore(); };
 function nNav(cx, label, draw, fn, badge, on, locked) {                           // 底栏：选中那格托一块金色光晕、图标亮、字金；没开放的压暗
   const cy = H - 46;
-  if (FS && on) { ctx.save(); rr(cx - 26, H - 71, 52, 63, FS.pillR || 14); ctx.fillStyle = FS.navOn; ctx.fill(); ctx.restore(); }
+  if (FS && on && FS.navOn) { ctx.save(); rr(cx - 26, H - 71, 52, 63, FS.pillR || 14); ctx.fillStyle = FS.navOn; ctx.fill(); ctx.restore(); }
   if (!FS && on) { ctx.save();                                                             // 选中底座：金框圆角牌 + 里面一团暖光，往上浮 4px（原来只是一块糊的金色光）
     const px = cx - 26, py = H - 71, pw = 52, ph = 63, fg   /* 11-18 用户圈着：「贴住了」——原来底座顶边压在底栏上沿金线上；整个缩进底栏、上下各留 5px */ = ctx.createLinearGradient(0, py, 0, py + ph); fg.addColorStop(0, '#ffe7a6'); fg.addColorStop(.5, '#b9792a'); fg.addColorStop(1, 'rgba(120,70,20,.2)');
     ctx.shadowColor = 'rgba(255,170,60,.45)'; ctx.shadowBlur = 14; rr(px, py, pw, ph, 14); ctx.fillStyle = fg; ctx.fill(); ctx.shadowBlur = 0;
     const bg = ctx.createLinearGradient(0, py, 0, py + ph); bg.addColorStop(0, '#5a3a1c'); bg.addColorStop(.55, '#2c1a10'); bg.addColorStop(1, 'rgba(20,12,24,.9)'); rr(px + 1.5, py + 1.5, pw - 3, ph - 3, 12.5); ctx.fillStyle = bg; ctx.fill();
     const rg = ctx.createRadialGradient(cx, cy - 2, 2, cx, cy - 2, 30); rg.addColorStop(0, 'rgba(255,196,90,.55)'); rg.addColorStop(1, 'rgba(255,150,50,0)'); ctx.fillStyle = rg; rr(px + 1.5, py + 1.5, pw - 3, ph - 3, 12.5); ctx.fill(); ctx.restore(); }
-  ctx.save(); if (locked) { ctx.globalAlpha = .34; ctx.filter = 'grayscale(1)'; } draw(cx, cy, on ? 34 : 29, NC.dim, on && !locked); ctx.restore();
+  ctx.save(); if (locked) { ctx.globalAlpha = .34; ctx.filter = 'grayscale(1)'; } else if (FS && FS.mono) { ctx.filter = on ? 'grayscale(1) brightness(1.8)' : 'grayscale(1) brightness(1.3)'; ctx.globalAlpha = on ? 1 : .82; } draw(cx, cy, on ? 34 : 29, NC.dim, on && !locked); ctx.restore();
   uiText(label, cx, cy + 25, fitSize(label, 11, 54, 99, UIF, 0), locked ? (FS && FS.navTxt[0][0] === '#' ? 'rgba(120,100,90,.45)' : 'rgba(220,210,200,.4)') : FS ? FS.navTxt[on ? 1 : 0] : on ? NC.gold2 : NC.dim, 'center', UIF, { stroke: false });
   if (badge && !locked) nDot(cx + 14, cy - 13);
   hit(cx - 29, cy - 28, 58, 58, () => { if (MENU.tip && MENU.tip.x === cx) tipDone(MENU.tip.k); fn(); });
@@ -7691,7 +7696,7 @@ function drawMenu2() {
     uiText(String(lvNo(lv)), bx + bs / 2, by + bs / 2 - 3, 21, '#fff', 'center', UIF, { lw: 3 });   // 现代手游用阿拉伯数字，不用「一」的古印
     uiText(duel ? '斗将' : EN_ON ? 'Stage' : '关', bx + bs / 2, by + bs - 9, 9, 'rgba(255,255,255,.72)', 'center', UIF, { stroke: false }); }
   { const tg = ctx.createLinearGradient(0, cy0 + 12, 0, cy0 + 32); tg.addColorStop(0, '#7a4416'); tg.addColorStop(1, '#3e1d06');   // 关名：深褐渐变字（米黄面板上用深字，参考少年三国志2 的列表标题）
-    uiText(lv.name, cx0 + 62, cy0 + 22, fitSize(lv.name, 19, 126, 99, UIF, 0), tg, 'left', UIF, { stroke: false }); }
+    uiText(lv.name, cx0 + 62, cy0 + 22, fitSize(lv.name, 19, 126, 99, (FS && FS.font) || UIF, 0), (FS && FS.ink) || tg, 'left', (FS && FS.font) || UIF, { stroke: false }); }
   { const tag = `${SEGS[Math.floor(ni / 10)]} · ${levelTag(lv)}`, fz = 10; ctx.font = fstr(fz, UIF); const tw = ctx.measureText(tr(tag)).width;   // 阶段做成一枚小标签（chip），不是一行灰字
     ctx.save(); rr(cx0 + 62, cy0 + 34, tw + 12, 15, 7.5); ctx.fillStyle = 'rgba(176,112,48,.16)'; ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(150,92,36,.45)'; rr(cx0 + 62.5, cy0 + 34.5, tw + 11, 14, 7.5); ctx.stroke(); ctx.restore();
     uiText(tag, cx0 + 68, cy0 + 41.5, fz, NC.ink2, 'left', UIF, { stroke: false });
@@ -7699,7 +7704,8 @@ function drawMenu2() {
   hit(cx0, cy0, cw - 108, chh, () => { if (!open1) { MENU.lockT = uiNow(); return; } screen = 'levels'; MENU.seg = Math.floor(ni / 10); });
   nBtn(cx0 + cw - 100, cy0 + 16, 88, 34, '出征', () => { BACKTO = null; openLevel(ni); }, { fz: 20 });
   // 底栏
-  if (FS) { ctx.save(); if (!FS.hard) { ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = -2; } rr(-10, H - 76, W + 20, 100, FS.hard ? 0 : 20); ctx.fillStyle = FS.nav; ctx.fill(); ctx.restore(); if (FS.navLine) { ctx.fillStyle = FS.navLine; ctx.fillRect(0, H - 76, W, 1); } }
+  if (FS && FS.navGrad) { const g = ctx.createLinearGradient(0, H - 96, 0, H); g.addColorStop(0, 'rgba(14,12,10,0)'); g.addColorStop(.45, 'rgba(14,12,10,.55)'); g.addColorStop(1, 'rgba(14,12,10,.82)'); ctx.fillStyle = g; ctx.fillRect(0, H - 96, W, 96); }
+  else if (FS) { ctx.save(); if (!FS.hard) { ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = -2; } rr(-10, H - 76, W + 20, 100, FS.hard ? 0 : 20); ctx.fillStyle = FS.nav; ctx.fill(); ctx.restore(); if (FS.navLine) { ctx.fillStyle = FS.navLine; ctx.fillRect(0, H - 76, W, 1); } }
   else { ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = -2; rr(-10, H - 76, W + 20, 100, 20); const g = ctx.createLinearGradient(0, H - 76, 0, H); g.addColorStop(0, 'rgba(78,38,20,.96)'); g.addColorStop(1, 'rgba(36,16,8,.98)');   /* 底栏冷紫改暖深褐 */ ctx.fillStyle = g; ctx.fill(); ctx.restore();
     const lg = ctx.createLinearGradient(0, 0, W, 0); lg.addColorStop(0, 'rgba(255,214,140,0)'); lg.addColorStop(.5, 'rgba(255,224,160,.85)'); lg.addColorStop(1, 'rgba(255,214,140,0)');   // 上沿一道中间亮、两头淡的金线
     ctx.lineWidth = 1.4; ctx.strokeStyle = lg; ctx.beginPath(); ctx.moveTo(0, H - 75.5); ctx.lineTo(W, H - 75.5); ctx.stroke(); }   // 原来中间还有一颗菱形小饰，贴着选中底座的角，去掉
