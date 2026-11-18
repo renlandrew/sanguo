@@ -7839,6 +7839,7 @@ function drawLvPop(t) {                                                         
 // 11-12 用户：「放在战役页里面，残是什么？」——先放底下「返回」两边；用户圈图：「反过来无尽和残放上面，前后三十关用箭头」——挪到页头两角（印 + 全名），换章的箭头改到地图左右两边中间
 function lvModeBtns(t) {   // 11-12 用户圈图「这个布局」：页签那一行左「无尽守城」、中间当前这一段、右「每日残局」；前一段、后一段的名字放底下「返回」两边（跨章也这样翻，不再另画换章箭头）
   const tab = (x, nm, on, fn, dim) => { const y = 73,   /* 用户：「2个btn往下一点点」66 → 73 */ tim = on ? IMG.ui2_tab_red : IMG.ui2_tab_dark; ctx.save(); if (dim) ctx.globalAlpha = .55;
+    if (NEWUI) { nPill(x, y, 108, 30, nm, on ? 'pri' : 'sec', { font: FONT, fz: 16 }); ctx.restore(); if (fn) hit(x, y, 108, 30, fn); return; }   // 11-18 用户截战役页「这2个btn还没改」
     if (ready(tim)) draw9(tim, x, y, 108, 30, 90, 90, 0, 0, 30 / 189); else uiPanel(x, y, 108, 30, { r: 15, top: on ? '#c0402a' : '#3a2b1f', bot: on ? '#6e140c' : UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.6)', single: true });
     uiText(nm, x + 54, y + 15, fitSize(nm, 15, 108 - 30 - 4), on ? '#fff2dc' : UIC.cream, 'center', FONT, { stroke: false }); ctx.restore(); if (fn) hit(x, y, 108, 30, fn); };
   /* 用户：「不，上面完全不要普通关卡」——中间不放当前这一段的页签；这一段叫什么写进页头标题 */
