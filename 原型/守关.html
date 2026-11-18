@@ -63,7 +63,7 @@ const INK = '#1d1a17', INK2 = '#3b352e', PAPER = '#ece4d2', CINNABAR = '#b23f2a'
 // 英文比原来的中文宽太多时按中文的宽度缩字（enFit：最多宽一成再加半个字），版面不用逐页改
 const LANG = /[?&]lang=en\b/.test(location.search) && window.EN ? 'en' : 'zh', EN_ON = LANG === 'en';
 const NEWUI = !/[?&]skin=old\b/.test(location.search); // 11-18 起新皮肤是默认，?skin=old 看旧皮肤
-const SERIF_FAM = ({ xl: 'SHSerifXL', l: 'SHSerifL' })[(/[?&]font=(\w+)/.exec(location.search) || [])[1]] || 'SHSerif';   // 11-18 用户：「再尝试很细的宋体」——?font=xl 特细、?font=l 细，试样用
+const SERIF_FAM = ({ h: 'SHSerif', l: 'SHSerifL' })[(/[?&]font=(\w+)/.exec(location.search) || [])[1]] || 'SHSerifXL';   // 11-18 用户：「再尝试很细的宋体」→「特细设为默认」——默认思源宋体 ExtraLight；?font=l 细、?font=h 粗（Heavy）
 const SERIF = '"' + SERIF_FAM + '", "Source Han Serif SC", "Noto Serif SC", "Songti SC", "STSong", serif';   // 11-18 用户：「所有字体也要用宋体，思源宋体 Heavy」——新皮肤里书法体、黑体、细宋体一律换它
 const FONT_ZH = NEWUI ? SERIF : '"Ma Shan Zheng", "STKaiti", "KaiTi", serif', FONT = NEWUI ? SERIF : EN_ON ? '"Alegreya SC", Georgia, serif' : FONT_ZH, PLAIN = NEWUI ? SERIF : '"PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif';
 // 11-18 \u7528\u6237\uff1a\u300c\u76ee\u524d\u6574\u4e2a\u754c\u9762\u4e0d\u591f\u73b0\u4ee3\uff0c\u592a\u53e4\uff0c\u5176\u5b9e\u5e74\u8f7b\u4eba\u4e0d\u559c\u6b22\uff0c\u4f60\u53bb\u770b\u770b\u4ec0\u4e48\u5c11\u5e74\u4e09\u56fd\u5fd7\u4e4b\u7c7b\u7684\u754c\u9762\uff0c\u91cd\u65b0\u5236\u4f5c\u300d
