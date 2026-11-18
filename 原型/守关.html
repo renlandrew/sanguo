@@ -60,8 +60,8 @@ const INK = '#1d1a17', INK2 = '#3b352e', PAPER = '#ece4d2', CINNABAR = '#b23f2a'
 const LANG = /[?&]lang=en\b/.test(location.search) && window.EN ? 'en' : 'zh', EN_ON = LANG === 'en';
 const FONT_ZH = '"Ma Shan Zheng", "STKaiti", "KaiTi", serif', FONT = EN_ON ? '"Alegreya SC", Georgia, serif' : FONT_ZH, PLAIN = '"PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif';
 // 11-18 \u7528\u6237\uff1a\u300c\u76ee\u524d\u6574\u4e2a\u754c\u9762\u4e0d\u591f\u73b0\u4ee3\uff0c\u592a\u53e4\uff0c\u5176\u5b9e\u5e74\u8f7b\u4eba\u4e0d\u559c\u6b22\uff0c\u4f60\u53bb\u770b\u770b\u4ec0\u4e48\u5c11\u5e74\u4e09\u56fd\u5fd7\u4e4b\u7c7b\u7684\u754c\u9762\uff0c\u91cd\u65b0\u5236\u4f5c\u300d
-// \u65b0\u76ae\u80a4\u8d70 ?skin=new\uff1aUI \u5b57\u4f53\u6362\u7c97\u9ed1\u4f53\u3001\u8272\u6539\u6df1\u84dd\u7d2b\uff0b\u9ad8\u9971\u548c\u91d1\u6a59\u3001\u724c\u5b50\u6362\u73bb\u7483\u5706\u89d2\u5361\u3001\u5370\u7ae0\u6362\u7ea2\u70b9\u89d2\u6807\u3001\u5e95\u680f\u6362\u9009\u4e2d\u6001\u56fe\u6807\u3001\u51fa\u5f81\u6362\u5927\u6e10\u53d8\u94ae\u3002\u65e7\u76ae\u80a4\u4e00\u884c\u4e0d\u52a8\uff0c\u968f\u65f6\u5207\u56de\u5bf9\u6bd4\u3002
-const NEWUI = /[?&]skin=new\b/.test(location.search);
+// 新皮肤（照少年三国志、三国志幻想大陆：米黄面板、金框按钮、GPT 画的图标、城头黄昏底图）11-18 设为默认；?skin=old 切回旧皮肤对比。
+const NEWUI = !/[?&]skin=old\b/.test(location.search); // 11-18 起新皮肤是默认，?skin=old 看旧皮肤
 const UIF = '!"PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif';         // \u5f00\u5934\u7684 ! \u8868\u793a\u7c97\u4f53\uff08fstr \u8ba4\uff09\uff0cCSS \u7b80\u5199\u91cc bold \u5fc5\u987b\u5199\u5728\u5b57\u53f7\u524d\u9762\uff0c\u62fc\u4e0d\u8fdb `${size}px ${font}`
 const fstr = (size, font) => font && font[0] === '!' ? `700 ${fpx(size)}px ${font.slice(1)}` : `${fpx(size)}px ${font}`;
 const TR_CACHE = new Map(), CJK = /[\u3400-\u9fff]/;
@@ -7429,7 +7429,7 @@ function drawMenuTip(t) {
   ctx.beginPath(); ctx.moveTo(T.x - 9, by - 10); ctx.lineTo(T.x + 9, by - 10); ctx.lineTo(T.x, by); ctx.closePath(); ctx.fill(); ctx.restore();
 }
 const TRIO_H = 292, TRIO_FOOT = 498, CARD_Y = 518, TIP_Y = 136, BG_UP = 86;   // 主页三兄弟画多高、脚在哪（城头步道）；关卡牌在脚下；TIP_Y 现在只给点卯横幅用
-// ---------- 新皮肤（?skin=new）：现代手游那套版面 ----------
+// ---------- 新皮肤（默认；?skin=old 切回旧皮肤）：现代手游那套版面 ----------
 // 配色：深蓝紫玻璃打底 + 高饱和金橙主色；字一律粗黑体（书法体只留 logo 和招式名）；角标用红点不用印章
 // 11-18 用户：「幻想和少年也是这种panel吗？」——对了实拍：都不是。少年三国志2 是米黄奶油底、细褐分隔、深褐字、外面深木框加金边；
 // 三国志幻想大陆是很浅的奶油／半透明白配淡金边。上一版的冷色蓝紫玻璃是西式暗色模式的套路，改成米黄面板（o.dark 才用暖深褐）
