@@ -1,12 +1,67 @@
 [
- {"id": "home_1", "prompt": "Traditional Chinese classical music, ancient Han dynasty court style, solo guqin playing a slow noble pentatonic melody, answered by a xiao end-blown bamboo flute, soft bianzhong bronze bells on the strong beats, sparse and spacious, solemn and heroic, acoustic traditional Chinese instruments only, instrumental", "neg": "orchestra, violin, cello, string section, brass, trumpet, french horn, trombone, piano, harp, synthesizer, pad, electric guitar, bass guitar, drum kit, taiko, Japanese, cinematic trailer, epic orchestral, modern, pop, electronic, vocals, singing, choir"},
- {"id": "home_2", "prompt": "Traditional Chinese folk ensemble in an ancient silk-and-bamboo style, erhu leading a gentle pentatonic melody, guzheng flowing glissandos and plucks, dizi bamboo flute joining softly, light wooden clapper, calm and dignified, mountains and rivers, acoustic traditional Chinese instruments only, instrumental", "neg": "orchestra, violin, cello, string section, brass, trumpet, french horn, piano, harp, synthesizer, pad, electric guitar, drum kit, taiko, Japanese, cinematic, modern, pop, electronic, vocals, singing, choir"},
- {"id": "camp_1", "prompt": "Ancient Chinese army camp at dusk, solo pipa playing a slow wistful pentatonic tune, soft xiao flute answering, a distant small frame drum, quiet campfire mood, warm and nostalgic, acoustic traditional Chinese instruments only, instrumental", "neg": "orchestra, violin, cello, string section, brass, piano, harp, synthesizer, pad, guitar, drum kit, taiko, Japanese, cinematic, modern, pop, electronic, vocals, singing, choir"},
- {"id": "story_1", "prompt": "Playful comedic traditional Chinese opera percussion and instruments, bangu clapper drum and small gongs and cymbals in a bouncy Peking opera rhythm, cheeky jinghu fiddle and pipa phrases, light and funny, pentatonic, acoustic traditional Chinese instruments only, instrumental", "neg": "orchestra, violin, pizzicato strings, cello, brass, piano, harp, synthesizer, guitar, drum kit, taiko, Japanese, cartoon orchestra, modern, pop, electronic, vocals, singing"},
- {"id": "war_1", "prompt": "Ancient Chinese battlefield war music, large Chinese war drums pounding a fast driving rhythm, big tam-tam gongs and cymbals, suona horns blaring a heroic pentatonic battle melody, pipa rapid tremolo, intense and triumphant, acoustic traditional Chinese instruments only, instrumental", "neg": "orchestra, violin, string section, brass section, trumpet, french horn, trombone, piano, synthesizer, electric guitar, drum kit, taiko, Japanese, epic orchestral, cinematic trailer, modern, rock, electronic, vocals, choir"},
- {"id": "war_2", "prompt": "Ancient Chinese army marching to battle, thunderous Chinese war drums and gongs in a steady urgent march, erhu and banhu fiddles playing a fierce pentatonic theme, dizi flute calls, sheng mouth organ chords, acoustic traditional Chinese instruments only, instrumental", "neg": "orchestra, violin, cello, string section, brass, trumpet, horn, piano, synthesizer, guitar, drum kit, taiko, Japanese, epic orchestral, cinematic, modern, rock, electronic, vocals, choir"},
- {"id": "war_3", "prompt": "Heroic charge of ancient Chinese generals on a city wall, two suona horns trading bold pentatonic fanfares, galloping Chinese war drums, crashing cymbals and gongs, pipa and ruan strumming fast, brave and determined, acoustic traditional Chinese instruments only, instrumental", "neg": "orchestra, violin, string section, brass section, trumpet, french horn, trombone, piano, synthesizer, electric guitar, drum kit, taiko, Japanese, epic orchestral, cinematic trailer, modern, rock, electronic, vocals, choir"},
- {"id": "war_4", "prompt": "Tense siege defense in ancient China, low Chinese war drums slowly pounding, guzheng tremolo and sharp plucks, erhu sliding tense phrases, building tension then a short heroic suona call, pentatonic, acoustic traditional Chinese instruments only, instrumental", "neg": "orchestra, violin, staccato strings, string section, brass, piano, synthesizer, pad, guitar, drum kit, taiko, Japanese, cinematic, modern, electronic, vocals, choir"},
- {"id": "duel_1", "prompt": "Menacing duel with a legendary enemy general in ancient China, deep slow Chinese war drum hits, huge tam-tam gong swells, low guan reed pipe growling, erhu in dark minor pentatonic, heavy and threatening, acoustic traditional Chinese instruments only, instrumental", "neg": "orchestra, violin, cello, string section, brass, trumpet, horn, piano, synthesizer, pad, guitar, drum kit, taiko, Japanese, epic orchestral, cinematic, modern, metal, electronic, vocals, choir"},
- {"id": "omen_1", "prompt": "Mysterious supernatural ancient Chinese music, guqin harmonics ringing in silence, a low xun clay ocarina, distant bronze bell and slow gong rolls, eerie and still, a crack in the heavens, slow and ominous, acoustic traditional Chinese instruments only, instrumental", "neg": "orchestra, violin, string section, brass, piano, harp, synthesizer, drone pad, ambient electronic, guitar, drum kit, taiko, Japanese, cinematic, modern, vocals, choir"}
+ {
+  "id": "home_1",
+  "prompt": "Traditional Chinese classical music, ancient Han dynasty court style, solo guqin playing a slow noble pentatonic melody, answered by a xiao end-blown bamboo flute, soft bianzhong bronze bells on the strong beats, sparse and spacious, solemn and heroic, acoustic traditional Chinese instruments only, instrumental",
+  "neg": "orchestra, violin, cello, string section, brass, trumpet, french horn, trombone, piano, harp, synthesizer, pad, electric guitar, bass guitar, drum kit, taiko, Japanese, cinematic trailer, epic orchestral, modern, pop, electronic, vocals, singing, choir"
+ },
+ {
+  "id": "home_2",
+  "prompt": "Traditional Chinese folk ensemble in an ancient silk-and-bamboo style, erhu leading a gentle pentatonic melody, guzheng flowing glissandos and plucks, dizi bamboo flute joining softly, light wooden clapper, calm and dignified, mountains and rivers, acoustic traditional Chinese instruments only, instrumental",
+  "neg": "orchestra, violin, cello, string section, brass, trumpet, french horn, piano, harp, synthesizer, pad, electric guitar, drum kit, taiko, Japanese, cinematic, modern, pop, electronic, vocals, singing, choir"
+ },
+ {
+  "id": "camp_1",
+  "prompt": "Ancient Chinese army camp at dusk, solo pipa playing a slow wistful pentatonic tune, soft xiao flute answering, a distant small frame drum, quiet campfire mood, warm and nostalgic, acoustic traditional Chinese instruments only, instrumental",
+  "neg": "orchestra, violin, cello, string section, brass, piano, harp, synthesizer, pad, guitar, drum kit, taiko, Japanese, cinematic, modern, pop, electronic, vocals, singing, choir"
+ },
+ {
+  "id": "story_1",
+  "prompt": "Playful comedic traditional Chinese opera percussion and instruments, bangu clapper drum and small gongs and cymbals in a bouncy Peking opera rhythm, cheeky jinghu fiddle and pipa phrases, light and funny, pentatonic, acoustic traditional Chinese instruments only, instrumental",
+  "neg": "orchestra, violin, pizzicato strings, cello, brass, piano, harp, synthesizer, guitar, drum kit, taiko, Japanese, cartoon orchestra, modern, pop, electronic, vocals, singing"
+ },
+ {
+  "id": "war_1",
+  "prompt": "Ancient Chinese battlefield war music, large Chinese war drums pounding a fast driving rhythm, big tam-tam gongs and cymbals, suona horns blaring a heroic pentatonic battle melody, pipa rapid tremolo, intense and triumphant, acoustic traditional Chinese instruments only, instrumental",
+  "neg": "orchestra, violin, string section, brass section, trumpet, french horn, trombone, piano, synthesizer, electric guitar, drum kit, taiko, Japanese, epic orchestral, cinematic trailer, modern, rock, electronic, vocals, choir"
+ },
+ {
+  "id": "war_2",
+  "prompt": "Ancient Chinese army marching to battle, thunderous Chinese war drums and gongs in a steady urgent march, erhu and banhu fiddles playing a fierce pentatonic theme, dizi flute calls, sheng mouth organ chords, acoustic traditional Chinese instruments only, instrumental",
+  "neg": "orchestra, violin, cello, string section, brass, trumpet, horn, piano, synthesizer, guitar, drum kit, taiko, Japanese, epic orchestral, cinematic, modern, rock, electronic, vocals, choir"
+ },
+ {
+  "id": "war_3",
+  "prompt": "Heroic charge of ancient Chinese generals on a city wall, two suona horns trading bold pentatonic fanfares, galloping Chinese war drums, crashing cymbals and gongs, pipa and ruan strumming fast, brave and determined, acoustic traditional Chinese instruments only, instrumental",
+  "neg": "orchestra, violin, string section, brass section, trumpet, french horn, trombone, piano, synthesizer, electric guitar, drum kit, taiko, Japanese, epic orchestral, cinematic trailer, modern, rock, electronic, vocals, choir"
+ },
+ {
+  "id": "war_4",
+  "prompt": "Tense siege defense in ancient China, low Chinese war drums slowly pounding, guzheng tremolo and sharp plucks, erhu sliding tense phrases, building tension then a short heroic suona call, pentatonic, acoustic traditional Chinese instruments only, instrumental",
+  "neg": "orchestra, violin, staccato strings, string section, brass, piano, synthesizer, pad, guitar, drum kit, taiko, Japanese, cinematic, modern, electronic, vocals, choir"
+ },
+ {
+  "id": "duel_1",
+  "prompt": "Menacing duel with a legendary enemy general in ancient China, deep slow Chinese war drum hits, huge tam-tam gong swells, low guan reed pipe growling, erhu in dark minor pentatonic, heavy and threatening, acoustic traditional Chinese instruments only, instrumental",
+  "neg": "orchestra, violin, cello, string section, brass, trumpet, horn, piano, synthesizer, pad, guitar, drum kit, taiko, Japanese, epic orchestral, cinematic, modern, metal, electronic, vocals, choir"
+ },
+ {
+  "id": "omen_1",
+  "prompt": "Mysterious supernatural ancient Chinese music, guqin harmonics ringing in silence, a low xun clay ocarina, distant bronze bell and slow gong rolls, eerie and still, a crack in the heavens, slow and ominous, acoustic traditional Chinese instruments only, instrumental",
+  "neg": "orchestra, violin, string section, brass, piano, harp, synthesizer, drone pad, ambient electronic, guitar, drum kit, taiko, Japanese, cinematic, modern, vocals, choir"
+ },
+ {
+  "id": "home_3",
+  "prompt": "Soft ambient traditional Chinese guzheng, slow gentle plucked pentatonic arpeggios with plenty of space and silence between phrases, very light and airy, no strong melody or hook, unobtrusive background music, peaceful late afternoon, warm and calm, subtle natural reverb, acoustic solo guzheng only, instrumental",
+  "neg": "drums, percussion, war drum, gong, cymbals, bells, suona, erhu, strong catchy melody, hook, orchestra, strings section, piano, violin, cello, synth, electronic, vocals, singing, choir, speech"
+ },
+ {
+  "id": "home_4",
+  "prompt": "Quiet solo guqin, slow meditative open strings and soft ringing harmonics, sparse unhurried phrases, understated and gentle, calm background ambience, no memorable tune, acoustic solo guqin only, instrumental",
+  "neg": "drums, percussion, war drum, gong, cymbals, bells, suona, erhu, strong catchy melody, hook, orchestra, strings section, piano, violin, cello, synth, electronic, vocals, singing, choir, speech"
+ },
+ {
+  "id": "home_5",
+  "prompt": "Gentle duet of guzheng and guqin, light soft plucking, slow flowing pentatonic texture rather than a melody, airy and transparent, relaxed and warm, low intensity background music that never draws attention, acoustic traditional Chinese zither instruments only, instrumental",
+  "neg": "drums, percussion, war drum, gong, cymbals, bells, suona, erhu, strong catchy melody, hook, orchestra, strings section, piano, violin, cello, synth, electronic, vocals, singing, choir, speech"
+ }
 ]

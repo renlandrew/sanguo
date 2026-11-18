@@ -59,6 +59,11 @@ const INK = '#1d1a17', INK2 = '#3b352e', PAPER = '#ece4d2', CINNABAR = '#b23f2a'
 // 英文比原来的中文宽太多时按中文的宽度缩字（enFit：最多宽一成再加半个字），版面不用逐页改
 const LANG = /[?&]lang=en\b/.test(location.search) && window.EN ? 'en' : 'zh', EN_ON = LANG === 'en';
 const FONT_ZH = '"Ma Shan Zheng", "STKaiti", "KaiTi", serif', FONT = EN_ON ? '"Alegreya SC", Georgia, serif' : FONT_ZH, PLAIN = '"PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif';
+// 11-18 \u7528\u6237\uff1a\u300c\u76ee\u524d\u6574\u4e2a\u754c\u9762\u4e0d\u591f\u73b0\u4ee3\uff0c\u592a\u53e4\uff0c\u5176\u5b9e\u5e74\u8f7b\u4eba\u4e0d\u559c\u6b22\uff0c\u4f60\u53bb\u770b\u770b\u4ec0\u4e48\u5c11\u5e74\u4e09\u56fd\u5fd7\u4e4b\u7c7b\u7684\u754c\u9762\uff0c\u91cd\u65b0\u5236\u4f5c\u300d
+// \u65b0\u76ae\u80a4\u8d70 ?skin=new\uff1aUI \u5b57\u4f53\u6362\u7c97\u9ed1\u4f53\u3001\u8272\u6539\u6df1\u84dd\u7d2b\uff0b\u9ad8\u9971\u548c\u91d1\u6a59\u3001\u724c\u5b50\u6362\u73bb\u7483\u5706\u89d2\u5361\u3001\u5370\u7ae0\u6362\u7ea2\u70b9\u89d2\u6807\u3001\u5e95\u680f\u6362\u9009\u4e2d\u6001\u56fe\u6807\u3001\u51fa\u5f81\u6362\u5927\u6e10\u53d8\u94ae\u3002\u65e7\u76ae\u80a4\u4e00\u884c\u4e0d\u52a8\uff0c\u968f\u65f6\u5207\u56de\u5bf9\u6bd4\u3002
+const NEWUI = /[?&]skin=new\b/.test(location.search);
+const UIF = '!"PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif';         // \u5f00\u5934\u7684 ! \u8868\u793a\u7c97\u4f53\uff08fstr \u8ba4\uff09\uff0cCSS \u7b80\u5199\u91cc bold \u5fc5\u987b\u5199\u5728\u5b57\u53f7\u524d\u9762\uff0c\u62fc\u4e0d\u8fdb `${size}px ${font}`
+const fstr = (size, font) => font && font[0] === '!' ? `700 ${fpx(size)}px ${font.slice(1)}` : `${fpx(size)}px ${font}`;
 const TR_CACHE = new Map(), CJK = /[\u3400-\u9fff]/;
 function trStrict(s, tpl) {   // 整句表，再试句式；tpl：只认表里带数字的句式（拼句时试着把几段并回去用，不走手写规则）
   let r = window.EN[s];
@@ -99,7 +104,7 @@ window.__tr = tr;   // en.js 的句式规则里拆开的半句也走整套翻译
 function enFit(s0, s, size, font) {
   if (!EN_ON || s === s0 || typeof s0 !== 'string' || !CJK.test(s0)) return size;
   ctx.font = `${fpx(size)}px ${font === FONT ? FONT_ZH : font}`; const zw = rawMeasure(s0).width;
-  ctx.font = `${fpx(size)}px ${font}`; const ew = rawMeasure(s).width, ok = Math.max(zw * 1.1 + size * .5, size * 3.4);   // 两个字的短标签（导航、按钮）英文至少给三个半字宽
+  ctx.font = fstr(size, font); const ew = rawMeasure(s).width, ok = Math.max(zw * 1.1 + size * .5, size * 3.4);   // 两个字的短标签（导航、按钮）英文至少给三个半字宽
   const r = ew > ok ? Math.max(Math.min(size, 9), size * ok / ew) : size; if (window.__fitlog && r < size) window.__fitlog(s0, s, size, r); return r;   // __fitlog：调试，记下被缩的字
 }
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -2868,7 +2873,7 @@ function drawHoverTip() {
 // 10-30 iPhone 13 第四关第 25 秒被杀：头顶「冲」「帅」、伤害数字的字号按透视／动画算成连续小数，每帧每人一个新字号，苹果的浏览器给每个字号建一套中文字体缓存，
 // 冲阵队一出来网页内存从 230MB 冲到约 1.5GB（模拟器实测）。字号一律取到 0.5px，种类有限、缓存复用
 function fpx(v) { return Math.round(v * 2) / 2; }
-function txt(s, x, y, size, color = INK, align = 'left', font = FONT, alpha = 1) { const s0 = s; s = tr(s); size = enFit(s0, s, size, font); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.font = `${fpx(size)}px ${font}`; ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillText(s, x, y); ctx.globalAlpha = 1; }
+function txt(s, x, y, size, color = INK, align = 'left', font = FONT, alpha = 1) { const s0 = s; s = tr(s); size = enFit(s0, s, size, font); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.font = fstr(size, font); ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillText(s, x, y); ctx.globalAlpha = 1; }
 function inkRect(x, y, w, h, fill = 'rgba(244,238,226,.92)', line = INK, lw = 1.5) {
   ctx.fillStyle = fill; ctx.fillRect(x, y, w, h);
   ctx.strokeStyle = line; ctx.lineWidth = lw; ctx.globalAlpha = .85; ctx.strokeRect(x, y, w, h);
@@ -2895,7 +2900,7 @@ function drawLoading() {                                                        
   ctx.restore(); return false;
 }
 function renderScreen() {
-  HITS = [];
+  HITS = []; LITE.length = 0;
   ctx.setTransform(RS, 0, 0, RS, 0, 0);
   ctx.clearRect(0, 0, W, H);
   musicTick();
@@ -3790,6 +3795,11 @@ for (const k of ['ui_top', 'ui_tray', 'ui_card_sq', 'ui_avatar_ring', 'ui_scroll
 // 所以带光时先在离屏画布上拼好整块，再整块贴上去、只投一次光。不带光时接缝对齐到屏幕像素，中间几块多盖一个像素，不留亚像素缝
 const D9C = new Map();
 function draw9(im, x, y, w, h, l, r, t, b, s = .5) {
+  if (NEWUI && im === IMG.ui2_top) {   // 新皮肤：黑漆顶栏／底栏（底栏是同一张倒过来画）换成暖深褐渐变 + 靠内侧一道中间亮两头淡的金线
+    const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, 'rgba(84,42,20,.97)'); g.addColorStop(1, 'rgba(40,18,8,.97)'); ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+    const lg = ctx.createLinearGradient(x, 0, x + w, 0); lg.addColorStop(0, 'rgba(255,214,140,0)'); lg.addColorStop(.5, 'rgba(255,226,160,.9)'); lg.addColorStop(1, 'rgba(255,214,140,0)'); ctx.fillStyle = lg; ctx.fillRect(x, y + h - 1.6, w, 1.4);
+    liteMark(x, y, w, h, false); return; }
+  if (NEWUI && im === IMG.ui_banner) { nCard(x + 8, y + h * .14, w - 16, h * .72, 14); liteMark(x + 8, y + h * .14, w - 16, h * .72, true); return; }   // 云纹横幅换米黄面板（上面的字自动换深色）
   const iw = im.width, ih = im.height, L = l * s, R = r * s, T = t * s, B = b * s;
   const sx = [0, l, iw - r, iw], sy = [0, t, ih - b, ih];
   const glow = ctx.shadowBlur > 0 && ctx.shadowColor && !/rgba\([^)]*,\s*0\)$/.test(ctx.shadowColor);
@@ -3809,6 +3819,13 @@ const UIL = {};                                                                 
 const uiNow = () => performance.now() / 1000;
 function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 function uiPanel(x, y, w, h, o = {}) {
+  if (NEWUI) {   // 新皮肤：带自定义色的多半是按钮、页签——红色系画成金橙主钮、别的画成暖褐次钮；默认色的是深色小面板（提示框等），画暖深褐卡、字照旧浅色
+    ctx.save(); ctx.globalAlpha *= o.alpha ?? 1;
+    if (o.top && h <= 44) { const m = /^#([0-9a-f]{6})/i.exec(o.top), v = m ? [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16)) : [0, 0, 0], red = v[0] > v[1] + 40 && v[0] > 90;   // 选中页签常用暗红（#6e1a10），也要认成主钮
+      if (o.glow) { ctx.shadowColor = o.glow; ctx.shadowBlur = o.glowR || 12; rr(x, y, w, h, Math.min(h / 2, o.r ?? 6)); ctx.fillStyle = 'rgba(0,0,0,.01)'; ctx.fill(); ctx.shadowBlur = 0; }
+      nPill(x, y, w, h, '', red ? 'pri' : 'sec'); }
+    else { nCard(x, y, w, h, Math.min(o.r ?? 8, h / 2.5), { dark: true, corner: h > 40 }); liteMark(x, y, w, h, false); }
+    ctx.restore(); return; }
   const r = o.r ?? 6, g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, o.top || UIC.lac2); g.addColorStop(1, o.bot || UIC.lac);
   ctx.save(); ctx.globalAlpha = o.alpha ?? .94; rr(x, y, w, h, r); ctx.fillStyle = g; ctx.fill(); ctx.globalAlpha = 1;
   if (o.glow) { ctx.shadowColor = o.glow; ctx.shadowBlur = o.glowR || 12; }
@@ -3831,21 +3848,43 @@ function uiBar(key, x, y, w, h, frac, c1, c2, o = {}) {
 }
 // 字放进框里（10-25 夜用户：「很多字都超出btn……你检查所有btn，确保字不要超出来」）：给出框里能写字的宽、高，字号先按高、再按宽缩（描边也算进宽）
 let FIT_LAST = null;   // 11-09 英文：fitSize 已按真实宽度量过的字，uiText 不再按中文宽度二次缩
-function fitSize(s, size, maxW, maxH = Infinity, font = FONT, lw = 0) { s = tr(s); size = Math.min(size, maxH); ctx.font = `${fpx(size)}px ${font}`; const w = ctx.measureText(s).width + lw, r = w > maxW ? Math.max(8, size * maxW / w) : size; if (EN_ON) FIT_LAST = [s, r]; return r; }
+function fitSize(s, size, maxW, maxH = Infinity, font = FONT, lw = 0) { s = tr(s); size = Math.min(size, maxH); ctx.font = fstr(size, font); const w = ctx.measureText(s).width + lw, r = w > maxW ? Math.max(8, size * maxW / w) : size; if (EN_ON) FIT_LAST = [s, r]; return r; }
 // 10-30 用户（晋升标题、教学卡「守城」后面那团）：「这些黄色全部去掉」——字后面的黄、金色光晕一律不画；红、蓝、白的光留着
 const yellowGlow = c => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c); return !!m && +m[1] >= 220 && +m[2] >= 140 && +m[3] <= 140; };   // 不缓存：有的光晕颜色每帧带不同透明度
+// 11-18 新皮肤铺到所有页面（用户：「可以铺到所有其他地方了」「所有这些」）：参考的三国手游面板是米黄奶油底 + 深色字，可各页的字都是写给深色木牌的浅色字。
+// 不一页页改字色：米黄面板画出来时把它在屏幕上的位置登记进 LITE（按钮、印章画完也登记一块「深色」盖在上面），
+// uiText 落在米黄面板上、又是浅色字的，就换成同色相的深色（米白→深褐、金→琥珀褐、绿→深绿、红→深红），去掉深色描边和光晕
+const LITE = [];
+function liteMark(x, y, w, h, light) { if (!NEWUI) return; const m = ctx.getTransform(), k = 1 / RS; LITE.push({ x: (m.a * x + m.e) * k, y: (m.d * y + m.f) * k, w: m.a * w * k, h: m.d * h * k, light }); }
+function liteAt(x, y) { if (!LITE.length) return false; const m = ctx.getTransform(), k = 1 / RS, px = (m.a * x + m.e) * k, py = (m.d * y + m.f) * k;
+  for (let i = LITE.length - 1; i >= 0; i--) { const r = LITE[i]; if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) return r.light; } return false; }
+const DARKEN = new Map();
+function darkenCol(c) {
+  if (DARKEN.has(c)) return DARKEN.get(c); let r, g, b, a = 1, m;
+  if ((m = /^#([0-9a-f]{3})$/i.exec(c))) [r, g, b] = [...m[1]].map(h => parseInt(h + h, 16));
+  else if ((m = /^#([0-9a-f]{6})/i.exec(c))) [r, g, b] = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16));
+  else if ((m = /^rgba?\(([^)]+)\)/.exec(c))) { const p = m[1].split(',').map(Number); [r, g, b] = p; if (p.length > 3) a = p[3]; }
+  else { DARKEN.set(c, c); return c; }
+  const mx = Math.max(r, g, b) / 255, mn = Math.min(r, g, b) / 255, l = (mx + mn) / 2;
+  if (l < .5) { DARKEN.set(c, c); return c; }                                        // 本来就是深色字，不动
+  const d = mx - mn, s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1)); let h = 0;
+  if (d) { const R = r / 255, G2 = g / 255, B = b / 255; h = mx === R ? ((G2 - B) / d) % 6 : mx === G2 ? (B - R) / d + 2 : (R - G2) / d + 4; h *= 60; if (h < 0) h += 360; }
+  const out = s < .15 ? `rgba(74,37,12,${Math.max(a, .85)})` : `hsla(${Math.round(h)},${Math.round(Math.min(s, .8) * 100)}%,${h > 70 && h < 170 ? 26 : 28}%,${Math.max(a, .85)})`;
+  DARKEN.set(c, out); return out;
+}
 function uiText(s, x, y, size, color, align = 'left', font = FONT, o = {}) {
+  if (NEWUI && LITE.length && liteAt(x, y)) { color = typeof color === 'string' ? darkenCol(color) : NC.ink; o = { ...o, stroke: false, glow: null }; }
   const s0 = s; s = tr(s);
   if (EN_ON && o.maxW && s !== s0) {   // 11-09 英文：给了真实可用宽度就按它排，不按中文宽度缩；缩到 minFz 还放不下且 wrap，就在空格处折两行
-    ctx.font = `${fpx(size)}px ${font}`; const w = rawMeasure(s).width, lw = o.stroke !== false ? (o.lw || 3) : 0;
+    ctx.font = fstr(size, font); const w = rawMeasure(s).width, lw = o.stroke !== false ? (o.lw || 3) : 0;
     if (w + lw > o.maxW) { const f = size * o.maxW / (w + lw), mf = o.minFz || 10, sp = s.indexOf(' ');
       if (f < mf && o.wrap && sp > 0) { const h = s.length / 2; let k = s.indexOf(' ', Math.round(h)), k2 = s.lastIndexOf(' ', Math.round(h)); if (k < 0 || (k2 > 0 && h - k2 < k - h)) k = k2;
-        const L = [s.slice(0, k), s.slice(k + 1)]; ctx.font = `${fpx(size)}px ${font}`; const lw2 = Math.max(...L.map(l => rawMeasure(l).width)) + lw, z = Math.max(8, Math.min(size, o.wrapFz || size, size * o.maxW / lw2)), dy = o.wrapUp ? -z * 1.05 : o.wrapDown ? 0 : -z * .52;
+        const L = [s.slice(0, k), s.slice(k + 1)]; ctx.font = fstr(size, font); const lw2 = Math.max(...L.map(l => rawMeasure(l).width)) + lw, z = Math.max(8, Math.min(size, o.wrapFz || size, size * o.maxW / lw2)), dy = o.wrapUp ? -z * 1.05 : o.wrapDown ? 0 : -z * .52;
         const o2 = { ...o, maxW: 0 }; uiText(L[0], x, y + dy, z, color, align, font, o2); uiText(L[1], x, y + dy + z * 1.05, z, color, align, font, o2); return; }
       size = Math.max(8, f); } }
   else if (!(FIT_LAST && FIT_LAST[0] === s && FIT_LAST[1] === size)) size = enFit(s0, s, size, font);
   if (SC.on) SC.bot = Math.max(SC.bot, y + size * .6);
-  ctx.font = `${fpx(size)}px ${font}`; ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  ctx.font = fstr(size, font); ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
   if (o.stroke !== false) { ctx.lineWidth = o.lw || Math.max(2.5, size * .16); ctx.strokeStyle = o.stroke || 'rgba(12,8,5,.9)'; ctx.strokeText(s, x, y); }
   // 11-11 用户圈着败退结算页星星后面那块红方块：「这个正方形好难看」——苹果的浏览器给「渐变色的字」画光晕时，画出来的是一整块方的色块（还往下偏），不是字形的光。
   // 字是渐变色时，光晕先用纯色的字画一遍，再盖上不带光晕的渐变字；纯色字照旧
@@ -3898,10 +3937,11 @@ function sealBake(t, s, c, round) {
 }
 function segText(segs, cx, y, size, font = PLAIN, o = { stroke: false }) {               // 一行里分段上色，整行居中（10-29 用户：「阶级那几个字标红」）
   if (EN_ON) segs = segs.map(([t, c]) => [tr(t), c]);   // 11-10 英文：先翻再量宽度
-  ctx.font = `${fpx(size)}px ${font}`; const ws = segs.map(([t]) => ctx.measureText(t).width); let x = cx - ws.reduce((a, b) => a + b, 0) / 2;
+  ctx.font = fstr(size, font); const ws = segs.map(([t]) => ctx.measureText(t).width); let x = cx - ws.reduce((a, b) => a + b, 0) / 2;
   segs.forEach(([t, c], i) => { uiText(t, x, y, size, c, 'left', font, o); x += ws[i]; });
 }
 function uiSeal(x, y, s, txtS, c = UIC.red, round = false) {                         // 关号、斗将、胜败、选、升、令
+  if (NEWUI) { nBadge(x, y, s, txtS, c, round); return; }
   const b = sealBake(txtS, s, c, round);
   ctx.save(); ctx.translate(x, y); ctx.rotate(round ? 0 : -.05);
   if (b) ctx.drawImage(b, -s / 2, -s / 2, s, s);
@@ -5877,10 +5917,10 @@ function sfx(k) {
 }
 // 音乐（10-25 夜用户：「音乐还是用google 生成吧？多生成几首轮流播放」；10-26 用户嫌「都是现代乐器」，提示词改成只用古乐器，用户照新提示词生成了十首、按下载顺序对上 music.json 换进来）：Vertex AI Lyria 2 生成的曲子（music/<名>.mp3，提示词在 ../工具/music/music.json），
 // 按场合分组轮流放，换曲、换场合时淡入淡出；哪一组一首都没有（文件还没生成或读不到），就用下面现合的占位
-const MUSIC = { calm: ['home_1', 'home_2', 'camp_1'], war: ['war_1', 'war_2', 'war_3', 'war_4'], duel: ['duel_1'], story: ['story_1'], omen: ['omen_1'] };
+const MUSIC = { calm: ['home_calm'], war: ['war_1', 'war_2', 'war_3', 'war_4'], duel: ['duel_1'], story: ['story_1'], omen: ['omen_1'] };
 const MP = { el: null, old: [], want: null, i: 0, fail: new Set() };
 // 10-28 用户：「第一章前 10 关的背景音乐和战斗音乐要固定下来」——前 10 关（打仗时按这一关，主页、结算等按还没打过的第一关）每个场合只放一首、单曲循环，不再轮换
-const MUSIC_FIX = { calm: 'home_1', war: 'war_1' };
+const MUSIC_FIX = { calm: 'home_calm', war: 'war_1' };   // 11-18 用户：「主页音乐换一首更轻的琴，古筝，不要太强的印象，太强反而容易听腻」——home_1（编钟、箫，庄严）换成 home_calm：古琴、古筝、琴筝合奏三段接成一首（工具/music/stitch_home_calm.sh），原来的 home_1/2、camp_1 留着不删
 const musicFixed = want => { const id = G && screen === 'play' ? G.lv.id : (LEVELS[frontier()] || {}).id; return id <= 10 && MUSIC_FIX[want] ? [MUSIC_FIX[want]] : null; };
 const musicWant = () => screen === 'story' ? (STP && STP.key === 'l10' ? 'omen' : 'story') : G && screen === 'play' && G.state !== 'over' && !G.sim ? (G.lv.kind === 'duel' ? 'duel' : 'war') : 'calm';
 // 苹果的浏览器（含微信）里 <audio> 的 volume 是只读的、永远 1：原来靠 el.volume 淡入淡出、调到 0 才暂停，所以手机上关不掉、还会几首叠着放（10-26 用户：「网页上关不了音乐音效」）。
@@ -6311,6 +6351,7 @@ function goldGrad(y, h, win = true) {
   return g;
 }
 function plaque3(x, y, w, h, label, fn, red) {                                     // 牌匾三段画：两头云纹按原比例，中间拉短，高度不变、可以变窄（10-29 用户）
+  if (NEWUI) return plaque(x, y, w, h, label, fn, red);
   const im = IMG[red ? 'ui_plaque_red' : 'ui_plaque_dark']; if (!ready(im)) return plaque(x, y, w, h, label, fn, red);
   const k = h / im.height, cap = im.width * .2, cw = cap * k;
   ctx.drawImage(im, 0, 0, cap, im.height, x, y, cw, h); ctx.drawImage(im, im.width - cap, 0, cap, im.height, x + w - cw, y, cw, h); ctx.drawImage(im, cap, 0, im.width - cap * 2, im.height, x + cw - .5, y, w - cw * 2 + 1, h);
@@ -6318,6 +6359,7 @@ function plaque3(x, y, w, h, label, fn, red) {                                  
 }
 function plaque(x, y, w, h, label, fn, red, alpha = 1) {
   if (label === '返回' && y >= 580) scrollEnd();
+  if (NEWUI) { ctx.save(); ctx.globalAlpha *= alpha; const bh = Math.min(h, 34), by = y + (h - bh) / 2; nPill(x + 4, by, w - 8, bh, label, red ? 'pri' : 'sec', { font: FONT, fz: Math.min(19, bh * .58) }); ctx.restore(); if (fn) hit(x, y, w, h, fn); return; }   // 新皮肤：云纹牌匾换成金框圆角钮（主＝金橙，次＝暖深褐）
   const im = IMG[red ? 'ui_plaque_red' : 'ui_plaque_dark'];
   ctx.save(); ctx.globalAlpha = alpha;
   let fs = Math.min(22, h * .44);
@@ -6540,9 +6582,11 @@ function drawLineup(t) {
   hit(cx, cy, 62, cw, () => { screen = 'counsel'; });
 }
 function drawRoster() {
-  drawBg(); const t = uiNow();
+  const t = uiNow();
+  if (NEWUI) nPageBg('武将'); else {
+  drawBg();
   const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, 'rgba(8,5,4,.72)'); bg.addColorStop(1, 'rgba(6,4,3,.95)'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  uiText('武将', W / 2, 34, 30, goldGrad(34, 30), 'center', FONT, { glow: 'rgba(255,200,90,.7)', glowR: 14, lw: 6 });
+  uiText('武将', W / 2, 34, 30, goldGrad(34, 30), 'center', FONT, { glow: 'rgba(255,200,90,.7)', glowR: 14, lw: 6 }); }
   drawLineup(t);
   // 10-26 用户：「这里还是占太满了」——三人不再各占一大块：中间一排三张头像卡，点谁下面只摊开谁的五维
   const ids = ['guan', 'zhang', 'liu'], sel = ids.includes(MENU.rosterSel) ? MENU.rosterSel : 'guan', cw = 104, chh = 150, y0 = 140;
@@ -6598,7 +6642,7 @@ function drawItemIcon(k, cx, cy, s) {
 // 按实际字宽断行（10-28 用户截图：「练兵可以……我们在后面……」那行「……」超出对话框——原来按每行 19 个字数，标点不能放行首就硬塞在行尾）：
 // 放不下就换行；下一个字是不能放行首的标点（，。……」等）时，把这一行最后一个字带到下一行，不往行尾硬塞
 function fitLines(t, maxW, size, font) {
-  t = tr(t); ctx.font = `${fpx(size)}px ${font}`; const out = []; let cur = '';
+  t = tr(t); ctx.font = fstr(size, font); const out = []; let cur = '';
   if (EN_ON && !CJK.test(t)) { for (const w of t.split(/ +/)) { if (cur && ctx.measureText(cur + ' ' + w).width > maxW) { out.push(cur); cur = w; } else cur = cur ? cur + ' ' + w : w; } if (cur) out.push(cur); return out; }   // 英文按词换行
   const noHead = ch => /[，。、；：%）」』！？…—\d]/.test(ch);   // 数字也不打头：「+15%」不拆成「+1」「5%」
   for (const ch of t) {
@@ -6624,6 +6668,7 @@ function cardLines(t, per, maxL) {
 }
 function fitText(t, size, maxW) { t = tr(t); ctx.font = `${fpx(size)}px ${PLAIN}`; if (ctx.measureText(t).width <= maxW) return t; while (t.length > 2 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1); return t + '…'; }
 function roundBtn(cx, cy, r, ch, label, fn, badge) {
+  if (NEWUI) { nRound(cx, cy, r, ch, label, badge); hit(cx - r, cy - r, r * 2, r * 2 + 16, fn); return; }
   ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.clip();
   if (ready(IMG.ui2_tab_dark)) ctx.drawImage(IMG.ui2_tab_dark, 60, 24, 260, 140, cx - r * 1.4, cy - r, r * 2.8, r * 2); else { ctx.fillStyle = UIC.lac; ctx.fill(); } ctx.restore();   // 漆面借页签那张的纹理
   ctx.save(); ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(cx, cy, r - .9, 0, 6.283); ctx.stroke();
@@ -6648,6 +6693,7 @@ function chevBtn(cx, cy, r, dir) {
 }
 // 简洁的漆面小按钮（不用带花的牌匾）
 function pill(x, y, w, h, label, fn, red = true, on = true) {
+  if (NEWUI) { ctx.save(); if (!on) ctx.globalAlpha *= .5; nPill(x, y, w, h, label, red ? 'pri' : 'sec'); ctx.restore(); if (on && fn) hit(x, y, w, h, fn); return; }
   const im = red ? IMG.ui2_tab_red : IMG.ui2_tab_dark; ctx.save(); if (!on) ctx.globalAlpha = .45;
   if (ready(im)) draw9(im, x, y, w, h, 90, 90, 0, 0, h / 189); else uiPanel(x, y, w, h, { r: h / 2, single: true, top: red ? '#c0402a' : '#3a2b1f', bot: red ? '#6e140c' : UIC.lac });
   uiText(label, x + w / 2, y + h / 2 + 1, fitSize(label, Math.min(15, h * .5), w - h * .95 - 4), red ? '#fff2dc' : UIC.gold2, 'center', FONT, { stroke: false }); ctx.restore();
@@ -6655,6 +6701,8 @@ function pill(x, y, w, h, label, fn, red = true, on = true) {
 }
 function plate(x, y, w, h, glow) {
   if (SC.on) SC.bot = Math.max(SC.bot, y + h);
+  if (NEWUI) { if (glow) { ctx.save(); ctx.shadowColor = `rgba(255,190,80,${.5 + .3 * Math.sin(uiNow() * 3)})`; ctx.shadowBlur = 14; rr(x, y, w, h, 10); ctx.fillStyle = 'rgba(0,0,0,.01)'; ctx.fill(); ctx.restore(); }
+    nCard(x, y, w, h, Math.min(12, h / 3)); liteMark(x, y, w, h, true); return; }   // 新皮肤：木牌换米黄面板，登记成浅色区（上面的浅色字自动换深色）
   if (glow) { ctx.shadowColor = `rgba(255,200,90,${.5 + .3 * Math.sin(uiNow() * 3)})`; ctx.shadowBlur = 12; }
   if (ready(IMG.ui2_plate)) draw9(IMG.ui2_plate, x, y, w, h, 40, 40, 40, 40, .25); else uiPanel(x, y, w, h, { r: 6 }); ctx.shadowBlur = 0;
 }
@@ -6664,6 +6712,7 @@ const etaColor = d => d <= 0 ? '#9be0a0' : d < 1 ? '#ffd76e' : d === 1 ? '#ffb07
 const ROOM_OF = [1, 2, 4, 6, 8, 10];
 for (let k = 1; k <= 10; k++) { IMG['room_' + k] = new Image(); IMG['room_' + k].src = 'img/room_' + k + '.jpg' + BUST; }
 function campBg(title) {
+  if (NEWUI) { nPageBg(title); return; }
   drawBg(); const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, 'rgba(8,5,4,.78)'); bg.addColorStop(1, 'rgba(6,4,3,.96)'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H); scrollBegin();
   uiText(title, W / 2, 32, 28, goldGrad(32, 28), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 });
 }
@@ -7367,11 +7416,11 @@ function drawMenuTip(t) {
   const T = tipNow(); MENU.tip = T || null; if (!T || REWARD || (MENU.note && t - MENU.note.t0 < 3.2)) return;
   if (MENU.tipK !== T.k) { MENU.tipK = T.k; MENU.tipT = t; MENU.tipOpen = false; } const a = clamp((t - MENU.tipT - .4) / .3, 0, 1); if (a <= 0) return;
   // 11-02 用户：「军师提示感觉不好放」→「收成小头像点开看」：平时只在关卡牌左上角露军师小头像（固定不动、挂「!」），点开才说那句话；点话算看过
-  const [ck, C] = counselNow(), im = IMG['p_' + ck], hx = 40, hy = CARD_Y - 30, hr = 15;   // 11-02 用户：「固定在这个位置不要动」——不再一跳一跳
+  const [ck, C] = counselNow(), im = IMG['p_' + ck], hx = 40, hy = NEWUI ? H - 180 : CARD_Y - 30, hr = 15;// 11-02 用户：「固定在这个位置不要动」——不再一跳一跳
   if (!MENU.tipOpen) {   // 点开后卷轴自带头像，小头像先藏起来
   ctx.save(); ctx.globalAlpha = a; ctx.beginPath(); ctx.arc(hx, hy, hr, 0, 6.283); ctx.clip(); if (ready(im)) ctx.drawImage(im, hx - hr * 1.2, hy - hr, hr * 2.4, hr * 2.4); else { ctx.fillStyle = '#3a2b1f'; ctx.fill(); } ctx.restore();
   ctx.save(); ctx.globalAlpha = a; if (ready(IMG.ui_avatar_ring)) ctx.drawImage(IMG.ui_avatar_ring, hx - hr * 1.3, hy - hr * 1.3, hr * 2.6, hr * 2.6); else { ctx.strokeStyle = UIC.gold2; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(hx, hy, hr + 1, 0, 6.283); ctx.stroke(); }
-  uiSeal(hx + 12, hy - 12, 13, '!', UIC.red); ctx.restore(); }
+  if (NEWUI) nDot(hx + 12, hy - 12); else uiSeal(hx + 12, hy - 12, 13, '!', UIC.red); ctx.restore(); }
   hit(hx - 20, hy - 20, 40, 40, () => { MENU.tipOpen = !MENU.tipOpen; });
   if (MENU.tipOpen) { const ks = .74, tx = hx - 38 * ks, ty = hy - 26 * ks;   // 11-02 用户：「头像和说话都留在左边」——点开后头像不挪，话从头像右边展开
     ctx.save(); ctx.translate(tx, ty); ctx.scale(ks, ks); drawCounselSay(ck, C, T.say, 0, a); ctx.restore();
@@ -7380,7 +7429,265 @@ function drawMenuTip(t) {
   ctx.beginPath(); ctx.moveTo(T.x - 9, by - 10); ctx.lineTo(T.x + 9, by - 10); ctx.lineTo(T.x, by); ctx.closePath(); ctx.fill(); ctx.restore();
 }
 const TRIO_H = 292, TRIO_FOOT = 498, CARD_Y = 518, TIP_Y = 136, BG_UP = 86;   // 主页三兄弟画多高、脚在哪（城头步道）；关卡牌在脚下；TIP_Y 现在只给点卯横幅用
+// ---------- 新皮肤（?skin=new）：现代手游那套版面 ----------
+// 配色：深蓝紫玻璃打底 + 高饱和金橙主色；字一律粗黑体（书法体只留 logo 和招式名）；角标用红点不用印章
+// 11-18 用户：「幻想和少年也是这种panel吗？」——对了实拍：都不是。少年三国志2 是米黄奶油底、细褐分隔、深褐字、外面深木框加金边；
+// 三国志幻想大陆是很浅的奶油／半透明白配淡金边。上一版的冷色蓝紫玻璃是西式暗色模式的套路，改成米黄面板（o.dark 才用暖深褐）
+const NC = { gold: '#ffc84a', gold2: '#ffe9a8', txt: '#fff6e6', dim: 'rgba(255,240,220,.72)', red: '#ff3b30', ink: '#4a250c', ink2: '#8a5a2c' };
+function nCard(x, y, w, h, r = 14, o = {}) {
+  ctx.save(); ctx.shadowColor = 'rgba(40,18,4,.45)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 4;           // 外框：深木色一圈 + 金渐变一圈
+  rr(x - 2.5, y - 2.5, w + 5, h + 5, r + 2.5); ctx.fillStyle = '#3b1f0c'; ctx.fill(); ctx.restore();
+  { const fg = ctx.createLinearGradient(0, y - 2, 0, y + h + 2); fg.addColorStop(0, '#ffe7a8'); fg.addColorStop(.5, '#c38a3a'); fg.addColorStop(1, '#7a4a18');
+    rr(x - 1.5, y - 1.5, w + 3, h + 3, r + 1.5); ctx.fillStyle = fg; ctx.fill(); }
+  { const g = ctx.createLinearGradient(0, y, 0, y + h);                                                   // 面板：米黄奶油渐变（上亮下暖）
+    if (o.dark) { g.addColorStop(0, '#4a2a18'); g.addColorStop(1, '#24120a'); } else { g.addColorStop(0, '#fff8e8'); g.addColorStop(.55, '#f6e8c8'); g.addColorStop(1, '#ead3a4'); }
+    rr(x, y, w, h, r); ctx.fillStyle = g; ctx.fill(); }
+  ctx.save(); ctx.lineWidth = 1; ctx.strokeStyle = o.dark ? 'rgba(255,220,160,.25)' : 'rgba(160,110,50,.38)'; rr(x + 3.5, y + 3.5, w - 7, h - 7, Math.max(2, r - 3)); ctx.stroke();   // 里面一道细褐线（参考里的内框）
+  if (o.corner !== false) { ctx.fillStyle = '#c8913c'; const q = 4.5;                                    // 四角各一颗小金菱（角饰的极简版）
+    [[x + 9, y + 9], [x + w - 9, y + 9], [x + 9, y + h - 9], [x + w - 9, y + h - 9]].forEach(([px, py]) => { ctx.beginPath(); ctx.moveTo(px, py - q); ctx.lineTo(px + q, py); ctx.lineTo(px, py + q); ctx.lineTo(px - q, py); ctx.closePath(); ctx.fill(); }); }
+  ctx.restore();
+}
+// 各页通用的小钮（替掉漆面 pill、云纹牌匾）：pri 金橙主钮、sec 暖深褐次钮，都是深色外线 + 金渐变框 + 顶部高光。画完登记成深色区（字不被换色）
+function nPill(x, y, w, h, label, kind = 'pri', o = {}) {
+  const r = h / 2, pri = kind === 'pri';
+  ctx.save(); ctx.shadowColor = 'rgba(40,16,4,.35)'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 1.5; rr(x - 1.5, y - 1.5, w + 3, h + 3, r + 1.5); ctx.fillStyle = '#2e1606'; ctx.fill(); ctx.restore();
+  { const fg = ctx.createLinearGradient(0, y - 1, 0, y + h + 1); fg.addColorStop(0, '#ffeab0'); fg.addColorStop(.5, '#cf9440'); fg.addColorStop(1, '#7c4a16'); rr(x - .8, y - .8, w + 1.6, h + 1.6, r + .8); ctx.fillStyle = fg; ctx.fill(); }
+  { const g = ctx.createLinearGradient(0, y, 0, y + h); if (pri) { g.addColorStop(0, '#ffd877'); g.addColorStop(.5, '#ffa23a'); g.addColorStop(1, '#ec6f1e'); } else { g.addColorStop(0, '#7a4528'); g.addColorStop(.55, '#4a2414'); g.addColorStop(1, '#2e140a'); }
+    rr(x + .6, y + .6, w - 1.2, h - 1.2, r - .6); ctx.fillStyle = g; ctx.fill(); }
+  ctx.save(); const hg = ctx.createLinearGradient(0, y, 0, y + h * .5); hg.addColorStop(0, `rgba(255,255,255,${pri ? .45 : .2})`); hg.addColorStop(1, 'rgba(255,255,255,0)'); rr(x + 2.5, y + 1.5, w - 5, h * .46, h * .22); ctx.fillStyle = hg; ctx.fill(); ctx.restore();
+  liteMark(x - 2, y - 2, w + 4, h + 4, false);
+  const f = o.font || UIF, fz = fitSize(label, o.fz || Math.min(15, h * .52), w - h * .7, 99, f, 0);
+  if (pri) uiText(label, x + w / 2, y + h / 2 + 1.5, fz, 'rgba(255,236,186,.7)', 'center', f, { stroke: false });
+  uiText(label, x + w / 2, y + h / 2 + .5, fz, pri ? '#4a1c03' : '#ffe2a0', 'center', f, { stroke: false });
+}
+// 印章换角标：圆角方块（round 时是圆）、本色渐变 + 细金框 + 高光、白色粗体字
+const CNUM_BACK = new Map(Array.from({ length: 60 }, (_, i) => [CNUM(i + 1), String(i + 1)]));   // 古印里的「一」「廿三」「卅」→ 1、23、30（现代手游用阿拉伯数字）
+function nBadge(x, y, s, t, c = UIC.red, round = false) {
+  t = CNUM_BACK.get(t) || t;
+  const r = round ? s / 2 : s * .28, x0 = x - s / 2, y0 = y - s / 2;
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1; rr(x0 - 1, y0 - 1, s + 2, s + 2, r + 1); ctx.fillStyle = '#f2c46a'; ctx.fill(); ctx.restore();
+  const g = ctx.createLinearGradient(0, y0, 0, y0 + s); g.addColorStop(0, lighten(c, .28)); g.addColorStop(1, c); rr(x0, y0, s, s, r); ctx.fillStyle = g; ctx.fill();
+  ctx.save(); const hg = ctx.createLinearGradient(0, y0, 0, y0 + s * .5); hg.addColorStop(0, 'rgba(255,255,255,.4)'); hg.addColorStop(1, 'rgba(255,255,255,0)'); rr(x0 + 1.5, y0 + 1, s - 3, s * .45, Math.max(1, r - 1.5)); ctx.fillStyle = hg; ctx.fill(); ctx.restore();
+  liteMark(x0 - 1, y0 - 1, s + 2, s + 2, false);
+  uiText(t, x, y + .5, s * (String(t).length > 1 ? .42 : .6), '#fff', 'center', UIF, { stroke: 'rgba(60,10,4,.6)', lw: Math.max(1.5, s * .08) });
+}
+function lighten(c, k) { const m = /^#([0-9a-f]{6})/i.exec(c); if (!m) return c; const v = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16)); return '#' + v.map(n => Math.round(n + (255 - n) * k).toString(16).padStart(2, '0')).join(''); }
+// 各页页面底（替掉 campBg 的黑底）：主页那张城头黄昏底图压一层暖褐，顶上一条暖深褐页头 + 中间亮两头淡的金线，标题还是书法金字（参考：标题留书法体）
+function nPageBg(title) {
+  const hb = IMG['home_' + HOME_BG];
+  if (ready(hb)) { const k = Math.max(W / hb.width, H / hb.height), dw = hb.width * k, dh = hb.height * k; ctx.drawImage(hb, (W - dw) / 2, H - dh, dw, dh); } else drawBg();
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(44,20,8,.62)'); g.addColorStop(1, 'rgba(26,11,4,.82)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  scrollBegin();
+  { const hg = ctx.createLinearGradient(0, 0, 0, 56); hg.addColorStop(0, 'rgba(70,34,16,.96)'); hg.addColorStop(1, 'rgba(40,18,8,.9)'); ctx.fillStyle = hg; ctx.fillRect(0, 0, W, 56);
+    const lg = ctx.createLinearGradient(0, 0, W, 0); lg.addColorStop(0, 'rgba(255,214,140,0)'); lg.addColorStop(.5, 'rgba(255,226,160,.9)'); lg.addColorStop(1, 'rgba(255,214,140,0)'); ctx.fillStyle = lg; ctx.fillRect(0, 55, W, 1.4); }
+  uiText(title, W / 2, 30, 26, goldGrad(30, 26), 'center', FONT, { lw: 5, stroke: 'rgba(40,14,2,.95)' });
+}
+function nRound(cx, cy, r, ch, label, badge) {                                       // 圆钮：暖褐渐变 + 金框 + 高光
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 6; ctx.beginPath(); ctx.arc(cx, cy, r + 1.6, 0, 6.283); ctx.fillStyle = '#2a1306'; ctx.fill(); ctx.restore();
+  const fg = ctx.createLinearGradient(0, cy - r, 0, cy + r); fg.addColorStop(0, '#ffe7a6'); fg.addColorStop(1, '#8a5418'); ctx.beginPath(); ctx.arc(cx, cy, r + .8, 0, 6.283); ctx.fillStyle = fg; ctx.fill();
+  const g = ctx.createRadialGradient(cx - r * .3, cy - r * .4, 1, cx, cy, r); g.addColorStop(0, '#7a4428'); g.addColorStop(1, '#2c140a'); ctx.beginPath(); ctx.arc(cx, cy, r - .6, 0, 6.283); ctx.fillStyle = g; ctx.fill();
+  ctx.save(); ctx.globalAlpha = .25; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(cx, cy - r * .45, r * .62, r * .32, 0, 0, 6.283); ctx.fill(); ctx.restore();
+  liteMark(cx - r, cy - r, r * 2, r * 2, false);
+  uiText(ch, cx, cy + 1, r * 1.0, UIC.gold2, 'center', FONT, { lw: 3, stroke: 'rgba(30,10,2,.9)' });
+  uiText(label, cx, cy + r + 10, 11, NC.txt, 'center', UIF, { lw: 3, stroke: 'rgba(30,12,4,.85)' });
+  if (badge) nDot(cx + r * .74, cy - r * .7);
+}
+function nBtn(x, y, w, h, label, fn, o = {}) {                                    // 主钮：下沿一道深色唇、金橙渐变、顶上一条高光、外面一圈呼吸光；字是深褐色粗体（比描边白字干净）
+  const pu = .5 + .5 * Math.sin(uiNow() * 3), r = h / 2;
+  ctx.save(); if (o.glow !== false) { ctx.shadowColor = `rgba(255,170,60,${.30 + .28 * pu})`; ctx.shadowBlur = 16; }   // 外金框（11-18「不够精美」：钮要有一圈金属框才像游戏钮）：深色外线 + 金渐变框，钮身嵌在里面
+  rr(x - 3, y - 3, w + 6, h + 8.5, r + 3); ctx.fillStyle = '#2a1404'; ctx.fill(); ctx.restore();
+  { const fg = ctx.createLinearGradient(0, y - 2, 0, y + h + 5); fg.addColorStop(0, '#fff2c4'); fg.addColorStop(.45, '#e0a440'); fg.addColorStop(1, '#8a5412');
+    rr(x - 2, y - 2, w + 4, h + 6.5, r + 2); ctx.fillStyle = fg; ctx.fill(); }
+  rr(x, y + 2.5, w, h, r); ctx.fillStyle = o.lip || '#8d3509'; ctx.fill();
+  const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, o.c1 || '#ffd977'); g.addColorStop(.52, o.c2 || '#ffa63a'); g.addColorStop(1, o.c3 || '#ff7a28');
+  rr(x, y, w, h, r); ctx.fillStyle = g; ctx.fill();
+  ctx.save(); ctx.globalAlpha = .45; ctx.lineWidth = 1; ctx.strokeStyle = '#fff4d2'; rr(x + .5, y + .5, w - 1, h - 1, r); ctx.stroke();
+  ctx.globalAlpha = .30; ctx.fillStyle = '#fff'; rr(x + 3, y + 2, w - 6, h * .40, h * .2); ctx.fill(); ctx.restore();
+  if (o.shine !== false) { const sp = (uiNow() % 2.6) / 2.6, sx = x - w * .5 + (w * 2) * sp;   // 一道高光每 2.6 秒斜着扫过钮面（现代手游主钮的标配动效）
+    ctx.save(); rr(x, y, w, h, r); ctx.clip(); const sg = ctx.createLinearGradient(sx - 14, y, sx + 14, y + h);
+    sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(.5, 'rgba(255,255,255,.45)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = sg; ctx.fillRect(x, y, w, h); ctx.restore(); }
+  { const bf = o.font || FONT;   // 11-18 看了实拍：大钮上的字（开战、出征）反而留书法体，黑体只用在数字、标签、说明上——全换黑体是我上一版改过头了
+    const fz = fitSize(label, o.fz || 18, w - 20, 99, bf, 0);   // 字压一道浅色下影，像刻进钮面（浮雕感）
+    uiText(label, x + w / 2, y + h / 2 + 2, fz, 'rgba(255,238,190,.75)', 'center', bf, { stroke: false });
+    uiText(label, x + w / 2, y + h / 2 + 1, fz, o.col || '#4a1c03', 'center', bf, { stroke: false }); }
+  hit(x, y, w, h, fn);
+}
+function nDot(cx, cy, n) {                                                          // 红点角标（代替「!」印章）
+  ctx.save(); ctx.shadowColor = 'rgba(255,60,40,.85)'; ctx.shadowBlur = 7; ctx.beginPath(); ctx.arc(cx, cy, n ? 7 : 5, 0, 6.283); ctx.fillStyle = NC.red; ctx.fill(); ctx.restore();
+  ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.arc(cx, cy, n ? 7 : 5, 0, 6.283); ctx.stroke();
+  if (n) uiText(String(n), cx, cy + .5, 9, '#fff', 'center', UIF, { stroke: false });
+}
+// 右上角资源条：照实拍参考改——左端一枚带金环的圆形图标徽章压在条上、中间深色半透明条写粗体数字、右端一个金色「+」
+// （11-18 查了三国志幻想大陆、少年三国志零的游戏内截图：资源条一定带「+」，图标一定是独立的圆徽章，不是塞在条里的小图）
+function nRes(x, y, k, n, col) {
+  const h = 20, w = 62, r0 = 11, cx2 = x + 9;
+  ctx.save(); rr(x + 4, y, w - 4, h, h / 2); ctx.fillStyle = 'rgba(34,16,6,.66)'; ctx.fill();
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,215,140,.28)'; rr(x + 4.5, y + .5, w - 5, h - 1, h / 2); ctx.stroke(); ctx.restore();
+  uiText(String(n || 0), x + w - 17, y + h / 2 + .5, 11, col || NC.txt, 'right', UIF, { stroke: false });
+  { const px = x + w - 9, pr = 6.5; ctx.save(); const g = ctx.createLinearGradient(0, y + 3, 0, y + h - 3); g.addColorStop(0, '#ffe08a'); g.addColorStop(1, '#e8a32c');   // 金色「+」：现代手游资源条的通用充值/获取入口
+    ctx.beginPath(); ctx.arc(px, y + h / 2, pr, 0, 6.283); ctx.fillStyle = g; ctx.fill(); ctx.restore();
+    ctx.lineWidth = 1.7; ctx.strokeStyle = '#5a3406'; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(px - 3, y + h / 2); ctx.lineTo(px + 3, y + h / 2); ctx.moveTo(px, y + h / 2 - 3); ctx.lineTo(px, y + h / 2 + 3); ctx.stroke(); }
+  ctx.save(); ctx.beginPath(); ctx.arc(cx2, y + h / 2, r0, 0, 6.283); ctx.fillStyle = 'rgba(52,26,10,.95)'; ctx.fill(); ctx.clip(); { const pi = IMG['ui_n_' + k]; if (ready(pi)) ctx.drawImage(pi, cx2 - 12, y + h / 2 - 12, 24, 24); else drawItemIcon(k, cx2, y + h / 2, 17); } ctx.restore();
+  ctx.lineWidth = 1.6; const rg = ctx.createLinearGradient(0, y, 0, y + h); rg.addColorStop(0, '#ffe8a8'); rg.addColorStop(1, '#c98f28');
+  ctx.strokeStyle = rg; ctx.beginPath(); ctx.arc(cx2, y + h / 2, r0, 0, 6.283); ctx.stroke();
+  hov(x, y, w, h, ITEM_TIP[k]); return x + w + 6;
+}
+// 底栏图标：不用画的素材，按路径画（永远清晰、能随选中态变色发光、能做动效、不占内存）。s 是外接方框边长，画在 (cx,cy) 中心
+function icoPath(k, cx, cy, s, col, on, g = ctx) {
+  const rrG = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+  const u = s / 32; g.save(); g.translate(cx, cy); g.scale(u, u); g.lineJoin = 'round'; g.lineCap = 'round';
+  const gr = g.createLinearGradient(0, -15, 0, 15); if (on) { gr.addColorStop(0, '#ffe9a8'); gr.addColorStop(1, '#ffa63a'); } else { gr.addColorStop(0, col); gr.addColorStop(1, col); }
+  g.strokeStyle = gr; g.fillStyle = gr; g.lineWidth = 2.2;
+  if (on) { g.shadowColor = 'rgba(255,180,70,.75)'; g.shadowBlur = 8; }
+  if (k === 'sword') {                                                              // 神兵：剑——刃、格、柄、首
+    g.beginPath(); g.moveTo(0, -15); g.lineTo(4, -8); g.lineTo(4, 3); g.lineTo(0, 7); g.lineTo(-4, 3); g.lineTo(-4, -8); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(-9, 6); g.lineTo(9, 6); g.stroke();
+    g.beginPath(); g.moveTo(0, 7); g.lineTo(0, 13); g.stroke(); g.beginPath(); g.arc(0, 14.5, 2.2, 0, 6.283); g.fill();
+  } else if (k === 'flag') {                                                        // 战役：旗——旗杆 + 三角旗 + 地面
+    g.beginPath(); g.moveTo(-7, -15); g.lineTo(-7, 14); g.stroke();
+    g.beginPath(); g.moveTo(-7, -14); g.lineTo(11, -8.5); g.lineTo(-7, -3); g.closePath(); g.fill();
+    g.globalAlpha = .55; g.beginPath(); g.moveTo(-13, 14); g.lineTo(8, 14); g.stroke(); g.globalAlpha = 1;
+  } else if (k === 'cards') {                                                       // 奇谋：三张扇开的卡（两张描边在后、中间一张实心）
+    g.lineWidth = 2; [[-11, 3, -26], [11, 3, 26]].forEach(([dx, dy, rot]) => { g.save(); g.translate(dx, dy); g.rotate(rot * Math.PI / 180);
+      g.globalAlpha = .72; rrG(-4.5, -9.5, 9, 18, 2.5); g.stroke(); g.restore(); });
+    g.save(); g.translate(0, -1.5); g.globalCompositeOperation = 'destination-out'; g.lineWidth = 4; rrG(-5.5, -11, 11, 21, 2.5); g.stroke(); g.restore();   // 先掏一圈空隙，中间那张才不会和后面两张糊成一块
+    g.save(); g.translate(0, -1.5); rrG(-5.5, -11, 11, 21, 2.5); g.fill(); g.restore();
+  } else if (k === 'tent') {                                                        // 军帐：帐篷（三角 + 门缝 + 地平线 + 小旗）
+    g.lineWidth = 2.2; g.beginPath(); g.moveTo(0, -11); g.lineTo(12.5, 11); g.lineTo(-12.5, 11); g.closePath(); g.fill();
+    g.save(); g.globalCompositeOperation = 'destination-out'; g.beginPath(); g.moveTo(0, 1.5); g.lineTo(3.4, 11.6); g.lineTo(-3.4, 11.6); g.closePath(); g.fill(); g.restore();
+    g.globalAlpha = .55; g.beginPath(); g.moveTo(-15, 11); g.lineTo(15, 11); g.stroke(); g.globalAlpha = 1;
+    g.beginPath(); g.moveTo(0, -11); g.lineTo(0, -15.5); g.stroke(); g.beginPath(); g.moveTo(0, -15.5); g.lineTo(5.5, -14); g.lineTo(0, -12.5); g.closePath(); g.fill();
+  } else if (k === 'gear') {                                                        // 系统：齿轮
+    g.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, r1 = 14, r2 = 10.5, w = .20;
+      g.lineTo(Math.cos(a - w) * r2, Math.sin(a - w) * r2); g.lineTo(Math.cos(a - w * .62) * r1, Math.sin(a - w * .62) * r1);
+      g.lineTo(Math.cos(a + w * .62) * r1, Math.sin(a + w * .62) * r1); g.lineTo(Math.cos(a + w) * r2, Math.sin(a + w) * r2); }
+    g.closePath(); g.fill();
+    g.save(); g.globalCompositeOperation = 'destination-out'; g.beginPath(); g.arc(0, 0, 5, 0, 6.283); g.fill(); g.restore();
+  }
+  g.restore();
+}
+// 11-18 用户看了截图：「好像还不够精美吧？」——平涂单色的矢量图标像系统设置图标，不像游戏图标。
+// 补一层质感：把图形烤进离屏画布，先按八个方向描一圈深色外廓，再用金属渐变填充，最后斜着压一道顶部高光。选中是金，没选中是冷银。
+const ICO_BAKE = new Map();
+function icoBake(k, s, on) {
+  const key = k + '|' + s + '|' + (on ? 1 : 0); if (ICO_BAKE.has(key)) return ICO_BAKE.get(key);
+  const P = 6, D = s + P * 2, mk = () => { const c = document.createElement('canvas'); c.width = c.height = D * 2; const g = c.getContext('2d'); g.scale(2, 2); return [c, g]; };
+  const [c1, g1] = mk(); icoPath(k, D / 2, D / 2, s, '#fff', false, g1);   // 1 先画成纯白的形
+  const [c3, g3] = mk(); g3.drawImage(c1, 0, 0, D, D);                                     // 2 金属渐变：白形当遮罩，往里灌渐变
+  g3.globalCompositeOperation = 'source-in'; const mg = g3.createLinearGradient(0, P, 0, D - P);
+  if (on) { mg.addColorStop(0, '#fff3cc'); mg.addColorStop(.42, '#ffc24e'); mg.addColorStop(.72, '#ef9a1e'); mg.addColorStop(1, '#b86c10'); }
+  else { mg.addColorStop(0, '#eae6f4'); mg.addColorStop(.45, '#b5afc9'); mg.addColorStop(.75, '#8b85a4'); mg.addColorStop(1, '#6a6482'); }
+  g3.fillStyle = mg; g3.fillRect(0, 0, D, D);
+  g3.globalCompositeOperation = 'source-atop'; const hg = g3.createLinearGradient(0, P, 0, D * .52);   // 3 顶部高光（金属感的来源）
+  hg.addColorStop(0, 'rgba(255,255,255,.62)'); hg.addColorStop(1, 'rgba(255,255,255,0)'); g3.fillStyle = hg; g3.fillRect(0, 0, D, D * .52);
+  const [c2, g2] = mk(); const R = 1.7;                                                     // 4 深色外廓：白形往八个方向各偏一点叠出来，再染成深色
+  for (let a = 0; a < 8; a++) g2.drawImage(c1, Math.cos(a * Math.PI / 4) * R, Math.sin(a * Math.PI / 4) * R, D, D);
+  g2.globalCompositeOperation = 'source-in'; g2.fillStyle = on ? '#4a2404' : '#241f36'; g2.fillRect(0, 0, D, D);
+  g2.globalCompositeOperation = 'source-over'; g2.drawImage(c3, 0, 0, D, D);
+  ICO_BAKE.set(key, c2); return c2;
+}
+const navV = k => (cx, cy, s, col, on) => { const b = icoBake(k, s, on), d = b.width / 2;
+  ctx.save(); if (on) { ctx.shadowColor = 'rgba(255,180,70,.65)'; ctx.shadowBlur = 9; } ctx.drawImage(b, cx - d / 2, cy - d / 2, d, d); ctx.restore(); };
+// 11-18 用户：「可以用gpt画？」——GPT 画的 Q 版金属图标（美术/界面/新图标/，工具/画图/draw_ui_icons.sh + cut_ui_icons.py → img/ui_n_*.png）。
+// 只有新皮肤才加载；图没到就退回上面代码画的矢量图标。图标一直是彩色的（参考游戏也是），选中的放大一点、带光，没选中的略暗
+const UI_N = ['general', 'armory', 'campaign', 'ploy', 'camp', 'sys', '精铁', '残页', '体力'];
+if (NEWUI) for (const k of UI_N) { IMG['ui_n_' + k] = new Image(); IMG['ui_n_' + k].src = 'img/ui_n_' + k + '.png' + BUST; }
+const HOME_BG = (/[?&]home=(\w+)/.exec(location.search) || [, 'wall'])[1];   // 新皮肤主页底图：wall 城头黄昏（11-18 用户选的，默认）／peach 桃园春日
+if (NEWUI) { IMG['home_' + HOME_BG] = new Image(); IMG['home_' + HOME_BG].src = 'img/home_' + HOME_BG + '.jpg' + BUST; }
+const navP = (k, vk) => (cx, cy, s, col, on) => { const im = IMG['ui_n_' + k]; if (!ready(im)) return navV(vk)(cx, cy, s, col, on);
+  const d = s * 1.28; ctx.save(); if (on) { ctx.shadowColor = 'rgba(255,190,80,.7)'; ctx.shadowBlur = 12; } else ctx.globalAlpha *= .86;
+  ctx.drawImage(im, cx - d / 2, cy - d / 2 - (on ? 3 : 0), d, d); ctx.restore(); };
+function nNav(cx, label, draw, fn, badge, on, locked) {                           // 底栏：选中那格托一块金色光晕、图标亮、字金；没开放的压暗
+  const cy = H - 46;
+  if (on) { ctx.save();                                                             // 选中底座：金框圆角牌 + 里面一团暖光，往上浮 4px（原来只是一块糊的金色光）
+    const px = cx - 26, py = H - 71, pw = 52, ph = 63, fg   /* 11-18 用户圈着：「贴住了」——原来底座顶边压在底栏上沿金线上；整个缩进底栏、上下各留 5px */ = ctx.createLinearGradient(0, py, 0, py + ph); fg.addColorStop(0, '#ffe7a6'); fg.addColorStop(.5, '#b9792a'); fg.addColorStop(1, 'rgba(120,70,20,.2)');
+    ctx.shadowColor = 'rgba(255,170,60,.45)'; ctx.shadowBlur = 14; rr(px, py, pw, ph, 14); ctx.fillStyle = fg; ctx.fill(); ctx.shadowBlur = 0;
+    const bg = ctx.createLinearGradient(0, py, 0, py + ph); bg.addColorStop(0, '#5a3a1c'); bg.addColorStop(.55, '#2c1a10'); bg.addColorStop(1, 'rgba(20,12,24,.9)'); rr(px + 1.5, py + 1.5, pw - 3, ph - 3, 12.5); ctx.fillStyle = bg; ctx.fill();
+    const rg = ctx.createRadialGradient(cx, cy - 2, 2, cx, cy - 2, 30); rg.addColorStop(0, 'rgba(255,196,90,.55)'); rg.addColorStop(1, 'rgba(255,150,50,0)'); ctx.fillStyle = rg; rr(px + 1.5, py + 1.5, pw - 3, ph - 3, 12.5); ctx.fill(); ctx.restore(); }
+  ctx.save(); if (locked) { ctx.globalAlpha = .34; ctx.filter = 'grayscale(1)'; } draw(cx, cy, on ? 34 : 29, NC.dim, on && !locked); ctx.restore();
+  uiText(label, cx, cy + 25, fitSize(label, 11, 54, 99, UIF, 0), locked ? 'rgba(220,210,200,.4)' : on ? NC.gold2 : NC.dim, 'center', UIF, { stroke: false });
+  if (badge && !locked) nDot(cx + 14, cy - 13);
+  hit(cx - 29, cy - 28, 58, 58, () => { if (MENU.tip && MENU.tip.x === cx) tipDone(MENU.tip.k); fn(); });
+}
+function drawMenu2() {
+  const open1 = open1st(), t = uiNow();
+  if (!BEST[1] && !MENU.autoGo && !window.__sg.all) { MENU.autoGo = true; openLevel(0); if (screen !== 'menu') return; }
+  // 11-18 用户：「颜色会不会太暗？」「整个界面有点不搭，后面背景图换一张」「重新画一张底图吧」——GPT 新画的明亮主页底图（工具/画图/draw_home_bg.sh），
+  // 画了桃园春日、城头黄昏两张，用户选「B 城头黄昏」当默认，?home=peach 换桃园；按原比例铺满（高度对齐、左右裁掉一点），不拉伸。新图没到就用原来的底图
+  const hb = IMG['home_' + HOME_BG];
+  if (ready(hb)) { const k = Math.max(W / hb.width, H / hb.height), dw = hb.width * k, dh = hb.height * k; ctx.drawImage(hb, (W - dw) / 2, H - dh, dw, dh); }
+  else if (ready(IMG.bg)) { ctx.fillStyle = '#0d0918'; ctx.fillRect(0, 0, W, H); ctx.drawImage(IMG.bg, 0, -BG_UP, W, H); } else drawBg();
+  if (!INV.rankMig) { INV.rankMig = 1; for (let k = 1; k < RANKS.length; k++) if (BEST[RANKS[k].node]) INV.rank = Math.max(INV.rank || 0, k); syncRankArt(); saveInv(); }
+  { const lite = ready(hb), g = ctx.createLinearGradient(0, 0, 0, lite ? 74 : 108); g.addColorStop(0, `rgba(40,18,6,${lite ? .42 : .86})`); g.addColorStop(1, 'rgba(40,18,6,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, 108);   // 上下两道渐隐托住顶栏、底栏的字；新底图亮，压暗减半（原来这两道把画面又压暗了一成）
+    const g2 = ctx.createLinearGradient(0, H - 170, 0, H); g2.addColorStop(0, 'rgba(40,18,6,0)'); g2.addColorStop(.6, `rgba(40,18,6,${lite ? .25 : .72})`); g2.addColorStop(1, `rgba(30,12,4,${lite ? .6 : .96})`); ctx.fillStyle = g2; ctx.fillRect(0, H - 170, W, 170); }
+  { const sy = TRIO_FOOT - 6, pu = .5 + .5 * Math.sin(t * 1.6); ctx.save(); ctx.translate(W / 2, sy); ctx.scale(1, .22);   // 脚下一圈柔光（现代手游的"舞台聚光"），让人物从底图里浮出来
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 132); g.addColorStop(0, `rgba(255,205,120,${.26 + .06 * pu})`); g.addColorStop(.55, 'rgba(190,150,255,.10)'); g.addColorStop(1, 'rgba(160,130,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 132, 0, 6.283); ctx.fill(); ctx.restore(); }
+  if (ready(IMG.trio)) { const im = IMG.trio, wide = im.width > im.height, h = wide ? W * im.height / im.width : TRIO_H, w = h * im.width / im.height; ctx.drawImage(im, W / 2 - w / 2, wide ? 150 : TRIO_FOOT - TRIO_H, w, h); }
+  // 顶左：圆头像 + 官阶；点进官阶页
+  const rk = RANKS[rankNow()].name, ax = 28, ay = 28;
+  { const im = IMG.liu, r = 17; ctx.save(); ctx.beginPath(); ctx.arc(ax, ay, r, 0, 6.283); ctx.fillStyle = '#241a33'; ctx.fill(); ctx.clip();
+    if (ready(im)) { const f = FACE.liu; if (f) ctx.drawImage(im, f[0], f[1], f[2], f[2], ax - r, ay - r, r * 2, r * 2); else ctx.drawImage(im, ax - r * 1.15, ay - r, r * 2.3, r * 2.3); } ctx.restore();
+    ctx.lineWidth = 2; ctx.strokeStyle = NC.gold; ctx.shadowColor = 'rgba(255,200,90,.5)'; ctx.shadowBlur = 6; ctx.beginPath(); ctx.arc(ax, ay, r + 1, 0, 6.283); ctx.stroke(); ctx.shadowBlur = 0; }
+  uiText(rk, ax + 24, ay - 7, fitSize(rk, 14, 96, 99, UIF, 0), NC.txt, 'left', UIF, { lw: 3 });
+  { const bx2 = ax + 24, bw2 = 72, by2 = ay + 7, bh2 = 6, nd = nextRank() ? prepNeed() : 0, fr = nd ? clamp((INV.prep || 0) / nd, 0, 1) : 1;
+    ctx.save(); rr(bx2, by2, bw2, bh2, bh2 / 2); ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fill();                                   // 官阶进度条：现代手游顶左标配，比干写一行官阶名有信息量
+    ctx.beginPath(); rr(bx2 + .8, by2 + .8, (bw2 - 1.6) * fr, bh2 - 1.6, (bh2 - 1.6) / 2); const bg2 = ctx.createLinearGradient(bx2, 0, bx2 + bw2, 0); bg2.addColorStop(0, '#5ad8ff'); bg2.addColorStop(1, '#8f7bff'); ctx.fillStyle = bg2; ctx.fill();
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,.18)'; rr(bx2 + .5, by2 + .5, bw2 - 1, bh2 - 1, bh2 / 2); ctx.stroke(); ctx.restore();
+    if (nd) uiText(`${INV.prep || 0}/${nd}`, bx2 + bw2 + 5, by2 + bh2 / 2, 9, NC.dim, 'left', UIF, { stroke: false });
+    hov(bx2, by2 - 4, bw2 + 26, 14, nd ? `资历 ${INV.prep || 0}/${nd}\n攒够了去军帐晋阶` : '已是本章最高官阶'); }
+  hit(ax - 20, ay - 20, 120, 40, () => { screen = 'rank'; });
+  if (canPromote()) nDot(ax + 13, ay - 13);
+  // 顶右：资源胶囊
+  { let x = W - 8 - 62 * 3 - 12; [['精铁', INV.it.精铁, null], ['残页', INV.it.残页, null], ['体力', staNow(), '#9ff0a6']].forEach(([k, n, c]) => { x = nRes(x, 9, k, n, c); });
+    const ch = CHAP[chOf(LEVELS[frontier()])].no + ' · ' + SEGS[Math.floor(frontier() / 10)]; uiText(DEMO ? '试玩版 · 前十关' : ch, W - 8, 40, 10, NC.dim, 'right', UIF, { stroke: false }); }
+  // 底部出征卡：关号牌 + 关名 + 阶段 + 大出征钮
+  const ni = frontier(), lv = LEVELS[ni], duel = lv.kind === 'duel', cx0 = 14, cw = W - 28, cy0 = H - 158, chh = 62;
+  nCard(cx0, cy0, cw, chh, 16);
+  { const bs = 40, bx = cx0 + 11, by = cy0 + (chh - bs) / 2;                         // 关号：圆角方牌（印章改的），斗将用红
+    ctx.save(); const g = ctx.createLinearGradient(0, by, 0, by + bs); if (duel) { g.addColorStop(0, '#ff7a63'); g.addColorStop(1, '#a3170a'); } else { g.addColorStop(0, '#ff9c55'); g.addColorStop(1, '#c2361a'); }   /* 紫色关号牌改朱红：米黄面板上冷紫最跳 */
+    { const fg = ctx.createLinearGradient(0, by - 2, 0, by + bs + 2); fg.addColorStop(0, '#fff0c0'); fg.addColorStop(.5, '#d79a38'); fg.addColorStop(1, '#7c4a10');   // 金属外框
+      rr(bx - 2.5, by - 2.5, bs + 5, bs + 5, 14); ctx.fillStyle = '#1f1204'; ctx.fill(); rr(bx - 1.6, by - 1.6, bs + 3.2, bs + 3.2, 13.5); ctx.fillStyle = fg; ctx.fill(); }
+    rr(bx, by, bs, bs, 12); ctx.fillStyle = g; ctx.fill();
+    { const hg = ctx.createLinearGradient(0, by, 0, by + bs * .5); hg.addColorStop(0, 'rgba(255,255,255,.42)'); hg.addColorStop(1, 'rgba(255,255,255,0)'); rr(bx + 2, by + 1.5, bs - 4, bs * .48, 10); ctx.fillStyle = hg; ctx.fill();   // 顶部玻璃高光
+      const ig = ctx.createRadialGradient(bx + bs / 2, by + bs * .85, 2, bx + bs / 2, by + bs * .85, bs * .6); ig.addColorStop(0, 'rgba(255,215,150,.45)'); ig.addColorStop(1, 'rgba(0,0,0,0)'); rr(bx, by, bs, bs, 12); ctx.fillStyle = ig; ctx.fill(); }   // 底部内发光
+    ctx.restore();
+    uiText(String(lvNo(lv)), bx + bs / 2, by + bs / 2 - 3, 21, '#fff', 'center', UIF, { lw: 3 });   // 现代手游用阿拉伯数字，不用「一」的古印
+    uiText(duel ? '斗将' : EN_ON ? 'Stage' : '关', bx + bs / 2, by + bs - 9, 9, 'rgba(255,255,255,.72)', 'center', UIF, { stroke: false }); }
+  { const tg = ctx.createLinearGradient(0, cy0 + 12, 0, cy0 + 32); tg.addColorStop(0, '#7a4416'); tg.addColorStop(1, '#3e1d06');   // 关名：深褐渐变字（米黄面板上用深字，参考少年三国志2 的列表标题）
+    uiText(lv.name, cx0 + 62, cy0 + 22, fitSize(lv.name, 19, 126, 99, UIF, 0), tg, 'left', UIF, { stroke: false }); }
+  { const tag = `${SEGS[Math.floor(ni / 10)]} · ${levelTag(lv)}`, fz = 10; ctx.font = fstr(fz, UIF); const tw = ctx.measureText(tr(tag)).width;   // 阶段做成一枚小标签（chip），不是一行灰字
+    ctx.save(); rr(cx0 + 62, cy0 + 34, tw + 12, 15, 7.5); ctx.fillStyle = 'rgba(176,112,48,.16)'; ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(150,92,36,.45)'; rr(cx0 + 62.5, cy0 + 34.5, tw + 11, 14, 7.5); ctx.stroke(); ctx.restore();
+    uiText(tag, cx0 + 68, cy0 + 41.5, fz, NC.ink2, 'left', UIF, { stroke: false });
+    const st = BEST[lv.id] || 0; for (let s = 0; s < 3; s++) uiStar(cx0 + 70 + tw + 14 + s * 14, cy0 + 41.5, 6, s < st); }   // 三颗星：打过几星亮几颗
+  hit(cx0, cy0, cw - 108, chh, () => { if (!open1) { MENU.lockT = uiNow(); return; } screen = 'levels'; MENU.seg = Math.floor(ni / 10); });
+  nBtn(cx0 + cw - 100, cy0 + 16, 88, 34, '出征', () => { BACKTO = null; openLevel(ni); }, { fz: 20 });
+  // 底栏
+  { ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = -2; rr(-10, H - 76, W + 20, 100, 20); const g = ctx.createLinearGradient(0, H - 76, 0, H); g.addColorStop(0, 'rgba(78,38,20,.96)'); g.addColorStop(1, 'rgba(36,16,8,.98)');   /* 底栏冷紫改暖深褐 */ ctx.fillStyle = g; ctx.fill(); ctx.restore();
+    const lg = ctx.createLinearGradient(0, 0, W, 0); lg.addColorStop(0, 'rgba(255,214,140,0)'); lg.addColorStop(.5, 'rgba(255,224,160,.85)'); lg.addColorStop(1, 'rgba(255,214,140,0)');   // 上沿一道中间亮、两头淡的金线
+    ctx.lineWidth = 1.4; ctx.strokeStyle = lg; ctx.beginPath(); ctx.moveTo(0, H - 75.5); ctx.lineTo(W, H - 75.5); ctx.stroke(); }   // 原来中间还有一颗菱形小饰，贴着选中底座的角，去掉
+  const newC = Object.keys(COUNSEL).some(k => counselOK(k) && !(INV.seenC || []).includes(k) && k !== 'zoujing');
+  nNav(30, '武将', navP('general', 'flag'), () => { screen = 'roster'; MENU.rosterT = uiNow(); }, newC || cHint() || loadNew(), false, false);
+  const nv = (cx, label, draw, fn, badge, on) => nNav(cx, label, draw, open1 ? fn : () => { MENU.lockT = uiNow(); }, badge, on && open1, !open1);
+  nv(90, '神兵', navP('armory', 'sword'), () => { screen = 'armory'; ARM.t0 = uiNow(); }, canUp('wpn'));
+  nv(150, '战役', navP('campaign', 'flag'), () => { screen = 'levels'; MENU.seg = Math.floor(frontier() / 10); }, false, true);
+  nv(210, '奇谋', navP('ploy', 'cards'), () => { screen = 'qimou'; QM.sel = null; QM.from = 'menu'; }, false);
+  nv(270, '军帐', navP('camp', 'tent'), () => { screen = 'camp'; CAMP.t0 = uiNow(); }, dailyTotal() > dailyDone());
+  nNav(330, '系统', navP('sys', 'gear'), () => { screen = 'system'; }, false, false, false);
+  if (!open1 && MENU.lockT && t - MENU.lockT < 1.8) { const a = clamp((1.8 - (t - MENU.lockT)) / .4, 0, 1); ctx.save(); ctx.globalAlpha = a; nCard(W / 2 - 96, cy0 - 36, 192, 28, 14);
+    uiText('打完第一关「桃园结义」开放', W / 2, cy0 - 22, 12, NC.ink, 'center', UIF, { stroke: false }); ctx.restore(); }
+  const nt = dailyTick(); if (nt) MENU.note = { ...nt, t0: t };
+  if (MENU.note && t - MENU.note.t0 < 3.2) { const u = (t - MENU.note.t0) / 3.2, a = u < .1 ? u / .1 : u > .8 ? (1 - u) / .2 : 1, g = MENU.note.got;
+    ctx.save(); ctx.globalAlpha = a; nCard(20, 120, W - 40, 56, 16); uiText('点卯', W / 2, 138, 16, NC.ink, 'center', UIF, { stroke: false });
+    const ents = Object.entries(g), is = 18; ctx.font = fstr(12, UIF); const segW = ents.map(([, n]) => is + 2 + ctx.measureText('+' + n).width), tot = segW.reduce((a2, b) => a2 + b, 0) + (ents.length - 1) * 10;
+    let x = W / 2 - tot / 2; ents.forEach(([k, n], j) => { drawItemIcon(k, x + is / 2, 161, is); uiText('+' + n, x + is + 2, 161, 12, NC.ink, 'left', UIF, { stroke: false }); x += segW[j] + 10; }); ctx.restore(); }
+  if (MONTH_SHOW) { const im = IMG.ui_nav_month, mx = W - 26, my = 62; if (ready(im)) { const f = 26 / Math.max(im.width, im.height); ctx.drawImage(im, mx - im.width * f / 2, my - im.height * f / 2, im.width * f, im.height * f); }
+    uiText('月卡', mx, my + 19, 10, NC.gold2, 'center', UIF, { stroke: false }); hit(mx - 22, my - 18, 44, 48, () => { screen = 'month'; MON.ask = false; }); }
+  drawMenuTip(t);
+}
 function drawMenu() {
+  if (NEWUI) return drawMenu2();
   const open1 = open1st();
   if (!BEST[1] && !MENU.autoGo && !window.__sg.all) { MENU.autoGo = true; openLevel(0); if (screen !== 'menu') return; }   // 11-02 用户：「新玩家直接开始第一关，不存在先看到界面」——第一关没过，开页就进（序章 → 第一关）；退军回来才看到主页，一次开页只自动进一次
   if (ready(IMG.bg)) { ctx.fillStyle = '#141010'; ctx.fillRect(0, 0, W, H); ctx.drawImage(IMG.bg, 0, -BG_UP, W, H); } else drawBg(); const t = uiNow();   // 11-02 用户：「图也要往上，人才能站对位置」——底图上移，城头步道落在三兄弟脚下（底下露出的那条被底栏盖住）
@@ -7467,7 +7774,7 @@ function drawCampaignMap(mim, t) {
   ctx.save(); const mh = W * mim.height / mim.width, y0 = MAP_TOP + (MAP_BOT - MAP_TOP - mh) / 2, y1 = y0 + mh, im = inkBg(mim);
   ctx.drawImage(im, 0, y0, W, mh);
   /* 用户：「上面的渐隐再加重一点……不要出现任何倒映」——不再把图翻过去接；图外面（68 以上、608 以下）涂实底色，再从图的上下沿往里渐隐到透明，接缝处两边同色所以没有线 */
-  const DK = '8,5,4'; ctx.fillStyle = `rgb(${DK})`; ctx.fillRect(0, 0, W, y0 + .5); ctx.fillRect(0, y1 - .5, W, H - y1 + 1);
+  const DK = NEWUI ? '40,19,8' : '8,5,4'; ctx.fillStyle = `rgb(${DK})`; ctx.fillRect(0, 0, W, y0 + .5); ctx.fillRect(0, y1 - .5, W, H - y1 + 1);
   let fd = ctx.createLinearGradient(0, y0, 0, y0 + 62); fd.addColorStop(0, `rgba(${DK},1)`); fd.addColorStop(.3, `rgba(${DK},.8)`); fd.addColorStop(.65, `rgba(${DK},.35)`); fd.addColorStop(1, `rgba(${DK},0)`); ctx.fillStyle = fd; ctx.fillRect(0, y0, W, 62);
   fd = ctx.createLinearGradient(0, y1 - 56, 0, y1); fd.addColorStop(0, `rgba(${DK},0)`); fd.addColorStop(.4, `rgba(${DK},.4)`); fd.addColorStop(.75, `rgba(${DK},.85)`); fd.addColorStop(1, `rgba(${DK},1)`); ctx.fillStyle = fd; ctx.fillRect(0, y1 - 56, W, 56);
   const N = MAP_NODE[MENU.seg], base = MENU.seg * 10, open = i => i === 0 || BEST[LEVELS[i - 1].id] || window.__sg.all;
@@ -7545,6 +7852,8 @@ function drawLevels() {
   const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, 'rgba(8,5,4,.55)'); bg.addColorStop(1, 'rgba(6,4,3,.9)'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
   const ch = Math.floor(MENU.seg / 3), nCh = Math.ceil(LEVELS.length / 30), chOpen = c => c === 0 || window.__sg.all || !!BEST[c * 30];   // 打完上一章最后一关开下一章
   const mim = IMG['map_' + (MENU.seg + 1)], hasMap = ready(mim); if (hasMap) drawCampaignMap(mim, t);   // 地图铺满整屏，先画，标题压在上面
+  if (NEWUI) { const hg = ctx.createLinearGradient(0, 0, 0, 58); hg.addColorStop(0, 'rgba(70,34,16,.96)'); hg.addColorStop(1, 'rgba(40,18,8,.88)'); ctx.fillStyle = hg; ctx.fillRect(0, 0, W, 58);   // 新皮肤：标题后面补一条暖褐页头 + 金线（和 nPageBg 一样），不再是一条黑带
+    const lg = ctx.createLinearGradient(0, 0, W, 0); lg.addColorStop(0, 'rgba(255,214,140,0)'); lg.addColorStop(.5, 'rgba(255,226,160,.9)'); lg.addColorStop(1, 'rgba(255,214,140,0)'); ctx.fillStyle = lg; ctx.fillRect(0, 57, W, 1.4); }
   { const ttl = EN_ON ? tr(SEGS[MENU.seg]) : CHAP[ch].no + ' · ' + SEGS[MENU.seg]; uiText(ttl, W / 2, 34, fitSize(ttl, 26, W - 40, 99, FONT, 6), goldGrad(34, 26), 'center', FONT, { glow: 'rgba(255,200,90,.6)', glowR: 12, lw: 6 }); }
   if (MENU.chLockT && uiNow() - MENU.chLockT < 1.6) uiText(`打完${CHAP[ch].no}最后一关开放`, W / 2, 58, 11, UIC.red2, 'center', PLAIN, { lw: 3 });
   if (hasMap) { plaque(112, 590, 136, 34, '返回', () => { screen = 'menu'; }, false); lvModeBtns(t); drawLvPop(t); if (REWARD) drawReward(); return; }

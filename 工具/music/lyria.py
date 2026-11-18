@@ -1,6 +1,6 @@
 # Lyria 2 配乐（Vertex AI lyria-002）：一条提示词出一段约 30 秒 48kHz WAV；每次请求前记账，到上限就停
 import base64, json, os, subprocess, sys, urllib.request
-PROJECT, LOC = "project-2000f509-2230-4dd4-bfe", "us-central1"
+PROJECT, LOC = os.environ.get("PROJECT", "project-2000f509-2230-4dd4-bfe"), "us-central1"   # 11-18：可用 PROJECT=… 换到有赠金的项目（老项目超出赠金会扣卡）
 PRICE, CAP = float(os.environ.get("PRICE", "0.06")), float(os.environ.get("CAP_USD", "3"))
 def book():
     s = json.load(open("spent.json")) if os.path.exists("spent.json") else {"usd": 0, "requests": 0}
