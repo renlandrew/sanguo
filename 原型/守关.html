@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@900&family=Alegreya+SC:wght@700;800&display=swap" rel="stylesheet">
 <style>
+/* 11-18 用户：「所有字体也要用宋体，思源宋体 Heavy」——本机装了就用本机的，没有就下裁过的子集（工具/字体/subset_font.py）；一款粗字担所有字重，不让浏览器假加粗 */
+@font-face { font-family: 'SHSerif'; src: local('Source Han Serif SC Heavy'), local('SourceHanSerifSC-Heavy'), url('font/shs_heavy.woff2?v=20261118') format('woff2'); font-weight: 100 900; font-style: normal; font-display: block; }
   html, body { margin: 0; height: 100%; background: #1c1a16; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; }
   canvas { display: block; margin: 0 auto; position: relative; z-index: 1; }
   #bgv { position: fixed; inset: -40px; width: calc(100% + 80px); height: calc(100% + 80px); margin: 0; object-fit: cover; filter: blur(22px) brightness(.55) saturate(1.15); z-index: 0; }   /* 10-27 用户：「主页我看看，为什么两边截断了」——宽屏两侧用当前画面放大糊开垫底，不再是黑边 */
@@ -58,11 +60,12 @@ const INK = '#1d1a17', INK2 = '#3b352e', PAPER = '#ece4d2', CINNABAR = '#b23f2a'
 // 标题字体换 Alegreya SC（书法字体没有像样的英文；Cinzel 试过太宽）；换行按词；竖排招名改横排；
 // 英文比原来的中文宽太多时按中文的宽度缩字（enFit：最多宽一成再加半个字），版面不用逐页改
 const LANG = /[?&]lang=en\b/.test(location.search) && window.EN ? 'en' : 'zh', EN_ON = LANG === 'en';
-const FONT_ZH = '"Ma Shan Zheng", "STKaiti", "KaiTi", serif', FONT = EN_ON ? '"Alegreya SC", Georgia, serif' : FONT_ZH, PLAIN = '"PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif';
+const NEWUI = !/[?&]skin=old\b/.test(location.search); // 11-18 起新皮肤是默认，?skin=old 看旧皮肤
+const SERIF = '"SHSerif", "Source Han Serif SC", "Noto Serif SC", "Songti SC", "STSong", serif';   // 11-18 用户：「所有字体也要用宋体，思源宋体 Heavy」——新皮肤里书法体、黑体、细宋体一律换它
+const FONT_ZH = NEWUI ? SERIF : '"Ma Shan Zheng", "STKaiti", "KaiTi", serif', FONT = NEWUI ? SERIF : EN_ON ? '"Alegreya SC", Georgia, serif' : FONT_ZH, PLAIN = NEWUI ? SERIF : '"PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif';
 // 11-18 \u7528\u6237\uff1a\u300c\u76ee\u524d\u6574\u4e2a\u754c\u9762\u4e0d\u591f\u73b0\u4ee3\uff0c\u592a\u53e4\uff0c\u5176\u5b9e\u5e74\u8f7b\u4eba\u4e0d\u559c\u6b22\uff0c\u4f60\u53bb\u770b\u770b\u4ec0\u4e48\u5c11\u5e74\u4e09\u56fd\u5fd7\u4e4b\u7c7b\u7684\u754c\u9762\uff0c\u91cd\u65b0\u5236\u4f5c\u300d
 // 新皮肤（照少年三国志、三国志幻想大陆：米黄面板、金框按钮、GPT 画的图标、城头黄昏底图）11-18 设为默认；?skin=old 切回旧皮肤对比。
-const NEWUI = !/[?&]skin=old\b/.test(location.search); // 11-18 起新皮肤是默认，?skin=old 看旧皮肤
-const UIF = '!"PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif';         // \u5f00\u5934\u7684 ! \u8868\u793a\u7c97\u4f53\uff08fstr \u8ba4\uff09\uff0cCSS \u7b80\u5199\u91cc bold \u5fc5\u987b\u5199\u5728\u5b57\u53f7\u524d\u9762\uff0c\u62fc\u4e0d\u8fdb `${size}px ${font}`
+const UIF = NEWUI ? '!' + SERIF : '!"PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif';         // \u5f00\u5934\u7684 ! \u8868\u793a\u7c97\u4f53\uff08fstr \u8ba4\uff09\uff0cCSS \u7b80\u5199\u91cc bold \u5fc5\u987b\u5199\u5728\u5b57\u53f7\u524d\u9762\uff0c\u62fc\u4e0d\u8fdb `${size}px ${font}`
 const fstr = (size, font) => font && font[0] === '!' ? `700 ${fpx(size)}px ${font.slice(1)}` : `${fpx(size)}px ${font}`;
 const TR_CACHE = new Map(), CJK = /[\u3400-\u9fff]/;
 function trStrict(s, tpl) {   // 整句表，再试句式；tpl：只认表里带数字的句式（拼句时试着把几段并回去用，不走手写规则）
@@ -2896,7 +2899,7 @@ function drawLoading() {                                                        
   ctx.font = '44px ' + FONT; ctx.textAlign = 'center'; ctx.fillStyle = '#f6d27a'; ctx.fillText(tr('群雄逐鹿'), W / 2, H * .42);
   const bx = 60, by = H * .42 + 50, bw = W - 120; ctx.fillStyle = '#2a1608'; ctx.fillRect(bx, by, bw, 10); ctx.fillStyle = '#e0a83a'; ctx.fillRect(bx, by, bw * loadShown, 10);
   ctx.strokeStyle = '#9a7432'; ctx.lineWidth = 1; ctx.strokeRect(bx - .5, by - .5, bw + 1, 11);
-  ctx.font = '13px sans-serif'; ctx.fillStyle = 'rgba(244,230,196,.8)'; ctx.fillText((EN_ON ? 'Mustering… ' : '整军备马… ') + Math.round(loadShown * 100) + '%', W / 2, by + 32);
+  ctx.font = '13px ' + PLAIN; ctx.fillStyle = 'rgba(244,230,196,.8)'; ctx.fillText((EN_ON ? 'Mustering… ' : '整军备马… ') + Math.round(loadShown * 100) + '%', W / 2, by + 32);
   ctx.restore(); return false;
 }
 function renderScreen() {
@@ -6693,8 +6696,8 @@ function chevBtn(cx, cy, r, dir) {
   chev(cx + dir * r * .08, cy, r * .95, dir);
 }
 // 简洁的漆面小按钮（不用带花的牌匾）
-function pill(x, y, w, h, label, fn, red = true, on = true) {
-  if (NEWUI) { ctx.save(); if (!on) ctx.globalAlpha *= .5; nPill(x, y, w, h, label, red ? 'pri' : 'sec'); ctx.restore(); if (on && fn) hit(x, y, w, h, fn); return; }
+function pill(x, y, w, h, label, fn, red = true, on = true, hot = false) {   // hot：条件满足、该点了（11-18 用户：「满足时，都做一点效果，提示用户点」）
+  if (NEWUI) { ctx.save(); if (!on) ctx.globalAlpha *= .5; nPill(x, y, w, h, label, red ? 'pri' : 'sec', { hot: hot && on }); ctx.restore(); if (on && fn) hit(x, y, w, h, fn); return; }
   const im = red ? IMG.ui2_tab_red : IMG.ui2_tab_dark; ctx.save(); if (!on) ctx.globalAlpha = .45;
   if (ready(im)) draw9(im, x, y, w, h, 90, 90, 0, 0, h / 189); else uiPanel(x, y, w, h, { r: h / 2, single: true, top: red ? '#c0402a' : '#3a2b1f', bot: red ? '#6e140c' : UIC.lac });
   uiText(label, x + w / 2, y + h / 2 + 1, fitSize(label, Math.min(15, h * .5), w - h * .95 - 4), red ? '#fff2dc' : UIC.gold2, 'center', FONT, { stroke: false }); ctx.restore();
@@ -6775,7 +6778,7 @@ function drawCamp() {
   plate(14, 58, W - 28, 100, false);
   { const N = nextRank(); if (N) { uiText('下一阶 · ' + N.name, W / 2, 84, 18, UIC.gold2, 'center', FONT, { lw: 4 }); uiText(`资历 ${INV.prep || 0}/${prepNeed()}`, 30, 120, 13, UIC.cream, 'left', PLAIN, { stroke: false });
       uiBar('cprep', 100, 114, W - 230, 12, Math.min(1, (INV.prep || 0) / prepNeed()), '#8a5a14', '#ffd76e'); 
-      pill(W - 112, 104, 90, 28, canPromote() ? '去晋阶' : '看官阶', () => { screen = 'rank'; }, canPromote()); }
+      pill(W - 112, 104, 90, 28, canPromote() ? '去晋阶' : '看官阶', () => { screen = 'rank'; }, canPromote(), true, canPromote()); }
     else uiText('已是第一章最高官阶', W / 2, 108, 18, UIC.gold2, 'center', FONT); }   // 军帐顶上改放官阶资历（兵器不在这里：10-29 用户）
   if (gl) { ctx.save(); ctx.translate(0, 110); SC.off -= 110; plate(14, 58, W - 28, 166, true);   // 备料卡整块往下挪 110：画面平移，按钮的点击位置跟着挪（借拖动的偏移）
     const { ng, key, U, tot, d } = gl, lv = LEVELS.find(l => l.id === ng), lvl = INV.up[key] || 0;
@@ -6787,7 +6790,7 @@ function drawCamp() {
       uiText(`${it} ${Math.min(have, n)}/${n}`, 120, yy, 13, ITEM_C[it], 'right', PLAIN, { stroke: false });
       uiBar('goal_' + it, 130, yy - 4, 150, 8, have / n, '#8a5a14', '#ffd76e', { edge: 'rgba(217,166,64,.55)' }); });
     if (canUp(key)) pill(W / 2 - 60, 186, 120, 32, key === 'awake' ? '觉醒' : U.gen ? '研习' : '打造', () => { if (key === 'awake') CAMP.pickAwake = true; else { const ok = doUp(key); MENU.flash = { key, t0: uiNow() }; const U2 = UPS[key];
-      if (ok) showReward(U2.gen ? '研习成功' : '打造成功', [`${U2.name} ${U2.max > 1 ? '+' + INV.up[key] : '已学会'}`, ...(key === 'wpn' ? ['三兄弟的兵器一起精炼'] : []), U2.desc(INV.up[key])], U2.gen ? [U2.gen] : ['guan', 'zhang', 'liu']); else showReward('材料不够', ['还差：' + lackText(Object.entries(upCost(key)).filter(([i, n]) => (INV.it[i] || 0) < n))], U2.gen ? [U2.gen] : ['zhang'], false); } });
+      if (ok) showReward(U2.gen ? '研习成功' : '打造成功', [`${U2.name} ${U2.max > 1 ? '+' + INV.up[key] : '已学会'}`, ...(key === 'wpn' ? ['三兄弟的兵器一起精炼'] : []), U2.desc(INV.up[key])], U2.gen ? [U2.gen] : ['guan', 'zhang', 'liu']); else showReward('材料不够', ['还差：' + lackText(Object.entries(upCost(key)).filter(([i, n]) => (INV.it[i] || 0) < n))], U2.gen ? [U2.gen] : ['zhang'], false); } }, true, true, true);
     else uiText(gl.lack.some(([i]) => i === '将印') && !INV.seal20 ? '将印要首通第廿关' : '', W / 2, 204, 17, etaColor(d), 'center', FONT);
     if (MENU.flash && uiNow() - MENU.flash.t0 < 1.2) { const u = (uiNow() - MENU.flash.t0) / 1.2; ctx.save(); ctx.globalAlpha = 1 - u; uiSeal(W - 58, 108, 34 + 12 * u, UPS[MENU.flash.key].gen ? '悟' : '成', UIC.red); ctx.restore(); }
     SC.off += 110; ctx.restore(); SC.bot = Math.max(SC.bot, 58 + 166 + 110); }
@@ -6797,7 +6800,7 @@ function drawCamp() {
   uiText(`${dailyDone()}/${dailyTotal()}`, W - 18, 250 + TOPY, 12, 'rgba(244,230,196,.6)', 'right', PLAIN, { stroke: false });
   { const sta = staNow(), k = staClaimable(), y = 250 + TOPY;   // 11-02 体力：标题这行中间写现有多少；12–14 点、19–21 点各能领一次 20（能领时出「领 60」钮，不能领时写下一段几点开）
     drawItemIcon('体力', 112, y, 16); uiText(String(sta), 122, y, 13, sta >= BATTLE_STA ? '#9be0a0' : UIC.red2, 'left', FONT, { lw: 3 });
-    if (k >= 0) pill(160, y - 12, 76, 24, `领体力 ${STA_GIFT}`, () => { if (claimSta()) { campFw(198, y, 3); campGain([['体力', STA_GIFT]], 198, y); } }, true);
+    if (k >= 0) pill(160, y - 12, 76, 24, `领体力 ${STA_GIFT}`, () => { if (claimSta()) { campFw(198, y, 3); campGain([['体力', STA_GIFT]], 198, y); } }, true, true, true);
     else { const h = staHour(), got = DAILY.staGot || [], nx = STA_WIN.find(([a], j) => !got[j] && h < a); uiText(nx ? `${nx[0]}点可领体力` : '今天体力已领完', 160, y, 10, 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false }); } }
   if (!ts.length) { const y = 264 + TOPY; plate(14, y, W - 28, 80, false);                 // 10-29 用户：「不要用描述性文字，直接告诉玩家出征后得到什么」
     uiSeal(40, y + 30, 28, '令', UIC.red); uiText('征战军令 ×3', 64, y + 22, 15, UIC.gold2, 'left', FONT, { lw: 3 }); uiText('全部完成得', 168, y + 22, 11, 'rgba(244,230,196,.65)', 'left', PLAIN, { stroke: false, maxW: 110 });   /* 奖励是完成三道军令才有，不是出征就有（10-29 用户问） */
@@ -6836,7 +6839,7 @@ function drawCamp() {
     const sta = staNow(), can = Math.min(left, Math.floor(sta / CHORE_STA));
     uiText(`日常杂务 ${CHORES.length - left}/${CHORES.length}`, 24, y + 15, 13, UIC.cream, 'left', PLAIN, { stroke: false });
     uiText(`体力 ${sta}`, 112, y + 15, 11, sta >= CHORE_STA ? '#9be0a0' : UIC.red2, 'left', PLAIN, { stroke: false, maxW: 100 });
-    if (left) { pill(W - 112, y + 5, 88, 22, can ? `一键完成` : '体力不够', () => { const b0 = itemSnap(), l0 = choresLeft(); doChores(); const done = l0 - choresLeft(); if (done) { campFw(W / 2, 640 * .62, 7); campGain(itemDiff(b0, itemSnap()), W / 2, 640 * .62); } else showReward('体力不够', ['明天再来'], ['zhang'], false); }, true, can > 0); if (can) uiText(`体力 -${can * CHORE_STA}`, W - 68, y + 34, EN_ON ? 11 : 10, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false, maxW: 90 }); }
+    if (left) { pill(W - 112, y + 5, 88, 22, can ? `一键完成` : '体力不够', () => { const b0 = itemSnap(), l0 = choresLeft(); doChores(); const done = l0 - choresLeft(); if (done) { campFw(W / 2, 640 * .62, 7); campGain(itemDiff(b0, itemSnap()), W / 2, 640 * .62); } else showReward('体力不够', ['明天再来'], ['zhang'], false); }, true, can > 0, can); if (can) uiText(`体力 -${can * CHORE_STA}`, W - 68, y + 34, EN_ON ? 11 : 10, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false, maxW: 90 }); }
     else uiSeal(W - 40, y + 15, 22, '毕', UIC.red, true);
     CHORES.forEach((c, k) => { const cx = 24 + (k % 2) * ((W - 48) / 2), cy = y + 48 + Math.floor(k / 2) * 27, on = choreOn(k);
       uiText(c, cx, cy, 12, on ? 'rgba(244,230,196,.45)' : UIC.cream, 'left', PLAIN, { stroke: false, maxW: 86 });
@@ -6973,7 +6976,7 @@ function drawArmory2() {
     // 进度条一栏（200–254，短一点），右边 262 起留给「打造」钮／还要几天，三栏互不相压
     Object.entries(cost).forEach(([it, n], j) => { const have = INV.it[it] || 0, yy = y + 60 + j * 15;
       uiText(`${it} ${Math.min(have, n)}/${n}`, 100, yy, 11, ITEM_C[it], 'left', PLAIN, { stroke: false, maxW: 94 }); uiBar('arm_' + it, 200, yy - 3, 54, 6, have / n, '#8a5a14', '#ffd76e', { edge: 'rgba(0,0,0,0)' }); });
-    if (canUp(AK)) pill(W - 98, y + 66, 76, 30, '打造', () => { doUp(AK); ARM.forge = { t0: uiNow(), id, lv: INV.up[AK], hit: 0 }; sfx('anvil'); });
+    if (canUp(AK)) pill(W - 98, y + 66, 76, 30, '打造', () => { doUp(AK); ARM.forge = { t0: uiNow(), id, lv: INV.up[AK], hit: 0 }; sfx('anvil'); }, true, true, true);
     else uiText(e.d >= 99 && cost[MAT[id].name] ? `先打到${lvName(MAT[id].lv[0])}` : etaText(e.d, e.lack), W - 24, y + 94, 12, etaColor(e.d), 'right', FONT, { stroke: false }); }   // 出材料的关还没打过：算不出天数
   /* 10-26 用户圈了「三人的兵器一起精炼」：「去掉这句」 */
   { const its = ['精铁', '陨铁', MAT[id].name]; plate(14, 46, 168, 26, false); its.forEach((k, i) => { const x = 32 + i * 56; drawItemIcon(k, x, 59, 16); uiText(String(INV.it[k] || 0), x + 11, 59, 12, UIC.cream, 'left', PLAIN, { stroke: false }); }); }   // 手上有多少材料（10-29 用户）
@@ -7160,7 +7163,7 @@ function drawRank() {                                                           
     const fr = Math.min(1, (INV.prep || 0) / prepNeed()), py = 410; plate(14, py, W - 28, 110, fr >= 1);
     uiText(`资历 ${INV.prep || 0}/${prepNeed()}`, 30, py + 26, 14, UIC.gold2, 'left', FONT, { stroke: false }); uiBar('prep', 130, py + 20, W - 160, 12, fr, '#8a5a14', '#ffd76e');
     if (fr >= 1 && promotedToday()) { ctx.save(); ctx.globalAlpha = .5; pill(W / 2 - 70, py + 50, 140, 40, '明天再晋阶', () => {}, false); ctx.restore(); uiText('一天只能晋一阶，今天已经晋过了', W / 2, py + 102, 11, 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false }); }
-    else if (fr >= 1) pill(W / 2 - 70, py + 50, 140, 40, '晋阶', () => promote(), true); else pill(W / 2 - 70, py + 50, 140, 40, '去做军务', () => { screen = 'camp'; }, false); }
+    else if (fr >= 1) pill(W / 2 - 70, py + 50, 140, 40, '晋阶', () => promote(), true, true, true); else pill(W / 2 - 70, py + 50, 140, 40, '去做军务', () => { screen = 'camp'; }, false); }
   if (t - RANKMSG.t0 < 3) { const a = Math.min(1, (3 - (t - RANKMSG.t0)) / .5); ctx.save(); ctx.globalAlpha = a; plate(30, 470, W - 60, 40, true); uiText(RANKMSG.text, W / 2, 490, fitSize(RANKMSG.text, 13, W - 80, 99, PLAIN), '#ffe39a', 'center', PLAIN, { lw: 3 }); ctx.restore(); }
   plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; }, false);
   if (RANKFX.on) drawPromote(t - RANKFX.t0);
@@ -7236,7 +7239,7 @@ function drawAch() {                                                            
     const prog = a.prog || [a.ok ? 1 : 0, 1]; slotBar(26, y + 30, 130, 10, [[Math.min(1, prog[0] / prog[1]), '#8a5a14', '#ffd76e']]); uiText(a.prog ? `${prog[0]}/${prog[1]}` : a.ok ? '已达成' : '未达成', 162, y + 35, 10, 'rgba(244,230,196,.6)', 'left', PLAIN, { stroke: false });
     a.pay.forEach(([kk, n], i) => { if (kk === '资历') uiSeal(214 + i * 34, y + 18, 16, '资', '#6a4a14', true); else drawItemIcon(kk, 214 + i * 34, y + 18, 20); uiText('×' + n, 214 + i * 34, y + 38, 10, UIC.cream, 'center', PLAIN, { stroke: false }); });
     if (a.perk) uiText((a.perk[0] === '被动' ? '「' : '') + a.perk[1] + (a.perk[0] === '被动' ? '」' : ''), 232, y + 26, 11, '#ffd76e', 'center', FONT, { lw: 3 });
-    if (a.got) uiSeal(W - 40, y + 26, 22, '已领', UIC.red, true); else if (can) pill(W - 74, y + 13, 54, 26, '领取', () => { const g = claimAch([a]); showReward('领取功绩', a.prep ? [`资历 +${a.prep}`] : [], ['guan', 'zhang', 'liu'], true, g); }, true);
+    if (a.got) uiSeal(W - 40, y + 26, 22, '已领', UIC.red, true); else if (can) pill(W - 74, y + 13, 54, 26, '领取', () => { const g = claimAch([a]); showReward('领取功绩', a.prep ? [`资历 +${a.prep}`] : [], ['guan', 'zhang', 'liu'], true, g); }, true, true, true);
     else uiText('未完成', W - 46, y + 26, 11, 'rgba(244,230,196,.4)', 'center', PLAIN, { stroke: false, maxW: 62 }); });
   if (S.length > maxN) { uiText(`${off + 1}–${Math.min(S.length, off + maxN)} / ${S.length}`, W / 2, y0 + maxN * rowH + 6, 10, 'rgba(244,230,196,.6)', 'center', PLAIN, { stroke: false });
     pill(30, y0 + maxN * rowH - 6, 60, 24, '上页', () => { ACHUI.scroll = Math.max(0, off - maxN); }, false); pill(W - 90, y0 + maxN * rowH - 6, 60, 24, '下页', () => { ACHUI.scroll = off + maxN; }, false); }
@@ -7463,6 +7466,7 @@ UI_STY[13] = L7('新中式 · 浅青瓷', 'rgba(228,244,239,.92)', '#3e9384', '#
 UI_STY[14] = L7('新中式 · 月白', 'rgba(236,242,248,.92)', '#4a6f96', '#fffaf0', 'rgba(246,249,252,.9)', '#33465c', '#45688e', '226,234,244', ['232,240,248', '204,218,234'], '#bf9d5e');
 UI_STY[15] = L7('新中式 · 杏粉', 'rgba(251,238,230,.92)', '#bf5a4a', '#fff6ee', 'rgba(255,248,243,.9)', '#6a3a30', '#a24e3e', '250,234,224', ['252,238,228', '238,214,200'], '#c79a5a');
 // 11-18 用户选「象牙」——12 设为默认；?ui=0 看之前的金框版，?ui=1…15 看各试样，?skin=old 看旧皮肤
+for (const k in UI_STY) if (UI_STY[k].font) UI_STY[k].font = SERIF;   // 各试样里写死的宋体也换成思源宋体
 UI_STY[12].cut = true; UI_STY[12].round = true;   // 11-18 用户截第 6 种的出征钮：「颜色可以，但还是用这种形状」——象牙的颜色 + 朱砂令牌的形状（令牌切角、回纹、竹简方片）
 var FS = (() => { const k = (/[?&]ui=(\d+)/.exec(location.search) || [, '12'])[1]; return (NEWUI && UI_STY[k]) || null; })();
 window.__uiSty = k => { FS = (NEWUI && UI_STY[k]) || null; return FS ? FS.name : '现在'; };   // 截图对比用：不重开页面换风格
@@ -7478,11 +7482,13 @@ function fCard(x, y, w, h, r, o) {                                              
 }
 function fPill(x, y, w, h, label, kind, o) {
   if (FS.cut) { const pri = kind === 'pri', R = Math.min(h * .5, 18); ctx.save();                // 令牌切角钮：下沿一道淡暗带；主钮实色 + 右端回纹，次钮浅底 + 宣纸纹 + 细金线
-    cutRR(x, y + 3, w, h, R, 3); ctx.fillStyle = 'rgba(90,60,24,.2)'; ctx.fill(); cutRR(x, y, w, h, R, 3); ctx.fillStyle = o.fill || (pri ? FS.pf : FS.sf); ctx.fill();
-    ctx.save(); ctx.clip(); if (pri) halftone(x, y, w, h, 'rgba(255,240,206,.17)'); else { ctx.fillStyle = paperPat();   /* 用户：「纹要很浅」——回纹压到 .17 */ ctx.fillRect(x, y, w, h); } ctx.restore();
+    const hot = o.hot, pu = .5 + .5 * Math.sin(uiNow() * 5);   // 该点的钮：外圈一呼一吸的金光、一道光每 1.6 秒扫过、右上角红点
+    cutRR(x, y + 3, w, h, R, 3); ctx.fillStyle = 'rgba(90,60,24,.2)'; ctx.fill(); if (hot) { ctx.shadowColor = `rgba(255,196,80,${.55 + .4 * pu})`; ctx.shadowBlur = 8 + 10 * pu; } cutRR(x, y, w, h, R, 3); ctx.fillStyle = o.fill || (pri ? FS.pf : FS.sf); ctx.fill(); ctx.shadowColor = 'rgba(0,0,0,0)';
+    ctx.save(); ctx.clip(); if (hot) { const sp = (uiNow() % 1.6) / 1.6, sx = x - 30 + (w + 60) * sp, sg = ctx.createLinearGradient(sx - 16, y, sx + 16, y + h); sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(.5, 'rgba(255,252,236,.55)'); sg.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = sg; ctx.fillRect(x, y, w, h); }
+    if (pri) halftone(x, y, w, h, 'rgba(255,240,206,.17)'); else { ctx.fillStyle = paperPat();   /* 用户：「纹要很浅」——回纹压到 .17 */ ctx.fillRect(x, y, w, h); } ctx.restore();
     ctx.lineWidth = 1; ctx.strokeStyle = pri ? 'rgba(255,240,205,.55)' : FS.hair; cutRR(x + .5, y + .5, w - 1, h - 1, R, 3); ctx.stroke(); ctx.restore(); liteMark(x - 2, y - 2, w + 4, h + 4, false);
     const big = pri && h >= 34, f = big ? FONT : FS.font, sp = big ? 6 : FS.spacing, fz = fitSize(label, o.fz || Math.min(15, h * .5), w - h * .7 - sp * label.length, 99, f, 0);
-    ctx.save(); try { ctx.letterSpacing = sp + 'px'; } catch (e) {} uiText(label, x + w / 2 + sp / 2, y + h / 2 + .5, fz, o.col || (pri ? FS.ptc : FS.tc), 'center', f, { stroke: false }); ctx.restore(); return; }
+    ctx.save(); try { ctx.letterSpacing = sp + 'px'; } catch (e) {} uiText(label, x + w / 2 + sp / 2, y + h / 2 + .5, fz, o.col || (pri ? FS.ptc : FS.tc), 'center', f, { stroke: false }); ctx.restore(); if (hot) nDot(x + w - 4, y + 3); return; }
   if (FS.outline) { const pri = kind === 'pri', r = h / 2; ctx.save(); rr(x, y, w, h, r); ctx.fillStyle = pri ? FS.pf : FS.sf; ctx.fill();   // 新中式：金线描边的胶囊；主钮深古铜底 + 内外两道金线
     ctx.lineWidth = pri ? 1.3 : 1; ctx.strokeStyle = FS.hair; rr(x + .5, y + .5, w - 1, h - 1, r - .5); ctx.stroke(); if (pri) { ctx.globalAlpha = .55; ctx.lineWidth = .8; if (FS.lite) ctx.strokeStyle = 'rgba(255,248,232,.85)'; rr(x + 3.5, y + 3.5, w - 7, h - 7, r - 3.5); ctx.stroke(); } ctx.restore(); liteMark(x - 2, y - 2, w + 4, h + 4, false);
     const f = FS.font, sp = FS.spacing * (h > 36 ? 2.5 : 1), fz = fitSize(label, o.fz || Math.min(15, h * .5), w - h * .7 - sp * label.length, 99, f, 0);
@@ -8134,7 +8140,7 @@ function fit() {
   if (ML === null && window.Moliu) ML = Moliu.create({ W, H, pw: cv.width, ph: cv.height, paintImg: IMG.paint }) || false;
   if (MLB === null && window.Moliu) { MLB = Moliu.create({ W, H, pw: cv.width, ph: cv.height, paintImg: IMG.paint }) || false; if (MLB) { MLB.cfg.palette = 'ink';   /* 10-26 试过紫金妖气，用户：「算了，你就保留之前墨烟吧」 */ MLB.cfg.decay = [.9, 3.6, .85, 2.2]; } }
 }
-(document.fonts ? Promise.race([document.fonts.load('40px "Ma Shan Zheng"'), new Promise(r => setTimeout(r, 2500))]) : Promise.resolve()).then(boot, boot);
+(document.fonts ? Promise.race([NEWUI ? document.fonts.load('40px "SHSerif"', '守关出征') : document.fonts.load('40px "Ma Shan Zheng"'), new Promise(r => setTimeout(r, NEWUI ? 8000 : 2500))]) : Promise.resolve()).then(boot, boot);   // 新皮肤等思源宋体（约 860KB）下完再开画，最多等 8 秒
 })();
 </script>
 </body>
