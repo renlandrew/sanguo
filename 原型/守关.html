@@ -9,6 +9,8 @@
 <style>
 /* 11-18 用户：「所有字体也要用宋体，思源宋体 Heavy」——本机装了就用本机的，没有就下裁过的子集（工具/字体/subset_font.py）；一款粗字担所有字重，不让浏览器假加粗 */
 @font-face { font-family: 'SHSerif'; src: local('Source Han Serif SC Heavy'), local('SourceHanSerifSC-Heavy'), url('font/shs_heavy.woff2?v=20261118') format('woff2'); font-weight: 100 900; font-style: normal; font-display: block; }
+@font-face { font-family: 'SHSerifXL'; src: local('Source Han Serif SC ExtraLight'), local('SourceHanSerifSC-ExtraLight'), url('font/shs_extralight.woff2?v=20261118') format('woff2'); font-weight: 100 900; font-style: normal; font-display: block; }
+@font-face { font-family: 'SHSerifL'; src: local('Source Han Serif SC Light'), local('SourceHanSerifSC-Light'), url('font/shs_light.woff2?v=20261118') format('woff2'); font-weight: 100 900; font-style: normal; font-display: block; }
   html, body { margin: 0; height: 100%; background: #1c1a16; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; }
   canvas { display: block; margin: 0 auto; position: relative; z-index: 1; }
   #bgv { position: fixed; inset: -40px; width: calc(100% + 80px); height: calc(100% + 80px); margin: 0; object-fit: cover; filter: blur(22px) brightness(.55) saturate(1.15); z-index: 0; }   /* 10-27 用户：「主页我看看，为什么两边截断了」——宽屏两侧用当前画面放大糊开垫底，不再是黑边 */
@@ -61,7 +63,8 @@ const INK = '#1d1a17', INK2 = '#3b352e', PAPER = '#ece4d2', CINNABAR = '#b23f2a'
 // 英文比原来的中文宽太多时按中文的宽度缩字（enFit：最多宽一成再加半个字），版面不用逐页改
 const LANG = /[?&]lang=en\b/.test(location.search) && window.EN ? 'en' : 'zh', EN_ON = LANG === 'en';
 const NEWUI = !/[?&]skin=old\b/.test(location.search); // 11-18 起新皮肤是默认，?skin=old 看旧皮肤
-const SERIF = '"SHSerif", "Source Han Serif SC", "Noto Serif SC", "Songti SC", "STSong", serif';   // 11-18 用户：「所有字体也要用宋体，思源宋体 Heavy」——新皮肤里书法体、黑体、细宋体一律换它
+const SERIF_FAM = ({ xl: 'SHSerifXL', l: 'SHSerifL' })[(/[?&]font=(\w+)/.exec(location.search) || [])[1]] || 'SHSerif';   // 11-18 用户：「再尝试很细的宋体」——?font=xl 特细、?font=l 细，试样用
+const SERIF = '"' + SERIF_FAM + '", "Source Han Serif SC", "Noto Serif SC", "Songti SC", "STSong", serif';   // 11-18 用户：「所有字体也要用宋体，思源宋体 Heavy」——新皮肤里书法体、黑体、细宋体一律换它
 const FONT_ZH = NEWUI ? SERIF : '"Ma Shan Zheng", "STKaiti", "KaiTi", serif', FONT = NEWUI ? SERIF : EN_ON ? '"Alegreya SC", Georgia, serif' : FONT_ZH, PLAIN = NEWUI ? SERIF : '"PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif';
 // 11-18 \u7528\u6237\uff1a\u300c\u76ee\u524d\u6574\u4e2a\u754c\u9762\u4e0d\u591f\u73b0\u4ee3\uff0c\u592a\u53e4\uff0c\u5176\u5b9e\u5e74\u8f7b\u4eba\u4e0d\u559c\u6b22\uff0c\u4f60\u53bb\u770b\u770b\u4ec0\u4e48\u5c11\u5e74\u4e09\u56fd\u5fd7\u4e4b\u7c7b\u7684\u754c\u9762\uff0c\u91cd\u65b0\u5236\u4f5c\u300d
 // 新皮肤（照少年三国志、三国志幻想大陆：米黄面板、金框按钮、GPT 画的图标、城头黄昏底图）11-18 设为默认；?skin=old 切回旧皮肤对比。
@@ -8140,7 +8143,7 @@ function fit() {
   if (ML === null && window.Moliu) ML = Moliu.create({ W, H, pw: cv.width, ph: cv.height, paintImg: IMG.paint }) || false;
   if (MLB === null && window.Moliu) { MLB = Moliu.create({ W, H, pw: cv.width, ph: cv.height, paintImg: IMG.paint }) || false; if (MLB) { MLB.cfg.palette = 'ink';   /* 10-26 试过紫金妖气，用户：「算了，你就保留之前墨烟吧」 */ MLB.cfg.decay = [.9, 3.6, .85, 2.2]; } }
 }
-(document.fonts ? Promise.race([NEWUI ? document.fonts.load('40px "SHSerif"', '守关出征') : document.fonts.load('40px "Ma Shan Zheng"'), new Promise(r => setTimeout(r, NEWUI ? 8000 : 2500))]) : Promise.resolve()).then(boot, boot);   // 新皮肤等思源宋体（约 860KB）下完再开画，最多等 8 秒
+(document.fonts ? Promise.race([NEWUI ? document.fonts.load('40px "' + SERIF_FAM + '"', '守关出征') : document.fonts.load('40px "Ma Shan Zheng"'), new Promise(r => setTimeout(r, NEWUI ? 8000 : 2500))]) : Promise.resolve()).then(boot, boot);   // 新皮肤等思源宋体（约 860KB）下完再开画，最多等 8 秒
 })();
 </script>
 </body>
