@@ -84,6 +84,16 @@ PLAN = {
     # 力士砸棍：头一条棍变锤、转身（退回/），补录那条举棍过头再砸下，第 29 帧起转身背对镜头，取到 28；倒下第 5–9 帧头顶白闪，跳过
     'yuanlishi': {'run': ('run', range(22, 32)), 'ram': ('ram', [0, 2, 4, 6, 8, 12, 16, 20, 24, 25, 26, 27, 28]), 'die': ('die', [0, 2, 4, *range(16, 40, 3)])},
     'xunzheng': {'idle': ('idle', range(8, 40, 3)), 'heavy': ('heavy', range(0, 40, 3)), 'hit': ('die', range(0, 4)), 'die': ('die', range(17, 40, 2))},
+    # 11-18 第三章首录（make_foe_pack7.py，首帧用 Codex 立绘），看过帧图：许褚连斩 8–25 帧大白刀弧、倒下前半段多挥一刀（从 14 取）；颜良待机 8–23 帧有白风痕（取 24 起）；
+    # 蔡阳连斩 17 帧起大刀变长枪（只取前 17）、倒下 9–15 帧红火星；高览连刺 9–27 帧一片碎点、倒下 6–7 帧白闪；曹仁重劈 25 帧起盾牌乱翻；先登死士倒下 10–25 帧碎片乱飞
+    'xuchu': {'idle': ('idle', range(4, 40, 3)), 'heavy': ('heavy', range(0, 40, 3)), 'combo': ('combo', [*range(0, 8), *range(26, 40, 2)]), 'hit': ('die', range(0, 6, 2)), 'die': ('die', range(14, 40, 2))},
+    'yanliang': {'idle': ('idle', range(24, 40, 2)), 'heavy': ('heavy', range(0, 40, 3)), 'combo': ('combo', range(0, 40, 3)), 'summon': ('summon', range(0, 40, 3)), 'hit': ('die', range(0, 8, 2)), 'die': ('die', range(6, 40, 3))},
+    'caiyang': {'idle': ('idle', range(4, 40, 3)), 'heavy': ('heavy', range(0, 40, 3)), 'combo': ('combo', range(0, 17)), 'hit': ('die', range(0, 8, 2)), 'die': ('die', range(16, 40, 2))},
+    'gaolan': {'idle': ('idle', range(4, 40, 3)), 'heavy': ('heavy', range(0, 40, 3)), 'combo': ('combo', [*range(0, 9), *range(28, 40, 2)]), 'hit': ('die', range(0, 6, 2)), 'die': ('die', range(8, 40, 3))},
+    'caoren': {'idle': ('idle', range(4, 40, 3)), 'heavy': ('heavy', range(0, 25, 2)), 'guard': ('guard', range(0, 40, 3)), 'hit': ('die', range(0, 8, 2)), 'die': ('die', range(6, 40, 3))},
+    'hebei': {'run': ('run', range(8, 32, 2)), 'ram': ('ram', range(0, 40, 3)), 'die': ('die', range(4, 40, 3))},
+    'daji': {'run': ('run', range(8, 32, 2)), 'ram': ('ram', range(0, 40, 3)), 'die': ('die', range(4, 40, 3))},
+    'xiandeng': {'run': ('run', range(8, 32, 2)), 'ram': ('ram', range(0, 40, 3)), 'die': ('die', [0, 2, 4, 6, 8, *range(26, 40, 2)])},
 }
 
 # 10-27 新画风重录时个别人的段换来源：刘备待机那条 Veo 整条叠了两个人（10-28 用户：「这里 2 个刘备」），改用普攻那条末尾站定的 9 帧
@@ -92,7 +102,7 @@ NEW_PLAN = {'liu': {'idle': ('atk', range(31, 40))}}
 # 镜头中途推近了的那几条（10-25：西凉铁骑撞城那条，人马越来越大）：这一段按它自己第一帧的马身宽度缩回和定脚底那条一样大，脚底也用它自己的
 FIT = {('tieqi', 'ram'), ('gaoshun', 'run')}
 # 11-09 第二章兵种：Veo 每条开头镜头远近不一（曹兵跑步那条一开头人就大了三成），每段按它那条视频第一帧的人高缩回和定脚底那条一样大
-FITH = {'caobing', 'nushou', 'caoxiao', 'huainan', 'yuanlishi', 'hubao'}
+FITH = {'caobing', 'nushou', 'caoxiao', 'huainan', 'yuanlishi', 'hubao', 'hebei', 'daji', 'xiandeng'}
 RUNZ = {'nushou': 439 / 535, 'yuanlishi': 439 / 543}   # 弩手、力士跑步那条人一路走近（第 0 帧人高 439 → 后段约 535、543），只取后段稳定的几帧，按人高缩回
 
 def body(m):
@@ -110,8 +120,9 @@ ALIAS = {'zhangjiao': {'run': 'idle', 'ram': 'cast', 'fly': 'die'}, 'qibing': {'
          'dengmao': {'run': 'idle', 'ram': 'heavy', 'cast': 'heavy', 'fly': 'die'}, 'qishou': {'hit': 'run', 'fly': 'die'},
          'zhangbao': {'hit': 'run', 'fly': 'die', 'cast': 'ram'}, 'duyou': {'hit': 'run', 'fly': 'die'},
          'qushuai': {'hit': 'run', 'fly': 'die'}, 'zhangliang': {'hit': 'run', 'fly': 'die', 'cast': 'ram'}, 'xiaowei': {'hit': 'run', 'fly': 'die'}, 'yushe': {'hit': 'run', 'fly': 'die', 'ram': 'run'},
-         **{k: {'run': 'idle', 'ram': 'heavy', 'cast': 'heavy', 'fly': 'die'} for k in ('xiahoudun', 'dianwei', 'jiling', 'zhangliao', 'xunzheng')},
-         **{k: {'hit': 'run', 'fly': 'die'} for k in ('caobing', 'caoxiao', 'huainan', 'hubao', 'yuanlishi')}, 'nushou': {'hit': 'run', 'fly': 'die', 'ram': 'shoot'}}
+         **{k: {'run': 'idle', 'ram': 'heavy', 'cast': 'heavy', 'fly': 'die'} for k in ('xiahoudun', 'dianwei', 'jiling', 'zhangliao', 'xunzheng', 'xuchu', 'yanliang', 'caiyang', 'gaolan')},
+         'caoren': {'run': 'idle', 'ram': 'heavy', 'cast': 'heavy', 'combo': 'heavy', 'fly': 'die'},
+         **{k: {'hit': 'run', 'fly': 'die'} for k in ('caobing', 'caoxiao', 'huainan', 'hubao', 'yuanlishi', 'hebei', 'daji', 'xiandeng')}, 'nushou': {'hit': 'run', 'fly': 'die', 'ram': 'shoot'}}
 
 def gray_of(rgb):
     a = rgb.astype(np.float32)
@@ -149,7 +160,7 @@ def cells(path):
     sheet = np.asarray(Image.open(path).convert('RGB')); ch, cw = sheet.shape[0] // ROWS, sheet.shape[1] // COLS
     return [sheet[(i // COLS) * ch:(i // COLS + 1) * ch, (i % COLS) * cw:(i % COLS + 1) * cw] for i in range(N)]
 
-FOE = {'xiahoudun', 'dianwei', 'jiling', 'zhangliao', 'dengmao', 'qishou', 'zhangbao', 'duyou', 'zhangjiao', 'qibing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'lvbu', 'gaoshun', 'panfeng', 'wuanguo', 'qushuai', 'zhangliang', 'xiaowei', 'yushe', 'xunzheng', 'caobing', 'nushou', 'caoxiao', 'huainan', 'yuanlishi', 'hubao'}   # 敌人和友军：图集不带 g_ 前缀
+FOE = {'xiahoudun', 'dianwei', 'jiling', 'zhangliao', 'dengmao', 'qishou', 'zhangbao', 'duyou', 'zhangjiao', 'qibing', 'tieqi', 'gongqi', 'langqi', 'huzhen', 'huaxiong', 'lijue', 'lvbu', 'gaoshun', 'panfeng', 'wuanguo', 'qushuai', 'zhangliang', 'xiaowei', 'yushe', 'xunzheng', 'caobing', 'nushou', 'caoxiao', 'huainan', 'yuanlishi', 'hubao', 'xuchu', 'yanliang', 'caiyang', 'gaolan', 'caoren', 'hebei', 'daji', 'xiandeng'}   # 敌人和友军：图集不带 g_ 前缀
 for g in (sys.argv[2:] or ['guan', 'zhang', 'liu']):
     takes = {p.stem.split('_', 1)[1]: p for p in SRC.glob(f'{g}[0-9]_*.jpg')}
     base = 'idle' if 'idle' in takes else next(iter(PLAN.get(g, {}).values()), (None,))[0]   # 脚底和缩放按这条的首帧定
