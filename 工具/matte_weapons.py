@@ -14,6 +14,7 @@ HERE = Path(__file__).resolve().parent
 src, prefix = Path(sys.argv[1]), sys.argv[2]
 HEIGHT = int(sys.argv[3]) if len(sys.argv) > 3 else 640
 COUNT = int(sys.argv[4]) if len(sys.argv) > 4 else 5
+START = int(sys.argv[5]) if len(sys.argv) > 5 else 1   # 11-18 第三章：第五个参数是编号从几起（11 → wpn_guan11..15）
 GAP = int(os.environ.get('GAP', 12))   # 隔多少列空白才算另一把；刘备一对双股剑挨得近，GAP=60 把一对当一样（10-28）
 a = np.asarray(Image.open(src).convert('RGB')).astype(np.float32)
 border = np.concatenate([a[:6].reshape(-1, 3), a[-6:].reshape(-1, 3), a[:, :6].reshape(-1, 3), a[:, -6:].reshape(-1, 3)])
@@ -48,8 +49,11 @@ while len(runs) < COUNT and runs:                                               
     cut = a0 + int(np.argmin(cnt[a0:a1])); runs[i:i + 1] = [(x0, cut), (cut, x1)]
 print('找到', len(runs), '把：', runs)
 un = np.clip((a - (1 - alpha[..., None]) * bgc) / np.maximum(alpha[..., None], .05), 0, 255)
-for k, (x0, x1) in enumerate(runs, 1):
+for k, (x0, x1) in enumerate(runs, START):
     m = np.zeros_like(alpha); m[:, x0:x1] = alpha[:, x0:x1]
+    F = 36   # 11-18 和相邻那把挨着切开的一边：光带渐隐，不留直边
+    if k > START: m[:, x0:x0 + F] *= np.linspace(0, 1, min(F, x1 - x0))[None, :]
+    if k < START + len(runs) - 1: m[:, max(x0, x1 - F):x1] *= np.linspace(1, 0, min(F, x1 - x0))[None, :]
     im = Image.fromarray(np.dstack([un, m * 255]).astype(np.uint8), 'RGBA'); im = im.crop(im.getbbox())
     w, h = im.size; im = im.resize((round(w * HEIGHT / h), HEIGHT), Image.Resampling.LANCZOS)
     dst = HERE.parent / '原型' / 'img' / f'{prefix}{k}.png'; im.save(dst, optimize=True); print(dst.name, im.size, dst.stat().st_size // 1024, 'KB')

@@ -159,8 +159,8 @@ const IMG = {}; for (const k of ['guan', 'zhang', 'liu', 'zhao']) { IMG[k] = new
 // 关羽的官阶头像：简洁肩甲是乡勇，原胸像是义勇头领；2–6 对应后续官阶。
 const GUAN_RANK_FILES = ['p_guan_rank_1_head.jpg', 'p_guan_rank_2_head_v2.jpg', 'p_guan_rank_3_head_v2.jpg', 'p_guan_rank_4_head_v2.jpg', 'p_guan_rank_5_head_v2.jpg', 'p_guan_rank_6_v2.jpg'];
 const GUAN_RANK_PORTRAITS = GUAN_RANK_FILES.map(file => { const im = new Image(); im.src = `img/${file}?v=20261029d`; return im; });
-const RANK_IMG = {}; for (const id of ['guan', 'zhang', 'liu']) for (let r = 1; r <= 9; r++) { const im = new Image(); im.src = `img/rank_${id}_${r}.jpg?v=20261029`; RANK_IMG[id + r] = im; }   // 10-29 三兄弟六个官阶的新装头像（美术/<人>/官阶设计_20261029、关羽/官阶头像_简化雕刻）
-const heroRankPortrait = (id, r = INV.rank || 0) => { const im = r >= 1 ? RANK_IMG[id + Math.min(9, r)] : null; return ready(im) ? im : r > 6 && ready(RANK_IMG[id + 6]) ? RANK_IMG[id + 6] : IMG[id]; };   // 11-08 第二章 7–9 阶
+const RANK_IMG = {}; for (const id of ['guan', 'zhang', 'liu']) for (let r = 1; r <= 12; r++) { const im = new Image(); im.src = `img/rank_${id}_${r}.jpg?v=${r > 9 ? 20261118 : 20261029}`; RANK_IMG[id + r] = im; }   // 10-29 三兄弟六个官阶的新装头像（美术/<人>/官阶设计_20261029、关羽/官阶头像_简化雕刻）
+const heroRankPortrait = (id, r = INV.rank || 0) => { const im = r >= 1 ? RANK_IMG[id + Math.min(12, r)] : null; return ready(im) ? im : r > 9 && ready(RANK_IMG[id + 9]) ? RANK_IMG[id + 9] : r > 6 && ready(RANK_IMG[id + 6]) ? RANK_IMG[id + 6] : IMG[id]; };   // 11-18 第三章：10–12 阶没画好时退回第九套   // 11-08 第二章 7–9 阶
 for (const k of ['jianyong', 'liru', 'zhangbao']) { IMG['p_' + k] = new Image(); IMG['p_' + k].src = 'img/p_' + k + '.jpg'; }   // 军师头像（10-25，ChatGPT 画，原图 美术/界面/军师头像_简雍李儒.jpg）
 IMG.trio = new Image(); IMG.trio.src = 'img/trio.png?v=1027b';
 // 3D 建模渲出来的小兵图集（Meshy → Blender → 水墨着色，见 ../工具/）；没有时退回程序画的
@@ -292,6 +292,26 @@ const FOES = {
   jiling:    { name: '纪灵', hp: 4000, spd: 0, dps: 0, exp: 100, r: 24, box: [76, 96], s: 2, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'jiling', alt: 'huaxiong', sh: 100, title: '袁术上将' },
   zhangliao: { name: '张辽', hp: 3400, spd: 0, dps: 0, exp: 70, r: 22, box: [76, 96], s: 1.9, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'zhangliao', alt: 'lijue', sh: 94, title: '吕布部将' },
   lvbu2:     { name: '吕布', hp: 5200, spd: 0, dps: 0, exp: 120, r: 26, box: [76, 96], s: 2.1, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'lvbu', alt: 'cyz', sh: 110, title: '白门楼', tint: 'lvbu', pt: 'lvbu' },
+  // 第三章（11-18，../设计/第三章设定.md）：先借第二章自己的图集调色（tintOwn），敌将、新兵种的 Veo 动作录好后换
+  hebei:    { name: '河北兵', hp: 62, spd: 34, leak: 4, exp: 2, r: 10, box: [34, 52], s: 1, wpn: 'spear', sheet: 'caobing', alt: 'xiliang', sh: 42, tint: 'hebei', tintOwn: true },   // 袁绍军：普通，成群，不举盾
+  daji:     { name: '河北大戟士', hp: 360, spd: 22, leak: 14, exp: 8, r: 13, box: [48, 66], s: 1.32, wpn: 'club', bulk: 12, sheet: 'caoxiao', alt: 'qushuai', sh: 62, tint: 'hebei', tintOwn: true, guard: 9 },   // 头目：隔一阵给身边的兵套挡刀；冷艳锯劈得开
+  xiandeng: { name: '先登死士', hp: 96, spd: 44, leak: 6, exp: 3, r: 10, box: [34, 52], s: 1.05, wpn: 'spear', sheet: 'xianzhen', alt: 'huangjin', sh: 46, tint: 'hebei', tintOwn: true, stunRes: .3 },   // 不怕晕、冲得快
+  guanbing: { name: '关卡守兵', hp: 40, spd: 34, leak: 2, exp: 2, r: 9, box: [34, 52], s: 1, wpn: 'bow', stopY: 280, shoot: { every: 3, dmg: 4.5 }, sheet: 'nushou', alt: 'gong', sh: 38, tint: 'guan5', tintOwn: true },   // 过五关：放冷箭的守兵
+  chezhou:  { name: '车胄', hp: 420, spd: 22, leak: 14, exp: 9, r: 13, box: [48, 66], s: 1.32, wpn: 'club', bulk: 12, sheet: 'caoxiao', alt: 'qushuai', sh: 62, front: .5, tint: 'cao', boss: true },
+  kongxiu:  { name: '孔秀', hp: 520, spd: 20, leak: 14, exp: 10, r: 13, box: [48, 66], s: 1.35, wpn: 'club', bulk: 12, sheet: 'caoxiao', alt: 'qushuai', sh: 64, tint: 'guan5', tintOwn: true, boss: true },
+  mengtan:  { name: '孟坦', hp: 480, spd: 26, leak: 14, exp: 10, r: 13, box: [48, 66], s: 1.35, wpn: 'club', bulk: 12, sheet: 'caoxiao', alt: 'qushuai', sh: 64, tint: 'guan5', tintOwn: true, boss: true },
+  hanfu:    { name: '韩福', hp: 420, spd: 20, leak: 14, exp: 10, r: 13, box: [48, 66], s: 1.3, wpn: 'bow', stopY: 300, shoot: { every: 3.5, dmg: 7 }, sheet: 'nushou', alt: 'gong', sh: 46, tint: 'guan5', tintOwn: true, boss: true },
+  bianxi:   { name: '卞喜', hp: 560, spd: 20, leak: 14, exp: 10, r: 13, box: [48, 66], s: 1.35, wpn: 'club', bulk: 12, sheet: 'caoxiao', alt: 'qushuai', sh: 64, tint: 'guan5', tintOwn: true, boss: true },
+  qinqi:    { name: '秦琪', hp: 600, spd: 22, leak: 14, exp: 10, r: 13, box: [48, 66], s: 1.35, wpn: 'club', bulk: 12, sheet: 'caoxiao', alt: 'qushuai', sh: 64, tint: 'cao', boss: true },
+  lvkuang:  { name: '吕旷', hp: 560, spd: 22, leak: 14, exp: 10, r: 13, box: [48, 66], s: 1.35, wpn: 'club', bulk: 12, sheet: 'caoxiao', alt: 'qushuai', sh: 64, tint: 'cao', boss: true },
+  lvxiang:  { name: '吕翔', hp: 560, spd: 22, leak: 14, exp: 10, r: 13, box: [48, 66], s: 1.35, wpn: 'club', bulk: 12, sheet: 'caoxiao', alt: 'qushuai', sh: 64, tint: 'cao', boss: true },
+  xuchu:    { name: '许褚', hp: 3800, spd: 0, dps: 0, exp: 90, r: 24, box: [76, 96], s: 2, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'dianwei', alt: 'huzhen', sh: 98, title: '虎痴', tint: 'xuchu', tintOwn: true },
+  yanliang: { name: '颜良', hp: 4400, spd: 0, dps: 0, exp: 110, r: 24, box: [76, 96], s: 2, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'jiling', alt: 'huaxiong', sh: 100, title: '河北名将', tint: 'yanliang', tintOwn: true },
+  wangzhi:  { name: '王植', hp: 3000, spd: 0, dps: 0, exp: 70, r: 22, box: [76, 96], s: 1.9, wpn: 'spear', bulk: 11, boss: true, duel: true, sheet: 'xunzheng', alt: 'dengmao', sh: 76, title: '荥阳太守', tint: 'cao', tintOwn: true },
+  zhangF:   { name: '张飞', hp: 3600, spd: 0, dps: 0, exp: 60, r: 24, box: [76, 96], s: 2, wpn: 'spear', bulk: 11, boss: true, duel: true, sheet: 'xiahoudun', alt: 'lijue', sh: 94, title: '古城三弟', tint: 'zhangF', tintOwn: true },   // 第 78 关：张飞误会关羽，两兄弟对打（正面图录好前借夏侯惇调成黑甲红巾）
+  caiyang:  { name: '蔡阳', hp: 4200, spd: 0, dps: 0, exp: 100, r: 24, box: [76, 96], s: 2, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'zhangliao', alt: 'lijue', sh: 94, title: '曹营老将', tint: 'caiyang', tintOwn: true },
+  gaolan:   { name: '高览', hp: 3800, spd: 0, dps: 0, exp: 90, r: 22, box: [76, 96], s: 1.9, wpn: 'spear', bulk: 11, boss: true, duel: true, sheet: 'xiahoudun', alt: 'lijue', sh: 94, title: '河北降将', tint: 'hebei', tintOwn: true },
+  caoren:   { name: '曹仁', hp: 5200, spd: 0, dps: 0, exp: 120, r: 26, box: [76, 96], s: 2.1, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'jiling', alt: 'huaxiong', sh: 100, title: '八门金锁', tint: 'cao', tintOwn: true },
   qixing: { name: '七星灯', hp: 1, spd: 0, dps: 0, exp: 0, r: 9, box: [22, 40], s: 1, lamp: true },   // 11-01 第十关张角拜北斗点的灯（见 stepQixing）
   zhangjiao: { name: '张角', hp: 2300, spd: 0, dps: 0, exp: 60, r: 26, box: [76, 96], s: 2.1, wpn: 'blade', bulk: 11, boss: true, duel: true, sheet: 'zhangjiao', alt: 'shushi', sh: 108, title: '天公将军', aura: true },   // 图集是 Veo 录的，高度连九节杖算
 };
@@ -536,9 +556,13 @@ const FOE_CS = {
   // 第二章（11-08）：郭嘉谁都看不透；阎象一般；陈宫一局三计，只有陈登看得破
   guojia: { name: '郭嘉', title: '曹操谋主', zhi: 96, n: 2, pool: ['ambush', 'fire', 'jijiang', 'rush', 'reinf'], cav: 'hubao' },
   yanxiang: { name: '阎象', title: '袁术主簿', zhi: 70, n: 1, pool: ['ambush', 'rush', 'reinf', 'jijiang'], cav: 'qibing' },
-  chengong: { name: '陈宫', title: '吕布谋主', zhi: 92, n: 3, pool: ['ambush', 'fire', 'lijian', 'jijiang', 'rush', 'reinf'], cav: 'langqi' } };
+  chengong: { name: '陈宫', title: '吕布谋主', zhi: 92, n: 3, pool: ['ambush', 'fire', 'lijian', 'jijiang', 'rush', 'reinf'], cav: 'langqi' },
+  /* 第三章（11-18） */ chengyu: { name: '程昱', title: '曹操谋士', zhi: 90, n: 2, pool: ['ambush', 'fire', 'lijian', 'jijiang', 'rush', 'reinf'], cav: 'hubao' },
+  shenpei: { name: '审配', title: '袁绍谋主', zhi: 78, n: 2, pool: ['ambush', 'rush', 'reinf', 'jijiang', 'fire'], cav: 'qibing' },
+  caimao: { name: '蔡瑁', title: '荆州水军都督', zhi: 70, n: 1, pool: ['ambush', 'rush', 'fire'], cav: 'qibing' } };
 const FOE_CS_LV = { 6: 'zhangbao', 7: 'zhangbao', 9: 'zhangbao', 12: 'liru', 13: 'liru', 14: 'liru', 16: 'liru', 17: 'liru', 18: 'liru', 19: 'liru', 21: 'liru', 22: 'liru', 23: 'liru', 24: 'liru', 26: 'liru', 27: 'liru', 28: 'liru', 29: 'liru',
-  33: 'guojia', 36: 'guojia', 37: 'guojia', 38: 'guojia', 39: 'guojia', 43: 'yanxiang', 46: 'yanxiang', 48: 'yanxiang', 49: 'yanxiang', 53: 'chengong', 54: 'chengong', 56: 'chengong', 58: 'chengong', 59: 'chengong' };
+  33: 'guojia', 36: 'guojia', 37: 'guojia', 38: 'guojia', 39: 'guojia', 43: 'yanxiang', 46: 'yanxiang', 48: 'yanxiang', 49: 'yanxiang', 53: 'chengong', 54: 'chengong', 56: 'chengong', 58: 'chengong', 59: 'chengong',
+  /* 第三章：关羽独守段（66–78）没有敌军师 */ 61: 'chengyu', 62: 'chengyu', 63: 'chengyu', 64: 'chengyu', 67: 'shenpei', 68: 'shenpei', 69: 'shenpei', 86: 'caimao', 87: 'caimao', 88: 'chengyu', 89: 'chengyu' };
 const FOE_CS_MUST = { 12: 'ambush' }, FOE_CS_N = { 48: 2 };   // 第四十八关阎象带两条                                                  // 第十二关教缓兵之计：李儒一定带伏兵
 const TAC = {   // 每个计：名字、看破时怎么报（T 是抽到的那一份：w 第几波、d 波开始后几秒、side、hero）
   ambush: { name: '伏兵', tell: T => `第${CN[T.w]}波开始约 ${Math.round(T.d)} 秒，${T.n} 骑从${T.side < 0 ? '左' : '右'}侧杀出` },
@@ -588,7 +612,9 @@ const isCav = T => !T.civ && (T.spd >= 48 || !!T.mount);
 const MER = { 1: 136, 2: 311, 3: 458,   // 10-26 前三关缩到约一分钟（walk/far/wait/tx）后重测；会搭配 6 种子：2.83 / 2.33 / 2.00 星、晋升 4 / 4.7 / 4 次
   4: 386, 5: 98, 6: 319, 7: 259, 8: 154, 9: 609, 10: 185, 11: 364, 12: 647, 13: 699, 14: 566, 15: 116,
   16: 663, 17: 369, 18: 718, 19: 652, 20: 78, 21: 818, 22: 656, 23: 617, 24: 120, 25: 190, 26: 611, 27: 563, 28: 785, 29: 885, 30: 45,
-  /* 第二章（11-08 merTest 4 种子，调血量前测的；血量按 smart 机器人 8 种子全胜、平均 ≥2.25 星、最长 ≤290 秒二分） */ 31: 640, 32: 595, 33: 752, 34: 416, 35: 116, 36: 767, 37: 554, 38: 645, 39: 754, 40: 83, 41: 607, 42: 602, 43: 626, 44: 547, 45: 147, 46: 676, 47: 515, 48: 624, 49: 706, 50: 95, 51: 217, 52: 792, 53: 837, 54: 772, 55: 95, 56: 1004, 57: 375, 58: 648, 59: 1017, 60: 67 };
+  /* 第二章（11-08 merTest 4 种子，调血量前测的；血量按 smart 机器人 8 种子全胜、平均 ≥2.25 星、最长 ≤290 秒二分） */ 31: 640, 32: 595, 33: 752, 34: 416, 35: 116, 36: 767, 37: 554, 38: 645, 39: 754, 40: 83, 41: 607, 42: 602, 43: 626, 44: 547, 45: 147, 46: 676, 47: 515, 48: 624, 49: 706, 50: 95, 51: 217, 52: 792, 53: 837, 54: 772, 55: 95, 56: 1004, 57: 375, 58: 648, 59: 1017, 60: 67,
+  /* 11-18 第三章：merTest 6 种子（按推荐官阶） */ 61: 567, 62: 555, 63: 685, 64: 574, 65: 70, 66: 302, 67: 628, 68: 470, 69: 721, 70: 143, 71: 323, 72: 363, 73: 308, 74: 415, 75: 62,
+  76: 342, 77: 542, 78: 50, 79: 584, 80: 78, 81: 672, 82: 434, 83: 765, 84: 569, 85: 65, 86: 706, 87: 350, 88: 703, 89: 643, 90: 145 };
 const RANK_AT = [.08, .3, .54, .8, 1.02], RANK_MAX = RANK_AT.length;   // 第一次来得快（约开打 15–25 秒），后面拉开
 const needOf = r => r >= RANK_MAX ? Infinity : (MER[G.lv.id] || 300) * (RANK_AT[r] - (RANK_AT[r - 1] || 0)) * (G.needMul || 1);   // 魅力高晋升快
 const rankFrac = () => G.rank >= RANK_MAX ? 1 : G.exp / needOf(G.rank);
@@ -905,6 +931,123 @@ const LEVELS = [
   { id: 60, name: '吕布', sub: '大战 · 白门楼', kind: 'duel', boss: 'lvbu2', hpMul: 8.241, sanying: true, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'baimen', reward: '方天画戟 · 第二章完',
     moves: ['heavy', 'combo', 'guard', 'rush', 'summon', 'combo', 'heavy', 'buff', 'rush'], gap: 2.8, heavy: 12, adds: [['xianzhen', 2], ['langqi', 1]],
     tips: [[1, '白门楼：吕布比虎牢关时更狠，陈宫的陷阵营也会冲上来'], [8, '画戟横扫要挡两次；无双喝断，护罩喝晕才破']] },
+  // ========== 第三章 · 官渡（61–90，11-18，见 ../设计/第三章设定.md）：敌人、敌将先借第二章图集调色；hpMul 按 smart 机器人 8 种子二分（波次关：全胜、≥2.25 星、≤290 秒；斗将：全胜、≥2 星，见方案初稿）==========
+  // ---------- 七 · 斩颜良（61–70） ----------
+  { id: 61, name: '截袁术', sub: '借截袁术之名逃出许都', hpMul: 1.825, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'xuzhou', reward: '精铁',
+    waves: [[2, 'huainan', 30, 8, 'rand'], [8, 'yuanlishi', 3, 3, 'rand'], [16, 'huainan', 34, 0, 'wedge'], [24, 'huainan', 40, 10, 'rand'], [34, 'yuanlishi', 5, 4, 'rand'], [42, 'huainan', 40, 0, 'line'], [50, 'huainan', 40, 10, 'rand']],
+    tips: [[1, '袁术残军乱成一团：一来一大片，招式等他们挤一堆'], [6, '程昱在曹营盯着你们']] },
+  { id: 62, name: '斩车胄', sub: '关羽夜斩车胄，夺回徐州', hpMul: 2.469, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'xzwall', reward: '乌金',
+    waves: [[2, 'caobing', 22, 8, 'rand'], [8, 'nushou', 4, 3, 'line'], [16, 'caobing', 26, 0, 'wedge'], [24, 'hubao', 6, 5, 'rand'], [32, 'chezhou', 1, 0, 'rand', { g: 'a', lead: true }], [32, 'caobing', 24, 0, 'line', { g: 'a' }], [44, 'nushou', 6, 4, 'line'], [50, 'caobing', 30, 10, 'rand']],
+    tips: [[1, '晋阶宜城亭侯以后，配招页开第三个被动格'], [30, '车胄带一队出城：斩他溃散']] },
+  { id: 63, name: '徐州复得', sub: '残局 · 曹操亲征，大军压到城下', hpMul: 4.626, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'xuzhou', reward: '乌金',
+    rules: { wall: 80, pre: [['caobing', 14, 260, 400], ['hubao', 3, 240, 300]] },
+    waves: [[4, 'caobing', 24, 6, 'rand'], [10, 'hubao', 6, 4, 'rand'], [18, 'caobing', 28, 0, 'wedge'], [26, 'nushou', 6, 4, 'line'], [32, 'caobing', 30, 10, 'rand'], [42, 'caoxiao', 1, 0, 'rand', { g: 'a', lead: true }], [42, 'caobing', 26, 0, 'line', { g: 'a' }], [52, 'hubao', 8, 6, 'rand']],
+    tips: [[1, '残局：城防八成，曹兵已冲到半路'], [6, '兵器要 +21 才扛得住这一波']] },
+  { id: 64, name: '张飞劫营', sub: '夜劫曹营——三人都知道这一仗会输', hpMul: 5.587, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'night', reward: '残页',
+    rules: { night: { vis: 240, torches: [[90, 300], [270, 260]] }, casts: 16 },
+    waves: [[2, 'caobing', 22, 8, 'rand'], [8, 'hubao', 6, 0, 'line'], [16, 'caobing', 26, 10, 'rand'], [24, 'hubao', 8, 6, 'rand'], [32, 'caobing', 30, 0, 'wedge'], [40, 'nushou', 6, 4, 'line'], [48, 'hubao', 10, 6, 'rand']],
+    tips: [[1, '夜里劫营：只看得见火把附近'], [4, '这关招式一共只能出 16 次']] },
+  { id: 65, name: '许褚', sub: '拦路将 · 虎痴裸衣来斗', kind: 'duel', boss: 'xuchu', hpMul: 5.372, slots: ['zhang', 'liu', 'guan', null], join: [], map: 'xuzhou', reward: '陨铁 · 兵书',
+    moves: ['heavy', 'combo', 'summon', 'heavy', 'buff', 'combo'], gap: 3, heavy: 14, adds: [['caobing', 3], ['hubao', 1]],
+    rage: { at: .5, gap: .7, heavy: 1.5, name: '裸衣', sub: '血过一半脱了甲：出手更快更重，挨打也更痛' },
+    tips: [[1, '许褚：连斩要举两次盾'], [8, '打掉一半血他会脱甲狂暴——攻高，可也更好打']] },
+  { id: 66, name: '土山约三事', sub: '关羽一人护着两位嫂嫂困在土山', hpMul: 1.815, slots: ['guan', null, null, null], join: [], map: 'tushan', reward: '曹操赠袍',
+    rules: { cart: { hp: 140, y0: 300, y1: 452, dur: 60, label: '二位嫂嫂车驾' } },
+    waves: [[2, 'caobing', 14, 8, 'rand'], [10, 'caobing', 16, 0, 'wedge'], [18, 'hubao', 4, 4, 'rand'], [26, 'caobing', 18, 10, 'rand'], [36, 'nushou', 4, 3, 'line'], [44, 'caobing', 20, 10, 'rand']],
+    tips: [[1, '只有关羽一人：护着嫂嫂的车驾，敌兵会去砍车'], [10, '张辽在山下喊话：「云长，降汉不降曹」']] },
+  { id: 67, name: '白马之围', sub: '关羽在曹营，随军解白马之围', hpMul: 0.765, slots: ['guan', null, null, null], join: [], map: 'baima', reward: '赤兔马鬃',
+    rules: { volley: { every: 9, n: 10, dmg: 30, text: '曹军弩手齐射' } },
+    waves: [[2, 'hebei', 22, 8, 'rand'], [8, 'hebei', 22, 0, 'wedge'], [16, 'qibing', 6, 5, 'rand'], [24, 'hebei', 28, 10, 'rand'], [32, 'daji', 1, 0, 'rand', { g: 'a', lead: true }], [32, 'hebei', 22, 0, 'line', { g: 'a' }], [44, 'hebei', 30, 10, 'rand']],
+    tips: [[1, '曹军弩手在城头助射，每 9 秒一轮'], [30, '河北大戟士隔一阵给身边的兵套挡刀：先斩他']] },
+  { id: 68, name: '河北先锋', sub: '颜良的先锋大戟士压上来', hpMul: 1.332, slots: ['guan', null, null, null], join: [], map: 'baima', reward: '青龙鳞',
+    rules: { volley: { every: 10, n: 8, dmg: 28, text: '曹军弩手齐射' } },
+    waves: [[2, 'hebei', 22, 8, 'rand'], [8, 'daji', 1, 0, 'rand', { g: 'a', lead: true }], [8, 'hebei', 20, 0, 'line', { g: 'a' }], [20, 'xiandeng', 8, 6, 'rand'], [28, 'hebei', 26, 10, 'rand'], [36, 'daji', 1, 0, 'rand', { g: 'b', lead: true }], [36, 'hebei', 22, 0, 'line', { g: 'b' }], [48, 'xiandeng', 10, 6, 'rand']],
+    tips: [[1, '大戟士有护罩、给兵套挡刀：研习「冷艳锯」后温酒斩将先劈碎再斩'], [18, '先登死士不怕喝、不怕晕，冲得快']] },
+  { id: 69, name: '颜良压境', sub: '战前 · 河北大军三路压来', hpMul: 1.529, slots: ['guan', null, null, null], join: [], map: 'baima', reward: '乌金 · 兵书',
+    rules: { volley: { every: 9, n: 10, dmg: 30, text: '曹军弩手齐射' } },
+    waves: [[2, 'hebei', 16, 6, 'rand', { lane: 'L' }], [2, 'xiandeng', 6, 4, 'rand', { lane: 'M' }], [2, 'hebei', 16, 6, 'rand', { lane: 'R' }], [18, 'qibing', 8, 6, 'rand'], [26, 'hebei', 28, 0, 'wedge'],
+      [36, 'daji', 1, 0, 'rand', { g: 'a', lead: true, lane: 'M' }], [36, 'hebei', 22, 8, 'rand', { g: 'a', lane: 'M' }], [48, 'xiandeng', 10, 6, 'rand'], [56, 'hebei', 30, 10, 'rand']],
+    tips: [[1, '三路同时来：左右河北兵，中路先登死士'], [34, '大戟士走中路，斩他溃散']] },
+  { id: 70, name: '颜良', sub: '大战 · 万军之中取上将首级', kind: 'duel', boss: 'yanliang', hpMul: 1.837, slots: ['guan', null, null, null], join: [], map: 'baima', reward: '颜良首级 · 第三章第一段完',
+    s3: { text: '斩将时城防剩八成以上（关羽一人喝不断无双）', check: (r, G) => r.win && r.frac >= .8 },   // 11-18 关羽独守的斗将没有张飞：第三星换成城防
+    moves: ['summon', 'heavy', 'combo', 'summon', 'guard', 'heavy', 'buff', 'summon'], gap: 3, heavy: 14, adds: [['hebei', 4], ['xiandeng', 1]],
+    tips: [[1, '颜良站在阵后不停召兵：温酒斩将、千里走单骑才够得到他'], [8, '大将护阵是护罩，冷艳锯劈得开']] },
+  // ---------- 八 · 过五关（71–80） ----------
+  { id: 71, name: '挂印封金', sub: '关羽挂印封金，护嫂嫂出许都', hpMul: 2.536, slots: ['guan', null, null, null], join: [], map: 'jingzhou', reward: '汉寿亭侯印',
+    rules: { cart: { hp: 140, y0: 250, y1: 452, dur: 62, label: '二位嫂嫂车驾' } },
+    waves: [[2, 'caobing', 14, 8, 'rand'], [10, 'hubao', 4, 4, 'rand'], [18, 'caobing', 18, 0, 'wedge'], [26, 'hubao', 6, 4, 'rand'], [36, 'caobing', 20, 10, 'rand'], [46, 'hubao', 6, 0, 'line']],
+    tips: [[1, '千里走单骑第一程：护着车驾出城'], [6, '曹操没下令追，可总有想立功的']] },
+  { id: 72, name: '东岭关 · 孔秀', sub: '过五关第一关：守将孔秀拦路', hpMul: 4.071, slots: ['guan', null, null, null], join: [], map: 'wuguan', reward: '乌金',
+    waves: [[2, 'guanbing', 6, 4, 'line'], [6, 'caobing', 14, 8, 'rand'], [16, 'guanbing', 8, 4, 'line'], [24, 'kongxiu', 1, 0, 'rand', { g: 'a', lead: true }], [24, 'caobing', 16, 0, 'line', { g: 'a' }], [36, 'caobing', 20, 10, 'rand'], [44, 'guanbing', 8, 4, 'line']],
+    tips: [[1, '守兵站在远处放冷箭：千里走单骑横着一扫最快'], [22, '孔秀带兵出关，斩他溃散']] },
+  { id: 73, name: '洛阳 · 孟坦韩福', sub: '残局 · 孟坦诈败，韩福冷箭', hpMul: 3.669, slots: ['guan', null, null, null], join: [], map: 'luoyang', reward: '乌金',
+    rules: { wall: 80, pre: [['caobing', 10, 260, 400], ['guanbing', 3, 240, 280]] },
+    waves: [[4, 'mengtan', 1, 0, 'rand', { g: 'a', lead: true }], [4, 'caobing', 14, 0, 'wedge', { g: 'a' }], [14, 'guanbing', 6, 4, 'line'], [22, 'hanfu', 1, 0, 'rand', { g: 'b', lead: true }], [22, 'guanbing', 6, 4, 'line', { g: 'b' }], [34, 'caobing', 20, 10, 'rand'], [44, 'hubao', 6, 4, 'rand']],
+    tips: [[1, '孟坦冲得快：引你追出去'], [20, '韩福停在远处放冷箭，打城防很狠']] },
+  { id: 74, name: '汜水关 · 卞喜', sub: '镇国寺里埋着伏兵', hpMul: 0.655, slots: ['guan', null, null, null], join: [], map: 'wuguan', reward: '残页',
+    rules: { casts: 12 },
+    waves: [[2, 'caobing', 14, 8, 'rand'], [8, 'guanbing', 6, 4, 'line'], [16, 'caobing', 16, 0, 'wedge'], [24, 'bianxi', 1, 0, 'rand', { g: 'a', lead: true }], [24, 'caobing', 16, 0, 'line', { g: 'a' }], [32, 'hubao', 6, 0, 'line'], [42, 'caobing', 20, 10, 'rand']],
+    tips: [[1, '这关招式一共只能出 12 次'], [22, '卞喜带伏兵杀出：斩他溃散']] },
+  { id: 75, name: '荥阳 · 王植', sub: '拦路将 · 王植火烧驿馆', kind: 'duel', boss: 'wangzhi', hpMul: 1.912, slots: ['guan', null, null, null], join: [], map: 'wuguan', reward: '陨铁 · 兵书',
+    s3: { text: '斩将时城防剩八成以上（关羽一人喝不断无双）', check: (r, G) => r.win && r.frac >= .8 },   // 11-18 关羽独守的斗将没有张飞：第三星换成城防
+    moves: ['heavy', 'summon', 'buff', 'heavy', 'summon'], gap: 3, heavy: 13, adds: [['guanbing', 2], ['caobing', 3]],
+    tips: [[1, '王植：守兵在远处放箭，兵一批批来'], [6, '火烧驿馆蓄势：打断不了就举盾']] },
+  { id: 76, name: '黄河渡口 · 秦琪', sub: '车驾要上船，秦琪拦渡', hpMul: 1.335, slots: ['guan', null, null, null], join: [], map: 'huanghe', reward: '乌金',
+    rules: { cart: { hp: 140, y0: 250, y1: 452, dur: 66, label: '渡船车驾' } },
+    waves: [[2, 'caobing', 14, 8, 'rand'], [8, 'guanbing', 6, 4, 'line'], [16, 'qinqi', 1, 0, 'rand', { g: 'a', lead: true }], [16, 'caobing', 18, 0, 'line', { g: 'a' }], [28, 'hubao', 6, 4, 'rand'], [38, 'caobing', 20, 10, 'rand'], [48, 'guanbing', 6, 4, 'line']],
+    tips: [[1, '研习「过关」后，千里走单骑撞开拦车的兵，车驾走得快一倍'], [14, '秦琪带兵拦渡：斩他溃散']] },
+  { id: 77, name: '夏侯惇追', sub: '夏侯惇追来，张辽送来曹操的放行令', hpMul: 0.426, slots: ['guan', null, null, null], join: [], map: 'huanghe', reward: '残页',
+    rules: { timed: { t: 70, label: '放行令到', text: '张辽送到放行令', sub: '夏侯惇只得收兵' } },
+    waves: [[2, 'hubao', 6, 4, 'rand'], [8, 'caobing', 18, 8, 'rand'], [16, 'hubao', 8, 0, 'line'], [24, 'caobing', 22, 10, 'rand'], [32, 'hubao', 10, 6, 'rand'], [42, 'caobing', 24, 0, 'wedge'], [52, 'hubao', 10, 6, 'rand']],
+    tips: [[1, '限时：撑到右上角倒数走完，放行令就到'], [6, '虎豹骑追得快']] },
+  { id: 78, name: '张飞挺矛', sub: '古城：张飞以为二哥降了曹', kind: 'duel', boss: 'zhangF', hpMul: 3.525, slots: ['guan', null, null, null], join: [], map: 'gucheng', reward: '三弟的酒',
+    s3: { text: '斩将时城防剩八成以上（关羽一人喝不断无双）', check: (r, G) => r.win && r.frac >= .8 },   // 11-18 关羽独守的斗将没有张飞：第三星换成城防
+    moves: ['heavy', 'combo', 'guard', 'heavy', 'buff'], gap: 3, heavy: 12, adds: [],
+    rules: { timed: { t: 60, bossNeed: .3, label: '三弟认人', text: '张飞认出二哥', sub: '「二哥！……你真没降？」', fail: '张飞还是不认' } },
+    tips: [[1, '倒数走完之前把张飞打掉三成血，他就认人'], [6, '据门不让是护罩：别硬砍，等他放下']] },
+  { id: 79, name: '蔡阳兵临', sub: '战前 · 蔡阳为外甥秦琪报仇', hpMul: 1.525, slots: ['zhang', 'guan', null, null], join: [], map: 'gucheng', reward: '乌金 · 兵书',
+    waves: [[2, 'caobing', 20, 8, 'rand'], [8, 'hubao', 6, 4, 'rand'], [16, 'nushou', 6, 4, 'line'], [24, 'caobing', 26, 0, 'wedge'], [32, 'hubao', 8, 6, 'rand'], [40, 'caoxiao', 1, 0, 'rand', { g: 'a', lead: true }], [40, 'caobing', 24, 0, 'line', { g: 'a' }], [52, 'caobing', 30, 10, 'rand']],
+    tips: [[1, '张飞回到城头了'], [38, '校尉带一队，斩他溃散']] },
+  { id: 80, name: '蔡阳', sub: '大战 · 古城三通鼓', kind: 'duel', boss: 'caiyang', hpMul: 3.48, slots: ['zhang', 'guan', null, null], join: [], map: 'gucheng', reward: '蔡阳首级 · 第三章第二段完',
+    moves: ['heavy', 'combo', 'summon', 'heavy', 'buff', 'combo'], gap: 3, heavy: 14, adds: [['caobing', 4], ['hubao', 1]],
+    rules: { timed: { t: 90, bossNeed: .999, label: '三通鼓', text: '三通鼓尽', sub: '', fail: '三通鼓尽，蔡阳还没斩' } },
+    tips: [[1, '三通鼓：右上角倒数走完之前要斩了蔡阳'], [6, '张飞研习过「三通鼓」：一喝之后三声鼓，关羽这时斩将翻倍']] },
+  // ---------- 九 · 新野（81–90） ----------
+  { id: 81, name: '古城聚义', sub: '赵云来投，兄弟重聚', hpMul: 13.068, slots: ['zhang', 'liu', 'guan', 'zhao'], join: [], map: 'gucheng', reward: '赵云归队',
+    waves: [[2, 'caobing', 22, 8, 'rand'], [8, 'hubao', 6, 4, 'rand'], [16, 'caobing', 26, 0, 'wedge'], [24, 'nushou', 6, 4, 'line'], [32, 'caobing', 30, 10, 'rand'], [42, 'hubao', 8, 6, 'rand'], [50, 'caobing', 30, 10, 'rand']],
+    tips: [[1, '赵云正式归队：第四个出手位'], [6, '张飞：「七进七出那个，终于是自己人了」']] },
+  { id: 82, name: '汝南', sub: '刘辟、龚都的黄巾余部来投', hpMul: 16.313, slots: ['zhang', 'liu', 'guan', 'zhao'], join: [], map: 'runan', reward: '龙胆银',
+    waves: [[2, 'baixing', 8, 8, 'rand'], [4, 'caobing', 18, 8, 'rand'], [12, 'baixing', 8, 8, 'rand'], [14, 'hubao', 6, 4, 'rand'], [22, 'caobing', 26, 10, 'rand'], [32, 'baixing', 10, 8, 'rand'], [36, 'nushou', 6, 4, 'line'], [46, 'caobing', 28, 10, 'rand']],
+    tips: [[1, '来投的黄巾余部往城门跑：别砍到自己人'], [6, '虎豹骑追上会砍倒他们']] },
+  { id: 83, name: '曹操破汝南', sub: '残局 · 曹操大军压到', hpMul: 13.68, slots: ['zhang', 'liu', 'guan', 'zhao'], join: [], map: 'runan', reward: '乌金',
+    rules: { wall: 60, pre: [['caobing', 16, 260, 400], ['hubao', 4, 240, 300], ['nushou', 3, 240, 280]] },
+    waves: [[4, 'caobing', 26, 6, 'rand'], [10, 'hubao', 8, 4, 'rand'], [18, 'caobing', 30, 0, 'wedge'], [26, 'nushou', 6, 4, 'line'], [32, 'caoxiao', 1, 0, 'rand', { g: 'a', lead: true }], [32, 'caobing', 26, 0, 'line', { g: 'a' }], [44, 'hubao', 10, 6, 'rand'], [52, 'caobing', 30, 10, 'rand']],
+    tips: [[1, '残局：城防只剩六成'], [6, '先保城防，别贪斩将']] },
+  { id: 84, name: '穰山', sub: '夜战，且战且走', hpMul: 17.385, slots: ['zhang', 'liu', 'guan', 'zhao'], join: [], map: 'rangshan', reward: '雌雄剑胚',
+    rules: { night: { vis: 250, torches: [[80, 300], [280, 260]] }, casts: 20 },
+    waves: [[2, 'caobing', 22, 8, 'rand'], [8, 'hubao', 6, 0, 'line'], [16, 'caobing', 26, 10, 'rand'], [24, 'hubao', 8, 6, 'rand'], [32, 'caobing', 30, 0, 'wedge'], [42, 'nushou', 6, 4, 'line'], [50, 'hubao', 10, 6, 'rand']],
+    tips: [[1, '夜战：只看得见火把附近'], [4, '这关招式一共只能出 20 次']] },
+  { id: 85, name: '高览', sub: '拦路将 · 赵云斩高览', kind: 'duel', boss: 'gaolan', hpMul: 17.331, slots: ['zhang', 'liu', 'guan', 'zhao'], join: [], map: 'rangshan', reward: '陨铁 · 兵书',
+    moves: ['heavy', 'combo', 'summon', 'heavy', 'buff', 'combo', 'summon'], gap: 2.9, heavy: 14, adds: [['qibing', 3]],
+    tips: [[1, '高览枪快，连刺要举两次盾'], [6, '研习「百鸟朝凤」：七进七出最后一趟扫一圈']] },
+  { id: 86, name: '投荆州', sub: '刘表借来楼船弩', hpMul: 19.718, slots: ['zhang', 'liu', 'guan', 'zhao'], join: [], map: 'jingzhou', reward: '乌金 · 兵书',
+    rules: { volley: { every: 8, n: 10, dmg: 32, text: '楼船弩齐射' } },
+    waves: [[2, 'caobing', 24, 8, 'rand'], [8, 'hubao', 6, 0, 'line'], [16, 'caobing', 28, 0, 'wedge'], [24, 'nushou', 6, 4, 'line'], [32, 'caobing', 30, 10, 'rand'], [40, 'hubao', 10, 6, 'rand'], [50, 'caobing', 32, 10, 'rand']],
+    tips: [[1, '刘表借的楼船弩在城头，每 8 秒齐射一轮'], [6, '蔡瑁看你们不顺眼']] },
+  { id: 87, name: '马跃檀溪', sub: '护着刘备的的卢过檀溪', hpMul: 34.949, slots: ['zhang', 'liu', 'guan', 'zhao'], join: [], map: 'tanxi', reward: '的卢',
+    rules: { cart: { hp: 140, y0: 250, y1: 452, dur: 66, label: '的卢' } },
+    waves: [[2, 'nushou', 6, 4, 'line'], [6, 'caobing', 20, 8, 'rand'], [14, 'qibing', 6, 4, 'rand'], [22, 'caobing', 24, 0, 'wedge'], [30, 'nushou', 6, 4, 'line'], [38, 'qibing', 8, 6, 'rand'], [48, 'caobing', 28, 10, 'rand']],
+    tips: [[1, '蔡瑁的追兵从两岸来：护着的卢过溪'], [6, '研习「携民」：仁德护阵的护盾也罩住的卢']] },
+  { id: 88, name: '徐庶来投', sub: '新野城外，一位叫单福的书生来投', hpMul: 22.376, slots: ['zhang', 'liu', 'guan', 'zhao'], join: [], map: 'xinye', reward: '徐庶入幕',
+    waves: [[2, 'caobing', 24, 8, 'rand'], [8, 'nushou', 6, 4, 'line'], [16, 'hubao', 6, 5, 'rand'], [24, 'caobing', 30, 0, 'wedge'], [32, 'caoxiao', 1, 0, 'rand', { g: 'a', lead: true }], [32, 'caobing', 26, 0, 'line', { g: 'a' }], [44, 'hubao', 10, 6, 'rand'], [52, 'caobing', 30, 10, 'rand']],
+    tips: [[1, '徐庶（单福）来投：智 93，程昱的计看得破'], [30, '校尉带一队，斩他溃散']] },
+  { id: 89, name: '吕旷吕翔', sub: '战前 · 两员敌将分两路杀来', hpMul: 13.238, slots: ['zhang', 'liu', 'guan', 'zhao'], join: [], map: 'xinye', reward: '乌金 · 兵书',
+    waves: [[2, 'caobing', 18, 8, 'rand', { lane: 'L' }], [2, 'caobing', 18, 8, 'rand', { lane: 'R' }], [10, 'lvkuang', 1, 0, 'rand', { g: 'a', lead: true, lane: 'L' }], [10, 'caobing', 18, 0, 'line', { g: 'a', lane: 'L' }],
+      [12, 'lvxiang', 1, 0, 'rand', { g: 'b', lead: true, lane: 'R' }], [12, 'caobing', 18, 0, 'line', { g: 'b', lane: 'R' }], [28, 'hubao', 8, 6, 'rand'], [38, 'caobing', 30, 10, 'rand'], [48, 'nushou', 8, 6, 'line']],
+    tips: [[1, '吕旷走左路、吕翔走右路：一路一个'], [10, '赵云的七进七出、张飞的丈八破阵都是一路一路打']] },
+  { id: 90, name: '曹仁', sub: '大战 · 八门金锁阵', kind: 'duel', boss: 'caoren', hpMul: 17.246, slots: ['zhang', 'liu', 'guan', 'zhao'], join: [], map: 'xinye', reward: '八门金锁阵图 · 第三章完',
+    moves: ['guard', 'heavy', 'summon', 'combo', 'guard', 'heavy', 'buff', 'summon'], gap: 2.9, heavy: 14, adds: [['caobing', 4], ['nushou', 1]],
+    tips: [[1, '八门金锁阵：盾阵罩住，护罩要喝晕才破'], [8, '带徐庶出战，他看得出生门']] },
 ];
 // 分波次、敌人加一倍（10-25 用户：「敌人要分波次。加大一倍敌人，加强一倍法术杀伤力，因为玩家喜欢看到大批大批被杀的游戏效果」）：
 // 关卡表里的出兵组照旧按时间写；这里数量 ×ENEMY_X，再按时间切成波（约 WAVE_LEN 秒一波，同一个头目带的兵算一波）。
@@ -1167,7 +1310,8 @@ const RANKFX = { t0: -99 };
 // 功绩簿（10-29 方案第 5 节，按星数能查的条件先做）：逐关首通、节点功绩（每次晋阶前两项，另给资历 4 点）、累计星绩；每项固定 ID 只领一次
 const ACH_NODE = { 5: [[3, 3, '第三关三星'], [4, 2, '第四关两星以上']], 10: [[7, 3, '第七关三星'], [9, 2, '第九关两星以上']], 15: [[12, 3, '第十二关三星'], [14, 2, '第十四关两星以上']],
   20: [[17, 3, '第十七关三星'], [19, 2, '第十九关两星以上']], 25: [[22, 3, '第廿二关三星'], [24, 2, '第廿四关两星以上']], 30: [[27, 3, '第廿七关三星'], [29, 2, '第廿九关两星以上']],
-  40: [[37, 3, '第二章第七关三星'], [39, 2, '第二章第九关两星以上']], 50: [[47, 3, '第二章第十七关三星'], [49, 2, '第二章第十九关两星以上']], 60: [[57, 3, '第二章第廿七关三星'], [59, 2, '第二章第廿九关两星以上']] };
+  40: [[37, 3, '第二章第七关三星'], [39, 2, '第二章第九关两星以上']], 50: [[47, 3, '第二章第十七关三星'], [49, 2, '第二章第十九关两星以上']], 60: [[57, 3, '第二章第廿七关三星'], [59, 2, '第二章第廿九关两星以上']],
+  70: [[67, 3, '第三章第七关三星'], [69, 2, '第三章第九关两星以上']], 80: [[77, 3, '第三章第十七关三星'], [79, 2, '第三章第十九关两星以上']], 90: [[87, 3, '第三章第廿七关三星'], [89, 2, '第三章第廿九关两星以上']] };
 const ACH_STAR = [5, 15, 30, 50, 75];
 // 战功（10-29）：每项都和连携、配招、打法挂钩；打赢时按这一局的记录判定，判到了记进 INV.feat，去功绩簿领
 const FEATS = [
@@ -1346,7 +1490,8 @@ function doUp(key, who) {
 }
 // 第一次打这一关还缺什么门槛：[{ key, need, have }]
 const wpnMin = () => Math.min(...['guan', 'zhang', 'liu'].map(h => INV.up['wpn_' + h] || 0));
-const gateLack = id => Object.entries(GATES[id] || {}).filter(([k, v]) => (k === 'wpn' ? wpnMin() : INV.up[k] || 0) < v).map(([k, v]) => ({ key: k, need: v, have: INV.up[k] || 0 }));
+const soloGuan = id => { const L = LEVELS.find(l => l.id === id); return !!L && L.slots.filter(Boolean).length === 1 && L.slots[0] === 'guan'; };   // 11-18 第三章关羽独守段：兵器门槛只看关羽
+const gateLack = id => Object.entries(GATES[id] || {}).filter(([k, v]) => (k === 'wpn' ? (soloGuan(id) ? INV.up.wpn_guan || 0 : wpnMin()) : INV.up[k] || 0) < v).map(([k, v]) => ({ key: k, need: v, have: INV.up[k] || 0 }));
 // 要过这道门还差的材料合起来、几天后够
 function gateEta(id) {
   const tot = {}; for (const g of gateLack(id)) { let lv = g.have; while (lv < g.need) { lv++; for (const [i, n] of Object.entries(UPS[g.key].cost(lv))) tot[i] = (tot[i] || 0) + n; } if (UPS[g.key].need && !INV.up[UPS[g.key].need]) for (const [i, n] of Object.entries(UPS[UPS[g.key].need].cost(1))) tot[i] = (tot[i] || 0) + n; }
@@ -1939,6 +2084,10 @@ const COUNSEL = {
     say: '打仗嘛，先把城守住', note: '带「伏兵」：两侧河沟藏乡勇，看准时机点令旗——用对了才有三星。偏守，打敌将的战法常低估' },
   chendeng: { name: '陈登', title: '徐州名士', zhi: 94, spec: '谋略', bias: '控', blind: 'shield', unlock: 42,   // 11-08 第二章：第四十二关来投；智力高过陈宫，看得破吕布那边的计
     say: '元龙在此，计从心出', note: '智力最高：敌军师的计（郭嘉除外）都看得破，荐卡也准；举盾的兵常看走眼' },
+  sunqian: { name: '孙乾', title: '刘备从事', zhi: 75, spec: '外交', bias: '守', blind: 'cav', unlock: 60,   // 11-18 第三章：第六十一关起能带
+    say: '公祐愿往', note: '能看破程昱以外的计；偏守' },
+  xushu: { name: '徐庶', title: '颍川单福', zhi: 93, spec: '阵法', bias: '控', blind: '将', unlock: 88,   // 11-18 第三章：第八十八关来投；八门金锁阵看得出生门
+    say: '某乃颍川单福', note: '智力最高之一：程昱的计看得破；八门金锁阵开战就标出生门' },
   luzhi: { name: '卢植', title: '北中郎将 · 刘备之师', zhi: 88, spec: '兵法', bias: '控', blind: 'cav', unlock: 9,
     say: '兵者，诡道也', note: '带「凿堑」（城前挖一道深堑，敌兵过堑慢一半、骑兵落马，8 秒）和「将计就计」（破掉敌军师第一个计）。连携、对症看得准；骑兵的事常看走眼' },
 };
@@ -2304,6 +2453,10 @@ const MOVE_NAME = { huzhen: { heavy: '双刀劈', combo: '双刀连斩', summon:
   xiahoudun: { heavy: '挺枪', combo: '连挑', summon: '虎豹骑', buff: '蓄势' }, dianwei: { heavy: '铁戟', combo: '双戟连击', seal: '掷戟', summon: '曹兵', buff: '蓄势' },
   xunzheng: { heavy: '挺枪', summon: '淮南兵', buff: '蓄势' }, jiling: { heavy: '三尖刀', combo: '三尖横扫', summon: '袁术力士', guard: '大将护阵', buff: '蓄势' },
   zhangliao: { heavy: '劈斩', summon: '两翼突袭', combo: '连斩', buff: '蓄势' }, lvbu2: { heavy: '方天画戟', combo: '画戟横扫', guard: '无双', buff: '飞将', rush: '赤兔冲阵', summon: '陷阵营' },
+  xuchu: { heavy: '大刀劈', combo: '裸衣连斩', summon: '虎卫', buff: '裸衣' }, yanliang: { heavy: '大刀斩', combo: '连环刀', summon: '河北大军', guard: '大将护阵', buff: '蓄势' },
+  wangzhi: { heavy: '挺枪', summon: '守兵', buff: '火烧驿馆' }, zhangF: { heavy: '蛇矛直刺', combo: '连刺', guard: '据门不让', buff: '大喝' },
+  caiyang: { heavy: '劈斩', combo: '连斩', summon: '前军', buff: '为外甥报仇' }, gaolan: { heavy: '突刺', combo: '连刺', summon: '河北骑兵', buff: '蓄势' },
+  caoren: { heavy: '劈斩', combo: '连斩', guard: '八门金锁', summon: '盾阵', buff: '蓄势' },
   dengmao: { heavy: '挺枪突刺', summon: '黄巾围攻', buff: '蓄势', heal: '回气', seal: '离间' }, zhangjiao: { heavy: '天雷', summon: '黄天当立', heal: '符水', seal: '妖术迷魂', buff: '苍天已死' } };
 function stepDuel(e, dt) {
   const L = G.lv, NM = MOVE_NAME[e.kind] || {};
@@ -3091,7 +3244,9 @@ function drawSheetFlash(name, anim, f, x, y, k, col, alpha) {
 const TINT = { gong: 'hue-rotate(170deg) saturate(1.4)', xiliang: 'hue-rotate(-42deg) saturate(1.5) brightness(.72)', gongqi: 'hue-rotate(-28deg) saturate(1.2) brightness(.95)', langqi: 'grayscale(.9) brightness(1.18) contrast(1.1)',
   huaxiong: 'hue-rotate(-40deg) saturate(1.4) brightness(.8)', lvbu: 'hue-rotate(250deg) saturate(1.6) brightness(1.05)', huzhen: 'hue-rotate(-35deg) brightness(.75)', lijue: 'hue-rotate(160deg) saturate(.8) brightness(.8)',
   /* 第二章：曹军蓝黑、袁术军金黄 */ cao: 'hue-rotate(185deg) saturate(.9) brightness(.85)', nu: 'hue-rotate(200deg) saturate(.7) brightness(.9)', hubao: 'grayscale(.7) brightness(.7) contrast(1.2)', huainan: 'hue-rotate(10deg) saturate(1.5) brightness(1.08)',
-  xhd: 'hue-rotate(40deg) saturate(.9) brightness(.85)', dianwei: 'grayscale(.6) brightness(.72) contrast(1.15)', yuanj: 'hue-rotate(15deg) saturate(1.6) brightness(1.05)', jiling: 'hue-rotate(40deg) saturate(1.3) brightness(1.05)', zhangliao: 'hue-rotate(220deg) saturate(.8) brightness(.9)' };
+  xhd: 'hue-rotate(40deg) saturate(.9) brightness(.85)', dianwei: 'grayscale(.6) brightness(.72) contrast(1.15)', yuanj: 'hue-rotate(15deg) saturate(1.6) brightness(1.05)', jiling: 'hue-rotate(40deg) saturate(1.3) brightness(1.05)', zhangliao: 'hue-rotate(220deg) saturate(.8) brightness(.9)',
+  /* 第三章：袁绍军土黄、过五关守军青灰、借图的敌将各调一色 */ hebei: 'hue-rotate(-150deg) saturate(1.1) brightness(1.02)', guan5: 'hue-rotate(-60deg) saturate(.55) brightness(.95)', xuchu: 'hue-rotate(-25deg) saturate(1.3) brightness(.95)',
+  yanliang: 'hue-rotate(-50deg) saturate(1.5) brightness(.95)', zhangF: 'hue-rotate(150deg) saturate(1.4) brightness(.8)', caiyang: 'hue-rotate(140deg) saturate(.6) brightness(.9)' };
 // 10-30 用户：「玩到第三关似乎有些卡？」——桌面实测：图集一张三千多像素、解码后二三十 MB，几张轮流挤显存，被挤掉的下次画要重新上传（单次 20–50 毫秒）；
 // 调色（ctx.filter）还要每画一次滤整张。改成：这一关第一次画到的图集，按屏幕上实际要的大小缩小（小兵四成左右、敌将七成），连调色一起画进一张小画布，之后都贴它；
 // 换关时把上一关没用到的放掉。只管画面
@@ -3365,7 +3520,10 @@ const BOSS_FX = {
   // 第二章敌将：录像借第一章（fx），只换主色
   xiahoudun: { col: '#4a7ab0', glow: '#a8c8f0', prof: 'sand', fx: 'lijue' }, dianwei: { col: '#8a8f9c', glow: '#e0e4ea', prof: 'sand', fx: 'huzhen' },
   xunzheng:  { col: '#d0a040', glow: '#f6dc9a', prof: 'sand', fx: 'dengmao' }, jiling: { col: '#e0b030', glow: '#ffe6a0', prof: 'fire', fx: 'huaxiong' },
-  zhangliao: { col: '#7a68c8', glow: '#c8bcf4', prof: 'violet', fx: 'lijue' }, lvbu2: { col: '#e0304a', glow: '#ff9a8a', prof: 'fire', fx: 'lvbu' },
+  zhangliao: { col: '#7a68c8', glow: '#c8bcf4', prof: 'violet', fx: 'lijue' },
+  /* 第三章敌将：录像借第一章，只换主色 */ xuchu: { col: '#c87830', glow: '#f0c088', prof: 'fire', fx: 'huzhen' }, yanliang: { col: '#d8a030', glow: '#ffe2a0', prof: 'fire', fx: 'huaxiong' },
+  wangzhi: { col: '#d06030', glow: '#ffb080', prof: 'fire', fx: 'dengmao' }, zhangF: { col: '#e0603a', glow: '#ffb090', prof: 'fire', fx: 'lijue' }, caiyang: { col: '#8a8f9c', glow: '#e0e4ea', prof: 'sand', fx: 'huzhen' },
+  gaolan: { col: '#c8a050', glow: '#f0dca0', prof: 'sand', fx: 'lijue' }, caoren: { col: '#4a6aa0', glow: '#a8c0e8', prof: 'sand', fx: 'huaxiong' }, lvbu2: { col: '#e0304a', glow: '#ff9a8a', prof: 'fire', fx: 'lvbu' },
 };
 const BTINT = {};
 // Veo 录的法术动画（黑底去黑、切成逐帧图集，工具/veo/cut_vfx.py）：重招落地时叠在画稿上播，每秒 12 帧；读不到就只演画稿和墨流
@@ -3560,7 +3718,8 @@ function drawFbs() {
   for (const f of G.fbs) { const t = vt - f.born; if (t < 0) continue; const M = FBM[f.k]; fbFrame(f.k, Math.min(M.n - 1, Math.floor(t / f.dur * M.n)), f.x, f.y, f.size, f.rot, f.alpha, f.flip, f.glow * (.5 + spxDimNow() * 1.5)); }
 }
 // 11–30 关的地图还没画的先借相近的（汜水关、虎牢关借谷口，酸枣大营借黄巾大营）
-const MAP_ALIAS = { sishui: 'canyon', hulao: 'canyon', suanzao: 'camp', luoyang: 'plain', ruins: 'plain', night: 'plain' };   // 第二章 11 张底图 11-08 画好，不再借第一章的   // night（第九关夜战）原来也借主页底图
+const MAP_ALIAS = { sishui: 'canyon', hulao: 'canyon', suanzao: 'camp', luoyang: 'plain', ruins: 'plain', night: 'plain',
+  /* 11-18 第三章底图没画前先借 */ rangshan: 'canyon', jingzhou: 'xuchang', tanxi: 'sishuiR', xinye: 'tancheng' };   // 第二章 11 张底图 11-08 画好，不再借第一章的   // night（第九关夜战）原来也借主页底图
 const BGC = {};   // 场景底图降饱和的副本（按地图名）；算好就把原图放掉，换关只留这关的（10-30 第 4–30 关复现：原图和副本各 8MB 同时常驻）
 function bgOf(m) { if (BGC[m]) return BGC[m]; const im = IMG['bg_' + m]; if (!ready(im)) return null; const c = inkBg(im); if (c !== im) { BGC[m] = c; INKBG.delete(im); relImg(im); } return c; }
 const mapKey = m => BGC[m] || ready(IMG['bg_' + m]) ? m : (MAP_ALIAS[m] || m);
@@ -6082,10 +6241,10 @@ function musicStep(mode, i, t) {
 // ---------- 系统页：音乐、声效的开关和音量，回看剧情 ----------
 // 回看剧情：序章＋每关一场，看过的才能点，按关名列成三列
 function drawStoryList() {
-  campBg('回看剧情'); const sc = MENU.stCh || 0, keys = STORY_KEYS().filter(k => k === 'open' ? sc === 0 : k === 'c2' ? sc === 1 : chOf({ id: +k.slice(1) }) === sc);   // 11-08 分章翻看
+  campBg('回看剧情'); const sc = MENU.stCh || 0, keys = STORY_KEYS().filter(k => k === 'open' ? sc === 0 : k === 'c2' ? sc === 1 : k === 'c3' ? sc === 2 : chOf({ id: +k.slice(1) }) === sc);   // 11-08 分章翻看
   if (STORY.c2 && storySeen('c2')) CHAP.forEach((c, j) => { const x = W / 2 - 108 + j * 112; ctx.save(); if (j !== sc) ctx.globalAlpha = .55; pill(x, 600 - 40, 104, 28, c.no, () => { MENU.stCh = j; }, false); ctx.restore(); });
   keys.forEach((k, i) => { const col = i % 3, row = Math.floor(i / 3), x = 16 + col * 110, y = 66 + row * 44, ok = storySeen(k);
-    const nm = k === 'open' ? '序章' : k === 'c2' ? '第二章开篇' : LEVELS.find(l => 'l' + l.id === k).name;
+    const nm = k === 'open' ? '序章' : k === 'c2' ? '第二章开篇' : k === 'c3' ? '第三章开篇' : LEVELS.find(l => 'l' + l.id === k).name;
     ctx.save(); if (!ok) ctx.globalAlpha = .35; pill(x, y, 106, 34, ok ? nm : '……', ok ? () => playStory(k, () => { screen = 'storylist'; }, true) : null, false); ctx.restore(); });
   plaque(112, 600, 136, 32, '返回', () => { screen = 'system'; }, false);
 }
@@ -6319,30 +6478,68 @@ const STORY = {
     [null, 'lvbu', '……那我先去看看。'], ['story_bolt', '', '轰——'], [null, '', '一道雷劈在白门楼上。和桃园那一道，一模一样。'],
     [null, '', '雷光散去，绳子还在，吕布不见了。只剩方天画戟插在楼上。'], [null, 'zhang', '他……他穿越了？'], [null, 'guan', '或者，他回去了。'],
     [null, 'caocao', '……你们三个，到底是什么人？'], [null, 'liu', '……打工的。'], [null, 'liu', '兄弟们，门是真的。而且有人已经走进去了。'], ['story_oath', '', '第二章 · 徐州风云 · 完']],
+  // ========== 第三章 · 官渡（11-18）：开篇 c3 + 61–90 每关首通一场；新人物立绘画好前退回刘关张 ==========
+  c3: [['story_oath', '', '第三章 · 官渡'], [null, '', '白门楼那道雷以后，三兄弟跟着曹操回了许都。'], [null, 'liu', '编制有了，宅子有了，皇上还管我叫皇叔。'], [null, 'zhang', '哥，你在后院种菜种了三个月了。'], [null, 'liu', '这叫韬光养晦。剧本里这时候曹操要请我喝酒。'], [null, 'guan', '煮酒论英雄。'], [null, 'liu', '他说「天下英雄，唯使君与操耳」，我筷子掉了。我准备好了，这次我稳住。'], [null, '', '当晚，曹操请刘备喝酒。'], [null, 'caocao', '天下英雄，唯使君与操耳。'], [null, '', '啪嗒。'], [null, 'liu', '……打雷了，打雷了。'], [null, 'zhang', '你筷子还是掉了。'], [null, 'liu', '剧本的力量。走，借截袁术的名义，跑。']],
+  l61: [[null, '', '袁术死在半路，临死前想喝一口蜜水，没有。'], [null, 'zhang', '他就是那个吐血的？'], [null, 'guan', '「袁术岂至于此乎！」然后吐血一斗。'], [null, 'zhang', '一斗是多少？'], [null, 'liu', '别问。我们现在拿着曹操的兵，在曹操的地盘外面。'], [null, 'liu', '公祐，你说我们是不是该回去了？'], [null, 'sunqian', '主公，回去就回不来了。'], [null, 'liu', '……那就不回。']],
+  l62: [[null, '', '徐州城里，曹操留下的刺史车胄想先动手。'], [null, 'guan', '我去。'], [null, '', '关羽一个人进了城，提着车胄的人头出来。'], [null, 'zhang', '二哥，你这效率……'], [null, 'guan', '剧本里也是我。'], [null, 'liu', '徐州又是我们的了。可曹操那边……'], [null, 'sunqian', '曹操亲征，二十万。'], [null, 'zhang', '咱有多少？'], [null, 'sunqian', '……别问。']],
+  l63: [[null, '', '曹军的前锋退了，后面还有。'], [null, 'liu', '曹操这次是真生气了。'], [null, 'zhang', '我有个主意：今晚劫营！'], [null, 'guan', '不行。剧本里你劫营，劫了个空，全军溃散。'], [null, 'zhang', '那我这次劫得聪明点。'], [null, 'liu', '三弟，有些剧情改不动。'], [null, 'zhang', '武安国那只胳膊也是这么说的。我不信。']],
+  l64: [[null, '', '张飞还是去劫营了。曹营里灯火通明，等着他。'], [null, 'zhang', '……他怎么知道我要来？'], [null, 'guan', '剧本知道。'], [null, '', '三兄弟在乱军里冲散了。'], [null, 'liu', '二弟！三弟！'], [null, 'zhang', '大哥往北！我往芒砀山！二哥——'], [null, 'guan', '嫂嫂还在下邳。我回去。'], [null, '', '火光里，三个人往三个方向跑。']],
+  l65: [['pt_xuchu', 'xuchu', '你就是张飞？吃俺一刀！'], [null, 'zhang', '虎痴！我小时候玩游戏，最爱用你！'], [null, 'xuchu', '……游戏？'], [null, 'zhang', '就是……打架。'], [null, '', '许褚把甲一脱，光着膀子冲了上来。'], [null, 'zhang', '这个我记得！裸衣斗马超！可现在马超还没来啊！'], [null, 'xuchu', '马超是谁？'], [null, '', '张飞且战且走，消失在山里。']],
+  l66: [['pt_zhangliao', 'zhangliao', '云长，下邳已破，你和两位夫人被围在这座土山上。'], [null, 'guan', '文远，我知道你来劝降。'], [null, 'zhangliao', '你知道？'], [null, 'guan', '我还知道我会答应。三个条件：降汉不降曹；嫂嫂的俸禄照给；一知道大哥在哪，我就走。'], [null, 'zhangliao', '……这三条，我还没替你想出来。'], [null, 'guan', '我替你想好了。'], [null, '', '这就是「土山约三事」。关羽一个人，进了曹营。']],
+  l67: [[null, '', '关羽在曹营，曹操三日一小宴，五日一大宴。'], [null, 'caocao', '云长，这件锦袍，赏你。'], [null, 'guan', '谢丞相。'], [null, '', '关羽把锦袍穿在里面，外面套着大哥送的旧袍。'], [null, 'caocao', '……为何如此？'], [null, 'guan', '旧袍是兄长所赐，不敢忘。'], [null, 'caocao', '真义士也。再赏你一匹马。'], [null, '', '那是吕布的赤兔马。']],
+  l68: [[null, '', '袁绍的大将颜良，围了白马。'], [null, 'zhangliao', '颜良勇冠三军，我和徐晃都不是他对手。'], [null, 'guan', '我去。'], [null, 'caocao', '云长，你可想好了？斩了颜良，你就要走了。'], [null, 'guan', '我答应过丞相，立了功再走。'], [null, 'caocao', '……我就不该提这一条。'], [null, '', '颜良的先锋，河北大戟士，压了上来。']],
+  l69: [[null, '', '河北军的阵，一层叠一层。颜良的帅旗在最后面。'], [null, 'guan', '他站得太远了。'], [null, 'zhangliao', '万军之中，怎么够得着？'], [null, '', '关羽翻身上了赤兔。'], [null, 'guan', '骑马去。'], [null, '', '关羽学会了「千里走单骑」。']],
+  l70: [['pt_yanliang', 'yanliang', '来者何人？'], [null, '', '话没说完，刀已经到了。'], [null, 'caocao', '……万军之中取上将首级，如探囊取物。'], [null, 'zhangliao', '丞相，这句话你记一下，以后会有人写进书里。'], [null, '', '颜良倒下的时候，手里攥着一张纸。纸上画着一扇门。'], [null, 'guan', '……天门。'], [null, '', '关羽把纸收进了怀里。'], [null, 'caocao', '云长，你那张纸，画的是什么？'], [null, 'guan', '家。']],
+  l71: [[null, '', '关羽打听到了：刘备在袁绍那里。'], [null, 'guan', '我要走了。'], [null, '', '他把曹操赏的金银封进库房，把汉寿亭侯的印挂在梁上。'], [null, 'caocao', '……追不追？'], [null, 'zhangliao', '丞相，您答应过的。'], [null, 'caocao', '我答应过。可我没答应过沿路的守将不拦他。'], [null, '', '关羽护着嫂嫂的车，出了许都。']],
+  l72: [[null, '', '第一关，东岭关。守将孔秀要看曹操的文书。'], [null, 'guan', '没有文书。'], ['pt_caocao', '', '孔秀拔刀了。'], [null, 'guan', '我本来不想……算了，剧本里你也是这么死的。'], [null, 'zhang', '（远方）二哥这是第一关！还有五关！'], [null, 'guan', '三弟，你在哪？'], [null, 'zhang', '（远方）我在古城！占山为王！'], [null, 'guan', '……你怎么又占山为王。']],
+  l73: [[null, '', '洛阳。孟坦假装打不过，想把关羽引出去；韩福在后面放冷箭。'], [null, 'guan', '这一招我在电视剧里看过。'], [null, '', '孟坦被追上了。韩福的箭射中了关羽的左臂。'], [null, 'guan', '……这一箭，剧本里也有。'], [null, 'guan', '有些伤，是一定要挨的。'], [null, '', '关羽拔出箭，继续赶路。']],
+  l74: [[null, '', '汜水关。守将卞喜摆下酒席，请关羽去镇国寺。'], [null, 'guan', '寺里埋着刀斧手。'], [null, '', '寺里一位老和尚给关羽递了个眼色。'], ['pt_caocao', '', '那是普净，和关羽是同乡。'], [null, 'guan', '多谢大师。'], [null, 'guan', '大师以后在玉泉山，会再见到我一次。'], [null, '', '老和尚愣住了，不知道这句话是什么意思。']],
+  l75: [['pt_wangzhi', 'wangzhi', '云长远来辛苦，驿馆歇息。'], [null, '', '夜里，驿馆外面堆满了柴草。'], [null, 'guan', '火烧驿馆。'], [null, '', '王植的从事胡班偷偷来报信。'], [null, 'guan', '你父亲叫胡华？他托我带了一封信。'], ['pt_caocao', '', '胡班看完信，放了关羽。'], [null, 'guan', '……这一路，全靠好人。']],
+  l76: [[null, '', '黄河渡口。秦琪守着渡船，不让过。'], [null, 'guan', '秦琪，你舅舅是蔡阳？'], ['pt_caocao', '', '是又如何？'], [null, 'guan', '没什么。只是他过几天会来找我。'], [null, '', '过了黄河，就是袁绍的地界。'], [null, 'guan', '五关，六将。'], [null, 'guan', '我其实一个都不想斩。']],
+  l77: [[null, '', '夏侯惇追到了黄河边。'], ['pt_xiahoudun', 'xiahoudun', '关云长，你斩我六将，休走！'], [null, 'guan', '元让，你眼睛还好吗？'], [null, 'xiahoudun', '……什么意思？'], [null, 'guan', '好好保护。'], [null, '', '张辽快马赶到，带来曹操的放行令。'], [null, 'zhangliao', '丞相说：「云长去意已决，让他走。」'], [null, 'guan', '替我谢谢丞相。他其实……挺好的。']],
+  l78: [[null, '', '古城。关羽终于找到了张飞。'], [null, 'zhang', '二哥！'], [null, 'zhang', '……不对，你投了曹操！你这个叛徒！'], [null, 'guan', '三弟，你听我解释——'], [null, 'zhang', '接矛！'], [null, '', '两兄弟在城门口打了起来。'], [null, 'zhang', '你还是那个刀法……二哥？真是你？'], [null, 'guan', '剧本里你还要我斩一个蔡阳，才信我。'], [null, 'zhang', '那你斩啊！'], [null, '', '远处尘头大起。蔡阳来了。']],
+  l79: [[null, '', '蔡阳带着兵，杀到古城下。'], ['pt_caiyang', 'caiyang', '关云长，你斩我外甥秦琪，今日拿命来！'], [null, 'zhang', '二哥，这就是你说的那个？'], [null, 'guan', '嗯。'], [null, 'zhang', '那我擂鼓。三通鼓，你斩不了他，我就不信你。'], [null, 'guan', '三通鼓，够了。']],
+  l80: [[null, '', '第一通鼓没打完，蔡阳的人头就落了地。'], [null, 'zhang', '……我鼓还没擂完。'], [null, 'guan', '剧本里也是这样。'], [null, 'zhang', '二哥！'], [null, '', '张飞扑过去抱住了关羽，哭得像个孩子。'], [null, 'zhang', '我在这山上等了好几个月，我以为你真的不回来了。'], [null, 'guan', '我回来了。大哥也快了。'], [null, '', '蔡阳的尸身边，掉出一块碎铜镜。镜子里照不出人，只照出一扇门。'], [null, 'guan', '门要开了。'], [null, 'zhang', '什么门？'], [null, 'guan', '……先找大哥。']],
+  l81: [[null, '', '古城里，刘备也到了。还带来一个人。'], ['pt_zhaoyun', 'zhaoyun', '常山赵子龙，愿追随主公。'], [null, 'zhang', '子龙！这次是真的入职了吧？不是借调？'], [null, 'zhaoyun', '……什么是借调？'], [null, 'liu', '正式员工。五险一金。'], [null, 'zhaoyun', '在下听不懂，但很高兴。'], [null, 'guan', '大哥，我们又在一起了。'], [null, 'liu', '嗯。这次谁都别再走散了。']],
+  l82: [[null, '', '汝南。黄巾的老部下刘辟、龚都来投。'], [null, 'zhang', '黄巾？我们第一章打的就是他们啊！'], [null, 'liu', '现在是自己人了。'], [null, 'zhang', '那我第一章砍的那些……'], [null, 'guan', '别想了。'], [null, 'zhaoyun', '主公，曹军的骑兵，在追他们。'], [null, 'liu', '开城门，让他们进来。']],
+  l83: [[null, '', '曹操打败了袁绍，腾出手来了。'], [null, 'liu', '官渡打完了？这么快？'], [null, 'guan', '袁绍输了。剧本里他也是这么输的。'], [null, 'zhang', '那曹操下一个打谁？'], [null, 'liu', '……打我们。'], [null, '', '汝南城外，曹军铺天盖地。']],
+  l84: [[null, '', '穰山，夜里。三兄弟且战且走。'], [null, 'zhaoyun', '主公先走，末将断后。'], [null, 'liu', '子龙，你一个人？'], [null, 'zhaoyun', '一个人就够了。'], [null, 'zhang', '……这台词好帅，我能借吗？'], [null, 'zhaoyun', '张将军请便。'], [null, '', '远处，河北降将高览带着骑兵杀来。']],
+  l85: [['pt_gaolan', 'gaolan', '赵子龙，来战！'], [null, '', '一枪。'], [null, 'zhang', '……就一枪？'], [null, 'zhaoyun', '他太急了。'], [null, 'guan', '赵云斩高览。剧本也是这么写的。'], [null, 'liu', '剧本里，我们下一步是去荆州投刘表。'], [null, 'zhang', '刘表是谁？'], [null, 'liu', '一个很有钱、但什么都不想干的亲戚。']],
+  l86: [['pt_liubiao', 'liubiao', '玄德贤弟远来，就在新野驻扎吧。'], [null, 'liu', '谢兄长。'], ['pt_caimao', 'caimao', '……'], [null, 'guan', '那个人在瞪你。'], [null, 'liu', '蔡瑁。他想杀我。'], [null, 'zhang', '那我先……'], [null, 'liu', '别。他是刘表的小舅子。打狗也要看主人。'], [null, 'zhang', '那狗要咬你呢？'], [null, 'liu', '……那就跑。']],
+  l87: [[null, '', '蔡瑁设宴，伏兵四起。刘备骑着的卢马，逃到檀溪边。'], [null, 'liu', '的卢，今日厄矣！'], [null, '', '的卢一跃三丈，飞过了檀溪。'], [null, 'zhang', '这马会飞？！'], [null, 'guan', '剧本里会。'], [null, 'liu', '……我刚才喊那一嗓子，是剧本让我喊的吗？'], [null, 'guan', '是。'], [null, 'liu', '那我还挺入戏。']],
+  l88: [[null, '', '新野城外，一个书生拦住了刘备的马。'], ['pt_xushu', 'xushu', '在下颍川单福，愿为使君效力。'], [null, 'guan', '大哥，他是徐庶。'], [null, 'liu', '我知道。'], [null, 'xushu', '……使君怎知我的真名？'], [null, 'liu', '我还知道你过一阵就要走，走之前会推荐一个人。'], [null, 'xushu', '……使君到底是什么人？'], [null, 'liu', '……打工的。']],
+  l89: [[null, '', '曹仁派吕旷、吕翔两路来攻新野。'], [null, 'xushu', '吕旷走左，吕翔走右。子龙打左，翼德打右。'], [null, 'zhang', '这么简单？'], [null, 'xushu', '打仗本来就简单。难的是知道对面怎么想。'], [null, '', '一个时辰，两员敌将都落了马。'], [null, 'zhaoyun', '军师，下一仗呢？'], [null, 'xushu', '曹仁会摆一个阵。我认得。']],
+  l90: [[null, '', '八门金锁阵，破了。'], [null, 'xushu', '从生门进，景门出，阵自乱。'], ['pt_caoren', 'caoren', '……这阵是谁破的？'], [null, 'liu', '单福。'], [null, 'caoren', '没听说过。'], [null, 'xushu', '你以后会听说的。'], [null, '', '夜里，徐庶看见张飞拿着一块黑色的小石板，对着火光发呆。'], [null, 'xushu', '翼德，这是何物？能照出人影。'], [null, 'zhang', '手机。没电了。我一直留着，里面有我妈的照片。'], [null, 'xushu', '……'], [null, '', '几天后，徐庶收到一封家书：母亲在许都，被曹操接走了。'], [null, 'xushu', '使君，我要走了。走之前，给你推荐一个人。'], [null, 'liu', '南阳卧龙。'], [null, 'xushu', '……你连这个都知道？'], [null, 'liu', '我知道很多。可我不知道那扇门后面是什么。'], ['story_oath', '', '第三章 · 官渡 · 完']],
 };
 const SPEAK = { zhaoyun: ['赵云', '#e0f0ff'], taoqian: ['陶谦', '#d8d0b0'], chendeng: ['陈登', '#a8e0d0'], chengong: ['陈宫', '#c8b0e8'], jiling: ['纪灵', '#f0c860'], dianwei: ['典韦', '#b8bcc8'],
   xiahoudun: ['夏侯惇', '#8ab0e0'], zhangliao: ['张辽', '#b0a8f0'], gaoshun: ['高顺', '#d0a090'], liu: ['刘备', '#9ad6ff'], guan: ['关羽', '#7ff0b8'], zhang: ['张飞', '#ff9a6a'], zhangjiao: ['张角', '#e8d27a'], zoujing: ['邹靖', '#f0a070'],
-  jianyong: ['简雍', '#a8d8ff'], luzhi: ['卢植', '#d8c8ff'], dongzhuo: ['董卓', '#d08060'], caocao: ['曹操', '#c0a0ff'], sunjian: ['孙坚', '#ff8080'], huaxiong: ['华雄', '#e07050'], gongsun: ['公孙瓒', '#f0f0f0'], lvbu: ['吕布', '#ff6a7a'] };
+  jianyong: ['简雍', '#a8d8ff'], luzhi: ['卢植', '#d8c8ff'], dongzhuo: ['董卓', '#d08060'], caocao: ['曹操', '#c0a0ff'], sunjian: ['孙坚', '#ff8080'], huaxiong: ['华雄', '#e07050'], gongsun: ['公孙瓒', '#f0f0f0'], lvbu: ['吕布', '#ff6a7a'],
+  /* 第三章 */ sunqian: ['孙乾', '#b8e0a8'], xuchu: ['许褚', '#e0a070'], yanliang: ['颜良', '#f0c040'], wangzhi: ['王植', '#c0a080'], caiyang: ['蔡阳', '#c8ccd8'], gaolan: ['高览', '#e0c890'],
+  liubiao: ['刘表', '#c8a8e0'], caimao: ['蔡瑁', '#90b0a0'], xushu: ['徐庶', '#d0e8ff'], caoren: ['曹仁', '#8aa0d0'] };
 const STORY_FACE = { liu: 'story_liu', guan: 'story_guan', zhang: 'story_zhang', zhangjiao: 'story_zhangjiao', zoujing: 'story_zoujing', jianyong: 'pt_jianyong', huaxiong: 'pt_huaxiong', lvbu: 'pt_lvbu',
   luzhi: 'pt_luzhi', dongzhuo: 'pt_dongzhuo', caocao: 'pt_caocao', gongsun: 'pt_gongsun', sunjian: 'pt_sunjian',
-  /* 第二章（11-08 Codex 画，原图 美术/第二章/立绘） */ zhaoyun: 'pt_zhaoyun', taoqian: 'pt_taoqian', chendeng: 'pt_chendeng', chengong: 'pt_chengong', jiling: 'pt_jiling', dianwei: 'pt_dianwei', xiahoudun: 'pt_xiahoudun', zhangliao: 'pt_zhangliao', gaoshun: 'pt_gaoshun' };   // 10-26 补画五人立绘（ChatGPT，原图 美术/<名>/正面.jpg）
+  /* 第二章（11-08 Codex 画，原图 美术/第二章/立绘） */ zhaoyun: 'pt_zhaoyun', taoqian: 'pt_taoqian', chendeng: 'pt_chendeng', chengong: 'pt_chengong', jiling: 'pt_jiling', dianwei: 'pt_dianwei', xiahoudun: 'pt_xiahoudun', zhangliao: 'pt_zhangliao', gaoshun: 'pt_gaoshun',
+  /* 第三章（11-18 Codex 画，原图 美术/第三章/立绘） */ sunqian: 'pt_sunqian', xuchu: 'pt_xuchu', yanliang: 'pt_yanliang', wangzhi: 'pt_wangzhi', caiyang: 'pt_caiyang', gaolan: 'pt_gaolan', liubiao: 'pt_liubiao', caimao: 'pt_caimao', xushu: 'pt_xushu', caoren: 'pt_caoren' };   // 10-26 补画五人立绘（ChatGPT，原图 美术/<名>/正面.jpg）
 for (const [key, L] of Object.entries(STORY)) { let cur = key === 'open' ? 'story_oath' : 'story_liu'; for (const ln of L) { if (!ln[0]) ln[0] = STORY_FACE[ln[1]] || cur; cur = ln[0]; } }   // 没写图的句子补上
 const STORY_GLOW = { story_liu: '80,150,255', story_guan: '60,220,150', story_zhang: '255,110,60', story_zhangjiao: '230,200,90', pt_jianyong: '90,170,230', pt_huaxiong: '220,80,50', pt_lvbu: '230,50,70',
   pt_luzhi: '70,160,150', pt_dongzhuo: '200,120,40', pt_caocao: '140,90,220', pt_gongsun: '220,230,240', pt_sunjian: '230,60,50',
-  pt_zhaoyun: '200,225,255', pt_taoqian: '200,170,120', pt_chendeng: '170,200,240', pt_chengong: '160,120,220', pt_jiling: '240,200,80', pt_dianwei: '180,180,190', pt_xiahoudun: '90,130,220', pt_zhangliao: '150,120,230', pt_gaoshun: '200,200,200' };
-for (const k of [1, 2, 3, 4, 5, 6]) { IMG['map_' + k] = new Image(); IMG['map_' + k].src = 'img/map_' + k + '.jpg' + BUST; }   // 战役地图（没有图时退回原来的关卡牌）
+  pt_zhaoyun: '200,225,255', pt_taoqian: '200,170,120', pt_chendeng: '170,200,240', pt_chengong: '160,120,220', pt_jiling: '240,200,80', pt_dianwei: '180,180,190', pt_xiahoudun: '90,130,220', pt_zhangliao: '150,120,230', pt_gaoshun: '200,200,200',
+  pt_sunqian: '170,220,150', pt_xuchu: '220,150,90', pt_yanliang: '240,190,60', pt_wangzhi: '200,160,120', pt_caiyang: '200,205,220', pt_gaolan: '230,200,140', pt_liubiao: '190,160,230', pt_caimao: '130,170,150', pt_xushu: '200,225,255', pt_caoren: '120,150,210' };
+for (const k of [1, 2, 3, 4, 5, 6, 7, 8, 9]) { IMG['map_' + k] = new Image(); IMG['map_' + k].src = 'img/map_' + k + '.jpg' + BUST; }   // 战役地图（没有图时退回原来的关卡牌）
 // 每关一张专门画的剧情图（10-26 用户：「每一关都要有至少一张故事，强调逗B的剧情发展」）：img/story_s<关>.jpg 铺满整场；还没画好的关先用原来的立绘（存在第四格）
-for (let n = 1; n <= 60; n++) { const L = STORY['l' + n]; if (!L) continue; for (const ln of L) { ln[3] = ln[0]; ln[0] = 'story_s' + n; } }
+const STORY_S3 = new Set([61, 62]);   // 11-18 第三章剧情图画好的关（img/story_s61…）；没画好的不换，先用立绘
+for (let n = 1; n <= 90; n++) { if (n > 60 && !STORY_S3.has(n)) continue; const L = STORY['l' + n]; if (!L) continue; for (const ln of L) { ln[3] = ln[0]; ln[0] = 'story_s' + n; } }
+for (const ln of STORY.c3) if (ln[0] !== 'story_oath') { ln[3] = ln[0]; ln[0] = 'story_c3'; }   // 11-18 第三章开篇图（煮酒论英雄）
 for (const k of new Set(Object.values(STORY).flat().flatMap(l => [l[0], l[3]]).filter(Boolean))) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + (STORY_GLOW[k] ? '.png' : '.jpg') + BUST; }
 let STP = null;                                                                    // 正在演的一场：{ key, i, t0, then }
 const storySeen = k => !!(INV.story && INV.story[k]);
 // 剧情里几句配声效、画面一抖：按句子里的字认
 const THUNDER = [[0, 1], [.95, .75], [1.85, .5]], THUNDER_LEN = 3.2;                                 // 三下雷的时刻、响度（画面白闪跟着它）
 // 剧情里学会招式那一句：演这位武将的大招特写（大招录像），大字招名下写「习得」，配招式声和一声锣；演完才能往下翻（10-26 用户：「学会技能时（剧情中）要有一个特效之类的」）
-const STORY_LEARN = [['学会了「双股剑」', 'liu'], ['学会了「青龙斩」', 'guan'], ['学会了「当阳一喝」', 'zhang'], ['亮了一手「七进七出」', 'zhao']];
+const STORY_LEARN = [['学会了「千里走单骑」', 'guan'], ['学会了「双股剑」', 'liu'], ['学会了「青龙斩」', 'guan'], ['学会了「当阳一喝」', 'zhang'], ['亮了一手「七进七出」', 'zhao']];
 const learnLen = k => ultReady(k) ? ULT[k].meta.n / ULT[k].meta.fps + .2 : 2.2;   // 10-28 用户：「学会技能似乎没播放完」——原来定死 2.2 秒就能翻页，大招特写 48 帧要 3 秒，后半截被点掉；改成按特写帧数演完才能翻
 const STORY_SFX = [['轰——', 'thunder'], ['马蹄声', 'hooves'], ['哇——！！！', 'zhang']];
-const STORY_KEYS = () => ['open', ...LEVELS.flatMap(l => l.id === 31 ? ['c2', 'l31'] : ['l' + l.id])].filter(k => STORY[k]);
+const STORY_KEYS = () => ['open', ...LEVELS.flatMap(l => l.id === 31 ? ['c2', 'l31'] : l.id === 61 ? ['c3', 'l61'] : ['l' + l.id])].filter(k => STORY[k]);
 function storyEnter() { const ln = STORY[STP.key][STP.i]; STP.t0 = uiNow(); const lr = STORY_LEARN.find(([w]) => ln[2].includes(w)); STP.learn = lr && ultReady(lr[1]) ? { k: lr[1], t0: uiNow() } : null; if (STP.learn) { sfx(lr[1]); sfx('gong'); } const fx = STORY_SFX.find(([w]) => ln[2].includes(w)); STP.fx = fx ? { k: fx[1], t0: uiNow() } : null; if (fx) sfx(fx[1]); }
 // read：阅读模式（系统页「翻看剧情」或网址带 ?story）——点左边往回翻、右边往下翻，一场完了接下一场；不记成看过
 // 11-11 用户：「过完一关后在剧情出来前会出现一个人物角色的图，一闪而过，每次还不一样」——剧情图是用到才下载的（换关还会放掉），剧情一开头图还没到，
@@ -6396,7 +6593,7 @@ function drawStory() {
   const allIn = shown >= [...text].length && !storyBusy(); if (allIn) uiText('点一下继续', bx + bw - 14, by + bh - 14, 10, `rgba(244,230,196,${.35 + .35 * Math.sin(t * 4)})`, 'right', PLAIN, { stroke: false });
   /* 10-26 用户圈了对话框左下角「10 / 31」：「不要这个」——不报第几句 */
   if (STP.fx && STP.fx.k === 'thunder') for (const [dt, v] of THUNDER) { const u = (t - STP.fx.t0 - dt) / .7; if (u >= 0 && u < 1) { ctx.fillStyle = `rgba(255,252,235,${(1 - u) * (u < .12 ? 1 : .6) * v})`; ctx.fillRect(0, 0, W, 470); } }   // 雷：每一下整幅白闪
-  if (STP.read) { const ks = STORY_KEYS(), j = ks.indexOf(STP.key), lv = LEVELS.find(l => 'l' + l.id === STP.key), nm = lv ? `${CHAP[chOf(lv)].no}第${CNUM(lvNo(lv))}关 · ${lv.name}` : STP.key === 'c2' ? '第二章 · 开篇' : '序章 · 桃园';
+  if (STP.read) { const ks = STORY_KEYS(), j = ks.indexOf(STP.key), lv = LEVELS.find(l => 'l' + l.id === STP.key), nm = lv ? `${CHAP[chOf(lv)].no}第${CNUM(lvNo(lv))}关 · ${lv.name}` : STP.key === 'c2' ? '第二章 · 开篇' : STP.key === 'c3' ? '第三章 · 开篇' : '序章 · 桃园';
     plate(10, 12, 170, 28); uiText(nm, 95, 27, fitSize(nm, 13, 150), UIC.gold2, 'center', FONT, { stroke: false });
     hit(0, 50, W / 3, by - 50, storyPrev); hit(W / 3, 50, W * 2 / 3, H - 50, storyNext); hit(0, by, W / 3, bh, storyPrev);
     if (j > 0) pill(12, H - 25, 84, 22, '‹ 上一场', () => storyJump(ks[j - 1]), false);
@@ -7150,7 +7347,8 @@ function openLevel(i) {
   if (DEMO && LEVELS[i] && LEVELS[i].id > DEMO_MAX) { G = null; screen = 'levels'; demoEv('end', LEVELS[i].id); showReward('试玩到此为止', ['前十关就是试玩的全部内容，谢谢你打到这里！', '正式版还有五十关和第二章「徐州风云」'], ['guan', 'zhang', 'liu'], true); return; }
   if (!window.__sg.all && !DEMO && staNow() < BATTLE_STA) { G = null; screen = 'camp'; CAMP.t0 = uiNow(); showReward('体力不够', [`打一关要 ${BATTLE_STA} 体力`, '12–14 点、19–21 点可在军帐领 20'], ['zhang'], false); return; }   // 11-02 体力控制
   if (i === 0 && !storySeen('open')) { playStory('open', () => openLevel(0)); return; }
-  if (LEVELS[i] && LEVELS[i].id === 31 && !storySeen('c2') && !window.__sg.simming) { playStory('c2', () => openLevel(i)); return; }   // 第一次进第二章：先演开章   // 第一次进第一关：先演序章（桃园、雷劈、醒来）
+  if (LEVELS[i] && LEVELS[i].id === 31 && !storySeen('c2') && !window.__sg.simming) { playStory('c2', () => openLevel(i)); return; }
+  if (LEVELS[i] && LEVELS[i].id === 61 && !storySeen('c3') && !window.__sg.simming) { playStory('c3', () => openLevel(i)); return; }   // 11-18 第一次进第三章   // 第一次进第二章：先演开章   // 第一次进第一关：先演序章（桃园、雷劈、醒来）
   /* 10-26 用户：「不需要任何破题门槛，不要在地图提示，可以让军师提示」——不再拦着不让打；缺的东西开战时军师提一句（见 counselGateTip） */
   enterLevel(i);
 }
@@ -7476,7 +7674,7 @@ const levelTag = lv => { const r = lv.rules || {}; if (lv.kind === 'duel') retur
   if (r.decoy) return '诱敌'; if (r.ally) return '友军'; if (r.flags) return '护旗'; if (r.wells) return '寻宝'; if (r.give) return lv.id === 1 ? '入门' : '连弩'; if (r.timed) return '限时';
   if (r.cart) return r.cart.kind === 'ram' ? '冲车' : '护送'; if (r.night) return '夜战'; if (r.huts) return '火攻'; if (r.ambush) return '伏兵'; if (r.volley) return '援军'; if (r.pre) return '残局'; if (r.pass) return '关隘';
   if (lv.waves.some(w => w[5] && w[5].lane)) return '三路'; if (r.casts) return '限手'; return '入门'; };
-const SEGS = ['黄巾之乱', '诸侯讨董', '虎牢关', '曹操攻徐州', '三让徐州', '白门楼'];
+const SEGS = ['黄巾之乱', '诸侯讨董', '虎牢关', '曹操攻徐州', '三让徐州', '白门楼', /* 11-18 第三章 */ '斩颜良', '过五关', '新野'];
 // 章节（11-08 用户：「做第二章吧」）：关卡 id 连着排（第二章 31–60），界面上按章内编号写「第二章 第 n 关」；每章三段、每段十关
 const CHAP = [{ no: '第一章', name: '群雄逐鹿' }, { no: '第二章', name: '徐州风云' }, { no: '第三章', name: '官渡' }];   // 11-18 第三章（关卡还在做，没有 61–90 关时战役页不会翻到这一章）
 const frontier = () => { const i = LEVELS.findIndex(lv => !BEST[lv.id]); return i < 0 ? LEVELS.length - 1 : i; };   // 还没打过的第一关
