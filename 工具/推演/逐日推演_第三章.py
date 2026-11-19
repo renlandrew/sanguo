@@ -17,7 +17,7 @@ c1 = c2.c1
 PREP_NEEDS = {9: 60, 10: 64, 11: 68}                    # 现在几阶 → 晋下一阶要的资历（同第二章：资历是一段五天的钟，其他线在这五天里错开卡）
 NODES = {70: 10, 80: 11, 90: 12}                         # 打这关前要几阶
 CAP = {9: 24, 10: 27, 11: 29, 12: 30}                    # 兵器上限跟官阶走（打完第二章、左将军 +24）
-WU = [3, 3, 3, 3, 3, 3, 4, 4, 4, 4]                      # +21…+30 每人每级乌金：三人合计约一天半的乌金收入
+WU = [4, 4, 4, 4, 5, 5, 5, 5, 6, 6]                      # +21…+30 每人每级乌金：三人合计约一天半的乌金收入
 ZS = [3, 3, 4, 4, 4, 4, 5, 5, 6, 6]                      # 每人每级专属
 WIN_WPN = {63: 21, 65: 22, 67: 23, 70: 24, 72: 25, 75: 26, 78: 27, 80: 28, 86: 29, 90: 30}   # 门槛（三兄弟都要到）：两三关一档，兵器当每天的钟
 STUDY = {  # 研习：门槛关 → (残页, 兵书)
@@ -30,7 +30,8 @@ STUDY = {  # 研习：门槛关 → (残页, 兵书)
 AWAKE2 = (90, 4)                                         # 第二次觉醒：门槛关、将印
 BINGSHU_AT = {65: 1, 70: 1, 75: 1, 79: 1, 84: 1, 86: 1}   # 兵书：斗将关、节点前一关首通各给一卷（共 6 卷，研习用 5 卷）
 ACH_NODE = {70: [67, 69], 80: [77, 79], 90: [87, 89]}    # 节点功绩（每阶两项）
-WU_DROP, WU_DAY, WU_SIGN = 2, 4, 2                        # 第三章关打赢掉 2、一天最多 4；点卯 2
+WU_DROP, WU_SIGN, WINS_DAY = 1, 2, 9                      # 第三章关打赢（含扫荡）掉 1，不设上限、靠体力管（11-02 用户「不要限制物品掉落，通过控制体力」）：
+                                                          # 体力一天 160，杂务花 70，剩 90 = 打赢／扫荡 9 次；点卯 2
 SMELT_RATE, SMELT_DAY = 4, 3                              # 精铁 4 换乌金 1，一天最多换 3
 
 
@@ -74,11 +75,12 @@ def run(share=1.0, verbose=True):
             if nxt in STUDY and nxt not in studied: why = f'研习{STUDY[nxt][0]}（残页{inv["残页"]:.0f}/{STUDY[nxt][1]} 兵书{inv["兵书"]}/{STUDY[nxt][2]}）'; break
             if nxt == AWAKE2[0] and not awake2: why = f'二次觉醒（将印{inv["将印"]}/{AWAKE2[1]}）'; break
             cleared = nxt; today.append(nxt); inv['精铁'] += 2
-            if wu_today < WU_DAY: g = min(WU_DROP, WU_DAY - wu_today); inv['乌金'] += g; wu_today += g
+            inv['乌金'] += WU_DROP; wu_today += 1
             inv['兵书'] += BINGSHU_AT.get(nxt, 0)
             if nxt in (65, 70, 75, 80, 85): inv['陨铁'] += 1; inv['将印'] += 0
             for lv, lvs in ACH_NODE.items():
                 if nxt in lvs and NODES[lv] == rank + 1: inv['精铁'] += 2; inv['残页'] += 1; inv['资历'] += 4 * share
+        if cleared > 60: inv['乌金'] += WU_DROP * max(0, WINS_DAY - wu_today)   # 剩下的体力扫荡第三章打过的关
         log.append((d, today, rank, wpn, dict(inv), got, why if cleared < 90 else '通关'))
         if cleared >= 90: break
     if verbose:

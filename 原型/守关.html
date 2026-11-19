@@ -458,22 +458,23 @@ const PERKS = [
 // ---------- 配招（10-29 方案 设计/成长方案_Claude_20261029.md）：每人带 1 个主动（他那张牌的按钮）＋最多 2 个被动 ----------
 // unlock：打过这一关（BEST）才学会；被动格：打过第 9 关开第 1 格、第 24 关开第 2 格（官阶做好后改按官阶）。默认带原来的招、不带被动，30 关平衡不变
 const SKILLS = {
-  guan:  { act: { qinglong: { name: '青龙斩', desc: '扫倒一片，晕住的多受伤' }, wenjiu: { name: '温酒斩将', desc: '一刀重斩最危险的一个', rank: 3 } },
-           pas: { tuodao: { name: '拖刀', desc: '刀气多一道' }, zhanjiang: { name: '斩将威名', desc: '斩了头目，全场敌兵吓住 1.5 秒' }, meiran: { name: '美髯公', desc: '城防低于三成，普攻 +40%' } } },
+  guan:  { act: { qinglong: { name: '青龙斩', desc: '扫倒一片，晕住的多受伤' }, wenjiu: { name: '温酒斩将', desc: '一刀重斩最危险的一个', rank: 3 }, qianli: { name: '千里走单骑', desc: '骑赤兔沿城前冲一趟，路上每人一刀、撞开', rank: 10 } },
+           pas: { tuodao: { name: '拖刀', desc: '刀气多一道' }, zhanjiang: { name: '斩将威名', desc: '斩了头目，全场敌兵吓住 1.5 秒' }, meiran: { name: '美髯公', desc: '城防低于三成，普攻 +40%' }, hanshou: { name: '汉寿亭侯', desc: '斩了头目，关羽冷却 -1 秒', rank: 10 } } },
   zhang: { act: { roar: { name: '当阳一喝', desc: '喝退城前、短晕、喝断蓄力' }, pojian: { name: '丈八破阵', desc: '向前直刺一路，穿透整列', rank: 2 } },
-           pas: { weizhen: { name: '威震', desc: '被晕的敌人谁打都多受 30%' }, nuqi: { name: '燕人怒气', desc: '城防每挨一下，普攻 +5%，叠 6 层' }, mengjin: { name: '猛进', desc: '出招后 4 秒，普攻快一倍' } } },
+           pas: { weizhen: { name: '威震', desc: '被晕的敌人谁打都多受 30%' }, nuqi: { name: '燕人怒气', desc: '城防每挨一下，普攻 +5%，叠 6 层' }, mengjin: { name: '猛进', desc: '出招后 4 秒，普攻快一倍' }, gucheng: { name: '古城擂鼓', desc: '城防低于五成，三人普攻 +20%', rank: 11 } } },
   liu:   { act: { shuang: { name: '双股剑', desc: '追击补刀，砍晕的翻倍' }, hujin: { name: '仁德护阵', desc: '给城防套一层护盾 8 秒', rank: 4 } },
-           pas: { rende: { name: '仁德', desc: '斩头目回城防' }, jijiang: { name: '激将', desc: '他出招后，下一位兄弟招式 +40%' }, jieyi: { name: '结义', desc: '三兄弟都在场，冷却 -10%' } } },
+           pas: { rende: { name: '仁德', desc: '斩头目回城防' }, jijiang: { name: '激将', desc: '他出招后，下一位兄弟招式 +40%' }, jieyi: { name: '结义', desc: '三兄弟都在场，冷却 -10%' }, huangshu: { name: '皇叔', desc: '每有一位兄弟在场，招式 +10%', rank: 11 } } },
   zhao:  { act: { qijin: { name: '七进七出', desc: '冲进敌阵最挤的一路来回三趟' } }, pas: {} },   // 11-08 借来的，不配招
 };
 const ACT0 = { guan: 'qinglong', zhang: 'roar', liu: 'shuang', zhao: 'qijin' };
 const actOpen = (id, k) => { const u = SKILLS[id].act[k].rank; return !u || window.__sg.all || rankNow() >= u; };
-const pasSlots = () => window.__sg.all ? 2 : rankNow() >= 5 ? 2 : rankNow() >= 2 ? 1 : 0;
+const pasSlots = () => window.__sg.all ? 3 : rankNow() >= 10 ? 3 : rankNow() >= 5 ? 2 : rankNow() >= 2 ? 1 : 0;   // 11-18 第三章：宜城亭侯开第三格
+const pasOpen = (id, k) => { const u = SKILLS[id].pas[k].rank; return !u || window.__sg.all || rankNow() >= u; };   // 第三章的新被动要晋阶才有
 // 10-30 用户：「配招也要提醒可以了」——开了新被动格、学会新招式，没进过配招页就亮红点
 const loadSig = () => pasSlots() + '|' + ['guan', 'zhang', 'liu'].flatMap(id => Object.keys(SKILLS[id].act).filter(k => actOpen(id, k))).join(',');
 const loadNew = () => loadSig() !== (INV.seenLoad || '0|qinglong,roar,shuang');
 const loadSeen = () => { INV.seenLoad = loadSig(); saveInv(); };
-const loadOf = id => { const L = (INV.load || {})[id] || {}; return { act: L.act && SKILLS[id].act[L.act] && actOpen(id, L.act) ? L.act : ACT0[id], pas: (L.pas || []).filter(k => SKILLS[id].pas[k]).slice(0, pasSlots()) }; };
+const loadOf = id => { const L = (INV.load || {})[id] || {}; return { act: L.act && SKILLS[id].act[L.act] && actOpen(id, L.act) ? L.act : ACT0[id], pas: (L.pas || []).filter(k => SKILLS[id].pas[k] && pasOpen(id, k)).slice(0, pasSlots()) }; };
 const skName = id => { const a = G && G.act ? G.act[id] : loadOf(id).act; return (SKILLS[id] && SKILLS[id].act[a] || {}).name || GEN[id].skill; };
 const hasPas = (id, k) => !!(G && G.pas && G.pas[id] && G.pas[id].includes(k));
 // 连携：出征时带的招对上了就成立；战斗里一人先出手，接手的在窗口期内接上就打出来（10-29 用户：「先把时间拖长点，照顾手残党」）
@@ -484,6 +485,7 @@ const COMBOS = [
   { id: 'cShuang', name: '双剑破阵', req: '刘备带双股剑＋张飞带当阳一喝或威震', need: L => L.liu && L.liu.act === 'shuang' && L.zhang && (L.zhang.act === 'roar' || L.zhang.pas.includes('weizhen')), desc: '双股剑砍中喝过的敌人：再晕 1 秒，身边一圈各受一半伤害' },
   { id: 'cHe', name: '喝而斩之', req: '张飞带当阳一喝＋关羽带温酒斩将', need: L => L.zhang && L.zhang.act === 'roar' && L.guan && L.guan.act === 'wenjiu', desc: '张飞喝后 5 秒内温酒斩将：这一刀翻倍，约是青龙斩一刀的 3.7 倍，专斩敌将' },
   { id: 'cRen', name: '仁剑', req: '刘备带仁德护阵＋仁德或结义', need: L => L.liu && L.liu.act === 'hujin' && (L.liu.pas.includes('rende') || L.liu.pas.includes('jieyi')), desc: '护阵护盾还在时，三人普攻 +20%' },
+  { id: 'cGu', name: '三通斩将', req: '张飞带当阳一喝且研习过三通鼓＋关羽', need: L => L.zhang && L.zhang.act === 'roar' && L.guan && !!(INV.up || {}).zhangGu, desc: '三声鼓内关羽打头目、敌将的招式翻倍' },   // 11-18 第三章
   { id: 'cTao', name: '桃园同心', req: '三兄弟同时出阵＋刘备带结义', need: L => L.guan && L.zhang && L.liu && L.liu.pas.includes('jieyi'), desc: '按张飞、刘备、关羽顺序出招：关羽这一刀翻倍、三人冷却 -2 秒' },
 ];
 const combosOf = L => COMBOS.filter(c => c.need(L));
@@ -495,6 +497,7 @@ const SHI = {
   pojian:   { lv: () => { G.pojMul = (G.pojMul || 1) * 1.25; }, 2: ['矛尖炸开', '破阵刺到最远处炸开一团火', () => { G.pojBoom = true; }], 4: ['两路破阵', '破阵一次刺两路', () => { G.pojTwo = true; }] },
   wenjiu:   { lv: () => { G.wjMul = (G.wjMul || 1) * 1.25; }, 2: ['连斩', '温酒斩将再斩第二个（六成伤害）', () => { G.wjTwo = true; }], 4: ['威慑三军', '斩完全场敌兵吓住 1.2 秒', () => { G.wjFear = true; }] },
   hujin:    { lv: () => { G.hjMul = (G.hjMul || 1) * 1.2; }, 2: ['回城', '护盾在时城防每秒回 1%', () => { G.hjHeal = true; }], 4: ['护阵反震', '护盾碎时震退城前一片敌人', () => { G.hjBlast = true; }] },
+  qianli:   { lv: () => { G.qlMul = (G.qlMul || 1) * 1.25; }, 2: ['赤兔', '千里走单骑再隔一排多冲一趟', () => { G.qlTwo = true; }], 4: ['过五关', '冲过的兵晕 1 秒', () => { G.qlStun = true; }] },   // 11-18 第三章
   qijin:    { lv: s => { s.zhaoDmg *= 1.2; s.zhaoW *= 1.06; }, 2: ['龙胆', '七进七出多冲一趟'], 4: ['单骑救主', '七进七出扫到的兵晕 1 秒'] },   // 11-08 赵云（2、4 级在 resolveQijin 里按 G.shi.zhao 查）
   shuang:   { lv: s => { s.liuSwords += 1; s.liuDmg *= 1.15; }, 2: ['剑印', '双股剑砍中的定住 3 秒', () => { G.shiRoot = true; }], 4: ['激将', '刘备出招后，下一位兄弟招式 +60%', s => { s.ji = true; }] },
 };
@@ -598,7 +601,8 @@ function firePloy() {
   for (const e of alive()) if (!FOES[e.kind].boss && !e.duel && e.y > WALL_Y - 150) { e.knock += 110 * SPD_X; e.atk = false; e.ram = 0; }   // 城前的先逼退一段（和一喝一样远）
   G.fx.push({ k: 'banner', t: 0, text: ADVISERS[AD.id].ploy });
 }
-const cdOf = id => CD * G.st.cdMul * (TUNE.cd || 1) * (G.cdg && G.cdg[id] || 1) * (G.awake === id ? .85 : 1);   // 智力高冷却短
+const isAw = id => !!G && (G.awake === id || G.awake2 === id);   // 11-18 第三章：最多两人觉醒
+const cdOf = id => CD * G.st.cdMul * (TUNE.cd || 1) * (G.cdg && G.cdg[id] || 1) * (isAw(id) ? .85 : 1);   // 智力高冷却短
 // 10-24 城头换成刘关张以后，三个人的普攻比原来一个主角强得多：敌人的血和招式伤害一起乘 HPX，招式照旧一刀清一片，普攻相对变弱
 const HPX = 1.8;
 const TUNE = {};                                     // 调难度时临时放大：n 兵数、hp 血、spd 速度、atk 普攻伤害
@@ -1066,7 +1070,7 @@ const EXPECT = (() => { const r = { guan: { lv: 1, exp: 0 }, zhang: { lv: 1, exp
 //            「要给玩家明显的感觉，他还差一些物品升级某个技能，要等第二天甚至几天才能得到，激励持续上线」；设计、推演见 ../设计/第一章设定.md 5.6） ----------
 // 时间公平：每天能拿的有上限、人人一样，多玩不多拿；漏掉的天点卯、军务最多补两天；掉落是定数，没有随机。
 const IKEY = `sgz.${SAVE_NS}.inv`, DKEY = `sgz.${SAVE_NS}.daily`;
-const ITEMS = { 精铁: '打兵器', 残页: '研习招式（军务、杂务给）', 将印: '觉醒', 陨铁: '陨铁：天外落下的铁，兵器 +4 起每两级要一块（斗将关首通、出外探访攒机缘）', 青龙鳞: '关羽兵器 +6 起要', 蛇纹镔铁: '张飞兵器 +6 起要', 雌雄剑胚: '刘备兵器 +6 起要' };   // 10-25 夜「神兵材料」改名「陨铁」   // 10-25 用户看了军帐：「好复杂」——甲片、马鬃（甲胄、坐骑）和军需（温酒、符水）都砍了，只留卡关要的；同日加神兵材料
+const ITEMS = { 精铁: '打兵器', 残页: '研习招式（军务、杂务给）', 将印: '觉醒', 陨铁: '陨铁：天外落下的铁，兵器 +4 起每两级要一块（斗将关首通、出外探访攒机缘）', 青龙鳞: '关羽兵器 +6 起要', 蛇纹镔铁: '张飞兵器 +6 起要', 雌雄剑胚: '刘备兵器 +6 起要', 乌金: '第三章兵器 +21 起要（第三章打赢、点卯、熔炉）', 兵书: '第三章研习招式要（固定几关首通给）' };   // 10-25 夜「神兵材料」改名「陨铁」   // 10-25 用户看了军帐：「好复杂」——甲片、马鬃（甲胄、坐骑）和军需（温酒、符水）都砍了，只留卡关要的；同日加神兵材料
 const ITEM_TIP = {                                                                   // 悬停说明：第一行名字，下面用途、来源（10-26 用户嫌原来的「很口语很儿戏，不像游戏」）
   精铁: '精铁\n百炼之铁，锻造兵器所需\n来源：点卯、征战、出外探访、日常杂务',
   残页: '兵书残页\n研习招式进阶所需\n来源：征战军令、日常杂务',
@@ -1075,17 +1079,22 @@ const ITEM_TIP = {                                                              
   青龙鳞: '青龙鳞\n青龙偃月刀 +6 起锻造所需\n来源：第三关、第十七关、第二章第八关打赢（每天最多两片），功绩「喝而斩之」「温酒斩将」',
   蛇纹镔铁: '蛇纹镔铁\n丈八蛇矛 +6 起锻造所需\n来源：第五关、第八关、第二章第十四关打赢（每天最多两块），功绩「丈八破阵」「喝断无双」',
   雌雄剑胚: '雌雄剑胚\n双股剑 +6 起锻造所需\n来源：第七关、第廿四关、第二章第十二关打赢（每天最多两块），功绩「桃园同心」「仁德护阵」',
+  乌金: '乌金\n乌沉沉的精金，兵器 +21 起锻造所需\n来源：第三章各关打赢或扫荡、点卯；神兵室熔炉里精铁四块换一块（每天三块）',
+  兵书: '兵书\n前人兵法手卷，第三章研习招式所需\n来源：第三章几处要关首通（各一卷，重打不再给）',
   体力: '体力\n打赢一关、扫荡、日常杂务各花十点\n每天点卯补满一百二十；十二到十四点、十九到二十一点各能在军帐领二十' };
-const ITEM_C = { 精铁: '#c9cdd2', 残页: '#f0d9a0', 将印: '#e2563a', 陨铁: '#8fe8ff', 体力: '#9be0a0', 青龙鳞: '#7fe0b8', 蛇纹镔铁: '#ff9a5a', 雌雄剑胚: '#9cc8ff' };
+const ITEM_C = { 精铁: '#c9cdd2', 残页: '#f0d9a0', 将印: '#e2563a', 陨铁: '#8fe8ff', 体力: '#9be0a0', 青龙鳞: '#7fe0b8', 蛇纹镔铁: '#ff9a5a', 雌雄剑胚: '#9cc8ff', 乌金: '#6b6f7a', 兵书: '#d8b878' };
 // 专属材料（10-29 用户：「陨铁再给多些，不要卡，但第三等级开始，每个人的武器都有专属材料，材料必须是在特定关卡里刷或者完成特定成就」）：
 // 兵器第三档（+6）起每人要自己的材料；指定关打赢掉 1、三星掉 2，每种一天最多 2；两项功绩各给 3；三块陨铁可换一份（保底）
-const MAT = { guan: { name: '青龙鳞', lv: [3, 17, 38] }, zhang: { name: '蛇纹镔铁', lv: [5, 8, 44] }, liu: { name: '雌雄剑胚', lv: [7, 24, 42] } }, MAT_NEED = { 6: 2, 7: 2, 8: 3, 9: 3, 10: 4, 11: 2, 12: 2, 13: 3, 14: 3, 15: 3, 16: 3, 17: 4, 18: 4, 19: 4, 20: 4 }, MAT_CAP = 2, MAT_SWAP = 3;
+const MAT = { guan: { name: '青龙鳞', lv: [3, 17, 38, 68] }, zhang: { name: '蛇纹镔铁', lv: [5, 8, 44, 79] }, liu: { name: '雌雄剑胚', lv: [7, 24, 42, 84] } }, MAT_NEED = { 6: 2, 7: 2, 8: 3, 9: 3, 10: 4, 11: 2, 12: 2, 13: 3, 14: 3, 15: 3, 16: 3, 17: 4, 18: 4, 19: 4, 20: 4, /* 11-18 第三章 */ 21: 3, 22: 3, 23: 4, 24: 4, 25: 4, 26: 4, 27: 5, 28: 5, 29: 6, 30: 6 }, MAT_CAP = 2, MAT_SWAP = 3;
+const BINGSHU_LV = [65, 70, 75, 79, 84, 86];   // 11-18 第三章：兵书六卷，这几关首通各一卷（研习用五卷，留一卷）
 const matOfLv = id => Object.values(MAT).filter(m => m.lv.includes(id));
 const WPN_IRON = [4, 4, 10, 10, 15, 15, 20, 20, 25, 25, /* 11-08 第二章 +11…+20 */ 18, 18, 20, 20, 22, 22, 25, 25, 28, 28];
-const WPN_ONE = (k, h) => { const c = { 精铁: Math.ceil(WPN_IRON[k - 1] / 3) }; if (h && MAT_NEED[k]) c[MAT[h].name] = MAT_NEED[k]; if (k >= 4 && k % 2 === 0 && !['guan', 'zhang', 'liu'].some(h => (INV.up['wpn_' + h] || 0) >= k)) c.陨铁 = 1; return c; };   // 10-29 逐日推演：每人各要一块，三人到 +10 共 12 块，一天只产约 0.3 块，要 34–40 天才打到吕布；用户：「只改陨铁」——照「资源不变」，这一级谁先打造谁出那一块，三人合计 +4／+6／+8／+10 各一块   // 一人一把：精铁三分之一   /* 10-27 用户：「要增加武器的升级频率」——5 级拆成 10 级，每级 +8%，精铁对半拆，陨铁在 4、6、8、10 级各一块；斗将关要 2/4/6/8/10 级，到关的天数不变 */
-const WPN_MAX = 20, wpnVis = w => (w = w || 0) <= 10 ? Math.floor(w / 2) : 5 + Math.ceil((w - 10) / 2);   // 11-08 第二章：+11、+12 玄铁 … +19、+20 天命（档位 6–10）；+10 以内和第一章一样
+const WPN_WU = [4, 4, 4, 4, 5, 5, 5, 5, 6, 6];   // 11-18 第三章 +21…+30 每人每级乌金（逐日推演_第三章.py：三人升一级约一天的乌金，兵器当每天的钟）
+const WPN_ONE = (k, h) => { if (k > 20) { const c = { 乌金: WPN_WU[k - 21] }; if (h && MAT_NEED[k]) c[MAT[h].name] = MAT_NEED[k]; if (k % 2 === 0) c.陨铁 = 1; return c; }   // 第三章：偶数级每人各一块陨铁
+  const c = { 精铁: Math.ceil(WPN_IRON[k - 1] / 3) }; if (h && MAT_NEED[k]) c[MAT[h].name] = MAT_NEED[k]; if (k >= 4 && k % 2 === 0 && !['guan', 'zhang', 'liu'].some(h => (INV.up['wpn_' + h] || 0) >= k)) c.陨铁 = 1; return c; };   // 10-29 逐日推演：每人各要一块，三人到 +10 共 12 块，一天只产约 0.3 块，要 34–40 天才打到吕布；用户：「只改陨铁」——照「资源不变」，这一级谁先打造谁出那一块，三人合计 +4／+6／+8／+10 各一块   // 一人一把：精铁三分之一   /* 10-27 用户：「要增加武器的升级频率」——5 级拆成 10 级，每级 +8%，精铁对半拆，陨铁在 4、6、8、10 级各一块；斗将关要 2/4/6/8/10 级，到关的天数不变 */
+const WPN_MAX = 30, wpnVis = w => (w = w || 0) <= 10 ? Math.floor(w / 2) : 5 + Math.ceil((w - 10) / 2);   // 11-18 第三章 +21…+30：档位 11–15   // 11-08 第二章：+11、+12 玄铁 … +19、+20 天命（档位 6–10）；+10 以内和第一章一样
 // 兵器能炼到几级（11-08 第二章）：第一章 +10；打完第一章、校尉 +12；别部司马 +15、徐州牧 +18、左将军 +20
-const wpnCap = () => { const r = rankNow(); return r >= 9 ? 20 : r >= 8 ? 18 : r >= 7 ? 15 : r >= 6 && BEST[30] ? 12 : 10; };   // 画面档位：两级换一次样子（兵器图、刀气光效仍是 0–5 档）                                                // 兵器 +1…+5 各要多少精铁：天天玩的约第 1、4、7、10、14 天攒够，正好赶上第 5、15、20、25、30 关的斗将
+const wpnCap = () => { const r = rankNow(); return r >= 12 ? 30 : r >= 11 ? 29 : r >= 10 ? 27 : r >= 9 && BEST[60] ? 24 : r >= 9 ? 20 : r >= 8 ? 18 : r >= 7 ? 15 : r >= 6 && BEST[30] ? 12 : 10; };   // 11-18 第三章：打完第二章 +24，宜城亭侯 +27、豫州牧 +29、镇东将军 +30   // 画面档位：两级换一次样子（兵器图、刀气光效仍是 0–5 档）                                                // 兵器 +1…+5 各要多少精铁：天天玩的约第 1、4、7、10、14 天攒够，正好赶上第 5、15、20、25、30 关的斗将
 const UPS = {                                                                        // 能打造、开封的东西：每级要什么、做什么
   wpn_guan: { name: '青龙偃月刀', hero: 'guan', max: WPN_MAX, cost: k => WPN_ONE(k, 'guan'), desc: k => `关羽普攻、招式 +${8 * k}%` },   // 10-29 用户：「单独打造，但是资源不变」——每人一把单独升，每次花原来的三分之一
   wpn_zhang: { name: '丈八蛇矛', hero: 'zhang', max: WPN_MAX, cost: k => WPN_ONE(k, 'zhang'), desc: k => `张飞普攻、招式 +${8 * k}%` },
@@ -1095,22 +1104,33 @@ const UPS = {                                                                   
   guan2:  { name: '青龙斩 · 龙鳞破甲', gen: 'guan', max: 1, cost: () => ({ 残页: 12 }), desc: () => '扫过的 4 秒内盾和甲都失效、多受 20%' },
   zhang2: { name: '当阳一喝 · 怒雷', gen: 'zhang', max: 1, cost: () => ({ 残页: 18 }), desc: () => '喝完城前留一道火沟烧 4 秒：走进去着火、慢一半，骑兵落马' },
   liu3:   { name: '剑印 · 终阶', gen: 'liu', max: 1, need: 'liu2', cost: () => ({ 残页: 18 }), desc: () => '定住 6 秒、双股剑多两剑：追百姓的兵被定住' },
-  awake:  { name: '觉醒', max: 1, cost: () => ({ 将印: 2 }), desc: () => '选一人觉醒：招式伤害 +20%、冷却 -15%' },
+  awake:  { name: '觉醒', max: 2, cost: k => ({ 将印: k >= 2 ? 4 : 2 }), desc: () => '选一人觉醒：招式伤害 +20%、冷却 -15%' },   // 11-18 第三章：豫州牧开第二次觉醒（将印 4），只能挑还没觉醒的
+  /* 11-18 第三章五项研习（设计/第三章设定.md 5.5）：残页＋兵书，一天只能研习一项（ch3），每项改招式的形状 */
+  guanLy: { name: '温酒斩将 · 冷艳锯', gen: 'guan', max: 1, ch3: true, cost: () => ({ 残页: 50, 兵书: 1 }), desc: () => '斩头目、敌将前先劈碎盾和甲；血少于两成五的头目一刀斩死' },
+  guanQl: { name: '千里走单骑 · 过关', gen: 'guan', max: 1, ch3: true, rank: 10, cost: () => ({ 残页: 70, 兵书: 1 }), desc: () => '冲阵路上的兵被撞开、晕 0.6 秒；护送的车驾 4 秒内走快一倍' },
+  zhangGu: { name: '当阳一喝 · 三通鼓', gen: 'zhang', max: 1, ch3: true, cost: () => ({ 残页: 80, 兵书: 1 }), desc: () => '一喝变三声鼓：全队伤害每声 +15%，叠三层，6 秒' },
+  zhaoBn: { name: '七进七出 · 百鸟朝凤', gen: 'zhao', max: 1, ch3: true, cost: () => ({ 残页: 90, 兵书: 1 }), desc: () => '最后一趟冲到头，枪花散开扫一圈' },
+  liuXm:  { name: '仁德护阵 · 携民', gen: 'liu', max: 1, ch3: true, cost: () => ({ 残页: 110, 兵书: 1 }), desc: () => '护盾在时护送的车驾不掉血；护盾碎或到时城防回 10%' },
 };
 // 破题门槛：第一次打这一关之前要有的（重打不拦）
 const GATES = { 5: { wpn: 2 }, 9: { liu2: 1 }, 11: { guan2: 1 }, 15: { wpn: 4 }, 20: { wpn: 6 }, 22: { zhang2: 1 }, 25: { wpn: 8 }, 27: { liu3: 1 }, 30: { wpn: 10, awake: 1 },
-  /* 11-08 第二章斗将关 */ 35: { wpn: 12 }, 45: { wpn: 14 }, 50: { wpn: 16 }, 55: { wpn: 18 }, 60: { wpn: 20 } };
+  /* 11-08 第二章斗将关 */ 35: { wpn: 12 }, 45: { wpn: 14 }, 50: { wpn: 16 }, 55: { wpn: 18 }, 60: { wpn: 20 },
+  /* 11-18 第三章：兵器两三关一档当每天的钟，研习插在中间（逐日推演_第三章.py） */ 63: { wpn: 21 }, 65: { wpn: 22 }, 67: { wpn: 23 }, 68: { guanLy: 1 }, 70: { wpn: 24 }, 72: { wpn: 25 }, 75: { wpn: 26 }, 76: { guanQl: 1 }, 78: { wpn: 27 }, 80: { wpn: 28, zhangGu: 1 }, 85: { zhaoBn: 1 }, 86: { wpn: 29 }, 87: { liuXm: 1 }, 90: { wpn: 30, awake: 2 } };
 const GATE_WHY = { 5: '邓茂挺枪护身：兵器不够利，砍不进去', 9: '张宝的术士给黄巾兵回血加速：要剑印把术士定住', 11: '西凉兵正面举盾：要龙鳞破甲把盾破了',
   15: '胡轸双刀连斩：兵器要再利一层', 20: '华雄关前死守、护罩厚：兵器要 +6 才砍得破', 22: '并州狼骑成群冲阵：要怒雷火沟把骑兵掀下马',
   25: '李傕的护罩更厚：兵器要 +8', 27: '西凉兵追砍百姓：要剑印终阶把追兵定住', 30: '吕布：兵器 +10，还要一人觉醒',
-  35: '夏侯惇拔矢啖睛、狂暴刀沉：兵器要 +12', 45: '荀正甲厚：兵器要 +14（关羽喝而斩之能一刀了结）', 50: '纪灵三尖刀横扫、护罩厚：兵器要 +16', 55: '张辽护罩更厚：兵器要 +18', 60: '白门楼吕布：兵器要 +20' };
+  35: '夏侯惇拔矢啖睛、狂暴刀沉：兵器要 +12', 45: '荀正甲厚：兵器要 +14（关羽喝而斩之能一刀了结）', 50: '纪灵三尖刀横扫、护罩厚：兵器要 +16', 55: '张辽护罩更厚：兵器要 +18', 60: '白门楼吕布：兵器要 +20',
+  63: '曹军压到徐州城下：兵器要 +21', 65: '许褚裸衣斗：兵器要 +22', 67: '白马城外河北兵厚：兵器要 +23', 68: '河北大戟士带护罩：要研习冷艳锯', 70: '颜良：兵器要 +24', 72: '东岭关：兵器要 +25',
+  75: '荥阳王植：兵器要 +26', 76: '黄河渡口拦车：要研习千里走单骑 · 过关', 78: '张飞挺矛：兵器要 +27', 80: '蔡阳：兵器要 +28，还要研习三通鼓', 85: '高览枪快：要研习百鸟朝凤', 86: '投荆州：兵器要 +29', 87: '马跃檀溪：要研习携民', 90: '八门金锁阵：兵器 +30，还要第二人觉醒' };
 // 开战时军师提一句（10-26 不再拦关）：短句，一行卷轴放得下
 const GATE_SAY = { 5: '邓茂甲厚，兵器不到 +2 砍不动他', 9: '术士给兵回血，先研习刘备的剑印', 11: '西凉兵举盾，先研习关羽的龙鳞破甲',
   15: '胡轸刀快，兵器最好先到 +4', 20: '华雄护罩厚，兵器要到 +6', 22: '狼骑成群，先研习张飞的怒雷',
   25: '李傕护罩更厚，兵器要到 +8', 27: '追兵砍百姓，先研习剑印终阶', 30: '吕布？兵器 +10，再觉醒一人',
-  35: '夏侯惇狂暴刀沉，兵器最好先到 +12', 45: '荀正甲厚，兵器要到 +14', 50: '纪灵护罩厚，兵器要到 +16', 55: '张辽护罩更厚，兵器要到 +18', 60: '白门楼吕布，兵器要到 +20' };
+  35: '夏侯惇狂暴刀沉，兵器最好先到 +12', 45: '荀正甲厚，兵器要到 +14', 50: '纪灵护罩厚，兵器要到 +16', 55: '张辽护罩更厚，兵器要到 +18', 60: '白门楼吕布，兵器要到 +20',
+  63: '曹军压城，兵器先到 +21', 65: '许褚力大，兵器要到 +22', 67: '河北兵厚，兵器要到 +23', 68: '大戟士护罩厚，先研习冷艳锯', 70: '颜良在阵后，兵器要到 +24', 72: '过关要快，兵器要到 +25',
+  75: '王植火烧驿馆，兵器要到 +26', 76: '渡口拦车，先研习「过关」', 78: '三弟认不出你，兵器要到 +27', 80: '三通鼓内斩蔡阳，兵器 +28、研习三通鼓', 85: '高览枪快，先研习百鸟朝凤', 86: '兵器要到 +29', 87: '护着主公过檀溪，先研习携民', 90: '八门金锁，兵器 +30，再觉醒一人' };
 const upAt = id => { const u = {}; for (const [g, req] of Object.entries(GATES)) if (+g <= id) for (const [k, v] of Object.entries(req)) u[k] = Math.max(u[k] || 0, v); if (u.wpn) for (const h of ['guan', 'zhang', 'liu']) u['wpn_' + h] = u.wpn; return u; };   // 按推荐打到第 id 关时手里有的
-let INV = { it: { 精铁: 0, 残页: 0, 将印: 0, 陨铁: 0, 青龙鳞: 0, 蛇纹镔铁: 0, 雌雄剑胚: 0 }, up: {}, awake: null, seal20: false, luck: 0 };
+let INV = { it: { 精铁: 0, 残页: 0, 将印: 0, 陨铁: 0, 青龙鳞: 0, 蛇纹镔铁: 0, 雌雄剑胚: 0, 乌金: 0, 兵书: 0 }, up: {}, awake: null, seal20: false, luck: 0 };
 try { const o = JSON.parse(localStorage.getItem(IKEY) || '{}'); INV = { ...INV, ...o, it: { ...INV.it, ...(o.it || {}) }, up: { ...(o.up || {}) } }; } catch (e) {}
 if (INV.up.wpn && !INV.wpn10) INV.up.wpn = Math.min(10, INV.up.wpn * 2); INV.wpn10 = true;   // 10-27 兵器 5 级改 10 级：旧档等级翻倍
 if (!INV.wpnSplit) { for (const h of ['guan', 'zhang', 'liu']) INV.up['wpn_' + h] = Math.max(INV.up['wpn_' + h] || 0, INV.up.wpn || 0); INV.wpnSplit = true; }   // 10-29 三人分开打造：旧档三人都按原来的等级
@@ -1130,8 +1150,12 @@ const RANKS = [
   { name: '别部司马', node: 40, gets: ['换上第七套新甲', '兵器可炼到 +15'] },
   { name: '徐州牧', node: 50, gets: ['换上第八套新甲', '兵器可炼到 +18'] },
   { name: '左将军', node: 60, gets: ['换上第九套新甲', '兵器可炼到 +20'] },
+  /* 11-18 第三章（设计/第三章设定.md 5.3）：官阶 10–12，每阶给新东西 */
+  { name: '宜城亭侯', node: 70, gets: ['被动第三格', '关羽新招「千里走单骑」', '兵器可炼到 +27'] },
+  { name: '豫州牧', node: 80, gets: ['第二次觉醒资格', '张飞、刘备各一个新被动', '兵器可炼到 +29'] },
+  { name: '镇东将军', node: 90, gets: ['兵器可炼到 +30', '第三章成长上限'] },
 ];
-const PREP_NEEDS = [16, 16, 36, 48, 52, 56, /* 11-08 第二章 */ 60, 64, 68], prepNeed = () => PREP_NEEDS[Math.min(rankNow(), PREP_NEEDS.length - 1)];   // 10-29 逐日推演：陨铁放开后一天晋一阶、8 天通关；用户「加码到 16 天」——前两阶不变保头两天的爽感，后面逐阶加码。10-30 用户：「我要打第五关，要升级，但我第一天似乎凑不够啊？」——一天军务十二道＋本阶两项功绩各 4 正好 20，一道没做成就晋不了；前两阶降到 16，留一项功绩或几道军务的余地
+const PREP_NEEDS = [16, 16, 36, 48, 52, 56, /* 11-08 第二章 */ 60, 64, 68, /* 11-18 第三章 */ 60, 64, 68], prepNeed = () => PREP_NEEDS[Math.min(rankNow(), PREP_NEEDS.length - 1)];   // 10-29 逐日推演：陨铁放开后一天晋一阶、8 天通关；用户「加码到 16 天」——前两阶不变保头两天的爽感，后面逐阶加码。10-30 用户：「我要打第五关，要升级，但我第一天似乎凑不够啊？」——一天军务十二道＋本阶两项功绩各 4 正好 20，一道没做成就晋不了；前两阶降到 16，留一项功绩或几道军务的余地
 INV.rank = INV.rank || 0; INV.prep = INV.prep || 0;
 const rankNow = () => INV.rank || 0, nextRank = () => RANKS[rankNow() + 1] || null;
 const syncRankArt = () => { INV.officeRank = Math.min(6, rankNow() + 1); };   // 关羽官阶头像那套（另一会话做的）按 1–6 编号
@@ -1221,7 +1245,7 @@ const TASKS = {
   ploy:    { ok: lv => lv.id === 12, text: n => `${n}在伏兵杀出时放缓兵之计`, check: (r, G) => r.win && G.adv && G.adv.used && G.adv.cond === 'ambush' },
 };
 const topDmg = G => Object.entries(G.dmgBy || {}).filter(([id]) => G.fighters.includes(id)).sort((a, b) => b[1] - a[1])[0]?.[0];
-const lvName = id => (id > 30 ? '第二章第' + CNUM((id - 1) % 30 + 1) : '第' + CNUM(id)) + '关';
+const lvName = id => (id > 60 ? '第三章第' + CNUM((id - 1) % 30 + 1) : id > 30 ? '第二章第' + CNUM((id - 1) % 30 + 1) : '第' + CNUM(id)) + '关';   // 11-18 第三章
 function genTasks(day, n) {                                                          // 同一天人人一样的题（按日期定），攻略能互相分享
   const done = LEVELS.filter(lv => BEST[lv.id]), pool = [];
   for (const lv of done) for (const [k, T] of Object.entries(TASKS)) if (T.ok(lv)) pool.push({ k, lv: lv.id });
@@ -1242,9 +1266,9 @@ function dailyTick() {
   if (DAILY.tasks && DAILY.tasks.some(t => TASKS[t.k].gone && !t.done)) { DAILY.tasks = DAILY.tasks.filter(t => !TASKS[t.k].gone || t.done); saveDaily(); }   // 撤掉的题（张飞、刘备伤害第一）从今天的军务里拿掉，下面按打过的关补一道
   if (DAILY.day !== td) {
     const gap = DAILY.day ? Math.max(1, dayNum(td) - dayNum(DAILY.day)) : 1, packs = 1 + Math.min(monthLeft() > 0 ? 6 : 2, gap - 1), got = { 精铁: 2 * packs };   // 月卡：补领七天
-    INV.it.精铁 += 2 * packs;
+    INV.it.精铁 += 2 * packs; if (BEST[60]) { INV.it.乌金 += 2 * packs; got.乌金 = 2 * packs; }   // 11-18 第三章开了以后点卯多给乌金 2
     staNow(); INV.sta.v = Math.max(INV.sta.v, STA_MAX); DAILY.staGot = [];   // 点卯：体力补满到 120（领多了的不扣）
-    DAILY.day = td; DAILY.met = {}; DAILY.taskN = 3 * packs; DAILY.tasks = genTasks(td, DAILY.taskN); DAILY.caps = { 精铁: 0 }; DAILY.visits = 0; DAILY.visitN = 2 * packs; DAILY.chores = false; DAILY.cd = CHORES.map(() => false); DAILY.endSwept = false; DAILY.cjWin = false; DAILY.huntTier = 0;
+    DAILY.day = td; DAILY.met = {}; DAILY.taskN = 3 * packs; DAILY.tasks = genTasks(td, DAILY.taskN); DAILY.caps = { 精铁: 0 }; DAILY.visits = 0; DAILY.visitN = 2 * packs; DAILY.chores = false; DAILY.cd = CHORES.map(() => false); DAILY.endSwept = false; DAILY.smelt = 0; DAILY.cjWin = false; DAILY.huntTier = 0;
     if (DAILY.week !== weekKey(td)) { DAILY.week = weekKey(td); DAILY.weekN = 0; DAILY.weekSeal = false; }
     if (monthLeft() > 0) doChores();                                             // 月卡：日常杂务一上线就做完
     note = { packs, got }; saveInv(); saveDaily();
@@ -1313,10 +1337,12 @@ function eta(cost) {
 }
 const etaText = (d, lack = []) => d <= 0 ? '够了' : '';   // 11-02 用户：「去掉所有明天就够的字眼」——不再估「今天／明天／后天／还要 n 天就够」，只在够了时说够了
 const upCost = key => UPS[key].cost((INV.up[key] || 0) + 1);
-function canUp(key) { const U = UPS[key], k = INV.up[key] || 0; if (k >= U.max || (U.hero && k >= wpnCap())) return false; if (U.need && !INV.up[U.need]) return false; return Object.entries(upCost(key)).every(([i, n]) => (INV.it[i] || 0) >= n); }
+function canUp(key) { const U = UPS[key], k = INV.up[key] || 0; if (k >= U.max || (U.hero && k >= wpnCap())) return false; if (U.need && !INV.up[U.need]) return false;
+  if (U.ch3 && INV.studyDay === dayStr()) return false; if (U.rank && rankNow() < U.rank) return false; if (key === 'awake' && k >= 1 && rankNow() < 11) return false;   /* 11-18 第三章：研习一天一项、要官阶的要先晋阶；第二次觉醒要豫州牧 */
+  return Object.entries(upCost(key)).every(([i, n]) => (INV.it[i] || 0) >= n); }
 function doUp(key, who) {
   if (!canUp(key)) return false; for (const [i, n] of Object.entries(upCost(key))) INV.it[i] -= n;
-  INV.up[key] = (INV.up[key] || 0) + 1; if (key === 'awake') INV.awake = who || 'guan'; saveInv(); return true;
+  INV.up[key] = (INV.up[key] || 0) + 1; if (key === 'awake') { if (INV.up.awake >= 2) INV.awake2 = who || 'zhang'; else INV.awake = who || 'guan'; } if (UPS[key].ch3) INV.studyDay = dayStr(); saveInv(); return true;
 }
 // 第一次打这一关还缺什么门槛：[{ key, need, have }]
 const wpnMin = () => Math.min(...['guan', 'zhang', 'liu'].map(h => INV.up['wpn_' + h] || 0));
@@ -1338,6 +1364,8 @@ function settleLoot(win) {
     if (lv.id === 20 && !INV.seal20) { INV.seal20 = true; give('将印', 1); }
     if (lv.kind === 'duel' && lv.id % 30 && !(INV.duelMet || (INV.duelMet = {}))[lv.id]) { INV.duelMet[lv.id] = 1; give('陨铁', 1); }   // 10-29 陨铁多给：斗将关首通各一块
     for (const m of matOfLv(lv.id)) give(m.name, 1);   // 专属材料：赢了掉 1 个（不设上限后三星不再给 2 个，不然一天就把兵器升满）
+    if (lv.id > 60) give('乌金', 1);                                                  // 11-18 第三章：乌金只在第三章掉，打赢、扫荡各 1，靠体力管
+    if (BINGSHU_LV.includes(lv.id) && !(INV.bsGot || (INV.bsGot = {}))[lv.id]) { INV.bsGot[lv.id] = 1; give('兵书', 1); }   // 兵书：固定几关首通各一卷，按关号记账、重打不再给
   }
   r.tasks = [];
   for (const t of DAILY.tasks) if (!t.done && t.lv === lv.id && TASKS[t.k].check(r, G)) {
@@ -1632,7 +1660,7 @@ function startLevel(i, lvX) {
   const own = INV.up, exp = upAt(lv.id); if (sim && window.__sg.wpnLess && exp.wpn) { exp.wpn -= window.__sg.wpnLess; for (const h of ['guan', 'zhang', 'liu']) exp['wpn_' + h] = exp.wpn; }   // wpnLess：推演「兵器差几级」（10-29 三人分开后也要改各人的）
   if (sim && window.__sg.upOver) Object.assign(exp, window.__sg.upOver(exp, lv.id) || {});   // 推演：按某天手里的东西覆盖（逐日推演用）
   G.up = sim ? (window.__sg.noUp ? {} : exp) : window.__sg.all ? Object.fromEntries([...new Set([...Object.keys(own), ...Object.keys(exp)])].map(k => [k, Math.max(own[k] || 0, exp[k] || 0)])) : { ...own };
-  G.upMul = 1; G.wpnLv = {}; for (const h of ['guan', 'zhang', 'liu']) G.wpnLv[h] = G.up['wpn_' + h] ?? G.up.wpn ?? 0; G.wpnLv.zhao = Math.min(G.wpnLv.guan, G.wpnLv.zhang, G.wpnLv.liu); G.awake = G.up.awake ? (!sim && INV.awake) || 'guan' : null;   // 11-08 赵云自带亮银枪，按三兄弟里最低的那把算
+  G.upMul = 1; G.qlMul = 1; G.qlTwo = G.qlStun = false; G.lyN = 0; G.drumT = 0; G.qlsT = 0; G.wpnLv = {}; for (const h of ['guan', 'zhang', 'liu']) G.wpnLv[h] = G.up['wpn_' + h] ?? G.up.wpn ?? 0; G.wpnLv.zhao = Math.min(G.wpnLv.guan, G.wpnLv.zhang, G.wpnLv.liu); G.awake = G.up.awake ? (!sim && INV.awake) || 'guan' : null; G.awake2 = G.up.awake >= 2 ? (!sim && INV.awake2) || (G.awake === 'zhang' ? 'liu' : 'zhang') : null;   // 11-08 赵云自带亮银枪，按三兄弟里最低的那把算
   G.blocks = 0; G.trenchT = 0; G.trenchFire = true; G.logUsed = false; G.nuUsed = false; G.logArm = false; G.nuArm = false; G.lights = []; G.flareT = 0; G.lightN = RU.night ? (RU.night.blind ? RU.night.blind.n : 3) : 0; G.lightArm = false; G.lightChk = 0;
   if (G.up.liu3) G.st.liuSwords += 2;
   G.wpnNeed = (GATES[lv.id] || {}).wpn || 0;
@@ -1688,12 +1716,12 @@ function spawn(q, y) {
   if (T.boss) { G.boss = e; G.fx.push({ k: 'banner', t: 0, text: T.name, sub: T.title || '黄巾大将' }); }
   return e;
 }
-const WHO = { qi: 'liu', sword: 'liu', wave: 'guan', slash: 'guan', thrust: 'zhang', roar: 'zhang', pierce: 'zhang', wenjiu: 'guan', lance: 'zhao', qijin: 'zhao' };
+const WHO = { qianli: 'guan', bainiao: 'zhao', qi: 'liu', sword: 'liu', wave: 'guan', slash: 'guan', thrust: 'zhang', roar: 'zhang', pierce: 'zhang', wenjiu: 'guan', lance: 'zhao', qijin: 'zhao' };
 // 游戏化（10-25 用户：「还不够游戏化」，发来《宗师之上》的录屏）：敌人头上一串串带招名的伤害数字，受击闪白、往后一仰，大招打死的击飞；
 // 招式从武将身上打出去、连到敌人；出招时武将旁边竖着弹出招名；大招顿一下、镜头往前推一下
-const BIGSRC = new Set(['slash', 'roar', 'sword', 'log', 'pierce', 'wenjiu', 'qijin']);
+const BIGSRC = new Set(['slash', 'roar', 'sword', 'log', 'pierce', 'wenjiu', 'qijin', 'qianli', 'bainiao']);
 const DMG_STYLE = { guan: ['#a8f0c8', '#0b3a2a'], zhang: ['#ffc08a', '#4a0f08'], liu: ['#bfe3ff', '#0c2a4a'], zhao: ['#e6deff', '#2a1f4a'] };
-const DMG_NAME = { slash: '青龙斩', roar: '当阳一喝', sword: '双股剑', burn: '灼烧', log: '滚木', pierce: '丈八破阵', wenjiu: '温酒斩将', qijin: '七进七出' };
+const DMG_NAME = { qianli: '千里走单骑', bainiao: '百鸟朝凤', slash: '青龙斩', roar: '当阳一喝', sword: '双股剑', burn: '灼烧', log: '滚木', pierce: '丈八破阵', wenjiu: '温酒斩将', qijin: '七进七出' };
 function popDmg(e, d, src, vd = 0) {
   const now = (G.vt || 0) + vd, T = FOES[e.kind], ps = persp(e.y), crit = src === 'sword' && e.stun > 0; G.nums = G.nums || [];
   const win = src === 'burn' ? .7 : .2, m = G.nums.find(n => n.e === e && n.src === src && now - n.t0 < win);   // 同一个人同一招连着挨的并成一个数（灼烧每帧都扣，攒 0.7 秒才跳一次）
@@ -1749,9 +1777,18 @@ function hurt(e, d, src) {
   if (who === 'zhang' && !BIGSRC.has(src) && G.nuqi) d *= 1 + .05 * G.nuqi;
   if (who && !BIGSRC.has(src) && G.wallShield > 0 && G.combos && G.combos.includes('cRen')) { d *= 1.2; if (G.cnt) G.cnt.cRen++; }                       // 仁剑                                              // 燕人怒气
   if (big && who === 'zhang' && G.st.wan) d *= 2;                                                                         // 万人敌
+  if (who && G.drumT > G.t && src !== 'burn') d *= Math.pow(1.15, Math.min(3, 1 + Math.floor((G.t - (G.drumT - 6)) / .4)));   // 11-18 三通鼓：每声 +15%，叠三层
+  if (big && who === 'guan' && BIGSRC.has(src) && G.drumT > G.t && G.combos && G.combos.includes('cGu')) d *= 2;           // 连携「三通斩将」
+  if (who && !BIGSRC.has(src) && src !== 'burn' && hasPas('zhang', 'gucheng') && G.wall < G.wallMax * .5) d *= 1.2;         // 古城擂鼓
+  if (who === 'liu' && BIGSRC.has(src) && hasPas('liu', 'huangshu')) d *= 1 + .1 * ['guan', 'zhang'].filter(h => G.fighters.includes(h)).length;   // 皇叔
+  if (G.wpnLv && who) { const wl = G.wpnLv[who] || 0;                                                                     // 11-18 兵器特性（+25、+30）
+    if (who === 'guan' && wl >= 30 && !BIGSRC.has(src) && G.t < (G.qlsT || 0)) d *= 1.4;                                    // 青龙出水：青龙斩后 3 秒普攻 +40%
+    if (who === 'zhang' && wl >= 30 && G.t - (e.roaredT ?? -9) < 4 && src !== 'burn') d *= 1.25;                            // 燕人怒：喝过的多受 25%
+    if (who === 'liu' && wl >= 25 && src === 'qi') d *= 1.25;                                                               // 雌雄：剑气交叉
+    if (who === 'liu' && wl >= 30 && src === 'qi' && big && G.t - (G.renJT || -9) > .5) { G.renJT = G.t; G.wall = Math.min(G.wallMax, G.wall + G.wallMax * .01); } }   // 仁剑：剑气打中头目城防回 1%
   if (who && G.pow) d *= BIGSRC.has(src) ? G.lead[who] : G.pow[who];
   if (who && src !== 'log' && src !== 'burn') d *= BIGSRC.has(src) ? SK_X * (TUNE.sk || 1) : ATK_X * (TUNE.atk2 || 1);                                                     // 武力管普攻、统率管招式
-  if (who && G.wpnLv) d *= (1 + .08 * (G.wpnLv[who] || 0)) * (G.awake === who && BIGSRC.has(src) ? 1.2 : 1);   // 兵器精炼、觉醒
+  if (who && G.wpnLv) d *= (1 + .08 * (G.wpnLv[who] || 0)) * (isAw(who) && BIGSRC.has(src) ? 1.2 : 1);   // 兵器精炼、觉醒
   if (who && G.dmgBy) { const dd = Math.max(0, Math.min(d, e.hp)); G.dmgBy[who] += dd; if (BIGSRC.has(src)) G.dmgSk[who] += dd; }   // 结算分开写招式、普攻各打了多少
   if (e.duel) G.exp += Math.min(d, e.hp) / e.max * 40;                                                                  // 斗将：砍敌将也给军功（一场约 40）
   e.hp -= d; if (src !== 'burn') e.hitT = .1; if (T0.mon) monHit(e, d, src);
@@ -1806,6 +1843,7 @@ function routGroup(e) {
 function die(e, src) {
   e.dead = true; if (FOES[e.kind].civ) return; G.killed++; G.exp += FOES[e.kind].exp; if (G.focus === e) G.focus = null; if (G.focusBy) for (const h in G.focusBy) if (G.focusBy[h] === e) delete G.focusBy[h];
   if (e.lead || FOES[e.kind].flag) routGroup(e);
+  if ((e.lead || FOES[e.kind].boss) && hasPas('guan', 'hanshou')) { const gi = G.order.indexOf('guan'); if (gi >= 0) G.ready[gi] = Math.max(G.t, G.ready[gi] - 1); }   // 11-18 汉寿亭侯
   if ((e.lead || FOES[e.kind].boss) && hasPas('guan', 'zhanjiang')) { for (const f of alive()) if (f !== e && !FOES[f.kind].boss) f.stun = Math.max(f.stun || 0, 1.5); if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: W / 2, y: 300, text: '斩将威名', size: 22, color: CINNABAR }); }
   if (e.duel) { for (const f of G.foes) if (f.lamp) f.dead = true; if (G.qx) G.qx.T = 0; for (const f of G.foes) if (f !== e) routFoe(f, true); G.qi = G.queue.length; G.boss = null; }
   if (G.st.ren) { const big = e.lead || FOES[e.kind].boss, heal = (big ? 6 : 0) + (G.killed % 25 === 0 ? 3 : 0); if (heal) { G.wall = Math.min(G.wallMax, G.wall + heal * G.st.ren); G.fx.push({ k: 'txt', t: 0, x: 90, y: WALL_Y - 30, text: '仁德 +' + heal * G.st.ren, size: 15, color: AZURE }); } }
@@ -2101,7 +2139,7 @@ function step(dt) {
       e.chaseT = .3; for (const c of G.foes) if (!c.dead && FOES[c.kind].civ && Math.abs(c.x - e.x) < 10 && Math.abs(c.y - e.y) < 7) { c.dead = true; G.civLost++; if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: c.x, y: c.y - 40, text: '百姓遇害', size: 14, color: INK }); break; }
     }
     // 护送：追到车边的敌人停下砍车
-    if (G.cart && !G.cart.done && G.cart.hp > 0 && Math.abs(e.x - G.cart.x) < 30 && Math.abs(e.y - G.cart.y) < 16) { e.atk = true; e.onCart = true; e.f = (e.f + dt * 5) % 4; G.cart.hp -= (T.boss ? 4 : 1.4) * (G.RU.cart.dmgX ?? 1) * dt; continue; }
+    if (G.cart && !G.cart.done && G.cart.hp > 0 && Math.abs(e.x - G.cart.x) < 30 && Math.abs(e.y - G.cart.y) < 16) { e.atk = true; e.onCart = true; e.f = (e.f + dt * 5) % 4; if (!(G.up && G.up.liuXm && G.wallShield > 0)) G.cart.hp -= (T.boss ? 4 : 1.4) * (G.RU.cart.dmgX ?? 1) * dt;   /* 11-18 携民：护盾在时车驾不掉血 */ continue; }
     e.onCart = false;
     const stopY = T.stopY ? T.stopY + e.jit : WALL_Y - 3;
     if (e.y < stopY) {
@@ -2230,7 +2268,7 @@ function stepRules(dt) {
     if (h.age >= 6) h.burnt = true;
   }
   if (G.cart && !G.cart.done) {                                // 护送董卓的车驾
-    const C = RU.cart, sg = Math.sign(C.y1 - C.y0); if (G.cart.hp > 0) { G.cart.y += (C.y1 - C.y0) / (C.dur * TIMEX.v) * dt; G.cart.walk += dt * 6 / TIMEX.v; }
+    const C = RU.cart, sg = Math.sign(C.y1 - C.y0); if (G.cart.hp > 0) { G.cart.y += (C.y1 - C.y0) / (C.dur * TIMEX.v) * dt * (G.t < (G.cartBoostT || 0) ? 2 : 1); G.cart.walk += dt * 6 / TIMEX.v; }
     if (G.cart.hp > 0 && (G.cart.y - C.y1) * sg >= 0) { G.cart.y = C.y1; G.cart.done = true;
       if (C.optional) { G.exp += C.bonus || 20; G.fx.push({ k: 'banner', t: 0, text: C.okText || '救下了', sub: C.okSub || '' }); }
       else { for (const f of G.foes) routFoe(f, true); G.qi = G.queue.length; G.fx.push({ k: 'banner', t: 0, text: C.okText || '车驾进城', sub: C.okSub || '董卓得救' }); } }
@@ -2375,11 +2413,12 @@ function stepAttacks(dt, al) {
     const dmg = A.dmg * G.st.atkMul * (TUNE.atk || 1) * (G.windT > 0 ? .5 : 1), n = 1 + G.st.n[id], tg = inR[0], ang = Math.atan2(tg.y - 14 - gy, tg.x - gx);
     G.anim[i] = { t: 0, ang, v: pickAtk(id, i) };
     if (A.kind === 'qi') for (let k = 0; k < n; k++) G.shots.push({ k: 'qi', side: k % 2, x: gx + (k % 2 ? 6 : -6), y: gy, target: inR[k % inR.length], dmg, trail: [], ang });
-    else if (A.kind === 'wave') for (let k = 0; k < n; k++) { const a = ang + (k - (n - 1) / 2) * .22; G.shots.push({ k: 'wave', x: gx, y: gy, vx: Math.cos(a) * 380, vy: Math.sin(a) * 380, ang: a, life: A.range / 380, hit: new Set(), dmg }); }
-    else if (A.kind === 'lance') G.shots.push({ k: 'lance', x: gx, y: gy - 6, vx: Math.cos(ang) * 620, vy: Math.sin(ang) * 620, ang, life: A.range / 620, hit: new Set(), left: A.n + G.st.n.zhao, dmg });   // 11-08 赵云枪芒：直线穿三个
+    else if (A.kind === 'wave') { const big5 = (G.wpnLv.guan || 0) >= 25 && ++G.lyN % 5 === 0;   // 11-18 兵器特性「冷艳」：每第五道刀气是一道宽月牙，伤害 ×2.2
+      for (let k = 0; k < n; k++) { const a = ang + (k - (n - 1) / 2) * .22; G.shots.push({ k: 'wave', x: gx, y: gy, vx: Math.cos(a) * 380, vy: Math.sin(a) * 380, ang: a, life: A.range / 380, hit: new Set(), dmg: big5 ? dmg * 2.2 : dmg, big: big5 }); } }
+    else if (A.kind === 'lance') G.shots.push({ k: 'lance', x: gx, y: gy - 6, vx: Math.cos(ang) * 620, vy: Math.sin(ang) * 620, ang, life: A.range / 620, hit: new Set(), left: A.n + G.st.n.zhao + ((G.wpnLv.zhao || 0) >= 25 ? 2 : 0), dmg });   // 11-18 银龙：涯角枪 +25 枪芒多穿两个   // 11-08 赵云枪芒：直线穿三个
     else if (A.kind === 'thrust') {
       G.visDelay = () => HIT_AT.thrust;   // 矛尖第 0.13 秒才扎到
-      for (let k = 0; k < Math.min(inR.length, A.n + G.st.n.zhang); k++) { const e = inR[k]; hitWith(e, dmg, 'thrust'); G.fx.push({ k: 'stab', t: 0, x0: gx + 8, y0: gy - 4, x: e.x, y: e.y - 14 }); burst('ember', e.x, e.y - 14, 2, 150, { life: .35, s: 2.6, g: 60 }); G.stabs++;
+      for (let k = 0; k < Math.min(inR.length, A.n + G.st.n.zhang); k++) { const e = inR[k]; hitWith(e, dmg, 'thrust'); if ((G.wpnLv.zhang || 0) >= 25 && !e.duel && !FOES[e.kind].boss) e.knock += 8 * SPD_X;   /* 11-18 蛇信：矛刺拖回半步 */ G.fx.push({ k: 'stab', t: 0, x0: gx + 8, y0: gy - 4, x: e.x, y: e.y - 14 }); burst('ember', e.x, e.y - 14, 2, 150, { life: .35, s: 2.6, g: 60 }); G.stabs++;
         if (G.st.wan && ++G.wanN >= 20) { G.wanN = 0; miniRoar(); } }
       G.visDelay = null;
       if (G.RU.rage && !rage && G.stabs >= G.RU.rage) { G.stabs = 0; G.rageT = 6; G.fx.push({ k: 'banner', t: 0, text: '怒鞭督邮', sub: '张飞暴怒 6 秒' }); }
@@ -2422,7 +2461,7 @@ function stepShot(s, dt) {
     if (!G.sim && !SPX.ok && vr() < .85) part('scale', s.x - Math.cos(s.ang) * 16 + VR(-10, 10), s.y - Math.sin(s.ang) * 16 + VR(-10, 10), { vx: -s.vx * .08, vy: -s.vy * .08 + VR(-15, 15), life: .55, s: VR(2.8, 4.4), drag: 3 });   // 刀气身后掉青龙鳞
     for (const e of G.foes) {
       if (e.dead || s.hit.has(e)) continue; const T = FOES[e.kind], ps = persp(e.y), cy = e.y - 14 * T.s * ps;
-      if (Math.hypot(s.x - e.x, (s.y - cy) * 1.2) < 15 + T.r * ps) { s.hit.add(e); G.visDelay = () => HIT_AT.wave; hitWith(e, s.dmg, 'wave'); G.visDelay = null; G.fx.push({ k: 'cut', t: 0, x: e.x, y: cy, ang: s.ang }); if (!SPX.ok) burst('shard', e.x, cy, 3, 100, { life: .45, s: 2.6, g: 120 }); }
+      if (Math.hypot(s.x - e.x, (s.y - cy) * 1.2) < 15 + T.r * ps + (s.big ? 16 : 0)) { s.hit.add(e); G.visDelay = () => HIT_AT.wave; hitWith(e, s.dmg, 'wave'); G.visDelay = null; G.fx.push({ k: 'cut', t: 0, x: e.x, y: cy, ang: s.ang }); if (!SPX.ok) burst('shard', e.x, cy, 3, 100, { life: .45, s: 2.6, g: 120 }); }
     }
   } else if (s.k === 'lance') {                                                                     // 11-08 赵云枪芒：直线飞、穿透，算矛刺（举盾挡不住）
     s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt; s.t = (s.t || 0) + dt;
@@ -2492,6 +2531,7 @@ function smartCast(al) {
   const stunned = foes.filter(e => e.stun > .3), sinceRoar = G.t - (G.roarT ?? -99), zSoon = zi >= 0 && knows('zhang') && G.seal[zi] <= 0 ? G.ready[zi] - G.t : 99;
   const pend = Object.entries(G.chg || {}).some(([id, c]) => c.state === 'warn' || (c.state === 'mark' && foes.some(e => e.ch == id && d(e) < CHARGE.stage + 90))), run = foes.filter(e => e.chargeT > 0), runIn = run.filter(e => d(e) < R0 * .9);
   const zCan = zSoon < 4;                                                   // 张飞的一喝来得及接冲阵
+  if (ok(gi) && G.act && G.act.guan === 'qianli') { const a = qlAim(al); if (a && (a.n >= 4 || foes.some(e => d(e) < 60) || run.length)) return startCast(gi); }   // 11-18 千里走单骑：城前一横排挤了四个以上、或有兵快撞城
   if (ok(gi) && G.act && G.act.guan === 'wenjiu') { const e = wjAim(al); if (e && (e.duel || FOES[e.kind].boss || e.lead || WALL_Y - e.y < 60 || e.chargeT > 0)) return startCast(gi); }
   if (ok(li) && G.act && G.act.liu === 'hujin' && !(G.wallShield > 0)) { if (G.wall < G.wallMax * .85 && (foes.some(e => WALL_Y - e.y < 60) || (duel && duel.mv))) return startCast(li); }
   if (ok(zi) && G.act && G.act.zhang === 'pojian') { const a = pojAim(al); if (a && (a.n >= 6 || (duel && a.n >= 3))) return startCast(zi); }
@@ -2504,7 +2544,7 @@ function smartCast(al) {
       if (w >= 8 || (foes.some(e => d(e) < 40) && w >= 2)) return startCast(zi); }
   }
   const hold = (pend || run.length) && zCan && sinceRoar > 1.6;             // 冲阵要来、一喝还接得上：关羽留着等喝晕再砍
-  if (ok(gi) && (!G.act || G.act.guan !== 'wenjiu')) { const a = guanAim(al); if (a) { const n = foes.filter(e => Math.hypot(e.x - a.cx, (e.y - 14 - a.cy) * 1.25) < a.r), ns = n.filter(e => e.stun > .2).length;
+  if (ok(gi) && (!G.act || (G.act.guan !== 'wenjiu' && G.act.guan !== 'qianli'))) { const a = guanAim(al); if (a) { const n = foes.filter(e => Math.hypot(e.x - a.cx, (e.y - 14 - a.cy) * 1.25) < a.r), ns = n.filter(e => e.stun > .2).length;
       if ((sinceRoar < 1.6 && ns >= 2) || (duel && duel.stun > .2)) return startCast(gi);
       if (run.length && !zCan && n.some(e => e.chargeT > 0)) return startCast(gi);                    // 一喝接不上：直接砍冲上来的那一团
       if (!hold && zSoon > 3 && (n.length >= 6 || (boss && n.includes(boss)) || foes.some(e => d(e) < 40))) return startCast(gi); } }
@@ -2526,7 +2566,7 @@ function startCast(i) {
   if (id === 'liu') spPlay('sigil_gold', genX(i), GY - 4, 150, { ground: true, sy: .45, fps: 22 });   /* 刘备出双股剑：脚下金色符文法阵 */
   G.ready[i] = G.t + cdOf(id); G.turn = (i + 1) % NS; if (id === 'zhang' && hasPas('zhang', 'mengjin')) G.mengT = G.t + 4;
   G.fx.push({ k: 'skname', t: 0, dur: 1.3, x: genX(i), y: GY - 150, text: skName(id), id });                      // 竖在这员武将头顶，四个位置隔 86，不会叠
-  if (G.awake === id) playUlt(id);
+  if (isAw(id)) playUlt(id);
 }
 // 限手关：点一张好了的牌放招
 function castSlot(i) { if (G.state !== 'play' || G.cast || !G.order[i] || !knows(G.order[i]) || G.t < G.ready[i] || G.seal[i] > 0 || G.casts <= 0) return; startCast(i); }
@@ -2576,7 +2616,9 @@ function qjAim(al) {   // 最挤的一路：x、加权人数、实际人数
 function resolveQijin(boost) {
   const A = qjAim(alive()); if (!A) return; const W0 = G.st.zhaoW, bx = A.x; const lv = G.shi && G.shi.zhao || 0, xs = lv >= 2 ? [bx - W0 * .55, bx + W0 * .55, bx - W0 * .2, bx + W0 * .2] : [bx - W0 * .55, bx + W0 * .55, bx], D = G.st.zhaoDmg * boost, span = WALL_Y - TOP;
   xs.forEach((px, p) => { G.visDelay = e => { const fr = clamp((WALL_Y - e.y) / span, 0, 1); return (p + (p % 2 ? 1 - fr : fr)) * QJ_P; };
-    for (const e of alive()) if (Math.abs(e.x - px) < W0 && e.y > TOP - 4 && !FOES[e.kind].civ) { hurt(e, D, 'qijin'); if (!e.duel && !FOES[e.kind].boss) { e.knock += 22 * SPD_X; if (lv >= 4) e.stun = Math.max(e.stun, 1); } } });
+    for (const e of alive()) if (Math.abs(e.x - px) < W0 && e.y > TOP - 4 && !FOES[e.kind].civ) { hurt(e, D, 'qijin'); if (!e.duel && !FOES[e.kind].boss) { e.knock += 22 * SPD_X; if (lv >= 4 || (G.wpnLv.zhao || 0) >= 30) e.stun = Math.max(e.stun, 1); } } });   // 11-18 一身是胆：涯角枪 +30 扫到的晕 1 秒
+  if (G.up && G.up.zhaoBn) { const px = xs[xs.length - 1], hit = alive().filter(e => Math.abs(e.x - px) < W0 * 1.6 && e.y > TOP - 4 && !FOES[e.kind].civ).sort((a, b) => a.y - b.y), c = hit[0];   // 11-18 百鸟朝凤：最后一趟冲到头，枪花散开扫一圈
+    if (c) { G.visDelay = () => QJ_P * xs.length; for (const e of alive()) if (Math.hypot(e.x - c.x, (e.y - c.y) * 1.3) < 80 && !FOES[e.kind].civ) hurt(e, D * .6, 'bainiao'); if (!G.sim) { G.fx.push({ k: 'txt', t: -QJ_P * xs.length, x: c.x, y: c.y - 50, text: '百鸟朝凤', size: 20, color: '#e4dcff' }); hitBurst(c.x, c.y - 14, 'azure', 120, QJ_P * xs.length, 5); } } }
   G.visDelay = null; G.shake = Math.max(G.shake || 0, .25);
   if (!G.sim) { G.fx.push({ k: 'qijin', t: 0, dur: QJ_P * xs.length + 1.1, xs }); for (let p = 0; p < xs.length; p++) hitStop(QJ_P * (p + .5), 1 / 30); spxDim(.35); }
 }
@@ -2585,6 +2627,7 @@ function resolveSkill(id, boost = 1) {
   if (id === 'liu' && G.st.ji) G.jiNext = true;
   if (id === 'zhang' && G.act && G.act.zhang === 'pojian') { resolvePojian(boost); return; }
   if (id === 'guan' && G.act && G.act.guan === 'wenjiu') { resolveWenjiu(boost); return; }
+  if (id === 'guan' && G.act && G.act.guan === 'qianli') { resolveQianli(boost); return; }
   if (id === 'liu' && G.act && G.act.liu === 'hujin') { resolveHujin(boost); return; }
   if (id === 'zhao') { resolveQijin(boost); return; }
   if (id === 'zhang') {
@@ -2593,6 +2636,7 @@ function resolveSkill(id, boost = 1) {
     G.visDelay = null;
     G.fx.push({ k: 'roar', t: 0, ox: genX(G.order.indexOf('zhang')), R: R0, hits: al.filter(e => WALL_Y - e.y < R0).map(e => [e.x, e.y - 14]), rays: Array.from({ length: 15 }, (_, i) => ({ a: -Math.PI * .93 + Math.PI * .86 * (i + R(-.35, .35)) / 14, l: R0 * R(.45, 1.02), w: R(12, 24), bend: R(-.12, .12) })) });
     G.shake = .3; G.roarT = G.t;
+    if (G.up && G.up.zhangGu) { G.drumT = G.t + 6; if (!G.sim) [0, .4, .8].forEach((dl, k) => G.fx.push({ k: 'txt', t: -dl, x: W / 2 + (k - 1) * 70, y: WALL_Y - 150 - k * 10, text: ['一通', '二通', '三通'][k], size: 20 + k * 3, color: '#ff8a4a' })); }   // 11-18 三通鼓
     gnd({ mode: 1, x: genX(G.order.indexOf('zhang')), y: WALL_Y - 26, rx: Math.min(R0, 200) * 1.05, sq: .36, dur: 1.1, open: .22, col: HCOL.zhang, n: 12 });   // 10-29 我方大招补贴地层：一喝冲开一圈地裂
     if (G.up && G.up.zhang2) { G.trenchT = 4; G.trenchY = WALL_Y - Math.min(R0, 160) * .62; G.trenchFire = true; }   // 怒雷：城前留一道火沟
   } else if (id === 'liu') {
@@ -2630,7 +2674,7 @@ function resolveSkill(id, boost = 1) {
       const sk = G.fx.filter(q => q.k === 'skname' && q.id === 'guan').pop(); if (sk) { sk.text = '横竖斩'; sk.t = 0; } }
     const hits = inS.map(e => [e.x, e.y - 14, G.visDelay(e)]); G.visDelay = null;
     G.fx.push({ k: 'slash', t: 0, x: cx, y: cy, r, dir, foes: G.sim ? null : inS, rot: R(-.35, .35), n: hit, hits, sp: Array.from({ length: 22 }, () => ({ u: R(0, 1), d: R(2, 22), r: R(.8, 3) })) });
-    if (G.sim) G.freeze = .07; else hitStop(.09, .1); G.shake = .28;   // 11-08 玩家这边：刀扫到一半才停、停 3 帧（原来出刀当下就停，刀还没到）
+    if (G.sim) G.freeze = .07; else hitStop(.09, .1); G.shake = .28; G.qlsT = G.t + 3;   // 11-08 玩家这边：刀扫到一半才停、停 3 帧（原来出刀当下就停，刀还没到）
   }
 }
 // 丈八破阵（10-29 新招）：选敌人最密的一路，矛势从城头直刺到底，整列都穿；三层伤害按穿过的人数衰减很少
@@ -2651,6 +2695,32 @@ function resolvePojian(boost = 1) {
   const hits = inL.map(e => [e.x, e.y - 14, G.visDelay(e)]); G.visDelay = null;
   G.fx.push({ k: 'pojian', t: 0, dur: .75, x0: zx, x: a.x, hits }); for (const [hx, hy, d] of hits.slice(0, 8)) fbPlay('hit_fire', hx, hy, 70, null, { delay: d, glow: .5 }); G.pojT = G.t; G.pojX = a.x; G.shake = .25; G.freeze = .05;   // pojX 只给横竖斩的画面用
 }
+// 千里走单骑（11-18 第三章新招，官阶宜城亭侯开）：关羽骑赤兔沿城前冲一趟——挑城前最挤的一横排，从左到右（或反过来）一路每人一刀、撞开；
+// 和青龙斩扫一片的形状不同，专打散开成一排的兵。研习「过关」后撞到的晕 0.6 秒、护送的车驾 4 秒内走快一倍。画面借赵云七进七出：关羽自己的半透明人影＋刀光画稿
+const QL_H = 26, QL_T = .45;
+function qlAim(al) {
+  const foes = al.filter(e => !FOES[e.kind].civ && !FOES[e.kind].invuln && seen(e) && e.y > TOP); let best = null, bn = 0;
+  for (let y = WALL_Y - 20; y >= Math.max(TOP + 20, WALL_Y - 200); y -= 8) { let n = 0; for (const e of foes) if (Math.abs(e.y - y) < QL_H) n += 1 + (FOES[e.kind].boss || e.lead ? 1.5 : 0) + (WALL_Y - e.y < 60 ? 1 : 0); if (n > bn) { bn = n; best = y; } }
+  return best == null ? null : { y: best, n: bn };
+}
+function resolveQianli(boost = 1) {
+  const al = alive(), a = qlAim(al); if (!a) return; if (G.qlTwo && !boost.two) { const b = qlAim(al.filter(e => Math.abs(e.y - a.y) > QL_H * 2)); if (b) { const sv = qlAim; qlAim = () => b; resolveQianli(Object.assign(new Number(boost), { two: 1 })); qlAim = sv; } }
+  const gx = genX(G.order.indexOf('guan')), dir = gx < W / 2 ? 1 : -1, D = G.st.guanDmg * .85 * boost * (G.qlMul || 1), pass = !!(G.up && G.up.guanQl);
+  const inB = al.filter(e => Math.abs(e.y - a.y) < QL_H && e.y > TOP - 4 && !FOES[e.kind].civ);
+  G.visDelay = e => clamp((dir > 0 ? e.x : W - e.x) / W, 0, 1) * QL_T;                // 人影从一边冲到另一边 0.45 秒，冲到谁谁才挨
+  for (const e of inB) { hurt(e, D, 'qianli'); if (!e.duel && !FOES[e.kind].boss) { e.knock += 26 * SPD_X; if (pass || G.qlStun) e.stun = Math.max(e.stun || 0, G.qlStun ? 1 : .6); } }
+  const hits = inB.map(e => [e.x, e.y - 14, G.visDelay(e)]); G.visDelay = null;
+  if (pass && G.cart) G.cartBoostT = G.t + 4;
+  G.qlT = G.t; G.shake = Math.max(G.shake || 0, .3);
+  if (!G.sim) { G.fx.push({ k: 'qianli', t: 0, dur: QL_T + .9, y: a.y, dir }); for (const [hx, hy, dl] of hits.slice(0, 8)) hitBurst(hx, hy, 'jade', 70, dl, 3); spxDim(.35); hitStop(QL_T * .5, 1 / 30); }
+}
+function drawQianli(f) {                                                              // 关羽人影骑行横冲，身后拖一道青绿刀光画稿（宽固定、只拉长），冲过的地上留一道刀痕
+  const u = clamp(f.t / QL_T, 0, 1), e2 = 1 - (1 - u) * (1 - u), x0 = f.dir > 0 ? -30 : W + 30, x1 = f.dir > 0 ? W + 30 : -30, x = x0 + (x1 - x0) * e2, fade = clamp(1 - (f.t - QL_T) / .9, 0, 1);
+  const tail = Math.abs(x - x0); if (tail > 12 && hasPaint2('blade')) drawPaintWL('blade', (x + x0) / 2, f.y - 18, 58 * persp(f.y) / .6, tail, f.dir > 0 ? Math.PI / 2 : -Math.PI / 2, .7 * fade, .25);
+  const S = SHEETS.g_guan; if (S && ready(IMG.g_guan) && u < 1) { const A = S.anims.atk, fr = Math.min(A.rects.length - 1, u * (A.rects.length - .01)), k = 96 * persp(f.y) / S.stand;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; drawSheet('g_guan', 'atk', fr, x, f.y + 10, k, .3); ctx.restore(); drawSheet('g_guan', 'atk', fr, x, f.y + 10, k, .7); }
+  if (u < 1) chargeFlash(x, f.y - 20, .4, '#9ff0c8', 40);
+}
 // 温酒斩将（10-29 新招）：一刀重斩场上最危险的一个——先救急（快撞城的大兵），再斩敌将、头目、精英
 function wjAim(al, skip) {
   const foes = al.filter(e => e !== skip && !FOES[e.kind].civ && !FOES[e.kind].invuln && seen(e) && e.y > TOP); if (!foes.length) return null;
@@ -2659,6 +2729,7 @@ function wjAim(al, skip) {
 }
 function resolveWenjiu(boost = 1, skip) {
   const al = alive(), e = wjAim(al, skip); if (!e) return; const he = G.combos && G.combos.includes('cHe') && (e.stun > 0 || G.t - (e.roaredT ?? -9) < WIN_ROAR);
+  if (G.up && G.up.guanLy) { e.breakT = Math.max(e.breakT || 0, 4); e.shield = 0; e.guardT2 = 0; if (!e.duel && (FOES[e.kind].boss || e.lead) && e.hp < e.max * .25) { e.hp = Math.min(e.hp, 1); if (!G.sim) G.fx.push({ k: 'txt', t: 0, x: e.x, y: e.y - 60, text: '冷艳锯', size: 18, color: JADE }); } }   // 11-18 冷艳锯：先劈碎盾甲护罩，两成五以下的头目一刀斩
   hurt(e, 260 * HPX * boost * (G.wjMul || 1) * (he ? 2 : 1), 'wenjiu'); if (!e.dead) e.knock += 30 * SPD_X;
   G.fx.push({ k: 'wenjiu', t: 0, dur: .8, x: e.x, y: e.y - 20 * FOES[e.kind].s * persp(e.y), he }); fbPlay('yanyue', e.x, e.y - 20, 220, null, { glow: .7 }); fbPlay('hit_jade', e.x, e.y - 20, 160, null, { delay: .08, glow: .6 });
   if (he && !G.sim) { const ty = e.y - 20 * FOES[e.kind].s * persp(e.y), zi = G.order.indexOf('zhang');                  // 连携「喝而斩之」专属画面（只管画面；原来只飘一行字）
@@ -2693,8 +2764,9 @@ function resolveHujin(boost = 1) {
     const sk = G.fx.filter(q => q.k === 'skname' && q.id === 'liu').pop(); if (sk) { sk.text = '仁剑'; sk.t = 0; } }
 }
 function stepHujin(dt) {                                                            // 每帧：城防掉了就先从护盾里补回来
-  if (!(G.wallShield > 0)) return; if (G.t > G.wallShieldT) { G.wallShield = 0; return; }
+  if (!(G.wallShield > 0)) return; if (G.t > G.wallShieldT) { G.wallShield = 0; if (G.up && G.up.liuXm) G.wall = Math.min(G.wallMax, G.wall + G.wallMax * .1); return; }   // 11-18 携民：盾到时城防回 10%
   if (G.lastWall != null && G.wall < G.lastWall) { const d = Math.min(G.wallShield, G.lastWall - G.wall); G.wall += d; G.wallShield -= d; if (G.cnt) G.cnt.shieldAbs += d / G.wallMax;
+    if (G.wallShield <= 0 && G.up && G.up.liuXm) G.wall = Math.min(G.wallMax, G.wall + G.wallMax * .1);
     if (G.wallShield <= 0 && G.hjBlast) { for (const e of alive()) if (WALL_Y - e.y < 140) { e.knock += 90 * SPD_X; e.stun = Math.max(e.stun || 0, .8); } G.shake = .3; } }
   if (G.hjHeal) G.wall = Math.min(G.wallMax, G.wall + G.wallMax * .01 * dt);
 }
@@ -4030,7 +4102,7 @@ function offsetPts(pts, d) {
 }
 // 关羽「刀气」：偃月刀形——刀背厚、刀尖往回勾，玉绿刀身、刀口一线白、刀背一道金，身后两道残影
 function drawWave(s) {
-  const sc = 1.65;
+  const sc = s.big ? 2.6 : 1.65;
   ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.ang);
   const arc = []; for (let i = 0; i <= 16; i++) { const a = -1.25 + 2.5 * i / 16; arc.push([-9 * sc + Math.cos(a) * 16 * sc, Math.sin(a) * 16 * sc]); }
   arc.unshift([arc[0][0] - 4 * sc, arc[0][1] + 1 * sc]);                               // 刀尖往回勾一下
@@ -4928,7 +5000,7 @@ const WT = () => Math.min(5, wpnVis(G && G.up && G.up.wpn));   // 11-08 第二�
 function spxWave(s) {
   if (hasPaint2('dao2')) { const r = s.ang + Math.PI / 2, cx = Math.cos(s.ang), cy = Math.sin(s.ang), vt = G.vt || 0; if (s.vb == null) { s.vb = vt; s.vx0 = s.x; s.vy0 = s.y; }
     const age = vt - s.vb, sc = age < .07 ? .35 + .85 * age / .07 : 1.2 - .2 * Math.min(1, (age - .07) / .08), fl = age < .12 ? .9 : .35 + .25 * Math.sin(vt * 38 + s.x);   // 出手：从小撑开、先亮后闪
-    const T = WT(), up = (1 + .06 * T) * RKX(), f2 = fl + .07 * T + RKG();
+    const T = WT(), up = (1 + .06 * T) * RKX() * (s.big ? 1.7 : 1), f2 = fl + .07 * T + RKG() + (s.big ? .25 : 0);   // 11-18 冷艳：宽月牙
     chargeFlash(s.vx0, s.vy0, age, '#9ff0ff', (30 + 4 * T) * RKX());
     lightTrail(s, 7 * (1 + .1 * T) * RKX(), '#7fe9ff', 10 + T + rankNow()); if (T >= 4) lightTrail(s, 2.4, '#ffd24a', 12 + T, 'vtr2');   // 拖尾按等级变粗变长；四级起里面多一条细金线（不叠光晕：纸色地面上会糊成一团雾）
     if (T >= 3) drawPaint2('dao2', s.x - cx * 34, s.y - cy * 34, 56 * sc * up, r, .18, 0);                         // 三级起多一道远一点的残影
@@ -5474,6 +5546,7 @@ function drawFx(f) {
   else if (f.k === 'wave') drawWaveBanner(f);
   else if (f.k === 'lanceHit') drawLanceHit(f);
   else if (f.k === 'qijin') drawQijin(f);
+  else if (f.k === 'qianli') drawQianli(f);
   else if (f.k === 'shout') {   // 张飞声浪：光效层就绪时由 FS_SHOUT 画（spxShout），这里只画没就绪时的简化弧线
     const u = f.t / f.dur;
     if (u >= 0 && u < 1 && !(SPX.ok && SPX.shoutP)) {   // 10-30 用户圈着旧火弧：「这个还可以优化吗」——光效层没就绪（刚加载、不支持 WebGL）时也不再画那张死的火焰图，
@@ -6655,7 +6728,7 @@ function drawRoster() {
 const CAMP = { t0: 0, pickAwake: false };
 let GATE = null;
 // 物品图标（ChatGPT 画，img/item_<名>.png）；没到时画一块同色的圆角块写首字
-for (const k of ['精铁', '残页', '将印', '陨铁', '体力', '机缘', '青龙鳞', '蛇纹镔铁', '雌雄剑胚']) { IMG['item_' + k] = new Image(); IMG['item_' + k].src = 'img/item_' + encodeURIComponent(k) + '.png' + BUST; }
+for (const k of ['精铁', '残页', '将印', '陨铁', '体力', '机缘', '青龙鳞', '蛇纹镔铁', '雌雄剑胚', '乌金', '兵书']) { IMG['item_' + k] = new Image(); IMG['item_' + k].src = 'img/item_' + encodeURIComponent(k) + '.png' + BUST; }
 function drawItemIcon(k, cx, cy, s) {
   if (ITEM_TIP[k]) hov(cx - s / 2 - 2, cy - s / 2 - 2, s + 4, s + 4, ITEM_TIP[k]);          // 图标都带悬停说明
   const im = IMG['item_' + k]; if (ready(im)) { const f = s / Math.max(im.width, im.height); ctx.drawImage(im, cx - im.width * f / 2, cy - im.height * f / 2, im.width * f, im.height * f); return; }
@@ -6798,7 +6871,7 @@ function drawCamp() {
   { const N = nextRank(); if (N) { uiText('下一阶 · ' + N.name, W / 2, 84, 18, UIC.gold2, 'center', FONT, { lw: 4 }); uiText(`资历 ${INV.prep || 0}/${prepNeed()}`, 30, 120, 13, UIC.cream, 'left', PLAIN, { stroke: false });
       uiBar('cprep', 100, 114, W - 230, 12, Math.min(1, (INV.prep || 0) / prepNeed()), '#8a5a14', '#ffd76e'); 
       pill(W - 112, 104, 90, 28, canPromote() ? '去晋阶' : '看官阶', () => { screen = 'rank'; }, canPromote(), true, canPromote()); }
-    else uiText('已是第一章最高官阶', W / 2, 108, 18, UIC.gold2, 'center', FONT); }   // 军帐顶上改放官阶资历（兵器不在这里：10-29 用户）
+    else uiText('已是最高官阶', W / 2, 108, 18, UIC.gold2, 'center', FONT); }   // 军帐顶上改放官阶资历（兵器不在这里：10-29 用户）
   if (gl) { ctx.save(); ctx.translate(0, 110); SC.off -= 110; plate(14, 58, W - 28, 166, true);   // 备料卡整块往下挪 110：画面平移，按钮的点击位置跟着挪（借拖动的偏移）
     const { ng, key, U, tot, d } = gl, lv = LEVELS.find(l => l.id === ng), lvl = INV.up[key] || 0;
     if (key === 'wpn') { drawWeapon('guan', wpnVis(lvl + 1), 44, 140, 150, .2, uiNow(), false); hit(14, 58, W - 28, 120, () => { screen = 'armory'; ARM.t0 = uiNow(); }); }   // 要打兵器时左边放下一级的青龙偃月刀，点卡片进神兵页
@@ -6869,8 +6942,8 @@ function drawCamp() {
   plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; CAMP.pickAwake = false; }, false);
   if (CAMP.pickAwake) {                                                            // 觉醒选人：三张头像
     ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(0, 0, W, H); uiText('选一人觉醒', W / 2, 220, 24, UIC.gold2, 'center', FONT);
-    ['guan', 'zhang', 'liu'].forEach((id, k) => { const x = 40 + k * 100, y = 250;
-      ctx.save(); rr(x, y, 80, 80, 8); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], x, y, 80, 80); ctx.restore();
+    ['guan', 'zhang', 'liu'].forEach((id, k) => { const x = 40 + k * 100, y = 250, done = INV.up.awake >= 1 && INV.awake === id;   // 11-18 第二次觉醒：已觉醒的那位灰掉、点不了
+      ctx.save(); if (done) ctx.globalAlpha = .35; rr(x, y, 80, 80, 8); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], x, y, 80, 80); ctx.restore(); if (done) { uiText('已觉醒', x + 40, y + 96, 14, 'rgba(244,230,196,.5)', 'center', FONT); return; }
       if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, x - 1, y - 1, 82, 82, 60, 60, 60, 60, .1);
       uiText(GEN[id].name, x + 40, y + 96, 16, UIC.cream, 'center', FONT); hit(x, y, 80, 100, () => { doUp('awake', id); CAMP.pickAwake = false; MENU.flash = { key: 'awake', t0: uiNow() }; }); });
     pill(130, 380, 100, 28, '算了', () => { CAMP.pickAwake = false; }, false);
@@ -6938,10 +7011,10 @@ function drawReward() {
 // 一页：中间一把大的斜着、慢慢浮，身后按等级发光（越高越亮、越多颜色），右边三格换着看三人的；底下写下一级要什么、几天后够，够了就打造
 const G_FIX = { guan: { idle: 1.03, atk: .95 }, zhang: { atk: 1.05 }, liu: { idle: .93 } };   // 按图集里身体高度量出来的（行里像素够多才算身体，兵器细杆不算），让三人待机、普攻一样高   // 10-27 新录战场人物：刘备待机首帧蹲得低，按它定的比例画出来大一圈（用户：「大小不一？」），缩回和关张一样高   // 10-28 用户：「这里 2 个刘备」——那条待机 Veo 整条都叠了两个人，待机改用普攻那条末尾站定的 9 帧（31–39），比例改回和他普攻一样高
 const ARM = { who: 'guan', t0: 0, flash: 0 };
-const WPN = { guan: '青龙偃月刀', zhang: '丈八蛇矛', liu: '雌雄双股剑' }, WPN_TIER = ['凡铁', '精钢', '龙纹', '鎏金', '神兵', '绝世', '玄铁', '寒霜', '赤焰', '紫电', '天命'];   // 11-08 第二章后五档
+const WPN = { guan: '青龙偃月刀', zhang: '丈八蛇矛', liu: '雌雄双股剑' }, WPN_TIER = ['凡铁', '精钢', '龙纹', '鎏金', '神兵', '绝世', '玄铁', '寒霜', '赤焰', '紫电', '天命', /* 11-18 第三章 */ '墨金', '苍龙', '星铭', '玄光', '本命'];   // 11-08 第二章后五档
 const WPN_GLOW = { guan: '90,220,170', zhang: '255,120,60', liu: '110,180,255' }, WPN_ROT = { guan: .62, zhang: .62, liu: .14 };   // 双股剑是交叉的一对，只斜一点
-for (const id of ['guan', 'zhang', 'liu']) for (let k = 1; k <= 10; k++) { const n = 'wpn_' + id + k; IMG[n] = new Image(); IMG[n].src = 'img/' + n + '.png' + BUST; }
-const wpnImg = (id, lvl) => { const im = IMG['wpn_' + id + (lvl <= 5 ? Math.min(5, lvl + 1) : Math.min(10, lvl))]; return lvl > 5 && !ready(im) ? IMG['wpn_' + id + 5] : im; };   // 档位 6–10（第二章）用第 6–10 张
+for (const id of ['guan', 'zhang', 'liu']) for (let k = 1; k <= 15; k++) { const n = 'wpn_' + id + k; IMG[n] = new Image(); IMG[n].src = 'img/' + n + '.png' + BUST; }
+const wpnImg = (id, lvl) => { const im = IMG['wpn_' + id + (lvl <= 5 ? Math.min(5, lvl + 1) : Math.min(15, lvl))]; return lvl > 10 && !ready(im) ? wpnImg(id, 10) : lvl > 5 && !ready(im) ? IMG['wpn_' + id + 5] : im; };   // 档位 11–15（第三章）没画好时退回第 10 张   // 档位 6–10（第二章）用第 6–10 张
 function drawWeapon(id, lvl, cx, cy, h, rot, t, big) {
   const im = wpnImg(id, lvl), tier = Math.min(5, lvl + 1), col = WPN_GLOW[id];
   if (big && tier >= 2) { const r = 90 + tier * 22, br = .5 + .5 * Math.sin(t * 2);                                     // 身后的光：二级起有，三级起带人物色，四级起再加金
@@ -6972,11 +7045,13 @@ function drawArmory2() {
   uiText(WPN[id], 22, 92, 22, UIC.gold2, 'left', FONT, { glow: `rgba(${WPN_GLOW[id]},.5)`, glowR: 10 });
   uiText(`${WPN_TIER[lvl]}${wl ? ' · +' + wl : ''}`, 22, 116, 15, `rgb(${WPN_GLOW[id]})`, 'left', FONT, { maxW: W - 104 });
   uiText(wl ? UPS[AK].desc(wl) : '还没精炼', 22, 136, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false, maxW: W - 104 });
-  { const M = MAT[id], got = DAILY.caps[M.name] || 0, ML = M.lv.filter(l => (l > 30) === !!BEST[30]), lvs = ML.map(lvName).join('、');   // 11-08 只列本章的刷点（三个写不下）   // 专属材料哪里来（10-29）：+6 起要；今天还能刷几块；点「去刷」开最前面那关
+  { const M = MAT[id], got = DAILY.caps[M.name] || 0, chN = BEST[60] && LEVELS.some(v => v.id > 60) ? 2 : BEST[30] ? 1 : 0, ML = M.lv.filter(l => Math.floor((l - 1) / 30) === chN && LEVELS.some(v => v.id === l)), lvs = ML.map(lvName).join('、');   // 11-08 只列本章的刷点（三个写不下）   // 专属材料哪里来（10-29）：+6 起要；今天还能刷几块；点「去刷」开最前面那关
     uiText(`${M.name}：${lvs}打赢掉（今日 ${got}/${MAT_CAP}）`, 22, 156, 11, ITEM_C[M.name], 'left', PLAIN, { stroke: false, maxW: W - 104 });
     uiText('功绩也给，兵器 +6 起要', 22, 172, 10, 'rgba(244,230,196,.55)', 'left', PLAIN, { stroke: false, maxW: W - 104 });
     const go = ML.find(l => BEST[l] != null || BEST[l - 1] != null || l === 1); if (got < MAT_CAP && go) pill(22, 182, 56, 22, '去刷', () => { BACKTO = 'armory'; openLevel(go - 1); });
-    if ((INV.it.陨铁 || 0) >= MAT_SWAP) pill(84, 182, 96, 22, `陨铁 ${MAT_SWAP} 换 1`, () => { INV.it.陨铁 -= MAT_SWAP; INV.it[M.name]++; saveInv(); sfx('anvil'); }); }
+    if ((INV.it.陨铁 || 0) >= MAT_SWAP) pill(84, 182, 96, 22, `陨铁 ${MAT_SWAP} 换 1`, () => { INV.it.陨铁 -= MAT_SWAP; INV.it[M.name]++; saveInv(); sfx('anvil'); });
+    if (BEST[60]) { const n = DAILY.smelt || 0, ok = n < SMELT_DAY && (INV.it.精铁 || 0) >= SMELT_RATE;   // 11-18 第三章熔炉：精铁 4 换乌金 1，一天最多 3 块（第二章堆下的精铁慢慢用，跳不过门槛）
+      pill(186, 182, 108, 22, `熔炉 铁${SMELT_RATE}换乌金 ${n}/${SMELT_DAY}`, ok ? () => { INV.it.精铁 -= SMELT_RATE; INV.it.乌金 = (INV.it.乌金 || 0) + 1; DAILY.smelt = n + 1; saveInv(); saveDaily(); sfx('anvil'); } : null, false, ok); } }
   ['guan', 'zhang', 'liu'].forEach((g, k) => { const x = W - 70, y = 70 + k * 92, on = g === id;                       // 右边三格：三人的兵器
     ctx.save(); if (!on) ctx.globalAlpha = .5; ctx.fillStyle = 'rgba(14,10,7,.8)'; rr(x, y, 58, 84, 7); ctx.fill();   /* 和底栏武将牌一样：暗底加细金框（关卡牌那张缩小了里面的金边像个方框） */
     const gl = INV.up['wpn_' + g] || 0; drawWeapon(g, wpnVis(gl), x + 29, y + 36, 66, WPN_ROT[g], t, false); if (canUp('wpn_' + g)) uiSeal(x + 52, y + 8, 12, '升', UIC.red, true); if (ready(IMG.ui2_frame)) draw9(IMG.ui2_frame, x - 1, y - 1, 60, 86, 60, 60, 60, 60, .1); ctx.restore();
@@ -6984,8 +7059,8 @@ function drawArmory2() {
     uiText(`${GEN[g].name} +${gl}`, x + 29, y + 74, 11, on ? UIC.gold2 : UIC.cream, 'center', PLAIN, { stroke: false, maxW: 52 }); hit(x, y, 58, 84, () => { ARM.who = g; }); });
   // 底下：下一级
   const y = 470, cap = wpnCap(); plate(14, y, W - 28, 112, wl < cap);
-  if (wl >= WPN_MAX) uiText('已是天命神兵', W / 2, y + 56, 18, UIC.gold2, 'center', FONT);
-  else if (wl >= cap) { const nr = RANKS.findIndex((R, i) => i > rankNow() && R.gets.some(g => g.includes('兵器可炼到'))), why = cap === 10 && !BEST[30] ? '打完第一章' : cap === 10 ? '晋阶校尉' : nr > 0 ? '晋阶' + RANKS[nr].name : '';   // 11-08 第二章：到了这一阶的上限
+  if (wl >= WPN_MAX) uiText('已是本命神兵', W / 2, y + 56, 18, UIC.gold2, 'center', FONT);
+  else if (wl >= cap) { const nr = RANKS.findIndex((R, i) => i > rankNow() && R.gets.some(g => g.includes('兵器可炼到'))), why = cap === 10 && !BEST[30] ? '打完第一章' : cap === 10 ? '晋阶校尉' : cap === 20 && !BEST[60] ? '打完第二章' : nr > 0 ? '晋阶' + RANKS[nr].name : '';   // 11-08 第二章：到了这一阶的上限
     uiText(wl >= 10 && cap === 10 && !BEST[30] ? '已是绝世神兵' : `已炼到这一阶的上限 +${cap}`, W / 2, y + 44, 17, UIC.gold2, 'center', FONT); if (why) uiText(`${why}后可以继续精炼`, W / 2, y + 72, 12, UIC.cream, 'center', PLAIN, { stroke: false }); }
   else { const cost = upCost(AK), e = eta(cost), nim = wpnImg(id, lvl + 1);
     ctx.save(); ctx.beginPath(); ctx.rect(20, y + 6, 70, 100); ctx.clip(); drawWeapon(id, wpnVis(wl + 1), 55, y + 56, 96, WPN_ROT[id], t, false); ctx.restore();
@@ -6998,7 +7073,7 @@ function drawArmory2() {
     if (canUp(AK)) pill(W - 98, y + 66, 76, 30, '打造', () => { doUp(AK); ARM.forge = { t0: uiNow(), id, lv: INV.up[AK], hit: 0 }; sfx('anvil'); }, true, true, true);
     else uiText(e.d >= 99 && cost[MAT[id].name] ? `先打到${lvName(MAT[id].lv[0])}` : etaText(e.d, e.lack), W - 24, y + 94, 12, etaColor(e.d), 'right', FONT, { stroke: false }); }   // 出材料的关还没打过：算不出天数
   /* 10-26 用户圈了「三人的兵器一起精炼」：「去掉这句」 */
-  { const its = ['精铁', '陨铁', MAT[id].name]; plate(14, 46, 168, 26, false); its.forEach((k, i) => { const x = 32 + i * 56; drawItemIcon(k, x, 59, 16); uiText(String(INV.it[k] || 0), x + 11, 59, 12, UIC.cream, 'left', PLAIN, { stroke: false }); }); }   // 手上有多少材料（10-29 用户）
+  { const its = [wl >= 20 ? '乌金' : '精铁', '陨铁', MAT[id].name]; plate(14, 46, 168, 26, false); its.forEach((k, i) => { const x = 32 + i * 56; drawItemIcon(k, x, 59, 16); uiText(String(INV.it[k] || 0), x + 11, 59, 12, UIC.cream, 'left', PLAIN, { stroke: false }); }); }   // 手上有多少材料（10-29 用户）
   plaque(112, 600, 136, 32, '返回', () => { screen = 'menu'; }, false);
   if (ARM.forge) drawForge(ARM.forge);
 }
@@ -7230,7 +7305,7 @@ function drawPromote(ft) {
 function unlockIcon(text, r) {                                                      // 解锁内容 → 奖励牌上的图和短名
   if (text.includes('新甲')) return { im: heroRankPortrait('liu', r), label: '新甲' };
   const m = text.match(/(关羽|张飞|刘备)新招「(.+)」/); if (m) return { im: heroRankPortrait({ 关羽: 'guan', 张飞: 'zhang', 刘备: 'liu' }[m[1]], r), label: m[2] };
-  if (text.includes('被动')) return { im: IMG.item_将印, fit: true, label: text.includes('第二') ? '被动二格' : '被动一格' };
+  if (text.includes('被动')) return { im: IMG.item_将印, fit: true, label: text.includes('第三') ? '被动三格' : text.includes('第二') ? '被动二格' : '被动一格' };
   if (text.includes('阶资格')) return { im: IMG.item_残页, fit: true, label: text.match(/[二三]阶/)[0] + '招式' };
   if (text.includes('上限')) return { im: IMG.item_陨铁, fit: true, label: '成长上限' };
   if (text.includes('兵器可炼到')) return { im: wpnImg('guan', wpnVis(+text.match(/\d+/)[0])), fit: true, label: '兵器 +' + text.match(/\d+/)[0] };
@@ -7279,14 +7354,16 @@ function drawLoadout(P) {
   ids.forEach((id, r) => { const y = y0 + 62 + r * rowH, l = L[id], S = SKILLS[id];
     ctx.save(); rr(20, y, 40, 40, 6); ctx.clip(); if (ready(IMG[id])) ctx.drawImage(IMG[id], FACE[id][0], FACE[id][1], FACE[id][2], FACE[id][2], 20, y, 40, 40); ctx.restore();
     uiText(GEN[id].name, 40, y + 52, 11, UIC.cream, 'center', FONT, { stroke: false });
-    let x = 68; for (const [k, a] of Object.entries(S.act)) { const open = actOpen(id, k), on = l.act === k, w = 128;
+    let x = 68; const nA = Object.keys(S.act).length, aw = Math.min(128, (W - 74 - 6 * (nA - 1)) / nA);   // 11-18 第三章关羽三个招式：按个数收窄
+    for (const [k, a] of Object.entries(S.act)) { const open = actOpen(id, k), on = l.act === k, w = aw;
       uiPanel(x, y, w, 40, { r: 7, top: on ? '#6e1a10' : '#2b1f16', bot: on ? '#3a0c06' : UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.45)', glow: on ? 'rgba(255,170,90,.6)' : null });
       ctx.save(); if (!open) ctx.globalAlpha = .4; uiText(a.name, x + w / 2, y + (EN_ON && open ? 10 : 13), EN_ON ? 12 : 13, on ? '#fff2dc' : UIC.cream, 'center', FONT, { lw: 3, maxW: w - 6 });
       if (open && EN_ON) { const ls = fitLines(a.desc, w - 8, 10, PLAIN).slice(0, 2); ls.forEach((ln, i) => uiText(ln, x + w / 2, y + (ls.length > 1 ? 22 : 28) + i * 10, fitSize(ln, 10, w - 6, 99, PLAIN), 'rgba(244,230,196,.75)', 'center', PLAIN, { stroke: false })); }   // 11-09 英文说明两行
       else if (open) uiText(a.desc, x + w / 2, y + 30, fitSize(a.desc, 9, w - 8, 10, PLAIN), 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false }); ctx.restore();
       if (!open) segText([[EN_ON ? 'At ' : '晋阶', 'rgba(244,230,196,.55)'], [RANKS[a.rank].name, '#ff6a4a'], [EN_ON ? '' : '学会', 'rgba(244,230,196,.55)']], x + w / 2, y + 30, 10, PLAIN, { lw: 3 });
       if (open) hit(x, y, w, 40, () => set(id, q => { q.act = k; })); x += w + 6; }
-    let px = 68; if (slots) for (const [k, a] of Object.entries(S.pas)) { const on = l.pas.includes(k), w = 84, py = y + 48;
+    let px = 68; const PS = Object.entries(S.pas).filter(([k]) => pasOpen(id, k)), pw = Math.min(84, (W - 72 - 4 * (PS.length - 1)) / Math.max(1, PS.length));   // 11-18 第三章四个被动：格子按个数收窄
+    if (slots) for (const [k, a] of PS) { const on = l.pas.includes(k), w = pw, py = y + 48;
       ctx.save(); if (!slots) ctx.globalAlpha = .35; uiPanel(px, py, w, 52, { r: 7, top: on ? '#24304a' : '#2b1f16', bot: UIC.lac, edge: on ? UIC.gold2 : 'rgba(217,166,64,.4)', glow: on ? 'rgba(140,190,255,.5)' : null });
       uiText(a.name, px + w / 2, py + 12, 12, on ? '#dfeaff' : UIC.cream, 'center', FONT, { lw: 3 });
       cardLines(a.desc, 9, 2).forEach((ln, i) => uiText(ln, px + w / 2, py + 27 + i * 11, fitSize(ln, 9, w - 6, 99, PLAIN), 'rgba(244,230,196,.7)', 'center', PLAIN, { stroke: false })); ctx.restore();
@@ -7401,7 +7478,7 @@ const levelTag = lv => { const r = lv.rules || {}; if (lv.kind === 'duel') retur
   if (lv.waves.some(w => w[5] && w[5].lane)) return '三路'; if (r.casts) return '限手'; return '入门'; };
 const SEGS = ['黄巾之乱', '诸侯讨董', '虎牢关', '曹操攻徐州', '三让徐州', '白门楼'];
 // 章节（11-08 用户：「做第二章吧」）：关卡 id 连着排（第二章 31–60），界面上按章内编号写「第二章 第 n 关」；每章三段、每段十关
-const CHAP = [{ no: '第一章', name: '群雄逐鹿' }, { no: '第二章', name: '徐州风云' }];
+const CHAP = [{ no: '第一章', name: '群雄逐鹿' }, { no: '第二章', name: '徐州风云' }, { no: '第三章', name: '官渡' }];   // 11-18 第三章（关卡还在做，没有 61–90 关时战役页不会翻到这一章）
 const frontier = () => { const i = LEVELS.findIndex(lv => !BEST[lv.id]); return i < 0 ? LEVELS.length - 1 : i; };   // 还没打过的第一关
 // 底栏一个图标钮：画的图标（或头像套金圈）、下面一行金字、有事没做时角上一枚朱砂小方印
 function navBtn(cx, label, draw, fn, badge, big) {
@@ -7969,11 +8046,12 @@ function drawCampaignMap(mim, t) {
 }
 // 扫荡（11-02 用户：「点击关卡要出现攻打和扫荡（通过第五关后，3*的关卡可以扫荡）」）：不用打，按三星打赢发一份——三人经验、精铁 1、专属材料 1、
 // 「打赢一次」那道军务；首通、斗将陨铁、功绩、其他打法军务都不算。扫荡和打赢一样花 SWEEP_STA 体力
+const SMELT_RATE = 4, SMELT_DAY = 3;   // 11-18 第三章熔炉
 const SWEEP_STA = 10, sweepOpen = () => !!BEST[5] || window.__sg.all, canSweep = lv => sweepOpen() && (BEST[lv.id] || 0) >= 3;
 function sweepLevel(i) {
   const lv = LEVELS[i]; if (!canSweep(lv) || staNow() < SWEEP_STA) return;
   INV.sta.v -= SWEEP_STA; const got = [], add = (k, n) => { if (n > 0) { INV.it[k] += n; got.push([k, n]); } };
-  add('精铁', 1); for (const m of matOfLv(lv.id)) add(m.name, 1);   // 11-02 不设每日上限，和打赢一样
+  add('精铁', 1); for (const m of matOfLv(lv.id)) add(m.name, 1); if (lv.id > 60) add('乌金', 1);   // 11-02 不设每日上限，和打赢一样
   const who = fighters(lv).filter(id => ROSTER[id]), g = expGain(lv, true, 3, false); for (const id of who) addExp(ROSTER[id], g); saveRoster();
   let tk = 0; for (const t of DAILY.tasks) if (!t.done && t.lv === lv.id && t.k === 'mat') { payTask(t); tk++; }
   const M = DAILY.met = DAILY.met || {}; M[lv.id] = [...new Set([...(M[lv.id] || []), 'mat'])];
@@ -7992,7 +8070,7 @@ function drawLvPop(t) {                                                         
   if (EN_ON) fitLines(tr(lv.sub || ''), pw - 28, 11, PLAIN).slice(0, 2).forEach((ln, k) => uiText(ln, px + 14, py + 66 + k * 13, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false }));   // 英文：简介按词折两行
   else uiText(fitText(lv.sub || '', 11, pw - 28), px + 14, py + 72, 11, 'rgba(244,230,196,.7)', 'left', PLAIN, { stroke: false });
   // 11-02 用户：「还要出现关卡可能掉落的东西」——精铁、这关专属材料，首通还没拿的写「首通」
-  { const D = [['精铁', '']]; for (const m of matOfLv(lv.id)) D.push([m.name, '']); if (lv.kind === 'duel' && lv.id % 30 && !(INV.duelMet || {})[lv.id]) D.push(['陨铁', '首通']); if (lv.id === 20 && !INV.seal20) D.push(['将印', '首通']);
+  { const D = [['精铁', '']]; for (const m of matOfLv(lv.id)) D.push([m.name, '']); if (lv.id > 60) D.push(['乌金', '']); if (BINGSHU_LV.includes(lv.id) && !(INV.bsGot || {})[lv.id]) D.push(['兵书', '首通']); if (lv.kind === 'duel' && lv.id % 30 && !(INV.duelMet || {})[lv.id]) D.push(['陨铁', '首通']); if (lv.id === 20 && !INV.seal20) D.push(['将印', '首通']);
     uiText('可能掉落', px + 14, py + 98, 11, 'rgba(246,210,122,.85)', 'left', PLAIN, { stroke: false, maxW: 64 });
     const full = k => false;   // 11-02 掉落不再设每日上限   // 11-02 用户：「这里也要显示，免得玩家浪费体力刷」——今天已领满的变淡、标「满」
     D.forEach(([k, tag], j) => { const ix = px + 84 + j * 34, f = !tag && full(k); ctx.save(); if (f) ctx.globalAlpha = .4; drawItemIcon(k, ix, py + 98, 22); ctx.restore(); if (f) uiText('满', ix + 9, py + 106, 10, UIC.red2, 'center', PLAIN, { lw: 2.5 }); if (tag) uiText(tag, ix, py + 115, 8, '#ffd76e', 'center', PLAIN, { lw: 2 }); hov(ix - 12, py + 86, 24, 24, ITEM_TIP[k] || k); });
