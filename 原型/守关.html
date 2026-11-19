@@ -3719,7 +3719,7 @@ function drawFbs() {
 }
 // 11–30 关的地图还没画的先借相近的（汜水关、虎牢关借谷口，酸枣大营借黄巾大营）
 const MAP_ALIAS = { sishui: 'canyon', hulao: 'canyon', suanzao: 'camp', luoyang: 'plain', ruins: 'plain', night: 'plain',
-  /* 11-18 第三章底图没画前先借 */ rangshan: 'canyon', jingzhou: 'xuchang', tanxi: 'sishuiR', xinye: 'tancheng' };   // 第二章 11 张底图 11-08 画好，不再借第一章的   // night（第九关夜战）原来也借主页底图
+  /* 11-18 第三章底图没画前先借 */ };   // 第二章 11 张底图 11-08 画好，不再借第一章的   // night（第九关夜战）原来也借主页底图
 const BGC = {};   // 场景底图降饱和的副本（按地图名）；算好就把原图放掉，换关只留这关的（10-30 第 4–30 关复现：原图和副本各 8MB 同时常驻）
 function bgOf(m) { if (BGC[m]) return BGC[m]; const im = IMG['bg_' + m]; if (!ready(im)) return null; const c = inkBg(im); if (c !== im) { BGC[m] = c; INKBG.delete(im); relImg(im); } return c; }
 const mapKey = m => BGC[m] || ready(IMG['bg_' + m]) ? m : (MAP_ALIAS[m] || m);
@@ -6527,7 +6527,7 @@ const STORY_GLOW = { story_liu: '80,150,255', story_guan: '60,220,150', story_zh
   pt_sunqian: '170,220,150', pt_xuchu: '220,150,90', pt_yanliang: '240,190,60', pt_wangzhi: '200,160,120', pt_caiyang: '200,205,220', pt_gaolan: '230,200,140', pt_liubiao: '190,160,230', pt_caimao: '130,170,150', pt_xushu: '200,225,255', pt_caoren: '120,150,210' };
 for (const k of [1, 2, 3, 4, 5, 6, 7, 8, 9]) { IMG['map_' + k] = new Image(); IMG['map_' + k].src = 'img/map_' + k + '.jpg' + BUST; }   // 战役地图（没有图时退回原来的关卡牌）
 // 每关一张专门画的剧情图（10-26 用户：「每一关都要有至少一张故事，强调逗B的剧情发展」）：img/story_s<关>.jpg 铺满整场；还没画好的关先用原来的立绘（存在第四格）
-const STORY_S3 = new Set([61, 62]);   // 11-18 第三章剧情图画好的关（img/story_s61…）；没画好的不换，先用立绘
+const STORY_S3 = new Set([61, 62, 63, 64, 65, 66]);   // 11-18 第三章剧情图画好的关（img/story_s61…）；没画好的不换，先用立绘
 for (let n = 1; n <= 90; n++) { if (n > 60 && !STORY_S3.has(n)) continue; const L = STORY['l' + n]; if (!L) continue; for (const ln of L) { ln[3] = ln[0]; ln[0] = 'story_s' + n; } }
 for (const ln of STORY.c3) if (ln[0] !== 'story_oath') { ln[3] = ln[0]; ln[0] = 'story_c3'; }   // 11-18 第三章开篇图（煮酒论英雄）
 for (const k of new Set(Object.values(STORY).flat().flatMap(l => [l[0], l[3]]).filter(Boolean))) { IMG[k] = new Image(); IMG[k].src = 'img/' + k + (STORY_GLOW[k] ? '.png' : '.jpg') + BUST; }
@@ -8212,6 +8212,10 @@ const MAP_NODE = [                                                              
   [[72, 512], [205, 490], [165, 428], [92, 345], [168, 298], [232, 262], [150, 222], [300, 192], [213, 190], [213, 118]],
   [[228, 122], [168, 200], [262, 230], [110, 300], [175, 290], [100, 380], [255, 380], [175, 420], [250, 470], [183, 525]],
   [[140, 525], [250, 292], [160, 440], [262, 405], [115, 345], [285, 205], [110, 252], [205, 250], [70, 185], [165, 160]],
+  // 11-18 第三章三张（Codex 画）：麦田 → 土山马车 → 白马城 → 黄河 → 袁绍连营；山间三座关楼 → 渡船 → 古城；汝南 → 檀溪陡崖 → 木桥 → 荆州 → 新野曹营
+  [[136, 548], [229, 499], [120, 439], [65, 373], [136, 313], [256, 365], [155, 248], [213, 199], [164, 161], [210, 123]],
+  [[115, 542], [142, 444], [185, 395], [142, 330], [284, 313], [191, 259], [278, 210], [224, 185], [158, 144], [227, 117]],
+  [[169, 548], [245, 520], [88, 482], [153, 400], [295, 406], [120, 313], [196, 449], [196, 248], [120, 193], [229, 128]],
 ];
 const MAP_TOP = 100, MAP_BOT = 576;
 function drawCampaignMap(mim, t) {
